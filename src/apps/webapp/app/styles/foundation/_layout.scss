@@ -1,0 +1,36 @@
+// Layout primitives: page width, card shell, flex rows, headers
+// Blocks: .container, .header-row, .card, .row
+.container {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+/** Use full `.app__content` width (same idea as `.settings`), not the narrow reading column. */
+.container--wide {
+  max-width: 100%;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.header-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.card {
+  background: var(--background-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-m);
+  padding: 1rem 1.25rem;
+  margin-bottom: 0.75rem;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}

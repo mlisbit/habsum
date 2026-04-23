@@ -1,0 +1,60 @@
+// Block: settings
+.settings {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 1.5rem;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+  box-sizing: border-box;
+}
+
+.settings__sidebar {
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-m);
+  padding: 1rem;
+  background: var(--background-secondary);
+  height: fit-content;
+}
+
+.settings__title {
+  margin: 0.75rem 0 1rem;
+  font-size: 1.25rem;
+}
+
+.settings__user-line {
+  margin-bottom: 0.75rem;
+}
+
+.settings__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.settings__link {
+  padding: 0.45rem 0.6rem;
+  border-radius: var(--border-radius-m);
+  color: var(--foreground);
+  text-decoration: none;
+
+  &:hover {
+    background: color-mix(in srgb, var(--foreground) 6%, transparent);
+  }
+}
+
+.settings__link--active {
+  background: color-mix(in srgb, var(--interactive-accent) 18%, transparent);
+  color: var(--foreground);
+}
+
+.settings__main {
+  min-width: 0;
+}
+
+@media (max-width: 720px) {
+  .settings {
+    grid-template-columns: 1fr;
+  }
+}

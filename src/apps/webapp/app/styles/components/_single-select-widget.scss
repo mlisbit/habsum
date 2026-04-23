@@ -1,0 +1,15 @@
+// app/components/widgets/SingleSelectWidget.tsx — BEM: .habit-select
+.habit-select__options {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.habit-select__error {
+  margin-top: 0.75rem;
+}
+
+.habit-select__option--dim {
+  opacity: 0.55;
+}

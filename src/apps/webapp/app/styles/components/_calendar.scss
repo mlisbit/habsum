@@ -1,0 +1,129 @@
+// app/components/Calendar.tsx
+.calendar {
+  width: 100%;
+}
+
+.calendar__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.calendar__title {
+  font-weight: 650;
+}
+
+.calendar__controls {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.calendar__weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.4rem;
+  margin-bottom: 0.4rem;
+}
+
+.calendar__weekday {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0 0.2rem;
+}
+
+.calendar__grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.4rem;
+}
+
+.calendar__cell {
+  position: relative;
+  min-height: 46px;
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-m);
+  padding: 0.35rem 0.45rem;
+  background: var(--background-secondary);
+}
+
+.calendar__cell--clickable {
+  cursor: pointer;
+}
+
+.calendar__cell--clickable:hover {
+  border-color: color-mix(in srgb, var(--interactive-accent) 45%, var(--border));
+}
+
+.calendar__cell--outside {
+  opacity: 0.55;
+}
+
+.calendar__cell--today {
+  border-color: color-mix(in srgb, var(--interactive-accent) 65%, var(--border));
+}
+
+.calendar__cell--selected {
+  outline: 2px solid color-mix(in srgb, var(--interactive-accent) 70%, transparent);
+  outline-offset: 2px;
+}
+
+.calendar__cell--future {
+  opacity: 0.4;
+  background: color-mix(in srgb, var(--background-secondary) 75%, var(--background));
+}
+
+.calendar__cell--before {
+  opacity: 0.35;
+  background: color-mix(in srgb, var(--background-secondary) 75%, var(--background));
+}
+
+.calendar__cell--noData {
+  opacity: 0.55;
+  background: color-mix(in srgb, var(--background-secondary) 82%, var(--background));
+  color: var(--text-muted);
+}
+
+.calendar__dayNumber {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.calendar__cellContent {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.calendar__dot {
+  width: 14px;
+  height: 14px;
+  border-radius: var(--border-radius-full);
+  background: var(--indicator-calendar-dot);
+  box-shadow: 0 0 0 4px
+    color-mix(in srgb, var(--indicator-calendar-dot) 22%, transparent);
+}
+
+// Calendar day hover panel — match app shell background (not card)
+.calendar__hoverable.hover-layer__panel {
+  background: var(--background-tertiary);
+}
+
+// Calendar Hover.Content (habit history / any consumer)
+.calendar-day-hover__habit {
+  margin-top: 0.3rem;
+
+  &:first-of-type {
+    margin-top: 0;
+  }
+}
+
+.calendar-day-hover__progress.progress {
+  margin-top: 0.35rem;
+}
+

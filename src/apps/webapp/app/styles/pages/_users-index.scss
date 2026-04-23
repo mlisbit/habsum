@@ -1,0 +1,14 @@
+// Block: users-index (layout: .container, .header-row, .card, .row)
+.users-index {
+  min-width: 0;
+}
+
+.users-index__actions {
+  display: flex;
+  align-items: baseline;
+  gap: spacing(2);
+}
+
+.users-index__error {
+  margin-top: spacing(2);
+}

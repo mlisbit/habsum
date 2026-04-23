@@ -1,0 +1,21 @@
+// app/routes/users/$user/habits/$habitId/route.tsx
+.habit-history {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+
+@media (min-width: 860px) {
+  .habit-history {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  }
+}
+
+.habit-history__calendar {
+  min-width: 0;
+}
+
+.habit-history__widget {
+  min-width: 0;
+}

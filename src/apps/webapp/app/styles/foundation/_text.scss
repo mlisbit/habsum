@@ -1,0 +1,14 @@
+// Text utilities: .muted, .warn
+.muted {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.warn {
+  color: var(--semantic-warning-fg);
+  background: var(--semantic-warning-bg);
+  border: 1px solid var(--semantic-warning-border);
+  padding: 0.25rem 0.6rem;
+  border-radius: var(--border-radius-full);
+  font-size: 0.8rem;
+}

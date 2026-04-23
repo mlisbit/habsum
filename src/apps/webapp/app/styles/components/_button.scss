@@ -1,0 +1,73 @@
+// app/components/Button.tsx — BEM block: .button
+button,
+.btn,
+.button {
+  font: inherit;
+  background: var(--background-button-cta-primary);
+  color: var(--foreground-on-cta-primary);
+  border: none;
+  border-radius: var(--border-radius-m);
+  padding: 0.5rem 0.9rem;
+  cursor: pointer;
+  transition:
+    transform 0.05s ease,
+    filter 0.12s ease,
+    box-shadow 0.12s ease;
+
+  &:hover {
+    filter: brightness(1.05);
+  }
+
+  &:active {
+    transform: translateY(1px);
+    filter: brightness(0.98);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px
+      color-mix(in srgb, var(--background-button-cta-primary) 35%, transparent);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    filter: none;
+  }
+}
+
+.button--secondary {
+  background: transparent;
+  color: var(--foreground);
+  border: 1px solid var(--border);
+
+  &:hover {
+    background: color-mix(in srgb, var(--foreground) 7%, transparent);
+  }
+
+  &:active {
+    background: color-mix(in srgb, var(--foreground) 10%, transparent);
+  }
+}
+
+.button--icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+}
+
+.button--plus {
+  font-size: 1.25rem;
+  line-height: 1;
+  border-radius: var(--border-radius-full);
+}
+
+.button__inner {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}

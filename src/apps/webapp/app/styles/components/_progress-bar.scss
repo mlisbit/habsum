@@ -1,0 +1,37 @@
+// app/components/ProgressBar.tsx — BEM block: .progress
+.progress {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.5rem;
+  padding: 0.2rem 0.65rem;
+  background: var(--border);
+  border-radius: var(--border-radius-full);
+  overflow: hidden;
+  margin-top: 0.75rem;
+}
+
+.progress__fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  max-width: 100%;
+  background: var(--interactive-accent);
+  border-radius: var(--border-radius-full);
+  transition: width 0.2s ease;
+}
+
+.progress__label {
+  position: relative;
+  z-index: 1;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  text-shadow: 0 0 1px var(--background), 0 1px 2px var(--background);
+  color: var(--foreground);
+  pointer-events: none;
+  user-select: none;
+}

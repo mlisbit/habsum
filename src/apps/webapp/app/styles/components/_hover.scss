@@ -1,0 +1,17 @@
+// app/components/Hover.tsx — portal panel
+.hover-layer__panel {
+  min-width: 200px;
+  padding: spacing(2, 3);
+  border-radius: var(--border-radius-m);
+  border: 1px solid var(--border);
+  background: var(--background-secondary);
+  box-shadow: var(--shadow-elevation-panel);
+  font-size: 0.85rem;
+  line-height: 1.35;
+  /* Panel must not capture the pointer — leave fires on the anchor as soon as you exit the cell. */
+  pointer-events: none;
+}
+
+.hover-layer__panel .muted {
+  color: var(--text-muted);
+}

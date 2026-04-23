@@ -1,0 +1,20 @@
+// Shared title link in SingleSelectWidget / SummationWidget (beat .app a { color: text-link })
+.app a.habit-widget__title {
+  color: inherit;
+  text-decoration: none;
+  font: inherit;
+  line-height: inherit;
+  display: inline;
+
+  &:hover {
+    text-decoration: underline;
+    color: var(--interactive-accent);
+  }
+}
+
+// SummationWidget / SingleSelectWidget — goal met, or (summation) no goal with logged total
+.habit-summation.habit-widget--complete,
+.habit-select.habit-widget--complete {
+  outline: 2px solid color-mix(in srgb, var(--interactive-accent) 58%, var(--border));
+  outline-offset: 3px;
+}

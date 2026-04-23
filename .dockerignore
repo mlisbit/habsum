@@ -1,0 +1,14 @@
+node_modules
+**/node_modules
+**/.cache
+**/.turbo
+**/.vite
+**/.DS_Store
+src/apps/webapp/build
+src/apps/webapp/.cache
+data
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+dist

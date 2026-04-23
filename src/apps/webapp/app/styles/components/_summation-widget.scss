@@ -1,0 +1,10 @@
+// app/components/widgets/SummationWidget.tsx — BEM: .habit-summation
+.habit-summation__add {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.habit-summation__error {
+  margin-top: 0.75rem;
+}

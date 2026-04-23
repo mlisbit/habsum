@@ -1,0 +1,14 @@
+// Global document reset (no surface colors; those live on .app)
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+}

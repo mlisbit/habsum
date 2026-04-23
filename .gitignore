@@ -1,0 +1,14 @@
+node_modules
+.DS_Store
+*.log
+.env
+.env.local
+
+# build outputs
+src/apps/server/dist
+src/apps/webapp/build
+src/apps/webapp/.cache
+src/apps/webapp/public/build
+
+# local runtime data (user-controlled)
+config/

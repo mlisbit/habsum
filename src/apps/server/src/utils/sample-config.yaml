@@ -1,0 +1,14 @@
+habits:
+  push ups:
+    type: summation
+    goal: 100
+    history: 
+      - period: 1w
+      - display: average
+
+  soda consumption:
+    type: single_select
+    options: [none, light, moderate]
+
+  pull ups:
+    type: summation

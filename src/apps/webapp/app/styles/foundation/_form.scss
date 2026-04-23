@@ -1,0 +1,11 @@
+// Form primitives
+.number-input {
+  font: inherit;
+  color: var(--foreground);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--border-radius-m);
+  padding: 0.35rem 0.5rem;
+  width: 5rem;
+  text-align: right;
+}
