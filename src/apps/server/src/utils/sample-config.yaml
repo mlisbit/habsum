@@ -2,7 +2,7 @@ habits:
   push ups:
     type: summation
     goal: 100
-    history: 
+    history:
       - period: 1w
       - display: average
 

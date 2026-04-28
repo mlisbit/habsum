@@ -1,11 +1,11 @@
-import { Link, Outlet, useLocation, useParams } from "@remix-run/react";
-import { Button } from "~/components/Button";
+import { Link, Outlet, useLocation, useParams } from '@remix-run/react';
+import { Button } from '~/components/Button';
 
 export default function UserSettingsLayout() {
   const { user } = useParams();
   const location = useLocation();
   const path = location.pathname;
-  const base = `/users/${encodeURIComponent(user ?? "")}/settings`;
+  const base = `/users/${encodeURIComponent(user ?? '')}/settings`;
 
   return (
     <div className="settings">
@@ -17,9 +17,7 @@ export default function UserSettingsLayout() {
           text=""
           title="Back to habits"
           aria-label="Back to habits"
-          onClick={() =>
-            window.location.assign(`/users/${encodeURIComponent(user ?? "")}/habits`)
-          }
+          onClick={() => window.location.assign(`/users/${encodeURIComponent(user ?? '')}/habits`)}
         />
 
         <h1 className="settings__title">Settings</h1>
@@ -27,9 +25,7 @@ export default function UserSettingsLayout() {
         <nav className="settings__nav">
           <Link
             className={
-              path.endsWith("/account")
-                ? "settings__link settings__link--active"
-                : "settings__link"
+              path.endsWith('/account') ? 'settings__link settings__link--active' : 'settings__link'
             }
             to={`${base}/account`}
           >
@@ -37,9 +33,7 @@ export default function UserSettingsLayout() {
           </Link>
           <Link
             className={
-              path.endsWith("/config")
-                ? "settings__link settings__link--active"
-                : "settings__link"
+              path.endsWith('/config') ? 'settings__link settings__link--active' : 'settings__link'
             }
             to={`${base}/config`}
           >

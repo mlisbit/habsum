@@ -23,7 +23,7 @@ habits:
   push ups:
     type: summation
     goal: 100
-    history: 
+    history:
       - period: 1w
       - display: average
 
@@ -44,17 +44,17 @@ services:
   server:
     image: ghcr.io/mlisbit/habsum/habsum-server:main
     environment:
-      PORT: "3001"
+      PORT: '3001'
       HABSUM_CONFIG_DIR: /data
     volumes:
       - ./data:/data
     expose:
-      - "3001"
+      - '3001'
 
   web:
     image: ghcr.io/mlisbit/habsum/habsum-webapp:main
     ports:
-      - "8882:3000"
+      - '8882:3000'
     depends_on:
       - server
 ```

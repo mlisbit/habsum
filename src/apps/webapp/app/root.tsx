@@ -1,20 +1,14 @@
-import {
-  Links,
-  Meta,
-  Outlet,
-  Scripts,
-  ScrollRestoration,
-} from "@remix-run/react";
-import type { LinksFunction, MetaFunction } from "@remix-run/node";
+import { Links, Meta, Outlet, Scripts, ScrollRestoration } from '@remix-run/react';
+import type { LinksFunction, MetaFunction } from '@remix-run/node';
 
-import stylesHref from "~/styles/main.scss?url";
+import stylesHref from '~/styles/main.scss?url';
 
 export const links: LinksFunction = () => [
-  { rel: "stylesheet", href: stylesHref },
-  { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
+  { rel: 'stylesheet', href: stylesHref },
+  { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
 ];
 
-export const meta: MetaFunction = () => [{ title: "habsum" }];
+export const meta: MetaFunction = () => [{ title: 'habsum' }];
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (

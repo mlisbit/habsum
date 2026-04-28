@@ -1,5 +1,5 @@
 function pad2(n: number) {
-  return String(n).padStart(2, "0");
+  return String(n).padStart(2, '0');
 }
 
 /**
@@ -32,8 +32,6 @@ export function fromDateKey(dateKey: string, tzOffsetMinutes: number): Date {
   const month = Number(m[2]); // 1-12
   const day = Number(m[3]); // 1-31
 
-  const utcAtLocalMidnight =
-    Date.UTC(year, month - 1, day) + tzOffsetMinutes * 60_000;
+  const utcAtLocalMidnight = Date.UTC(year, month - 1, day) + tzOffsetMinutes * 60_000;
   return new Date(utcAtLocalMidnight);
 }
-

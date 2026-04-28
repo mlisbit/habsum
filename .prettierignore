@@ -1,0 +1,15 @@
+node_modules
+package-lock.json
+
+# build outputs
+src/apps/server/dist
+src/apps/webapp/build
+src/apps/webapp/.cache
+src/apps/webapp/public/build
+
+# local runtime data
+config/
+
+# misc
+*.min.*
+LICENSE

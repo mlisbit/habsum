@@ -3,6 +3,7 @@
 ### Local (no Docker)
 
 Requirements:
+
 - Node >= 20
 - npm
 
@@ -37,4 +38,3 @@ HABSUM_CONFIG_DIR="$(pwd)/data" npm run dev
 ```
 
 The webapp runs on `http://localhost:3000` and proxies `/api/*` to the server.
-

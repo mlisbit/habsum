@@ -81,18 +81,18 @@
   background: color-mix(in srgb, var(--background-secondary) 75%, var(--background));
 }
 
-.calendar__cell--noData {
+.calendar__cell--no-data {
   opacity: 0.55;
   background: color-mix(in srgb, var(--background-secondary) 82%, var(--background));
   color: var(--text-muted);
 }
 
-.calendar__dayNumber {
+.calendar__day-number {
   font-size: 0.85rem;
   font-weight: 600;
 }
 
-.calendar__cellContent {
+.calendar__cell-content {
   position: absolute;
   inset: 0;
   display: grid;
@@ -105,8 +105,7 @@
   height: 14px;
   border-radius: var(--border-radius-full);
   background: var(--indicator-calendar-dot);
-  box-shadow: 0 0 0 4px
-    color-mix(in srgb, var(--indicator-calendar-dot) 22%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--indicator-calendar-dot) 22%, transparent);
 }
 
 // Calendar day hover panel — match app shell background (not card)
@@ -126,4 +125,3 @@
 .calendar-day-hover__progress.progress {
   margin-top: 0.35rem;
 }
-

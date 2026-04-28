@@ -1,4 +1,4 @@
-import { dasherize } from "@habsum/utils";
+import { dasherize } from '@habsum/utils';
 
 /**
  * Lowercase, dasherize, and safe-guard a habit name for a URL path segment

@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { ReactNode } from 'react';
 
 type ProgressBarProps = {
   value: number;
@@ -6,7 +6,7 @@ type ProgressBarProps = {
   className?: string;
   /** Shown on top of the track; defaults to `value` / `max` */
   label?: ReactNode;
-  "aria-label"?: string;
+  'aria-label'?: string;
 };
 
 function fillPercent(value: number, max: number): number {
@@ -24,7 +24,7 @@ export function ProgressBar({
   max,
   className,
   label,
-  "aria-label": ariaLabel,
+  'aria-label': ariaLabel,
 }: ProgressBarProps) {
   const pct = fillPercent(value, max);
   const now = clampValue(value, max);
@@ -32,21 +32,15 @@ export function ProgressBar({
 
   return (
     <div
-      className={className ? `progress ${className}` : "progress"}
+      className={className ? `progress ${className}` : 'progress'}
       role="progressbar"
       aria-valuemin={0}
       aria-valuemax={max}
       aria-valuenow={now}
       aria-label={ariaLabel ?? defaultAria}
     >
-      <div
-        className="progress__fill"
-        style={{ width: `${pct}%` }}
-        aria-hidden
-      />
-      <span className="progress__label">
-        {label ?? `${value} / ${max}`}
-      </span>
+      <div className="progress__fill" style={{ width: `${pct}%` }} aria-hidden />
+      <span className="progress__label">{label ?? `${value} / ${max}`}</span>
     </div>
   );
 }

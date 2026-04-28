@@ -1,16 +1,12 @@
-import type {
-  HabitsResponse,
-  ListUsersResponse,
-  PatchHabitResponse,
-} from "@habsum/api-types";
+import type { HabitsResponse, ListUsersResponse, PatchHabitResponse } from '@habsum/api-types';
 
-const SERVER_URL = process.env.HABSUM_SERVER_URL ?? "http://localhost:3001";
+const SERVER_URL = process.env.HABSUM_SERVER_URL ?? 'http://localhost:3001';
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${SERVER_URL}${path}`, {
     ...init,
     headers: {
-      "content-type": "application/json",
+      'content-type': 'application/json',
       ...(init?.headers ?? {}),
     },
   });
@@ -22,24 +18,19 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export function listUsers() {
-  return request<ListUsersResponse>("/users");
+  return request<ListUsersResponse>('/users');
 }
 
 export function getHabits(user: string) {
-  return request<HabitsResponse>(
-    `/users/${encodeURIComponent(user)}/habits`
-  );
+  return request<HabitsResponse>(`/users/${encodeURIComponent(user)}/habits`);
 }
 
 export function patchHabit(
   user: string,
-  body: { habit: string; total: number; action: "add" | "set" }
+  body: { habit: string; total: number; action: 'add' | 'set' },
 ) {
-  return request<PatchHabitResponse>(
-    `/users/${encodeURIComponent(user)}/habits`,
-    {
-      method: "PATCH",
-      body: JSON.stringify(body),
-    }
-  );
+  return request<PatchHabitResponse>(`/users/${encodeURIComponent(user)}/habits`, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+  });
 }

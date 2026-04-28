@@ -25,8 +25,7 @@ button,
 
   &:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 3px
-      color-mix(in srgb, var(--background-button-cta-primary) 35%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--background-button-cta-primary) 35%, transparent);
   }
 
   &:disabled {

@@ -1,15 +1,15 @@
 // `margin-top: spacing(1);` → 5px. Steps 1–5 map to 5, 10, 15, 20, 25px.
 // Shorthand: `padding: spacing(2, 3);` → 10px 15px (same rules as CSS two-value padding).
 // Up to four steps: `spacing(1, 2, 3, 4)` → top / right / bottom / left.
-@use "sass:list";
-@use "sass:math";
-@use "sass:meta";
+@use 'sass:list';
+@use 'sass:math';
+@use 'sass:meta';
 
 @function _spacing-step($n) {
-  @if meta.type-of($n) != "number" {
+  @if meta.type-of($n) != 'number' {
     @error "spacing(): expected a number, got #{meta.type-of($n)} (#{$n}).";
   }
-  @if math.unit($n) != "" {
+  @if math.unit($n) != '' {
     @error "spacing(): use unitless steps 1–5, not #{$n}.";
   }
   @if $n != math.round($n) {

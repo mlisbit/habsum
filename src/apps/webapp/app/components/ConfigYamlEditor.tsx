@@ -1,27 +1,27 @@
-import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
-import CodeMirror from "@uiw/react-codemirror";
-import { yaml } from "@codemirror/lang-yaml";
-import { oneDark } from "@codemirror/theme-one-dark";
-import { getUserConfig, putUserConfig } from "~/api.client";
-import { Button } from "~/components/Button";
+import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
+import CodeMirror from '@uiw/react-codemirror';
+import { yaml } from '@codemirror/lang-yaml';
+import { oneDark } from '@codemirror/theme-one-dark';
+import { getUserConfig, putUserConfig } from '~/api.client';
+import { Button } from '~/components/Button';
 
 function usePrefersDark() {
   return useSyncExternalStore(
     (onChange) => {
-      const mq = window.matchMedia("(prefers-color-scheme: dark)");
-      mq.addEventListener("change", onChange);
-      return () => mq.removeEventListener("change", onChange);
+      const mq = window.matchMedia('(prefers-color-scheme: dark)');
+      mq.addEventListener('change', onChange);
+      return () => mq.removeEventListener('change', onChange);
     },
-    () => window.matchMedia("(prefers-color-scheme: dark)").matches,
-    () => false
+    () => window.matchMedia('(prefers-color-scheme: dark)').matches,
+    () => false,
   );
 }
 
 type ConfigYamlEditorProps = { user: string };
 
 export function ConfigYamlEditor({ user }: ConfigYamlEditorProps) {
-  const [text, setText] = useState("");
-  const [initial, setInitial] = useState("");
+  const [text, setText] = useState('');
+  const [initial, setInitial] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -39,9 +39,7 @@ export function ConfigYamlEditor({ user }: ConfigYamlEditorProps) {
         setText(r.text);
         setInitial(r.text);
       })
-      .catch((e) =>
-        setLoadError(e instanceof Error ? e.message : String(e))
-      )
+      .catch((e) => setLoadError(e instanceof Error ? e.message : String(e)))
       .finally(() => setLoading(false));
   }, [user]);
 
@@ -76,15 +74,12 @@ export function ConfigYamlEditor({ user }: ConfigYamlEditorProps) {
       <div className="config-page__header">
         <h2>Config</h2>
         <p className="muted config-page__lead">
-          Edit the YAML for this user on the server. Save writes the file; invalid
-          YAML is rejected.
+          Edit the YAML for this user on the server. Save writes the file; invalid YAML is rejected.
         </p>
-        {dirty ? (
-          <p className="muted config-page__dirty">Unsaved changes</p>
-        ) : null}
+        {dirty ? <p className="muted config-page__dirty">Unsaved changes</p> : null}
         <Button
           type="primary"
-          text={saving ? "Saving…" : "Save"}
+          text={saving ? 'Saving…' : 'Save'}
           disabled={!dirty || saving}
           onClick={onSave}
         />
@@ -97,7 +92,7 @@ export function ConfigYamlEditor({ user }: ConfigYamlEditorProps) {
           extensions={[yaml()]}
           height="100%"
           minHeight="min(60vh, 640px)"
-          theme={prefersDark ? oneDark : "light"}
+          theme={prefersDark ? oneDark : 'light'}
           basicSetup={{
             lineNumbers: true,
             foldGutter: true,

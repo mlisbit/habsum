@@ -1,0 +1,15 @@
+{
+  "extends": ["stylelint-config-standard-scss"],
+  "rules": {
+    "selector-class-pattern": [
+      "^[a-z][a-z0-9]*(-[a-z0-9]+)*(__[a-z0-9]+(-[a-z0-9]+)*)?(--[a-z0-9]+(-[a-z0-9]+)*)?$",
+      {
+        "message": "Expected class selector to be kebab-case BEM (block__element--modifier)"
+      }
+    ],
+    "media-feature-range-notation": "prefix",
+    "value-keyword-case": ["lower", { "ignoreProperties": ["/font/"] }],
+    "scss/at-function-pattern": "^_?[a-z][a-z0-9-]*$",
+    "at-rule-empty-line-before": null
+  }
+}

@@ -1,9 +1,9 @@
-import { useState } from "react";
-import { Link } from "@remix-run/react";
-import type { HabitRowSingleSelect } from "@habsum/api-types";
-import { habitIdPathSegment } from "~/utils/habit-id";
-import { Button } from "~/components/Button";
-import { HistoryDisplay } from "~/components/HistoryDisplay";
+import { useState } from 'react';
+import { Link } from '@remix-run/react';
+import type { HabitRowSingleSelect } from '@habsum/api-types';
+import { habitIdPathSegment } from '~/utils/habit-id';
+import { Button } from '~/components/Button';
+import { HistoryDisplay } from '~/components/HistoryDisplay';
 
 type SingleSelectWidgetProps = {
   user: string;
@@ -22,18 +22,14 @@ export function SingleSelectWidget({ user, habit, onSelectOption }: SingleSelect
 
   const idSeg = habitIdPathSegment(habit.name);
   const to = `/users/${encodeURIComponent(user)}/habits/${encodeURIComponent(idSeg)}${
-    typeof window !== "undefined" ? window.location.search : ""
+    typeof window !== 'undefined' ? window.location.search : ''
   }`;
 
   return (
     <div
-      className={[
-        "card",
-        "habit-select",
-        isComplete ? "habit-widget--complete" : "",
-      ]
+      className={['card', 'habit-select', isComplete ? 'habit-widget--complete' : '']
         .filter(Boolean)
-        .join(" ")}
+        .join(' ')}
     >
       <div className="row">
         <div>
@@ -42,7 +38,7 @@ export function SingleSelectWidget({ user, habit, onSelectOption }: SingleSelect
               {habit.name}
             </Link>
           </h2>
-          <div className="muted">{habit.value ?? "—"}</div>
+          <div className="muted">{habit.value ?? '—'}</div>
         </div>
         <div className="habit-select__options">
           {habit.options.map((opt) => {
@@ -51,11 +47,11 @@ export function SingleSelectWidget({ user, habit, onSelectOption }: SingleSelect
             return (
               <Button
                 key={opt}
-                type={selected ? "primary" : "secondary"}
+                type={selected ? 'primary' : 'secondary'}
                 text={opt}
                 disabled={pending}
                 className={
-                  dim ? "habit-select__option habit-select__option--dim" : "habit-select__option"
+                  dim ? 'habit-select__option habit-select__option--dim' : 'habit-select__option'
                 }
                 onClick={async () => {
                   setPending(true);

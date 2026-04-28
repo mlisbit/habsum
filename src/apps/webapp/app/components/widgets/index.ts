@@ -1,2 +1,2 @@
-export { SingleSelectWidget } from "./SingleSelectWidget";
-export { SummationWidget } from "./SummationWidget";
+export { SingleSelectWidget } from './SingleSelectWidget';
+export { SummationWidget } from './SummationWidget';

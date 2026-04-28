@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
-import { Button } from "~/components/Button";
-import { Hover, type HoverPanelSide } from "~/components/Hover";
-import { fromDateKey, toDateKey } from "@habsum/utils";
+import { useEffect, useMemo, useState } from 'react';
+import { Button } from '~/components/Button';
+import { Hover, type HoverPanelSide } from '~/components/Hover';
+import { fromDateKey, toDateKey } from '@habsum/utils';
 
 export type CalendarCellInfo = {
   date: string; // YYYY-MM-DD (UTC)
@@ -49,8 +49,8 @@ function weekday(dateKey: string, tzOffsetMinutes: number) {
 function getMonthLabel(monthStartDateKey: string, tzOffsetMinutes: number) {
   const d = fromDateKey(monthStartDateKey, tzOffsetMinutes);
   const fmt = new Intl.DateTimeFormat(undefined, {
-    month: "long",
-    year: "numeric",
+    month: 'long',
+    year: 'numeric',
   });
   return fmt.format(d);
 }
@@ -79,16 +79,15 @@ function buildCalendarGrid({
 
 function getWeekdayLabels(weekStartsOn: number, tzOffsetMinutes: number) {
   // Use a fixed week with Monday 2023-01-02 and iterate; label in user's locale.
-  const baseMonday = "2023-01-02";
-  const fmt = new Intl.DateTimeFormat(undefined, { weekday: "short" });
+  const baseMonday = '2023-01-02';
+  const fmt = new Intl.DateTimeFormat(undefined, { weekday: 'short' });
   const labels: string[] = [];
   for (let i = 0; i < 7; i++) {
     const d = addDays(baseMonday, i, tzOffsetMinutes);
     labels.push(fmt.format(fromDateKey(d, tzOffsetMinutes)));
   }
   // Rotate to match weekStartsOn
-  const rotate = (labels: string[], n: number) =>
-    labels.slice(n).concat(labels.slice(0, n));
+  const rotate = (labels: string[], n: number) => labels.slice(n).concat(labels.slice(0, n));
   // baseMonday labels are Monday-first; convert to Sunday-first index then rotate
   // mondayFirstIndex: Mon=0..Sun=6, but weekStartsOn is Sun=0..Sat=6
   const mondayFirstToSundayFirst = (day: number) => (day === 0 ? 6 : day - 1);
@@ -107,7 +106,7 @@ export function Calendar({
   dataRenders = [],
   greyOutDaysWithoutData = false,
   /** Where the day hover panel opens when `hoverContent` is used. */
-  hoverPanelSide = "top",
+  hoverPanelSide = 'top',
 }: {
   initialMonth?: string; // any YYYY-MM-DD in target month (UTC)
   weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
@@ -121,18 +120,15 @@ export function Calendar({
   greyOutDaysWithoutData?: boolean;
   hoverPanelSide?: HoverPanelSide;
 }) {
-  const today = useMemo(
-    () => toDateKey(new Date(), tzOffsetMinutes),
-    [tzOffsetMinutes]
-  );
+  const today = useMemo(() => toDateKey(new Date(), tzOffsetMinutes), [tzOffsetMinutes]);
   const maxDate = lastData ?? today;
   const maxMonthStart = useMemo(
     () => startOfMonth(maxDate, tzOffsetMinutes),
-    [maxDate, tzOffsetMinutes]
+    [maxDate, tzOffsetMinutes],
   );
   const minMonthStart = useMemo(
     () => (firstDate ? startOfMonth(firstDate, tzOffsetMinutes) : null),
-    [firstDate, tzOffsetMinutes]
+    [firstDate, tzOffsetMinutes],
   );
   const [monthStart, setMonthStart] = useState(() => {
     const base = selectedDate ?? initialMonth ?? today;
@@ -148,13 +144,13 @@ export function Calendar({
 
   const weekdayLabels = useMemo(
     () => getWeekdayLabels(weekStartsOn, tzOffsetMinutes),
-    [weekStartsOn, tzOffsetMinutes]
+    [weekStartsOn, tzOffsetMinutes],
   );
 
   const metaByDate = useMemo(() => {
     const m = new Map<
       string,
-      { callRender: CalendarCellRender; hoverContent?: CalendarDataRender["hoverContent"] }
+      { callRender: CalendarCellRender; hoverContent?: CalendarDataRender['hoverContent'] }
     >();
     for (const r of dataRenders)
       m.set(r.date, { callRender: r.callRender, hoverContent: r.hoverContent });
@@ -163,15 +159,14 @@ export function Calendar({
 
   const days = useMemo(
     () => buildCalendarGrid({ monthStart, weekStartsOn, tzOffsetMinutes }),
-    [monthStart, weekStartsOn, tzOffsetMinutes]
+    [monthStart, weekStartsOn, tzOffsetMinutes],
   );
 
   const monthLabel = useMemo(
     () => getMonthLabel(monthStart, tzOffsetMinutes),
-    [monthStart, tzOffsetMinutes]
+    [monthStart, tzOffsetMinutes],
   );
-  const nextDisabled =
-    addMonths(monthStart, 1, tzOffsetMinutes) > maxMonthStart;
+  const nextDisabled = addMonths(monthStart, 1, tzOffsetMinutes) > maxMonthStart;
   const prevDisabled = minMonthStart
     ? addMonths(monthStart, -1, tzOffsetMinutes) < minMonthStart
     : false;
@@ -232,10 +227,8 @@ export function Calendar({
           const isBefore = firstDate != null && date < firstDate;
           const isSelected = selectedDate != null && date === selectedDate;
           const isClickable = !isFuture && !isBefore && onDaySelect != null;
-          const hasDataMarker =
-            !isFuture && !isBefore && metaByDate.has(date);
-          const isNoDataMuted =
-            greyOutDaysWithoutData && isClickable && !hasDataMarker;
+          const hasDataMarker = !isFuture && !isBefore && metaByDate.has(date);
+          const isNoDataMuted = greyOutDaysWithoutData && isClickable && !hasDataMarker;
           const dayNumber = Number(date.slice(8, 10));
           const meta = isFuture || isBefore ? undefined : metaByDate.get(date);
           const maybe = meta?.callRender;
@@ -243,24 +236,22 @@ export function Calendar({
           const cellInfo: CalendarCellInfo = { date, inCurrentMonth, isToday };
 
           const cellClassName = [
-            "calendar__cell",
-            !inCurrentMonth && "calendar__cell--outside",
-            isToday && "calendar__cell--today",
-            isFuture && "calendar__cell--future",
-            isBefore && "calendar__cell--before",
-            isNoDataMuted && "calendar__cell--noData",
-            isSelected && "calendar__cell--selected",
-            isClickable && "calendar__cell--clickable",
+            'calendar__cell',
+            !inCurrentMonth && 'calendar__cell--outside',
+            isToday && 'calendar__cell--today',
+            isFuture && 'calendar__cell--future',
+            isBefore && 'calendar__cell--before',
+            isNoDataMuted && 'calendar__cell--no-data',
+            isSelected && 'calendar__cell--selected',
+            isClickable && 'calendar__cell--clickable',
           ]
             .filter(Boolean)
-            .join(" ");
+            .join(' ');
 
           const cellBody = (
             <>
-              <div className="calendar__dayNumber">{dayNumber}</div>
-              <div className="calendar__cellContent">
-                {maybe ? maybe(cellInfo) : null}
-              </div>
+              <div className="calendar__day-number">{dayNumber}</div>
+              <div className="calendar__cell-content">{maybe ? maybe(cellInfo) : null}</div>
             </>
           );
 
@@ -272,7 +263,7 @@ export function Calendar({
                   role="gridcell"
                   aria-label={date}
                   data-date={date}
-                  aria-disabled={(isFuture || isBefore) || undefined}
+                  aria-disabled={isFuture || isBefore || undefined}
                   aria-selected={isSelected || undefined}
                   onClick={
                     isClickable
@@ -298,7 +289,7 @@ export function Calendar({
               role="gridcell"
               aria-label={date}
               data-date={date}
-              aria-disabled={(isFuture || isBefore) || undefined}
+              aria-disabled={isFuture || isBefore || undefined}
               aria-selected={isSelected || undefined}
               onClick={
                 isClickable
@@ -316,4 +307,3 @@ export function Calendar({
     </section>
   );
 }
-

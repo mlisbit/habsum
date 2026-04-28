@@ -1,10 +1,10 @@
-import { useRef, useState } from "react";
-import { Link } from "@remix-run/react";
-import type { HabitRowSummation } from "@habsum/api-types";
-import { habitIdPathSegment } from "~/utils/habit-id";
-import { Button } from "~/components/Button";
-import { HistoryDisplay } from "~/components/HistoryDisplay";
-import { ProgressBar } from "~/components/ProgressBar";
+import { useRef, useState } from 'react';
+import { Link } from '@remix-run/react';
+import type { HabitRowSummation } from '@habsum/api-types';
+import { habitIdPathSegment } from '~/utils/habit-id';
+import { Button } from '~/components/Button';
+import { HistoryDisplay } from '~/components/HistoryDisplay';
+import { ProgressBar } from '~/components/ProgressBar';
 
 type SummationWidgetProps = {
   user: string;
@@ -28,11 +28,11 @@ export function SummationWidget({ user, habit, onAddAmount }: SummationWidgetPro
 
   const idSeg = habitIdPathSegment(habit.name);
   const to = `/users/${encodeURIComponent(user)}/habits/${encodeURIComponent(idSeg)}${
-    typeof window !== "undefined" ? window.location.search : ""
+    typeof window !== 'undefined' ? window.location.search : ''
   }`;
 
   const submitAdd = async () => {
-    const rawValue = addAmountRef.current?.value ?? "1";
+    const rawValue = addAmountRef.current?.value ?? '1';
     const delta = Number(rawValue);
     if (!Number.isFinite(delta)) return;
 
@@ -41,7 +41,7 @@ export function SummationWidget({ user, habit, onAddAmount }: SummationWidgetPro
     try {
       await onAddAmount(delta);
       if (addAmountRef.current) {
-        addAmountRef.current.value = "1";
+        addAmountRef.current.value = '1';
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -52,13 +52,9 @@ export function SummationWidget({ user, habit, onAddAmount }: SummationWidgetPro
 
   return (
     <div
-      className={[
-        "card",
-        "habit-summation",
-        isComplete ? "habit-widget--complete" : "",
-      ]
+      className={['card', 'habit-summation', isComplete ? 'habit-widget--complete' : '']
         .filter(Boolean)
-        .join(" ")}
+        .join(' ')}
     >
       <div className="row">
         <div>
@@ -77,7 +73,7 @@ export function SummationWidget({ user, habit, onAddAmount }: SummationWidgetPro
             defaultValue="1"
             disabled={pending}
             onKeyDown={(e) => {
-              if (e.key === "Enter") {
+              if (e.key === 'Enter') {
                 e.preventDefault();
                 void submitAdd();
               }
@@ -97,11 +93,7 @@ export function SummationWidget({ user, habit, onAddAmount }: SummationWidgetPro
       </div>
       {error ? <p className="warn habit-summation__error">{error}</p> : null}
       {goal != null ? (
-        <ProgressBar
-          value={total}
-          max={goal}
-          aria-label={`${habit.name}: ${total} of ${goal}`}
-        />
+        <ProgressBar value={total} max={goal} aria-label={`${habit.name}: ${total} of ${goal}`} />
       ) : null}
       <HistoryDisplay history={habit.history} />
     </div>

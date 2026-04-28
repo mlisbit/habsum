@@ -34,4 +34,3 @@ The SQLite DB lives at:
 2. Otherwise `/users` shows all YAML files and lets you pick one.
 3. The selection is persisted as the `habsum_user` cookie.
 4. On `/users/:user/habits`, tap `+` to increment by 1 or edit the number and press Enter/blur to set an absolute value.
-

@@ -5,17 +5,17 @@ export type HealthResponse = { ok: true };
 
 export type ListUsersResponse = { users: string[] };
 
-export type { UsersPatchRequest } from "./users-patch.js";
+export type { UsersPatchRequest } from './users-patch.js';
 
 export type HabitHistory = {
-  display: "average";
+  display: 'average';
   data: { user: (number | null)[] };
 };
 
 /** A single-select row from `GET /users/:user/habits` */
 export type HabitRowSingleSelect = {
   name: string;
-  type: "single_select";
+  type: 'single_select';
   goal: number | null;
   options: string[];
   value: string | null;
@@ -25,7 +25,7 @@ export type HabitRowSingleSelect = {
 /** A summation row from `GET /users/:user/habits` */
 export type HabitRowSummation = {
   name: string;
-  type: "summation";
+  type: 'summation';
   goal: number | null;
   total: number;
   history?: HabitHistory;
@@ -50,7 +50,7 @@ export type HabitDetailResponse = {
   habitId: string;
   habitName: string;
   /** From user config — used when a selected day has no stored row yet. */
-  habitType: Habit["type"];
+  habitType: Habit['type'];
   habitGoal: number | null;
   habitOptions: string[];
   firstDate: string | null;
@@ -69,7 +69,7 @@ export type PatchHabitResponse =
       date: string;
       habit: string;
       value: string;
-      type: "single_select";
+      type: 'single_select';
       options: string[];
     }
   | {
@@ -77,7 +77,7 @@ export type PatchHabitResponse =
       date: string;
       habit: string;
       total: number;
-      type: "summation";
+      type: 'summation';
       goal: number | null;
     };
 

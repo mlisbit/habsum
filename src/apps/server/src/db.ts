@@ -1,27 +1,25 @@
-import Database from "better-sqlite3";
-import { mkdirSync } from "node:fs";
-import { join, resolve } from "node:path";
+import Database from 'better-sqlite3';
+import { mkdirSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 
 const rawDir = process.env.HABSUM_CONFIG_DIR;
 if (!rawDir) {
-  throw new Error(
-    "[habsum] HABSUM_CONFIG_DIR is required (must point to your data directory)"
-  );
+  throw new Error('[habsum] HABSUM_CONFIG_DIR is required (must point to your data directory)');
 }
 
 const DATA_DIR = resolve(rawDir);
-const DB_PATH = join(DATA_DIR, "habsum.db");
+const DB_PATH = join(DATA_DIR, 'habsum.db');
 try {
   mkdirSync(DATA_DIR, { recursive: true });
 } catch (e) {
   throw new Error(
     `[habsum] could not create data directory: ${DATA_DIR}\n` +
-      (e instanceof Error ? e.message : "unknown error")
+      (e instanceof Error ? e.message : 'unknown error'),
   );
 }
 
 export const db = new Database(DB_PATH);
-db.pragma("journal_mode = WAL");
+db.pragma('journal_mode = WAL');
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS habit_totals (
@@ -62,7 +60,7 @@ type SelectRow = { value: string };
 type SelectSeriesRow = { date: string; value: string };
 
 const getDailyTotalStmt = db.prepare<[string, string, string], TotalRow>(
-  "SELECT total FROM habit_daily_totals WHERE user = ? AND habit = ? AND date = ?"
+  'SELECT total FROM habit_daily_totals WHERE user = ? AND habit = ? AND date = ?',
 );
 
 const upsertDailyStmt = db.prepare<{
@@ -127,23 +125,13 @@ export function getTotal(user: string, habit: string, date: string): number {
   return row?.total ?? 0;
 }
 
-export function setTotal(
-  user: string,
-  habit: string,
-  date: string,
-  total: number
-): number {
+export function setTotal(user: string, habit: string, date: string, total: number): number {
   const next = Math.max(0, Math.trunc(total));
   upsertDailyStmt.run({ user, habit, date, total: next });
   return next;
 }
 
-export function addToTotal(
-  user: string,
-  habit: string,
-  date: string,
-  delta: number
-): number {
+export function addToTotal(user: string, habit: string, date: string, delta: number): number {
   const current = getTotal(user, habit, date);
   return setTotal(user, habit, date, current + Math.trunc(delta));
 }
@@ -152,22 +140,16 @@ export function getSeries(
   user: string,
   habit: string,
   startDate: string,
-  endDate: string
+  endDate: string,
 ): Array<{ date: string; total: number }> {
   return seriesStmt.all(user, habit, startDate, endDate);
 }
 
-export function getAllTotals(
-  user: string,
-  habit: string
-): Array<{ date: string; total: number }> {
+export function getAllTotals(user: string, habit: string): Array<{ date: string; total: number }> {
   return allTotalsStmt.all(user, habit);
 }
 
-export function getAllSelects(
-  user: string,
-  habit: string
-): Array<{ date: string; value: string }> {
+export function getAllSelects(user: string, habit: string): Array<{ date: string; value: string }> {
   return allSelectsStmt.all(user, habit);
 }
 
@@ -177,7 +159,7 @@ export function getHabitFirstDate(user: string, habit: string): string | null {
 }
 
 const getSelectStmt = db.prepare<[string, string, string], SelectRow>(
-  "SELECT value FROM habit_daily_selects WHERE user = ? AND habit = ? AND date = ?"
+  'SELECT value FROM habit_daily_selects WHERE user = ? AND habit = ? AND date = ?',
 );
 
 const upsertSelectStmt = db.prepare<{
@@ -193,29 +175,20 @@ const upsertSelectStmt = db.prepare<{
     updated_at = excluded.updated_at
 `);
 
-export function getSelect(
-  user: string,
-  habit: string,
-  date: string
-): string | null {
+export function getSelect(user: string, habit: string, date: string): string | null {
   const row = getSelectStmt.get(user, habit, date);
   return row?.value ?? null;
 }
 
-export function setSelect(
-  user: string,
-  habit: string,
-  date: string,
-  value: string
-): string {
+export function setSelect(user: string, habit: string, date: string, value: string): string {
   upsertSelectStmt.run({ user, habit, date, value });
   return value;
 }
 
 export function purgeUserData(user: string) {
-  db.prepare("DELETE FROM habit_daily_totals WHERE user = ?").run(user);
-  db.prepare("DELETE FROM habit_daily_selects WHERE user = ?").run(user);
-  db.prepare("DELETE FROM habit_totals WHERE user = ?").run(user);
+  db.prepare('DELETE FROM habit_daily_totals WHERE user = ?').run(user);
+  db.prepare('DELETE FROM habit_daily_selects WHERE user = ?').run(user);
+  db.prepare('DELETE FROM habit_totals WHERE user = ?').run(user);
 }
 
 export function closeDb() {

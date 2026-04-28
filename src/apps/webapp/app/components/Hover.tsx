@@ -11,11 +11,11 @@ import {
   type HTMLAttributes,
   type MutableRefObject,
   type ReactNode,
-} from "react";
-import { createPortal } from "react-dom";
+} from 'react';
+import { createPortal } from 'react-dom';
 
 /** Where the floating panel is placed relative to the anchor (before viewport clamp / flip). */
-export type HoverPanelSide = "top" | "bottom" | "left" | "right";
+export type HoverPanelSide = 'top' | 'bottom' | 'left' | 'right';
 
 type HoverRootProps = {
   children: ReactNode;
@@ -72,47 +72,48 @@ function HoverRoot({ children, openDelay = 60 }: HoverRootProps) {
       beginHover,
       endHover,
     }),
-    [open, beginHover, endHover]
+    [open, beginHover, endHover],
   );
 
   useLayoutEffect(
     () => () => {
       clearOpenTimer();
     },
-    [clearOpenTimer]
+    [clearOpenTimer],
   );
 
   return <HoverContext.Provider value={value}>{children}</HoverContext.Provider>;
 }
 
-const HoverAnchor = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
-  function HoverAnchor({ onMouseEnter, onMouseLeave, ...props }, ref) {
-    const { anchorRef, beginHover, endHover } = useHoverContext("Hover.Anchor");
+const HoverAnchor = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(function HoverAnchor(
+  { onMouseEnter, onMouseLeave, ...props },
+  ref,
+) {
+  const { anchorRef, beginHover, endHover } = useHoverContext('Hover.Anchor');
 
-    const setRefs = (el: HTMLDivElement | null) => {
-      anchorRef.current = el;
-      if (typeof ref === "function") ref(el);
-      else if (ref) (ref as MutableRefObject<HTMLDivElement | null>).current = el;
-    };
+  const setRefs = (el: HTMLDivElement | null) => {
+    anchorRef.current = el;
+    if (typeof ref === 'function') ref(el);
+    else if (ref) (ref as MutableRefObject<HTMLDivElement | null>).current = el;
+  };
 
-    return (
-      <div
-        ref={setRefs}
-        onMouseEnter={(e) => {
-          beginHover();
-          onMouseEnter?.(e);
-        }}
-        onMouseLeave={(e) => {
-          endHover();
-          onMouseLeave?.(e);
-        }}
-        {...props}
-      />
-    );
-  }
-);
+  return (
+    <div
+      ref={setRefs}
+      onMouseEnter={(e) => {
+        beginHover();
+        onMouseEnter?.(e);
+      }}
+      onMouseLeave={(e) => {
+        endHover();
+        onMouseLeave?.(e);
+      }}
+      {...props}
+    />
+  );
+});
 
-type HoverContentProps = Omit<HTMLAttributes<HTMLDivElement>, "children"> & {
+type HoverContentProps = Omit<HTMLAttributes<HTMLDivElement>, 'children'> & {
   children: ReactNode;
   /** Gap between anchor and panel (px). */
   offset?: number;
@@ -124,14 +125,14 @@ function HoverContent({
   children,
   className,
   offset = 8,
-  side = "bottom",
+  side = 'bottom',
   ...rest
 }: HoverContentProps) {
-  const { open, anchorRef } = useHoverContext("Hover.Content");
+  const { open, anchorRef } = useHoverContext('Hover.Content');
   const panelRef = useRef<HTMLDivElement | null>(null);
   const [style, setStyle] = useState<CSSProperties>({
-    position: "fixed",
-    visibility: "hidden",
+    position: 'fixed',
+    visibility: 'hidden',
     zIndex: 1200,
     left: 0,
     top: 0,
@@ -158,8 +159,7 @@ function HoverContent({
       let top: number;
       let left: number;
 
-      const clampVertical = (t: number) =>
-        Math.min(Math.max(margin, t), vh - pr.height - margin);
+      const clampVertical = (t: number) => Math.min(Math.max(margin, t), vh - pr.height - margin);
 
       const centeredOverAnchorX = (): number => {
         let x = ar.left + ar.width / 2 - pr.width / 2;
@@ -168,17 +168,17 @@ function HoverContent({
         return x;
       };
 
-      if (side === "top") {
+      if (side === 'top') {
         top = ar.top - pr.height - offset;
         if (top < margin) top = ar.bottom + offset;
         if (top + pr.height > vh - margin) top = vh - pr.height - margin;
         left = centeredOverAnchorX();
-      } else if (side === "bottom") {
+      } else if (side === 'bottom') {
         top = ar.bottom + offset;
         if (top + pr.height > vh - margin) top = ar.top - pr.height - offset;
         if (top < margin) top = margin;
         left = centeredOverAnchorX();
-      } else if (side === "left") {
+      } else if (side === 'left') {
         left = ar.left - pr.width - offset;
         if (left < margin) left = ar.right + offset;
         if (left + pr.width > vw - margin) left = vw - pr.width - margin;
@@ -191,36 +191,36 @@ function HoverContent({
       }
 
       setStyle({
-        position: "fixed",
+        position: 'fixed',
         zIndex: 1200,
         left,
         top,
-        visibility: "visible",
+        visibility: 'visible',
       });
     };
 
     update();
-    window.addEventListener("scroll", update, true);
-    window.addEventListener("resize", update);
+    window.addEventListener('scroll', update, true);
+    window.addEventListener('resize', update);
     return () => {
-      window.removeEventListener("scroll", update, true);
-      window.removeEventListener("resize", update);
+      window.removeEventListener('scroll', update, true);
+      window.removeEventListener('resize', update);
     };
   }, [open, anchorRef, offset, side]);
 
-  if (!open || typeof document === "undefined") return null;
+  if (!open || typeof document === 'undefined') return null;
 
   return createPortal(
     <div
       ref={panelRef}
       role="tooltip"
-      className={["hover-layer__panel", className].filter(Boolean).join(" ")}
+      className={['hover-layer__panel', className].filter(Boolean).join(' ')}
       style={style}
       {...rest}
     >
       {children}
     </div>,
-    document.body
+    document.body,
   );
 }
 

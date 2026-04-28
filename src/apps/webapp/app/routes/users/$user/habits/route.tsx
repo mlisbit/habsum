@@ -1,15 +1,15 @@
-import { useEffect, useMemo, useState } from "react";
-import { getHabits, patchHabit, type Habit } from "~/api.client";
-import { Button } from "~/components/Button";
-import { DayNav } from "~/components/DayNav";
-import { SingleSelectWidget, SummationWidget } from "~/components/widgets";
-import { clearSelectedUser } from "~/cookies.client";
-import { toDateKey } from "@habsum/utils";
+import { useEffect, useMemo, useState } from 'react';
+import { getHabits, patchHabit, type Habit } from '~/api.client';
+import { Button } from '~/components/Button';
+import { DayNav } from '~/components/DayNav';
+import { SingleSelectWidget, SummationWidget } from '~/components/widgets';
+import { clearSelectedUser } from '~/cookies.client';
+import { toDateKey } from '@habsum/utils';
 
 type HabitsState = { user: string; habits: Habit[] };
 
 export default function HabitsPage() {
-  const [user, setUser] = useState<string>("");
+  const [user, setUser] = useState<string>('');
   // Source of truth: the URL. `null` means "today" (clean URL).
   const [urlDate, setUrlDate] = useState<string | null>(null);
   const [firstDate, setFirstDate] = useState<string | null>(null);
@@ -21,16 +21,16 @@ export default function HabitsPage() {
 
   useEffect(() => {
     const match = window.location.pathname.match(/^\/users\/([^/]+)\/habits\/?$/);
-    setUser(match ? decodeURIComponent(match[1]) : "");
+    setUser(match ? decodeURIComponent(match[1]) : '');
 
     const syncFromUrl = () => {
       const q = new URLSearchParams(window.location.search);
-      setUrlDate(q.get("date"));
+      setUrlDate(q.get('date'));
     };
 
     syncFromUrl();
-    window.addEventListener("popstate", syncFromUrl);
-    return () => window.removeEventListener("popstate", syncFromUrl);
+    window.addEventListener('popstate', syncFromUrl);
+    return () => window.removeEventListener('popstate', syncFromUrl);
   }, []);
 
   useEffect(() => {
@@ -43,13 +43,13 @@ export default function HabitsPage() {
 
         // Keep URL clean: don't include ?date= when it's today.
         const qs = new URLSearchParams(window.location.search);
-        const hasDate = qs.has("date");
+        const hasDate = qs.has('date');
         if (effectiveDate === today && hasDate) {
-          qs.delete("date");
+          qs.delete('date');
           const nextUrl = qs.toString()
             ? `${window.location.pathname}?${qs.toString()}`
             : window.location.pathname;
-          window.history.replaceState({}, "", nextUrl);
+          window.history.replaceState({}, '', nextUrl);
         }
       })
       .catch((e) => setError(e instanceof Error ? e.message : String(e)));
@@ -57,13 +57,13 @@ export default function HabitsPage() {
 
   const goToDate = (next: string) => {
     const qs = new URLSearchParams(window.location.search);
-    if (next === today) qs.delete("date");
-    else qs.set("date", next);
+    if (next === today) qs.delete('date');
+    else qs.set('date', next);
 
     const nextUrl = qs.toString()
       ? `${window.location.pathname}?${qs.toString()}`
       : window.location.pathname;
-    window.history.pushState({}, "", nextUrl);
+    window.history.pushState({}, '', nextUrl);
     setUrlDate(next === today ? null : next);
   };
 
@@ -72,9 +72,7 @@ export default function HabitsPage() {
       if (!prev) return prev;
       return {
         ...prev,
-        habits: prev.habits.map((x) =>
-          x.name === updated.name ? { ...x, ...updated } : x
-        ),
+        habits: prev.habits.map((x) => (x.name === updated.name ? { ...x, ...updated } : x)),
       };
     });
   };
@@ -92,9 +90,7 @@ export default function HabitsPage() {
             title="Settings"
             aria-label="Settings"
             onClick={() =>
-              window.location.assign(
-                `/users/${encodeURIComponent(user)}/settings/account`
-              )
+              window.location.assign(`/users/${encodeURIComponent(user)}/settings/account`)
             }
           />
           <Button
@@ -102,7 +98,7 @@ export default function HabitsPage() {
             text="Switch user"
             onClick={() => {
               clearSelectedUser();
-              window.location.assign("/users");
+              window.location.assign('/users');
             }}
           />
         </div>
@@ -125,7 +121,7 @@ export default function HabitsPage() {
         <p className="muted">No habits configured.</p>
       ) : (
         state.habits.map((h) =>
-          h.type === "single_select" ? (
+          h.type === 'single_select' ? (
             <SingleSelectWidget
               key={h.name}
               user={state.user}
@@ -134,7 +130,7 @@ export default function HabitsPage() {
                 const updated = await patchHabit(
                   state.user,
                   { habit: h.name, value: opt },
-                  { date: effectiveDate }
+                  { date: effectiveDate },
                 );
                 onHabitUpdated({ ...h, ...updated, value: opt } as Habit);
               }}
@@ -148,12 +144,12 @@ export default function HabitsPage() {
                 const updated = await patchHabit(
                   state.user,
                   { habit: h.name, total: delta },
-                  { date: effectiveDate }
+                  { date: effectiveDate },
                 );
                 onHabitUpdated({ ...h, ...updated } as Habit);
               }}
             />
-          )
+          ),
         )
       )}
 

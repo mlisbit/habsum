@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
-import { createUser, listUsers } from "~/api.client";
-import { Button } from "~/components/Button";
-import { getSelectedUser, setSelectedUser } from "~/cookies.client";
+import { useEffect, useState } from 'react';
+import { createUser, listUsers } from '~/api.client';
+import { Button } from '~/components/Button';
+import { getSelectedUser, setSelectedUser } from '~/cookies.client';
 
 export default function UsersIndex() {
   const [users, setUsers] = useState<string[]>([]);
@@ -25,17 +25,17 @@ export default function UsersIndex() {
           <Button
             type="primary"
             icon="plus"
-            text={isCreating ? "Adding…" : "Add user"}
+            text={isCreating ? 'Adding…' : 'Add user'}
             disabled={isCreating}
             onClick={async () => {
               setError(null);
               setIsCreating(true);
               try {
-                await createUser("user");
+                await createUser('user');
                 const next = await listUsers();
                 setUsers(next.users);
               } catch (e) {
-                setError(e instanceof Error ? e.message : "failed to create user");
+                setError(e instanceof Error ? e.message : 'failed to create user');
               } finally {
                 setIsCreating(false);
               }
@@ -44,11 +44,7 @@ export default function UsersIndex() {
         </div>
       </div>
 
-      {error ? (
-        <p className="warn users-index__error">
-          {error}
-        </p>
-      ) : null}
+      {error ? <p className="warn users-index__error">{error}</p> : null}
 
       {users.length === 0 ? (
         <p className="muted">
