@@ -1,3 +1,5 @@
+@use 'functions';
+
 // app/components/Calendar.tsx
 .calendar {
   width: 100%;
@@ -7,8 +9,8 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 0.75rem;
+  gap: functions.spacing(3);
+  margin-bottom: functions.spacing(2);
 }
 
 .calendar__title {
@@ -17,14 +19,14 @@
 
 .calendar__controls {
   display: flex;
-  gap: 0.5rem;
+  gap: functions.spacing(2);
 }
 
 .calendar__weekdays {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 0.4rem;
-  margin-bottom: 0.4rem;
+  gap: functions.spacing(1);
+  margin-bottom: functions.spacing(1);
 }
 
 .calendar__weekday {
@@ -32,13 +34,13 @@
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
-  padding: 0 0.2rem;
+  padding: 0 functions.spacing(1);
 }
 
 .calendar__grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 0.4rem;
+  gap: functions.spacing(1);
 }
 
 .calendar__cell {
@@ -46,7 +48,7 @@
   min-height: 46px;
   border: 1px solid var(--border);
   border-radius: var(--border-radius-m);
-  padding: 0.35rem 0.45rem;
+  padding: functions.spacing(1);
   background: var(--background-secondary);
 }
 

@@ -1,8 +1,10 @@
+@use 'functions';
+
 // app/routes/users/$user/habits/$habitId/route.tsx
 .habit-history {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 1rem;
+  gap: functions.spacing(3);
   align-items: start;
 }
 
@@ -22,7 +24,7 @@
 
 // Hover content shown when hovering a calendar day
 .habit-history__calendar-day-hover-habit {
-  margin-top: 0.3rem;
+  margin-top: functions.spacing(1);
 
   &:first-of-type {
     margin-top: 0;
@@ -30,5 +32,5 @@
 }
 
 .habit-history__calendar-day-hover-progress.progress {
-  margin-top: 0.35rem;
+  margin-top: functions.spacing(1);
 }

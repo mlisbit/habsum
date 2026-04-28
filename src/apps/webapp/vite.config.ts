@@ -42,16 +42,8 @@ export default defineConfig({
   css: {
     preprocessorOptions: {
       scss: {
-        includePaths: [stylesDir],
-        additionalData(source: string, filename?: string) {
-          if (!filename) return source;
-          const f = filename.split(path.sep).join('/');
-          if (!f.includes('/app/styles/')) return source;
-          if (f.includes('/app/styles/functions/')) return source;
-          if (f.includes('_tokens.scss')) return source;
-          if (source.trimStart().startsWith('@use "functions/spacing"')) return source;
-          return `@use "functions/spacing" as *;\n${source}`;
-        },
+        api: 'modern',
+        loadPaths: [stylesDir],
       },
     },
   },

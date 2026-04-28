@@ -1,3 +1,5 @@
+@use 'functions';
+
 // Text utilities: .muted, .warn
 .muted {
   color: var(--text-muted);
@@ -8,7 +10,7 @@
   color: var(--semantic-warning-fg);
   background: var(--semantic-warning-bg);
   border: 1px solid var(--semantic-warning-border);
-  padding: 0.25rem 0.6rem;
+  padding: functions.spacing(1, 2);
   border-radius: var(--border-radius-full);
   font-size: 0.8rem;
 }

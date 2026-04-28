@@ -1,3 +1,5 @@
+@use 'functions';
+
 // app/components/ProgressBar.tsx — BEM block: .progress
 .progress {
   position: relative;
@@ -5,11 +7,11 @@
   align-items: center;
   justify-content: center;
   min-height: 1.5rem;
-  padding: 0.2rem 0.65rem;
+  padding: functions.spacing(1, 2);
   background: var(--border);
   border-radius: var(--border-radius-full);
   overflow: hidden;
-  margin-top: 0.75rem;
+  margin-top: functions.spacing(2);
 }
 
 .progress__fill {

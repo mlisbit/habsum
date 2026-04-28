@@ -1,7 +1,9 @@
+@use 'functions';
+
 // Block: account-page
 .account-page__rename {
   display: flex;
-  gap: spacing(2);
+  gap: functions.spacing(2);
   align-items: center;
   flex-wrap: wrap;
 }
@@ -12,7 +14,7 @@
   background: transparent;
   border: 1px solid var(--border);
   border-radius: var(--border-radius-m);
-  padding: spacing(1, 2);
+  padding: functions.spacing(1, 2);
   min-width: min(320px, 100%);
 }
 
@@ -22,7 +24,7 @@
 }
 
 .account-page__danger {
-  margin-top: 1rem;
+  margin-top: functions.spacing(3);
 }
 
 .account-page__danger-title {
@@ -30,5 +32,5 @@
 }
 
 .account-page__status {
-  margin-top: 0.75rem;
+  margin-top: functions.spacing(2);
 }

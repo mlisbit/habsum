@@ -1,6 +1,9 @@
 {
   "extends": ["stylelint-config-standard-scss"],
-  "plugins": ["./src/packages/tools/dist/stylelint/no-multiple-bem-blocks.mjs"],
+  "plugins": [
+    "./src/packages/tools/dist/stylelint/no-multiple-bem-blocks.mjs",
+    "./src/packages/tools/dist/stylelint/require-spacing-function.mjs"
+  ],
   "overrides": [
     {
       "files": ["src/apps/webapp/app/styles/**/*.scss"],
@@ -14,7 +17,8 @@
         "src/apps/webapp/app/styles/_tokens.scss"
       ],
       "rules": {
-        "selector-max-type": null
+        "selector-max-type": null,
+        "habsum/require-spacing-function": null
       }
     }
   ],
@@ -31,6 +35,7 @@
     "scss/at-function-pattern": "^_?[a-z][a-z0-9-]*$",
     "at-rule-empty-line-before": null,
     "habsum/no-multiple-bem-blocks": true,
+    "habsum/require-spacing-function": true,
     "selector-max-type": 0
   }
 }

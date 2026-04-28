@@ -1,40 +1,42 @@
+@use 'functions';
+
 // Block: settings
 .settings {
   display: grid;
   grid-template-columns: 220px 1fr;
-  gap: 1.5rem;
+  gap: functions.spacing(5);
   width: 100%;
   max-width: 100%;
   margin: 0 auto;
-  padding: 2rem 1rem;
+  padding: functions.spacing(5, 4);
   box-sizing: border-box;
 }
 
 .settings__sidebar {
   border: 1px solid var(--border);
   border-radius: var(--border-radius-m);
-  padding: 1rem;
+  padding: functions.spacing(3);
   background: var(--background-secondary);
   height: fit-content;
 }
 
 .settings__title {
-  margin: 0.75rem 0 1rem;
+  margin: functions.spacing(2) 0 functions.spacing(3);
   font-size: 1.25rem;
 }
 
 .settings__user-line {
-  margin-bottom: 0.75rem;
+  margin-bottom: functions.spacing(2);
 }
 
 .settings__nav {
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: functions.spacing(1);
 }
 
 .settings__link {
-  padding: 0.45rem 0.6rem;
+  padding: functions.spacing(1, 2);
   border-radius: var(--border-radius-m);
   color: var(--foreground);
   text-decoration: none;

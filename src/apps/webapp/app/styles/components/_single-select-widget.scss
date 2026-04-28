@@ -1,13 +1,15 @@
+@use 'functions';
+
 // app/components/widgets/SingleSelectWidget.tsx — BEM: .habit-select
 .habit-select__options {
   display: flex;
-  gap: 0.5rem;
+  gap: functions.spacing(2);
   flex-wrap: wrap;
   justify-content: flex-end;
 }
 
 .habit-select__error {
-  margin-top: 0.75rem;
+  margin-top: functions.spacing(2);
 }
 
 .habit-select__option--dim {

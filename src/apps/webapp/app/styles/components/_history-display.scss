@@ -1,7 +1,9 @@
+@use 'functions';
+
 // app/components/HistoryDisplay.tsx
 .history-display {
-  margin-top: 0.75rem;
-  padding: 0.6rem 0.75rem;
+  margin-top: functions.spacing(2);
+  padding: functions.spacing(2);
   border-radius: var(--border-radius-m);
   border: 1px solid var(--border);
   background: color-mix(in srgb, var(--background-secondary) 70%, transparent);
