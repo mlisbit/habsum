@@ -7,6 +7,15 @@
       "rules": {
         "habsum/no-multiple-bem-blocks": null
       }
+    },
+    {
+      "files": [
+        "src/apps/webapp/app/styles/_reset.scss",
+        "src/apps/webapp/app/styles/_tokens.scss"
+      ],
+      "rules": {
+        "selector-max-type": null
+      }
     }
   ],
   "rules": {
@@ -21,6 +30,7 @@
     "value-keyword-case": ["lower", { "ignoreProperties": ["/font/"] }],
     "scss/at-function-pattern": "^_?[a-z][a-z0-9-]*$",
     "at-rule-empty-line-before": null,
-    "habsum/no-multiple-bem-blocks": true
+    "habsum/no-multiple-bem-blocks": true,
+    "selector-max-type": 0
   }
 }

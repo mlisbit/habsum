@@ -7,8 +7,38 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  font-family: var(--font-sans);
 }
 
 body {
   margin: 0;
+}
+
+// Global defaults (non-theme: fonts only — colors live on `html[data-theme]` in tokens)
+:root {
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+a {
+  color: var(--text-link);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+h1 {
+  margin: 0 0 1.5rem;
+  font-size: 1.75rem;
+}
+
+h2 {
+  margin: 0 0 0.25rem;
+  font-size: 1.25rem;
+}
+
+h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
 }

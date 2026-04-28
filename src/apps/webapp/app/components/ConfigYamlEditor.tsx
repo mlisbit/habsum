@@ -72,7 +72,7 @@ export function ConfigYamlEditor({ user }: ConfigYamlEditorProps) {
   return (
     <div className="config-page">
       <div className="config-page__header">
-        <h2>Config</h2>
+        <h2 className="config-page__title">Config</h2>
         <p className="muted config-page__lead">
           Edit the YAML for this user on the server. Save writes the file; invalid YAML is rejected.
         </p>

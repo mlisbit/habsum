@@ -76,7 +76,7 @@ export default function UserSettingsAccount() {
       </div>
 
       <div className="card account-page__danger">
-        <h3>Danger zone</h3>
+        <h3 className="account-page__danger-title">Danger zone</h3>
         <p className="muted">
           Permanently delete all stored habit data for this user from the server database (daily
           totals, selections, legacy totals). YAML config is not removed.
