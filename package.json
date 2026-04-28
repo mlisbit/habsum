@@ -4,7 +4,8 @@
   "private": true,
   "description": "Habit tracker - lightweight Express server + Remix webapp",
   "workspaces": [
-    "src/packages/*",
+    "src/packages/api-types",
+    "src/packages/utils",
     "src/apps/server",
     "src/apps/webapp"
   ],
@@ -17,7 +18,11 @@
     "format:check": "prettier --check .",
     "lint:css": "stylelint \"src/**/*.{css,scss}\"",
     "lint:css:fix": "stylelint \"src/**/*.{css,scss}\" --fix",
-    "prepare": "husky"
+    "prelint:css": "npm run tools:build",
+    "prelint:css:fix": "npm run tools:build",
+    "tools:build": "tsc -p src/packages/tools/tsconfig.json",
+    "tools:watch": "tsc -p src/packages/tools/tsconfig.json --watch",
+    "prepare": "husky && npm run tools:build"
   },
   "devDependencies": {
     "husky": "9.1.7",

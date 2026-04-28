@@ -1,12 +1,9 @@
-// Layout primitives: page width, card shell, flex rows, headers
-// Blocks: .container, .header-row, .card, .row
 .container {
   max-width: 560px;
   margin: 0 auto;
   padding: 2rem 1rem;
 }
 
-/** Use full `.app__content` width (same idea as `.settings`), not the narrow reading column. */
 .container--wide {
   max-width: 100%;
   width: 100%;

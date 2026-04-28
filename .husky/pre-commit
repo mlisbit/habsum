@@ -1,1 +1,2 @@
+npm run --silent tools:build
 npx lint-staged

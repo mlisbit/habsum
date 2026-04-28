@@ -43,7 +43,7 @@ export default function UserSettingsAccount() {
           }}
         >
           <input
-            className="account-page__renameInput"
+            className="account-page__rename-input"
             value={nextName}
             onChange={(e) => setNextName(e.target.value)}
             placeholder="username"

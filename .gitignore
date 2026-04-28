@@ -9,6 +9,7 @@ src/apps/server/dist
 src/apps/webapp/build
 src/apps/webapp/.cache
 src/apps/webapp/public/build
+src/packages/tools/dist
 
 # local runtime data (user-controlled)
 config/

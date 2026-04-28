@@ -112,16 +112,3 @@
 .calendar__hoverable.hover-layer__panel {
   background: var(--background-tertiary);
 }
-
-// Calendar Hover.Content (habit history / any consumer)
-.calendar-day-hover__habit {
-  margin-top: 0.3rem;
-
-  &:first-of-type {
-    margin-top: 0;
-  }
-}
-
-.calendar-day-hover__progress.progress {
-  margin-top: 0.35rem;
-}

@@ -19,3 +19,16 @@
 .habit-history__widget {
   min-width: 0;
 }
+
+// Hover content shown when hovering a calendar day
+.habit-history__calendar-day-hover-habit {
+  margin-top: 0.3rem;
+
+  &:first-of-type {
+    margin-top: 0;
+  }
+}
+
+.habit-history__calendar-day-hover-progress.progress {
+  margin-top: 0.35rem;
+}

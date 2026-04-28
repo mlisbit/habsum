@@ -6,7 +6,7 @@
   flex-wrap: wrap;
 }
 
-.account-page__renameInput {
+.account-page__rename-input {
   font: inherit;
   color: var(--foreground);
   background: transparent;
@@ -16,7 +16,7 @@
   min-width: min(320px, 100%);
 }
 
-.account-page__renameInput:focus-visible {
+.account-page__rename-input:focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--interactive-accent) 35%, transparent);
 }

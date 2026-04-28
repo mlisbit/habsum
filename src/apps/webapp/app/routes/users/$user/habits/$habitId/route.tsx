@@ -162,15 +162,15 @@ export default function HabitDetailRoute() {
             <span className="calendar__dot" aria-hidden style={{ transform: `scale(${scale})` }} />
           ),
           hoverContent: () => (
-            <div className="calendar-day-hover">
+            <div className="habit-history__calendar-day-hover">
               {row.habits.map((h) => (
-                <div key={h.name} className="calendar-day-hover__habit">
+                <div key={h.name} className="habit-history__calendar-day-hover-habit">
                   {h.type === 'summation' ? (
                     <>
                       <strong>{h.name}</strong>
                       {h.goal != null && h.goal > 0 ? (
                         <ProgressBar
-                          className="calendar-day-hover__progress"
+                          className="habit-history__calendar-day-hover-progress"
                           value={h.total}
                           max={h.goal}
                           aria-label={`${h.name}: ${h.total} of ${h.goal}`}

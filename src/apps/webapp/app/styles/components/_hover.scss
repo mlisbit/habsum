@@ -8,6 +8,7 @@
   box-shadow: var(--shadow-elevation-panel);
   font-size: 0.85rem;
   line-height: 1.35;
+
   /* Panel must not capture the pointer — leave fires on the anchor as soon as you exit the cell. */
   pointer-events: none;
 }

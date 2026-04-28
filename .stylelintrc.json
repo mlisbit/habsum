@@ -1,5 +1,14 @@
 {
   "extends": ["stylelint-config-standard-scss"],
+  "plugins": ["./src/packages/tools/dist/stylelint/no-multiple-bem-blocks.mjs"],
+  "overrides": [
+    {
+      "files": ["src/apps/webapp/app/styles/**/*.scss"],
+      "rules": {
+        "habsum/no-multiple-bem-blocks": null
+      }
+    }
+  ],
   "rules": {
     "selector-class-pattern": [
       "^[a-z][a-z0-9]*(-[a-z0-9]+)*(__[a-z0-9]+(-[a-z0-9]+)*)?(--[a-z0-9]+(-[a-z0-9]+)*)?$",
@@ -8,8 +17,10 @@
       }
     ],
     "media-feature-range-notation": "prefix",
+    "property-no-vendor-prefix": [true, { "ignoreProperties": ["/text-size-adjust$/"] }],
     "value-keyword-case": ["lower", { "ignoreProperties": ["/font/"] }],
     "scss/at-function-pattern": "^_?[a-z][a-z0-9-]*$",
-    "at-rule-empty-line-before": null
+    "at-rule-empty-line-before": null,
+    "habsum/no-multiple-bem-blocks": true
   }
 }
