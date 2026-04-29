@@ -159,7 +159,7 @@ export function TopNav({
         <p className="top-nav__countdown text-b-m text-light">{countdown}</p>
       </div>
       <div className="top-nav__right">
-        <div className="day-nav">
+        <div className="day-nav day-nav--flush">
           <div>
             <div className="text-h-l">
               <HumanDate date={effectiveDate} tzOffsetMinutes={tzOffsetMinutes} today={today} />

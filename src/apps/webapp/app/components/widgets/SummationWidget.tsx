@@ -10,6 +10,8 @@ type SummationWidgetProps = {
   user: string;
   habit: HabitRowSummation;
   onAddAmount: (delta: number) => Promise<void>;
+  /** Extra root class(es), e.g. page layout hooks (`habits-page__tile`). */
+  surfaceClassName?: string;
 };
 
 function summationIsComplete(habit: HabitRowSummation): boolean {
@@ -18,7 +20,12 @@ function summationIsComplete(habit: HabitRowSummation): boolean {
   return total > 0;
 }
 
-export function SummationWidget({ user, habit, onAddAmount }: SummationWidgetProps) {
+export function SummationWidget({
+  user,
+  habit,
+  onAddAmount,
+  surfaceClassName,
+}: SummationWidgetProps) {
   const total = habit.total;
   const goal = habit.goal;
   const isComplete = summationIsComplete(habit);
@@ -52,7 +59,12 @@ export function SummationWidget({ user, habit, onAddAmount }: SummationWidgetPro
 
   return (
     <div
-      className={['card', 'habit-summation', isComplete ? 'habit-widget--complete' : '']
+      className={[
+        'card',
+        'habit-summation',
+        surfaceClassName,
+        isComplete ? 'habit-widget--complete' : '',
+      ]
         .filter(Boolean)
         .join(' ')}
     >

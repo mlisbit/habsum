@@ -6,7 +6,8 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: functions.spacing(4);
-  margin-bottom: functions.spacing(3);
+  margin-bottom: functions.spacing(4);
+  padding-top: functions.spacing(4);
 }
 
 .top-nav__left {
@@ -130,10 +131,6 @@ $back-button-slot: 2.25rem; // matches `.button.button--icon` width
   flex-direction: column;
   gap: functions.spacing(2);
   align-items: stretch;
-}
-
-.top-nav__right .day-nav {
-  margin-bottom: 0;
 }
 
 .top-nav__day-progress.progress {

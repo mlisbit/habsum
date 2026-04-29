@@ -201,7 +201,7 @@ export default function HabitDetailRoute() {
   }, [habitData]);
 
   return (
-    <div className="container container--wide">
+    <div>
       <div className="header-row">
         <Button
           type="secondary"

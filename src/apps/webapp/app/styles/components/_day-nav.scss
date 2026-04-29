@@ -8,6 +8,11 @@
   margin-bottom: functions.spacing(3);
 }
 
+/** In the habits top column, vertical rhythm is from `.top-nav__right` flex gap — drop default bottom margin. */
+.day-nav--flush {
+  margin-bottom: 0;
+}
+
 .day-nav__controls {
   display: flex;
   gap: functions.spacing(2);

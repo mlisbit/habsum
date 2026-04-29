@@ -1,18 +1,18 @@
 @use 'functions';
 
+.habits-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
 // Two flex columns — odd indices / even indices — so each stack is independent
 // (CSS Grid aligns entire rows and forces row height to match the tallest tile).
 .habits-page__columns {
   display: flex;
   align-items: flex-start;
-  gap: functions.spacing(2);
-
-  /* strip .card bottom margin inside column stacks; gaps handle rhythm */
-  .card {
-    margin-bottom: 0;
-    width: 100%;
-    box-sizing: border-box;
-  }
+  gap: functions.spacing(3);
 }
 
 .habits-page__column {
@@ -20,15 +20,22 @@
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: functions.spacing(2);
+  gap: functions.spacing(3);
 }
 
 .habits-page__stack {
   display: flex;
   flex-direction: column;
   gap: functions.spacing(2);
+}
 
-  .card {
-    margin-bottom: 0;
-  }
+// Habit widgets get foundation `.card` margin; flex gap replaces vertical rhythm.
+// `habits-page__tile` is passed on the widget root from the habits list route only.
+.habits-page__column > .habits-page__tile,
+.habits-page__stack > .habits-page__tile {
+  margin-bottom: 0;
+}
+
+.habits-page__column > .habits-page__tile {
+  width: 100%;
 }

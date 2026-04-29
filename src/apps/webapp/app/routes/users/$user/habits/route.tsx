@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { getHabits, patchHabit, type Habit } from '~/api.client';
+import { Footer } from '~/components/Footer';
 import { TopNav } from '~/components/TopNav';
 import { SingleSelectWidget, SummationWidget } from '~/components/widgets';
 import { clearSelectedUser } from '~/cookies.client';
@@ -99,6 +100,7 @@ export default function HabitsPage() {
           key={h.name}
           user={state!.user}
           habit={h}
+          surfaceClassName="habits-page__tile"
           onSelectOption={async (opt) => {
             const updated = await patchHabit(
               state!.user,
@@ -115,6 +117,7 @@ export default function HabitsPage() {
         key={h.name}
         user={state!.user}
         habit={h}
+        surfaceClassName="habits-page__tile"
         onAddAmount={async (delta) => {
           const updated = await patchHabit(
             state!.user,
@@ -128,7 +131,7 @@ export default function HabitsPage() {
   }
 
   return (
-    <div className="container container--wide habits-page">
+    <div className="habits-page">
       <TopNav
         username={user}
         effectiveDate={effectiveDate}
@@ -165,6 +168,8 @@ export default function HabitsPage() {
       ) : (
         <div className="habits-page__stack">{state.habits.map((h) => renderHabit(h))}</div>
       )}
+
+      <Footer />
     </div>
   );
 }

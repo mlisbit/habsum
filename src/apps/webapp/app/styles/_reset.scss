@@ -1,7 +1,12 @@
-// Global document reset (no surface colors; those live on .app)
+// Border-box globally: every element and generated pseudo-elements. `*` does not hit
+// `::backdrop` (top-layer pseudo for `<dialog>`), so declare it separately.
 *,
 *::before,
 *::after {
+  box-sizing: border-box;
+}
+
+::backdrop {
   box-sizing: border-box;
 }
 

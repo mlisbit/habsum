@@ -9,13 +9,20 @@ type SingleSelectWidgetProps = {
   user: string;
   habit: HabitRowSingleSelect;
   onSelectOption: (option: string) => Promise<void>;
+  /** Extra root class(es), e.g. page layout hooks (`habits-page__tile`). */
+  surfaceClassName?: string;
 };
 
 function singleSelectIsComplete(habit: HabitRowSingleSelect): boolean {
   return habit.value != null;
 }
 
-export function SingleSelectWidget({ user, habit, onSelectOption }: SingleSelectWidgetProps) {
+export function SingleSelectWidget({
+  user,
+  habit,
+  onSelectOption,
+  surfaceClassName,
+}: SingleSelectWidgetProps) {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const isComplete = singleSelectIsComplete(habit);
@@ -27,7 +34,12 @@ export function SingleSelectWidget({ user, habit, onSelectOption }: SingleSelect
 
   return (
     <div
-      className={['card', 'habit-select', isComplete ? 'habit-widget--complete' : '']
+      className={[
+        'card',
+        'habit-select',
+        surfaceClassName,
+        isComplete ? 'habit-widget--complete' : '',
+      ]
         .filter(Boolean)
         .join(' ')}
     >

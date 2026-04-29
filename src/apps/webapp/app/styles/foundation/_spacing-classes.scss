@@ -1,0 +1,29 @@
+@use '../functions' as fn;
+
+@for $step from 1 through 5 {
+  .mt-#{$step} {
+    margin-top: fn.spacing($step);
+  }
+  .mr-#{$step} {
+    margin-right: fn.spacing($step);
+  }
+  .mb-#{$step} {
+    margin-bottom: fn.spacing($step);
+  }
+  .ml-#{$step} {
+    margin-left: fn.spacing($step);
+  }
+
+  .pt-#{$step} {
+    padding-top: fn.spacing($step);
+  }
+  .pr-#{$step} {
+    padding-right: fn.spacing($step);
+  }
+  .pb-#{$step} {
+    padding-bottom: fn.spacing($step);
+  }
+  .pl-#{$step} {
+    padding-left: fn.spacing($step);
+  }
+}
