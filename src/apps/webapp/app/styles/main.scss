@@ -4,11 +4,11 @@
 @use 'foundation/layout';
 @use 'foundation/text';
 @use 'foundation/number-input';
-@use 'components/button';
-@use 'components/progress';
+@use 'core-components/button';
+@use 'core-components/progress';
+@use 'core-components/hover-layer';
 @use 'components/day-nav';
 @use 'components/calendar';
-@use 'components/hover-layer';
 @use 'components/history-display';
 @use 'components/habit-select';
 @use 'components/habit-summation';

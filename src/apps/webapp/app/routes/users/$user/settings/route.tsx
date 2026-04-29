@@ -1,5 +1,5 @@
 import { Link, Outlet, useLocation, useParams } from '@remix-run/react';
-import { Button } from '~/components/Button';
+import { Button } from '~/core-components/Button';
 
 export default function UserSettingsLayout() {
   const { user } = useParams();

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { createUser, listUsers } from '~/api.client';
-import { Button } from '~/components/Button';
+import { Button } from '~/core-components/Button';
 import { getSelectedUser, setSelectedUser } from '~/cookies.client';
 
 export default function UsersIndex() {

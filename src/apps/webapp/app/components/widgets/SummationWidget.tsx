@@ -2,9 +2,9 @@ import { useRef, useState } from 'react';
 import { Link } from '@remix-run/react';
 import type { HabitRowSummation } from '@habsum/api-types';
 import { habitIdPathSegment } from '~/utils/habit-id';
-import { Button } from '~/components/Button';
+import { Button } from '~/core-components/Button';
 import { HistoryDisplay } from '~/components/HistoryDisplay';
-import { ProgressBar } from '~/components/ProgressBar';
+import { ProgressBar } from '~/core-components/ProgressBar';
 
 type SummationWidgetProps = {
   user: string;

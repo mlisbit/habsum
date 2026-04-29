@@ -3,7 +3,7 @@ import CodeMirror from '@uiw/react-codemirror';
 import { yaml } from '@codemirror/lang-yaml';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { getUserConfig, putUserConfig } from '~/api.client';
-import { Button } from '~/components/Button';
+import { Button } from '~/core-components/Button';
 
 function usePrefersDark() {
   return useSyncExternalStore(

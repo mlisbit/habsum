@@ -36,7 +36,7 @@
       }
     },
     {
-      "files": ["src/apps/webapp/app/styles/components/_button.scss"],
+      "files": ["src/apps/webapp/app/styles/core-components/_button.scss"],
       "rules": {
         "property-disallowed-list": [
           ["font-size", "line-height", "font-weight"],

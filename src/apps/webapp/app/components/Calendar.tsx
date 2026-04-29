@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Button } from '~/components/Button';
-import { Hover, type HoverPanelSide } from '~/components/Hover';
+import { Button } from '~/core-components/Button';
+import { Hoverable, type HoverablePanelSide } from '~/core-components/Hoverable';
 import { fromDateKey, toDateKey } from '@habsum/utils';
 
 export type CalendarCellInfo = {
@@ -14,7 +14,7 @@ export type CalendarCellRender = (info: CalendarCellInfo) => React.ReactNode;
 export type CalendarDataRender = {
   date: string; // YYYY-MM-DD (UTC)
   callRender: CalendarCellRender;
-  /** When set, the day cell is wrapped with `Hover` and this renders in the floating panel. */
+  /** When set, the day cell is wrapped with `Hoverable` and this renders in the floating panel. */
   hoverContent?: (info: CalendarCellInfo) => React.ReactNode;
 };
 
@@ -118,7 +118,7 @@ export function Calendar({
   dataRenders?: CalendarDataRender[];
   /** When true, in-range days with no `dataRenders` entry look muted (e.g. habit history). */
   greyOutDaysWithoutData?: boolean;
-  hoverPanelSide?: HoverPanelSide;
+  hoverPanelSide?: HoverablePanelSide;
 }) {
   const today = useMemo(() => toDateKey(new Date(), tzOffsetMinutes), [tzOffsetMinutes]);
   const maxDate = lastData ?? today;
@@ -257,8 +257,8 @@ export function Calendar({
 
           if (hoverBody) {
             return (
-              <Hover.Root key={date}>
-                <Hover.Anchor
+              <Hoverable.Root key={date}>
+                <Hoverable.Anchor
                   className={cellClassName}
                   role="gridcell"
                   aria-label={date}
@@ -274,11 +274,11 @@ export function Calendar({
                   }
                 >
                   {cellBody}
-                </Hover.Anchor>
-                <Hover.Content className="calendar__hoverable" side={hoverPanelSide}>
+                </Hoverable.Anchor>
+                <Hoverable.Content className="calendar__hoverable" side={hoverPanelSide}>
                   {hoverBody(cellInfo)}
-                </Hover.Content>
-              </Hover.Root>
+                </Hoverable.Content>
+              </Hoverable.Root>
             );
           }
 

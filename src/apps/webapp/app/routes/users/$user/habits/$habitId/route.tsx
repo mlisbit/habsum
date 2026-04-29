@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Calendar, type CalendarDataRender } from '~/components/Calendar';
-import { Button } from '~/components/Button';
-import { ProgressBar } from '~/components/ProgressBar';
+import { Button } from '~/core-components/Button';
+import { ProgressBar } from '~/core-components/ProgressBar';
 import { SingleSelectWidget, SummationWidget } from '~/components/widgets';
 import { getHabitDetail, patchHabit, type Habit } from '~/api.client';
 import { toDateKey } from '@habsum/utils';

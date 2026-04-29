@@ -1,7 +1,7 @@
 import { useParams } from '@remix-run/react';
 import { useEffect, useState } from 'react';
 import { deleteUser, patchUser, purgeUserData } from '~/api.client';
-import { Button } from '~/components/Button';
+import { Button } from '~/core-components/Button';
 import { setSelectedUser } from '~/cookies.client';
 
 export default function UserSettingsAccount() {

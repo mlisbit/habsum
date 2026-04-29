@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { getHabits, patchHabit, type Habit } from '~/api.client';
-import { Button } from '~/components/Button';
+import { Button } from '~/core-components/Button';
 import { DayNav } from '~/components/DayNav';
 import { SingleSelectWidget, SummationWidget } from '~/components/widgets';
 import { clearSelectedUser } from '~/cookies.client';

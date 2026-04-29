@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from '@remix-run/react';
 import type { HabitRowSingleSelect } from '@habsum/api-types';
 import { habitIdPathSegment } from '~/utils/habit-id';
-import { Button } from '~/components/Button';
+import { Button } from '~/core-components/Button';
 import { HistoryDisplay } from '~/components/HistoryDisplay';
 
 type SingleSelectWidgetProps = {

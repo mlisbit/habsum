@@ -15,30 +15,30 @@ import {
 import { createPortal } from 'react-dom';
 
 /** Where the floating panel is placed relative to the anchor (before viewport clamp / flip). */
-export type HoverPanelSide = 'top' | 'bottom' | 'left' | 'right';
+export type HoverablePanelSide = 'top' | 'bottom' | 'left' | 'right';
 
-type HoverRootProps = {
+type HoverableRootProps = {
   children: ReactNode;
   /** Delay before opening (ms). */
   openDelay?: number;
 };
 
-type HoverContextValue = {
+type HoverableContextValue = {
   open: boolean;
   anchorRef: MutableRefObject<HTMLDivElement | null>;
   beginHover: () => void;
   endHover: () => void;
 };
 
-const HoverContext = createContext<HoverContextValue | null>(null);
+const HoverableContext = createContext<HoverableContextValue | null>(null);
 
-function useHoverContext(component: string): HoverContextValue {
-  const v = useContext(HoverContext);
-  if (!v) throw new Error(`${component} must be used inside Hover.Root`);
+function useHoverableContext(component: string): HoverableContextValue {
+  const v = useContext(HoverableContext);
+  if (!v) throw new Error(`${component} must be used inside Hoverable.Root`);
   return v;
 }
 
-function HoverRoot({ children, openDelay = 60 }: HoverRootProps) {
+function HoverableRoot({ children, openDelay = 60 }: HoverableRootProps) {
   const [open, setOpen] = useState(false);
   const anchorRef = useRef<HTMLDivElement | null>(null);
   const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -82,53 +82,52 @@ function HoverRoot({ children, openDelay = 60 }: HoverRootProps) {
     [clearOpenTimer],
   );
 
-  return <HoverContext.Provider value={value}>{children}</HoverContext.Provider>;
+  return <HoverableContext.Provider value={value}>{children}</HoverableContext.Provider>;
 }
 
-const HoverAnchor = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(function HoverAnchor(
-  { onMouseEnter, onMouseLeave, ...props },
-  ref,
-) {
-  const { anchorRef, beginHover, endHover } = useHoverContext('Hover.Anchor');
+const HoverableAnchor = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
+  function HoverableAnchor({ onMouseEnter, onMouseLeave, ...props }, ref) {
+    const { anchorRef, beginHover, endHover } = useHoverableContext('Hoverable.Anchor');
 
-  const setRefs = (el: HTMLDivElement | null) => {
-    anchorRef.current = el;
-    if (typeof ref === 'function') ref(el);
-    else if (ref) (ref as MutableRefObject<HTMLDivElement | null>).current = el;
-  };
+    const setRefs = (el: HTMLDivElement | null) => {
+      anchorRef.current = el;
+      if (typeof ref === 'function') ref(el);
+      else if (ref) (ref as MutableRefObject<HTMLDivElement | null>).current = el;
+    };
 
-  return (
-    <div
-      ref={setRefs}
-      onMouseEnter={(e) => {
-        beginHover();
-        onMouseEnter?.(e);
-      }}
-      onMouseLeave={(e) => {
-        endHover();
-        onMouseLeave?.(e);
-      }}
-      {...props}
-    />
-  );
-});
+    return (
+      <div
+        ref={setRefs}
+        onMouseEnter={(e) => {
+          beginHover();
+          onMouseEnter?.(e);
+        }}
+        onMouseLeave={(e) => {
+          endHover();
+          onMouseLeave?.(e);
+        }}
+        {...props}
+      />
+    );
+  },
+);
 
-type HoverContentProps = Omit<HTMLAttributes<HTMLDivElement>, 'children'> & {
+type HoverableContentProps = Omit<HTMLAttributes<HTMLDivElement>, 'children'> & {
   children: ReactNode;
   /** Gap between anchor and panel (px). */
   offset?: number;
   /** Preferred placement; may flip when there is not enough room in the viewport. */
-  side?: HoverPanelSide;
+  side?: HoverablePanelSide;
 };
 
-function HoverContent({
+function HoverableContent({
   children,
   className,
   offset = 8,
   side = 'bottom',
   ...rest
-}: HoverContentProps) {
-  const { open, anchorRef } = useHoverContext('Hover.Content');
+}: HoverableContentProps) {
+  const { open, anchorRef } = useHoverableContext('Hoverable.Content');
   const panelRef = useRef<HTMLDivElement | null>(null);
   const [style, setStyle] = useState<CSSProperties>({
     position: 'fixed',
@@ -224,9 +223,9 @@ function HoverContent({
   );
 }
 
-/** Composable hover: wrap `Hover.Anchor` + `Hover.Content` inside `Hover.Root`. */
-export const Hover = {
-  Root: HoverRoot,
-  Anchor: HoverAnchor,
-  Content: HoverContent,
+/** Compose `Hoverable.Anchor` + `Hoverable.Content` inside `Hoverable.Root`. */
+export const Hoverable = {
+  Root: HoverableRoot,
+  Anchor: HoverableAnchor,
+  Content: HoverableContent,
 };

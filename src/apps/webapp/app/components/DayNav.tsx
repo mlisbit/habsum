@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Button } from '~/components/Button';
+import { Button } from '~/core-components/Button';
 import { fromDateKey, toDateKey } from '@habsum/utils';
 
 function addDays(dateKey: string, delta: number, tzOffsetMinutes: number) {
