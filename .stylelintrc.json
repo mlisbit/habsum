@@ -3,7 +3,8 @@
   "plugins": [
     "./src/packages/tools/dist/stylelint/no-multiple-bem-blocks.mjs",
     "./src/packages/tools/dist/stylelint/require-spacing-function.mjs",
-    "./src/packages/tools/dist/stylelint/no-direct-color.mjs"
+    "./src/packages/tools/dist/stylelint/no-direct-color.mjs",
+    "./src/packages/tools/dist/stylelint/bem-block-matches-filename.mjs"
   ],
   "overrides": [
     {
@@ -50,6 +51,15 @@
       "rules": {
         "property-disallowed-list": null
       }
+    },
+    {
+      "files": [
+        "src/apps/webapp/app/styles/foundation/_text.scss",
+        "src/apps/webapp/app/styles/foundation/_layout.scss"
+      ],
+      "rules": {
+        "habsum/bem-block-matches-filename": null
+      }
     }
   ],
   "rules": {
@@ -73,6 +83,7 @@
     "habsum/no-multiple-bem-blocks": true,
     "habsum/require-spacing-function": true,
     "habsum/no-direct-color": true,
+    "habsum/bem-block-matches-filename": true,
     "selector-max-type": 0
   }
 }
