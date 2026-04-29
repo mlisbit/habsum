@@ -1,0 +1,141 @@
+@use 'functions';
+
+// Block: top-nav — habits page header (greeting + date nav)
+.top-nav {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: functions.spacing(4);
+  margin-bottom: functions.spacing(3);
+}
+
+.top-nav__left {
+  flex: 1;
+  min-width: 0;
+}
+
+.top-nav__intro-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: functions.spacing(1);
+}
+
+// Hover / focus greeting to reveal slide-out user switch button (chevron).
+.top-nav__greeting-zone {
+  display: inline-flex;
+  align-items: center;
+  gap: functions.spacing(1);
+  border-radius: var(--border-radius-m);
+  outline: none;
+
+  &:focus-visible {
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--foreground) 25%, transparent);
+  }
+}
+
+$back-button-slot: 2.25rem; // matches `.button.button--icon` width
+
+.top-nav__back-reveal {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  width: 0;
+  max-width: $back-button-slot;
+  overflow: hidden;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateX(-10%);
+  transition:
+    width 0.22s cubic-bezier(0.33, 1, 0.68, 1),
+    opacity 0.18s ease,
+    transform 0.22s cubic-bezier(0.33, 1, 0.68, 1),
+    visibility 0s linear 0.2s;
+  pointer-events: none;
+
+  .top-nav__greeting-zone:hover &,
+  .top-nav__greeting-zone:focus-within & {
+    width: $back-button-slot;
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0);
+    transition-delay: 0s, 0s, 0s, 0s;
+    pointer-events: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .top-nav__back-reveal {
+    transition: none;
+    transform: none;
+
+    .top-nav__greeting-zone:hover &,
+    .top-nav__greeting-zone:focus-within & {
+      transform: none;
+    }
+  }
+}
+
+.top-nav__back-anchor {
+  display: flex;
+  flex-shrink: 0;
+}
+
+// Compact Hoverable panels for icon buttons + day progress tooltip.
+.top-nav__back-tooltip.hover-layer__panel,
+.top-nav__settings-tooltip.hover-layer__panel,
+.top-nav__progress-tooltip.hover-layer__panel {
+  min-width: unset;
+}
+
+.top-nav__settings-anchor {
+  display: flex;
+}
+
+.top-nav__progress-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: functions.spacing(1);
+}
+
+.top-nav__progress-anchor {
+  display: block;
+}
+
+.top-nav__progress-caption {
+  margin: 0;
+  text-align: right;
+}
+
+.top-nav__countdown {
+  margin: functions.spacing(2) 0 0;
+}
+
+.top-nav__right {
+  flex-shrink: 0;
+  min-width: min(320px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: functions.spacing(2);
+  align-items: stretch;
+}
+
+.top-nav__right .day-nav {
+  margin-bottom: 0;
+}
+
+.top-nav__day-progress.progress {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+@media (max-width: 840px) {
+  .top-nav {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .top-nav__right {
+    min-width: 0;
+  }
+}

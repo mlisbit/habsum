@@ -12,16 +12,18 @@ const BUTTON_ICONS = {
 export type ButtonIcon = keyof typeof BUTTON_ICONS;
 
 type ButtonProps = {
-  type: 'primary' | 'secondary';
+  type: 'primary' | 'secondary' | 'tertiary';
+  size?: 'small' | 'medium' | 'large';
   icon?: ButtonIcon;
   circle?: boolean;
   text: string;
 } & Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'type' | 'children'>;
 
-const ICON_SIZE = 18;
+const ICON_SIZES = { small: 16, medium: 18, large: 20 } as const;
 
 export function Button({
   type: visual,
+  size = 'medium',
   icon,
   circle = false,
   text,
@@ -32,6 +34,8 @@ export function Button({
   const classes = [
     'button',
     visual === 'secondary' && 'button--secondary',
+    visual === 'tertiary' && 'button--tertiary',
+    size !== 'medium' && `button--${size}`,
     circle && isIconOnly && 'button--icon',
     icon === 'plus' && circle && isIconOnly && 'button--plus',
     className,
@@ -42,7 +46,8 @@ export function Button({
   const renderIcon = () => {
     if (icon == null) return null;
     const Lucide = BUTTON_ICONS[icon];
-    return <Lucide size={ICON_SIZE} strokeWidth={icon === 'plus' ? 2.5 : 2} aria-hidden />;
+    const px = ICON_SIZES[size];
+    return <Lucide size={px} strokeWidth={icon === 'plus' ? 2.5 : 2} aria-hidden />;
   };
 
   return (

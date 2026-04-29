@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Button } from '~/core-components/Button';
 import { Hoverable, type HoverablePanelSide } from '~/core-components/Hoverable';
 import { fromDateKey, toDateKey } from '@habsum/utils';
+import { addDays } from '~/utils/date-utils';
 
 export type CalendarCellInfo = {
   date: string; // YYYY-MM-DD (UTC)
@@ -32,12 +33,6 @@ function addMonths(dateKey: string, delta: number, tzOffsetMinutes: number) {
   local.setUTCHours(0, 0, 0, 0);
   local.setUTCMonth(local.getUTCMonth() + delta, 1);
   return toDateKey(new Date(local.getTime() + tzOffsetMinutes * 60_000), tzOffsetMinutes);
-}
-
-function addDays(dateKey: string, delta: number, tzOffsetMinutes: number) {
-  const d = fromDateKey(dateKey, tzOffsetMinutes);
-  const next = new Date(d.getTime() + delta * 86_400_000);
-  return toDateKey(next, tzOffsetMinutes);
 }
 
 function weekday(dateKey: string, tzOffsetMinutes: number) {

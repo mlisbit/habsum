@@ -14,6 +14,11 @@
   margin-top: functions.spacing(2);
 }
 
+.progress--small {
+  min-height: functions.spacing(1);
+  padding: 0 functions.spacing(1);
+}
+
 .progress__fill {
   position: absolute;
   left: 0;

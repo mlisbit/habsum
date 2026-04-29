@@ -1,12 +1,34 @@
 @use 'functions';
 
-// Block: habits-page
-.habits-page__toolbar {
+// Two flex columns — odd indices / even indices — so each stack is independent
+// (CSS Grid aligns entire rows and forces row height to match the tallest tile).
+.habits-page__columns {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
+  gap: functions.spacing(2);
+
+  /* strip .card bottom margin inside column stacks; gaps handle rhythm */
+  .card {
+    margin-bottom: 0;
+    width: 100%;
+    box-sizing: border-box;
+  }
+}
+
+.habits-page__column {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
   gap: functions.spacing(2);
 }
 
-.habits-page__footer {
-  margin-top: functions.spacing(5);
+.habits-page__stack {
+  display: flex;
+  flex-direction: column;
+  gap: functions.spacing(2);
+
+  .card {
+    margin-bottom: 0;
+  }
 }

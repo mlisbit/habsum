@@ -1,10 +1,22 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { getHabits, patchHabit, type Habit } from '~/api.client';
-import { Button } from '~/core-components/Button';
-import { DayNav } from '~/components/DayNav';
+import { TopNav } from '~/components/TopNav';
 import { SingleSelectWidget, SummationWidget } from '~/components/widgets';
 import { clearSelectedUser } from '~/cookies.client';
+import { getProgress } from '~/utils/habit-helpers';
 import { toDateKey } from '@habsum/utils';
+
+function useWideHabitsLayout(): boolean {
+  return useSyncExternalStore(
+    (onStoreChange) => {
+      const mq = window.matchMedia('(min-width: 721px)');
+      mq.addEventListener('change', onStoreChange);
+      return () => mq.removeEventListener('change', onStoreChange);
+    },
+    () => window.matchMedia('(min-width: 721px)').matches,
+    () => true,
+  );
+}
 
 type HabitsState = { user: string; habits: Habit[] };
 
@@ -77,41 +89,63 @@ export default function HabitsPage() {
     });
   };
 
+  const wideTwoColumn = useWideHabitsLayout();
+  const dayProgress = useMemo(() => getProgress(state?.habits ?? []), [state?.habits]);
+
+  function renderHabit(h: Habit) {
+    if (h.type === 'single_select') {
+      return (
+        <SingleSelectWidget
+          key={h.name}
+          user={state!.user}
+          habit={h}
+          onSelectOption={async (opt) => {
+            const updated = await patchHabit(
+              state!.user,
+              { habit: h.name, value: opt },
+              { date: effectiveDate },
+            );
+            onHabitUpdated({ ...h, ...updated, value: opt } as Habit);
+          }}
+        />
+      );
+    }
+    return (
+      <SummationWidget
+        key={h.name}
+        user={state!.user}
+        habit={h}
+        onAddAmount={async (delta) => {
+          const updated = await patchHabit(
+            state!.user,
+            { habit: h.name, total: delta },
+            { date: effectiveDate },
+          );
+          onHabitUpdated({ ...h, ...updated } as Habit);
+        }}
+      />
+    );
+  }
+
   return (
-    <div className="container habits-page">
-      <div className="header-row">
-        <h1 className="text-h-xl">{user}</h1>
-        <div className="habits-page__toolbar">
-          <Button
-            type="secondary"
-            icon="gear"
-            circle
-            text=""
-            title="Settings"
-            aria-label="Settings"
-            onClick={() =>
-              window.location.assign(`/users/${encodeURIComponent(user)}/settings/account`)
-            }
-          />
-          <Button
-            type="secondary"
-            text="Switch user"
-            onClick={() => {
-              clearSelectedUser();
-              window.location.assign('/users');
-            }}
-          />
-        </div>
-      </div>
+    <div className="container container--wide habits-page">
+      <TopNav
+        username={user}
+        effectiveDate={effectiveDate}
+        tzOffsetMinutes={tzOffsetMinutes}
+        firstDate={firstDate}
+        onChangeDate={goToDate}
+        onBack={() => {
+          clearSelectedUser();
+          window.location.assign('/users');
+        }}
+        onSettings={() =>
+          window.location.assign(`/users/${encodeURIComponent(user)}/settings/account`)
+        }
+        progress={dayProgress}
+      />
 
       {error ? <p className="warn text-b-s">{error}</p> : null}
-
-      <DayNav
-        date={effectiveDate}
-        firstDate={firstDate}
-        tzOffsetMinutes={tzOffsetMinutes}
-        onChangeDate={goToDate}
-      />
 
       {!state ? (
         <p className="text-light text-b-m" aria-busy>
@@ -119,43 +153,18 @@ export default function HabitsPage() {
         </p>
       ) : state.habits.length === 0 ? (
         <p className="text-light text-b-m">No habits configured.</p>
+      ) : wideTwoColumn ? (
+        <div className="habits-page__columns">
+          <div className="habits-page__column">
+            {state.habits.filter((_h, i) => i % 2 === 0).map((h) => renderHabit(h))}
+          </div>
+          <div className="habits-page__column">
+            {state.habits.filter((_h, i) => i % 2 === 1).map((h) => renderHabit(h))}
+          </div>
+        </div>
       ) : (
-        state.habits.map((h) =>
-          h.type === 'single_select' ? (
-            <SingleSelectWidget
-              key={h.name}
-              user={state.user}
-              habit={h}
-              onSelectOption={async (opt) => {
-                const updated = await patchHabit(
-                  state.user,
-                  { habit: h.name, value: opt },
-                  { date: effectiveDate },
-                );
-                onHabitUpdated({ ...h, ...updated, value: opt } as Habit);
-              }}
-            />
-          ) : (
-            <SummationWidget
-              key={h.name}
-              user={state.user}
-              habit={h}
-              onAddAmount={async (delta) => {
-                const updated = await patchHabit(
-                  state.user,
-                  { habit: h.name, total: delta },
-                  { date: effectiveDate },
-                );
-                onHabitUpdated({ ...h, ...updated } as Habit);
-              }}
-            />
-          ),
-        )
+        <div className="habits-page__stack">{state.habits.map((h) => renderHabit(h))}</div>
       )}
-
-      <p className="text-light text-b-m habits-page__footer">
-        <a href="/users">All users</a>
-      </p>
     </div>
   );
 }

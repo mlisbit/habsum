@@ -35,10 +35,32 @@
   }
 }
 
+.button--small {
+  padding: functions.spacing(1, 2);
+}
+
+.button--large {
+  padding: functions.spacing(3, 5);
+}
+
 .button--secondary {
   background: transparent;
   color: var(--foreground);
   border: 1px solid var(--border);
+
+  &:hover {
+    background: color-mix(in srgb, var(--foreground) 7%, transparent);
+  }
+
+  &:active {
+    background: color-mix(in srgb, var(--foreground) 10%, transparent);
+  }
+}
+
+.button--tertiary {
+  background: transparent;
+  color: var(--foreground);
+  border: none;
 
   &:hover {
     background: color-mix(in srgb, var(--foreground) 7%, transparent);
@@ -56,6 +78,16 @@
   width: 2.25rem;
   height: 2.25rem;
   padding: 0;
+}
+
+.button--icon.button--small {
+  width: 2rem;
+  height: 2rem;
+}
+
+.button--icon.button--large {
+  width: 2.5rem;
+  height: 2.5rem;
 }
 
 .button--plus {
