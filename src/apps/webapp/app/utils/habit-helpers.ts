@@ -6,12 +6,12 @@ const GOAL_WEIGHT = 4;
 /** Habits without (or with neutral) goals weigh one unit when averaging completion for the bar. */
 const OTHER_WEIGHT = 1;
 
-/** Denominator for `.total`; `current / PROGRESS_TOTAL_SCALE` equals weighted-average completion [0–1]. */
+/** Denominator for `.total`; `done / PROGRESS_TOTAL_SCALE` equals weighted-average completion [0–1]. */
 export const PROGRESS_TOTAL_SCALE = 10_000;
 
 export type DayProgressSlice = {
   /** Progress toward completing this slice (numerator-like). */
-  current: number;
+  done: number;
   /** Capacity for this slice (denominator-like). */
   total: number;
 };
@@ -23,7 +23,7 @@ export type DayProgressBreakdown = {
   other: DayProgressSlice;
   /**
    * Bar fill: numerator ÷ denominator = weighted-average completion (**weight 4** with numeric goals,
-   * **weight 1** for habits without usable goals).
+   * **weight 1** for habits without usable goals). **`done`** is the numerator, **`total`** the scale.
    */
   total: DayProgressSlice;
 };
@@ -60,9 +60,9 @@ export function getProgress(habits: readonly Habit[]): DayProgressBreakdown {
   const n = habits.length;
   if (n === 0) {
     return {
-      goals: { current: 0, total: 0 },
-      other: { current: 0, total: 0 },
-      total: { current: 0, total: 0 },
+      goals: { done: 0, total: 0 },
+      other: { done: 0, total: 0 },
+      total: { done: 0, total: 0 },
     };
   }
 
@@ -92,8 +92,8 @@ export function getProgress(habits: readonly Habit[]): DayProgressBreakdown {
   const totalCurrent = Math.round(PROGRESS_TOTAL_SCALE * weightedCompletion);
 
   return {
-    goals: { current: goalsCurrent, total: goalsTotal },
-    other: { current: otherCurrent, total: otherTotal },
-    total: { current: totalCurrent, total: PROGRESS_TOTAL_SCALE },
+    goals: { done: goalsCurrent, total: goalsTotal },
+    other: { done: otherCurrent, total: otherTotal },
+    total: { done: totalCurrent, total: PROGRESS_TOTAL_SCALE },
   };
 }

@@ -4,6 +4,7 @@ import { addDays, diffDays } from '~/utils/date-utils';
 import { Button } from '~/core-components/Button';
 import { HumanDate } from '~/core-components/HumanDate';
 import { Hoverable } from '~/core-components/Hoverable';
+import { Icon } from '~/core-components/Icon';
 import { ProgressBar } from '~/core-components/ProgressBar';
 import type { DayProgressBreakdown } from '~/utils/habit-helpers';
 
@@ -62,37 +63,42 @@ export function TopNav({
   const showJumpToToday = Math.abs(diffDays(effectiveDate, today, tzOffsetMinutes)) > 7;
 
   const averageCompletionPercent = useMemo(() => {
-    const { current, total } = progress.total;
-    if (total <= 0 || !Number.isFinite(current)) return null;
-    return Math.round((current / total) * 100);
+    const { done, total } = progress.total;
+    if (total <= 0 || !Number.isFinite(done)) return null;
+    return Math.round((done / total) * 100);
   }, [progress]);
+
+  const dayProgressFullyComplete = progress.total.total > 0 && averageCompletionPercent === 100;
 
   const progressCaption = useMemo(() => {
     if (progress.total.total <= 0) return 'No habits for this day';
+    if (averageCompletionPercent === 100) return null;
 
     const { goals, other } = progress;
-    const othersFullyLogged = other.total > 0 && other.current === other.total;
+    const othersFullyLogged = other.total > 0 && other.done === other.total;
 
     const parts: string[] = [];
 
     if (goals.total > 0) {
-      const completedPct = Math.round((goals.current / goals.total) * 100);
-      parts.push(`${completedPct}% of goals completed for the day`);
+      const completedPct = Math.round((goals.done / goals.total) * 100);
+      parts.push(`${completedPct}% of goals completed`);
     }
 
     // Omit the “N other habits” fragment when every no-goal habit is already logged today.
     if (other.total > 0 && !othersFullyLogged) {
-      parts.push(`${other.total} other habit${other.total === 1 ? '' : 's'}`);
+      parts.push(
+        `${other.total - other.done} other habit${other.total - other.done === 1 ? '' : 's'} remaining`,
+      );
     }
 
     return parts.length > 0 ? parts.join(' · ') : null;
-  }, [progress]);
+  }, [progress, averageCompletionPercent]);
 
   const progressBarProps = useMemo(
     () => ({
       className: 'top-nav__day-progress',
       size: 'small' as const,
-      value: progress.total.current,
+      value: progress.total.done,
       max: progress.total.total,
       'aria-label':
         progress.total.total <= 0
@@ -208,7 +214,12 @@ export function TopNav({
           ) : (
             <ProgressBar {...progressBarProps} />
           )}
-          {progressCaption ? (
+          {dayProgressFullyComplete ? (
+            <p className="top-nav__progress-caption top-nav__progress-caption--celebrate text-b-s text-light">
+              <Icon name="party" size="small" className="top-nav__progress-party" />
+              <span>Completed all goals!</span>
+            </p>
+          ) : progressCaption ? (
             <p className="top-nav__progress-caption text-b-s text-light">{progressCaption}</p>
           ) : null}
         </div>
