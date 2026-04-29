@@ -2,7 +2,8 @@
   "extends": ["stylelint-config-standard-scss"],
   "plugins": [
     "./src/packages/tools/dist/stylelint/no-multiple-bem-blocks.mjs",
-    "./src/packages/tools/dist/stylelint/require-spacing-function.mjs"
+    "./src/packages/tools/dist/stylelint/require-spacing-function.mjs",
+    "./src/packages/tools/dist/stylelint/no-direct-color.mjs"
   ],
   "overrides": [
     {
@@ -18,7 +19,36 @@
       ],
       "rules": {
         "selector-max-type": null,
-        "habsum/require-spacing-function": null
+        "habsum/require-spacing-function": null,
+        "habsum/no-direct-color": null
+      }
+    },
+    {
+      "files": ["src/apps/webapp/app/styles/_reset.scss"],
+      "rules": {
+        "property-disallowed-list": [
+          ["font-size", "line-height", "font-weight"],
+          {
+            "message": "Use atomic typography classes (.text-h-*, .text-b-*, .text-light, .text-bold) defined in foundation/_text.scss"
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/apps/webapp/app/styles/components/_button.scss"],
+      "rules": {
+        "property-disallowed-list": [
+          ["font-size", "line-height", "font-weight"],
+          {
+            "message": "Use atomic typography classes (.text-h-*, .text-b-*, .text-light, .text-bold) defined in foundation/_text.scss"
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/apps/webapp/app/styles/foundation/_text.scss"],
+      "rules": {
+        "property-disallowed-list": null
       }
     }
   ],
@@ -34,8 +64,15 @@
     "value-keyword-case": ["lower", { "ignoreProperties": ["/font/"] }],
     "scss/at-function-pattern": "^_?[a-z][a-z0-9-]*$",
     "at-rule-empty-line-before": null,
+    "property-disallowed-list": [
+      ["font-size", "line-height", "font-weight", "color"],
+      {
+        "message": "Use atomic text utility classes (.text-h-*, .text-b-*, .text-light, .text-bold) defined in foundation/_text.scss"
+      }
+    ],
     "habsum/no-multiple-bem-blocks": true,
     "habsum/require-spacing-function": true,
+    "habsum/no-direct-color": true,
     "selector-max-type": 0
   }
 }

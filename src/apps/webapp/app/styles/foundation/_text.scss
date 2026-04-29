@@ -1,9 +1,67 @@
 @use 'functions';
 
-// Text utilities: .muted, .warn
-.muted {
+// Atomic typography scale.
+// Each text-h-* / text-b-* sets size, line-height, and the default text color.
+// Override the color downstream with .text-light, or weight with .text-bold.
+
+.text-h-xl {
+  font-size: 1.75rem;
+  line-height: 1.2;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.text-h-l {
+  font-size: 1.25rem;
+  line-height: 1.25;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.text-h-m {
+  font-size: 1.125rem;
+  line-height: 1.3;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.text-h-s {
+  font-size: 1.1rem;
+  line-height: 1.35;
+  font-weight: 600;
+  color: var(--foreground);
+}
+
+.text-b-xl {
+  font-size: 1.125rem;
+  line-height: 1.5;
+  color: var(--foreground);
+}
+
+.text-b-l {
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--foreground);
+}
+
+.text-b-m {
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--foreground);
+}
+
+.text-b-s {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--foreground);
+}
+
+.text-bold {
+  font-weight: 700;
+}
+
+.text-light {
   color: var(--text-muted);
-  font-size: 0.9rem;
 }
 
 .warn {
@@ -12,5 +70,4 @@
   border: 1px solid var(--semantic-warning-border);
   padding: functions.spacing(1, 2);
   border-radius: var(--border-radius-full);
-  font-size: 0.8rem;
 }

@@ -214,7 +214,7 @@ function HoverContent({
     <div
       ref={panelRef}
       role="tooltip"
-      className={['hover-layer__panel', className].filter(Boolean).join(' ')}
+      className={['hover-layer__panel', 'text-b-m', className].filter(Boolean).join(' ')}
       style={style}
       {...rest}
     >

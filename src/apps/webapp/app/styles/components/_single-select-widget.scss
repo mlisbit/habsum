@@ -1,6 +1,5 @@
 @use 'functions';
 
-// app/components/widgets/SingleSelectWidget.tsx — BEM: .habit-select
 .habit-select__options {
   display: flex;
   gap: functions.spacing(2);

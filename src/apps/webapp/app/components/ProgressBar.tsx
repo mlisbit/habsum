@@ -40,7 +40,7 @@ export function ProgressBar({
       aria-label={ariaLabel ?? defaultAria}
     >
       <div className="progress__fill" style={{ width: `${pct}%` }} aria-hidden />
-      <span className="progress__label">{label ?? `${value} / ${max}`}</span>
+      <span className="progress__label text-b-s">{label ?? `${value} / ${max}`}</span>
     </div>
   );
 }

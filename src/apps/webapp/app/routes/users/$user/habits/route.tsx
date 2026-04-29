@@ -80,7 +80,7 @@ export default function HabitsPage() {
   return (
     <div className="container habits-page">
       <div className="header-row">
-        <h1>{user}</h1>
+        <h1 className="text-h-xl">{user}</h1>
         <div className="habits-page__toolbar">
           <Button
             type="secondary"
@@ -104,7 +104,7 @@ export default function HabitsPage() {
         </div>
       </div>
 
-      {error ? <p className="warn">{error}</p> : null}
+      {error ? <p className="warn text-b-s">{error}</p> : null}
 
       <DayNav
         date={effectiveDate}
@@ -114,11 +114,11 @@ export default function HabitsPage() {
       />
 
       {!state ? (
-        <p className="muted" aria-busy>
+        <p className="text-light text-b-m" aria-busy>
           Loading…
         </p>
       ) : state.habits.length === 0 ? (
-        <p className="muted">No habits configured.</p>
+        <p className="text-light text-b-m">No habits configured.</p>
       ) : (
         state.habits.map((h) =>
           h.type === 'single_select' ? (
@@ -153,7 +153,7 @@ export default function HabitsPage() {
         )
       )}
 
-      <p className="muted habits-page__footer">
+      <p className="text-light text-b-m habits-page__footer">
         <a href="/users">All users</a>
       </p>
     </div>

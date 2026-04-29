@@ -33,12 +33,12 @@ export function SingleSelectWidget({ user, habit, onSelectOption }: SingleSelect
     >
       <div className="row">
         <div>
-          <h2>
-            <Link className="habit-widget__title" to={to}>
+          <h2 className="text-h-l">
+            <Link className="habit-widget__title text-h-l" to={to}>
               {habit.name}
             </Link>
           </h2>
-          <div className="muted">{habit.value ?? '—'}</div>
+          <div className="text-light text-b-m">{habit.value ?? '—'}</div>
         </div>
         <div className="habit-select__options">
           {habit.options.map((opt) => {
@@ -69,7 +69,7 @@ export function SingleSelectWidget({ user, habit, onSelectOption }: SingleSelect
           })}
         </div>
       </div>
-      {error ? <p className="warn habit-select__error">{error}</p> : null}
+      {error ? <p className="warn text-b-s habit-select__error">{error}</p> : null}
       <HistoryDisplay history={habit.history} />
     </div>
   );

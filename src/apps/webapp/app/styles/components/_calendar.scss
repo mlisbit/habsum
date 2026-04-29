@@ -1,6 +1,5 @@
 @use 'functions';
 
-// app/components/Calendar.tsx
 .calendar {
   width: 100%;
 }
@@ -11,10 +10,6 @@
   justify-content: space-between;
   gap: functions.spacing(3);
   margin-bottom: functions.spacing(2);
-}
-
-.calendar__title {
-  font-weight: 650;
 }
 
 .calendar__controls {
@@ -30,8 +25,6 @@
 }
 
 .calendar__weekday {
-  color: var(--text-muted);
-  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   padding: 0 functions.spacing(1);
@@ -86,12 +79,6 @@
 .calendar__cell--no-data {
   opacity: 0.55;
   background: color-mix(in srgb, var(--background-secondary) 82%, var(--background));
-  color: var(--text-muted);
-}
-
-.calendar__day-number {
-  font-size: 0.85rem;
-  font-weight: 600;
 }
 
 .calendar__cell-content {

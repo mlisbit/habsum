@@ -20,21 +20,21 @@ export default function UserSettingsLayout() {
           onClick={() => window.location.assign(`/users/${encodeURIComponent(user ?? '')}/habits`)}
         />
 
-        <h1 className="settings__title">Settings</h1>
-        <div className="muted settings__user-line">{user}</div>
+        <h1 className="settings__title text-h-l">Settings</h1>
+        <div className="text-light text-b-m settings__user-line">{user}</div>
         <nav className="settings__nav">
           <Link
-            className={
-              path.endsWith('/account') ? 'settings__link settings__link--active' : 'settings__link'
-            }
+            className={`settings__link text-b-l${
+              path.endsWith('/account') ? ' settings__link--active' : ''
+            }`}
             to={`${base}/account`}
           >
             Account
           </Link>
           <Link
-            className={
-              path.endsWith('/config') ? 'settings__link settings__link--active' : 'settings__link'
-            }
+            className={`settings__link text-b-l${
+              path.endsWith('/config') ? ' settings__link--active' : ''
+            }`}
             to={`${base}/config`}
           >
             Config

@@ -1,6 +1,5 @@
 @use 'functions';
 
-// app/components/widgets/SummationWidget.tsx — BEM: .habit-summation
 .habit-summation__add {
   display: flex;
   gap: functions.spacing(2);

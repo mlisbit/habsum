@@ -12,6 +12,15 @@ html {
 
 body {
   margin: 0;
+  color: var(--foreground);
+}
+
+// Form elements don't inherit color by default; opt them in.
+input,
+textarea,
+select,
+button {
+  color: inherit;
 }
 
 // Global defaults (non-theme: fonts only — colors live on `html[data-theme]` in tokens)
@@ -28,17 +37,12 @@ a {
   }
 }
 
-h1 {
-  margin: 0 0 1.5rem;
-  font-size: 1.75rem;
-}
-
-h2 {
-  margin: 0 0 0.25rem;
-  font-size: 1.25rem;
-}
-
-h3 {
-  margin: 0 0 0.5rem;
-  font-size: 1.1rem;
+// Drop default heading margins — typography comes from .text-h-* atomic classes.
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin: 0;
 }

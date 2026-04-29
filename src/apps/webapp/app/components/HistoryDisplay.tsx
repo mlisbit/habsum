@@ -10,7 +10,7 @@ export function HistoryDisplay({ history }: { history: Habit['history'] }) {
 
     return (
       <div className="history-display">
-        <div className="muted history-display__meta">
+        <div className="text-light text-b-m history-display__meta">
           <span>History</span>
           <span>avg {avg == null ? '—' : avg}</span>
         </div>

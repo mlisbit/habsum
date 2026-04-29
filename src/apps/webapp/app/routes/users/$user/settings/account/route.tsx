@@ -17,12 +17,14 @@ export default function UserSettingsAccount() {
 
   return (
     <div className="account-page">
-      <h2>Account</h2>
-      <p className="muted">Managing data for user: {user}</p>
+      <h2 className="text-h-l">Account</h2>
+      <p className="text-light text-b-m">Managing data for user: {user}</p>
 
       <div className="card">
-        <h3>Username</h3>
-        <p className="muted">Rename this user (updates the YAML filename on the server).</p>
+        <h3 className="text-h-s">Username</h3>
+        <p className="text-light text-b-m">
+          Rename this user (updates the YAML filename on the server).
+        </p>
         {/** Button component always uses type="button", so don't rely on form submit. */}
         <form
           className="account-page__rename"
@@ -76,8 +78,8 @@ export default function UserSettingsAccount() {
       </div>
 
       <div className="card account-page__danger">
-        <h3 className="account-page__danger-title">Danger zone</h3>
-        <p className="muted">
+        <h3 className="account-page__danger-title text-h-s">Danger zone</h3>
+        <p className="text-light text-b-m">
           Permanently delete all stored habit data for this user from the server database (daily
           totals, selections, legacy totals). YAML config is not removed.
         </p>
@@ -128,7 +130,7 @@ export default function UserSettingsAccount() {
             }
           }}
         />
-        {status ? <p className="muted account-page__status">{status}</p> : null}
+        {status ? <p className="text-light text-b-m account-page__status">{status}</p> : null}
       </div>
     </div>
   );

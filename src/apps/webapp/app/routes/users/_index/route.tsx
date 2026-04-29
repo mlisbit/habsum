@@ -19,9 +19,9 @@ export default function UsersIndex() {
   return (
     <div className="container users-index">
       <div className="header-row">
-        <h1>Pick a user</h1>
+        <h1 className="text-h-xl">Pick a user</h1>
         <div className="users-index__actions">
-          {selected ? <span className="muted">current: {selected}</span> : null}
+          {selected ? <span className="text-light text-b-m">current: {selected}</span> : null}
           <Button
             type="primary"
             icon="plus"
@@ -44,17 +44,17 @@ export default function UsersIndex() {
         </div>
       </div>
 
-      {error ? <p className="warn users-index__error">{error}</p> : null}
+      {error ? <p className="warn text-b-s users-index__error">{error}</p> : null}
 
       {users.length === 0 ? (
-        <p className="muted">
+        <p className="text-light text-b-m">
           No users found. Use “Add user” (creates <code>users/user.yaml</code>).
         </p>
       ) : (
         users.map((user) => (
           <div key={user} className="card">
             <div className="row">
-              <h2>{user}</h2>
+              <h2 className="text-h-l">{user}</h2>
               <Button
                 type="primary"
                 text="Select"

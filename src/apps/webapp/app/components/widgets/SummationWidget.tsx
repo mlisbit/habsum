@@ -58,12 +58,12 @@ export function SummationWidget({ user, habit, onAddAmount }: SummationWidgetPro
     >
       <div className="row">
         <div>
-          <h2>
-            <Link className="habit-widget__title" to={to}>
+          <h2 className="text-h-l">
+            <Link className="habit-widget__title text-h-l" to={to}>
               {habit.name}
             </Link>
           </h2>
-          {goal == null ? <div className="muted">{total}</div> : null}
+          {goal == null ? <div className="text-light text-b-m">{total}</div> : null}
         </div>
         <div className="habit-summation__add">
           <input
@@ -91,7 +91,7 @@ export function SummationWidget({ user, habit, onAddAmount }: SummationWidgetPro
           />
         </div>
       </div>
-      {error ? <p className="warn habit-summation__error">{error}</p> : null}
+      {error ? <p className="warn text-b-s habit-summation__error">{error}</p> : null}
       {goal != null ? (
         <ProgressBar value={total} max={goal} aria-label={`${habit.name}: ${total} of ${goal}`} />
       ) : null}

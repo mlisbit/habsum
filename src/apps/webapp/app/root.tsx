@@ -38,8 +38,8 @@ export function HydrateFallback() {
     <div className="app">
       <div className="app__content">
         <div className="container">
-          <h1>habsum</h1>
-          <p className="muted">Loading…</p>
+          <h1 className="text-h-xl">habsum</h1>
+          <p className="text-light text-b-m">Loading…</p>
         </div>
       </div>
     </div>

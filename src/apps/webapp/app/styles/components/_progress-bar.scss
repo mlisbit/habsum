@@ -1,6 +1,5 @@
 @use 'functions';
 
-// app/components/ProgressBar.tsx — BEM block: .progress
 .progress {
   position: relative;
   display: flex;
@@ -29,13 +28,10 @@
 .progress__label {
   position: relative;
   z-index: 1;
-  font-size: 0.8rem;
   font-variant-numeric: tabular-nums;
-  line-height: 1.2;
   text-shadow:
     0 0 1px var(--background),
     0 1px 2px var(--background);
-  color: var(--foreground);
   pointer-events: none;
   user-select: none;
 }

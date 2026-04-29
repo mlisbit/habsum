@@ -59,31 +59,31 @@ export function ConfigYamlEditor({ user }: ConfigYamlEditorProps) {
 
   if (loading) {
     return (
-      <p className="muted" aria-busy>
+      <p className="text-light text-b-m" aria-busy>
         Loading config…
       </p>
     );
   }
 
   if (loadError) {
-    return <p className="warn">{loadError}</p>;
+    return <p className="warn text-b-s">{loadError}</p>;
   }
 
   return (
     <div className="config-page">
       <div className="config-page__header">
-        <h2 className="config-page__title">Config</h2>
-        <p className="muted config-page__lead">
+        <h2 className="config-page__title text-h-m">Config</h2>
+        <p className="text-light text-b-m config-page__lead">
           Edit the YAML for this user on the server. Save writes the file; invalid YAML is rejected.
         </p>
-        {dirty ? <p className="muted config-page__dirty">Unsaved changes</p> : null}
+        {dirty ? <p className="text-light text-b-m config-page__dirty">Unsaved changes</p> : null}
         <Button
           type="primary"
           text={saving ? 'Saving…' : 'Save'}
           disabled={!dirty || saving}
           onClick={onSave}
         />
-        {saveError ? <p className="warn config-page__error">{saveError}</p> : null}
+        {saveError ? <p className="warn text-b-s config-page__error">{saveError}</p> : null}
       </div>
       <div className="config-page__editor">
         <CodeMirror

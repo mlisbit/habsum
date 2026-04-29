@@ -174,7 +174,7 @@ export function Calendar({
   return (
     <section className="calendar" aria-label="Calendar">
       <div className="calendar__header">
-        <div className="calendar__title">{monthLabel}</div>
+        <div className="calendar__title text-bold">{monthLabel}</div>
         <div className="calendar__controls">
           <Button
             type="secondary"
@@ -213,7 +213,7 @@ export function Calendar({
 
       <div className="calendar__weekdays" aria-hidden>
         {weekdayLabels.map((w) => (
-          <div key={w} className="calendar__weekday">
+          <div key={w} className="calendar__weekday text-b-s text-light">
             {w}
           </div>
         ))}
@@ -250,7 +250,7 @@ export function Calendar({
 
           const cellBody = (
             <>
-              <div className="calendar__day-number">{dayNumber}</div>
+              <div className="calendar__day-number text-b-m text-bold">{dayNumber}</div>
               <div className="calendar__cell-content">{maybe ? maybe(cellInfo) : null}</div>
             </>
           );

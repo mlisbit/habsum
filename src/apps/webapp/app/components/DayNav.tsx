@@ -53,7 +53,7 @@ export function DayNav({
   return (
     <div className="day-nav">
       <div>
-        <div className="muted day-nav__label">{label}</div>
+        <div className="text-light text-b-m text-bold day-nav__label">{label}</div>
       </div>
       <div className="day-nav__right">
         <div className="day-nav__controls">
@@ -73,7 +73,11 @@ export function DayNav({
           />
         </div>
         {showJumpToToday ? (
-          <button type="button" className="day-nav__jump" onClick={() => onChangeDate(today)}>
+          <button
+            type="button"
+            className="day-nav__jump text-b-s text-light"
+            onClick={() => onChangeDate(today)}
+          >
             Jump to today
           </button>
         ) : null}

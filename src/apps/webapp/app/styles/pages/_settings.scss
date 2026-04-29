@@ -22,7 +22,6 @@
 
 .settings__title {
   margin: functions.spacing(2) 0 functions.spacing(3);
-  font-size: 1.25rem;
 }
 
 .settings__user-line {
@@ -38,7 +37,6 @@
 .settings__link {
   padding: functions.spacing(1, 2);
   border-radius: var(--border-radius-m);
-  color: var(--foreground);
   text-decoration: none;
 
   &:hover {
@@ -48,7 +46,6 @@
 
 .settings__link--active {
   background: color-mix(in srgb, var(--interactive-accent) 18%, transparent);
-  color: var(--foreground);
 }
 
 .settings__main {

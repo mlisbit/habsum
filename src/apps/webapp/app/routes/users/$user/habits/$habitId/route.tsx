@@ -176,7 +176,7 @@ export default function HabitDetailRoute() {
                           aria-label={`${h.name}: ${h.total} of ${h.goal}`}
                         />
                       ) : (
-                        <div className="muted">
+                        <div className="text-light text-b-m">
                           {h.total}
                           {h.goal != null ? ` / ${h.goal}` : ''}
                         </div>
@@ -185,7 +185,7 @@ export default function HabitDetailRoute() {
                   ) : (
                     <>
                       <strong>{h.name}</strong>
-                      <div className="muted">
+                      <div className="text-light text-b-m">
                         {h.value ?? '—'}
                         {h.options.length > 0 ? <span> · {h.options.join(', ')}</span> : null}
                       </div>
@@ -218,7 +218,7 @@ export default function HabitDetailRoute() {
             )
           }
         />
-        <h1>{habitData?.habitName ?? (habitId || 'Habit')}</h1>
+        <h1 className="text-h-xl">{habitData?.habitName ?? (habitId || 'Habit')}</h1>
       </div>
 
       <div className="habit-history">
@@ -237,9 +237,9 @@ export default function HabitDetailRoute() {
         </div>
 
         <div className="habit-history__widget">
-          {habitError ? <p className="warn">{habitError}</p> : null}
+          {habitError ? <p className="warn text-b-s">{habitError}</p> : null}
           {!habitError && habitData == null ? (
-            <p className="muted" aria-busy>
+            <p className="text-light text-b-m" aria-busy>
               Loading habit data…
             </p>
           ) : null}
