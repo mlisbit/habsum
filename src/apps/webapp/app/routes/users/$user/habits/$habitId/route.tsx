@@ -101,7 +101,7 @@ export default function HabitDetailRoute() {
       name: habitData.habitName,
       type: 'summation',
       goal: habitData.habitGoal,
-      total: 0,
+      total: null,
     } satisfies Habit);
   }, [habitData, effectiveDate]);
 
@@ -149,7 +149,7 @@ export default function HabitDetailRoute() {
           ? (() => {
               const goal = habit.goal ?? 0;
               if (goal <= 0) return 1;
-              const ratio = habit.total / goal;
+              const ratio = (habit.total ?? 0) / goal;
               // Map 0..1..2+ -> 0.6..1.2..1.5 (clamped)
               return clamp(0.6 + ratio * 0.6, 0.6, 1.5);
             })()
@@ -171,13 +171,13 @@ export default function HabitDetailRoute() {
                       {h.goal != null && h.goal > 0 ? (
                         <ProgressBar
                           className="habit-history__calendar-day-hover-progress"
-                          value={h.total}
+                          value={h.total ?? 0}
                           max={h.goal}
-                          aria-label={`${h.name}: ${h.total} of ${h.goal}`}
+                          aria-label={`${h.name}: ${h.total ?? 0} of ${h.goal}`}
                         />
                       ) : (
                         <div className="text-light text-b-m">
-                          {h.total}
+                          {h.total == null ? '—' : h.total}
                           {h.goal != null ? ` / ${h.goal}` : ''}
                         </div>
                       )}
@@ -256,6 +256,14 @@ export default function HabitDetailRoute() {
                   );
                   onHabitPatched({ ...habitForWidget, ...updated, value: opt } as Habit);
                 }}
+                onClearSelection={async () => {
+                  const updated = await patchHabit(
+                    habitData.user,
+                    { habit: habitForWidget.name, action: 'clear' },
+                    { date: effectiveDate },
+                  );
+                  onHabitPatched({ ...habitForWidget, ...updated } as Habit);
+                }}
               />
             ) : (
               <SummationWidget
@@ -265,6 +273,14 @@ export default function HabitDetailRoute() {
                   const updated = await patchHabit(
                     habitData.user,
                     { habit: habitForWidget.name, total: delta },
+                    { date: effectiveDate },
+                  );
+                  onHabitPatched({ ...habitForWidget, ...updated } as Habit);
+                }}
+                onClearTotal={async () => {
+                  const updated = await patchHabit(
+                    habitData.user,
+                    { habit: habitForWidget.name, action: 'clear' },
                     { date: effectiveDate },
                   );
                   onHabitPatched({ ...habitForWidget, ...updated } as Habit);

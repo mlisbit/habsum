@@ -27,7 +27,8 @@ export type HabitRowSummation = {
   name: string;
   type: 'summation';
   goal: number | null;
-  total: number;
+  /** Logged total for the requested day; `null` means no row stored (distinct from explicit `0`). */
+  total: number | null;
   history?: HabitHistory;
 };
 
@@ -68,7 +69,7 @@ export type PatchHabitResponse =
       user: string;
       date: string;
       habit: string;
-      value: string;
+      value: string | null;
       type: 'single_select';
       options: string[];
     }
@@ -76,7 +77,7 @@ export type PatchHabitResponse =
       user: string;
       date: string;
       habit: string;
-      total: number;
+      total: number | null;
       type: 'summation';
       goal: number | null;
     };

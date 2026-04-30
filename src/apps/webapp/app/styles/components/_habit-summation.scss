@@ -1,11 +1,5 @@
 @use 'functions';
 
-.habit-summation__add {
-  display: flex;
-  gap: functions.spacing(2);
-  align-items: center;
-}
-
 .habit-summation__error {
   margin-top: functions.spacing(2);
 }

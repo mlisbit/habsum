@@ -27,7 +27,9 @@ export function getHabits(user: string) {
 
 export function patchHabit(
   user: string,
-  body: { habit: string; total: number; action: 'add' | 'set' },
+  body:
+    | { habit: string; total: number; action?: 'add' | 'set' }
+    | { habit: string; action: 'clear' },
 ) {
   return request<PatchHabitResponse>(`/users/${encodeURIComponent(user)}/habits`, {
     method: 'PATCH',

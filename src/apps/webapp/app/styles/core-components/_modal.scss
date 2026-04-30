@@ -1,0 +1,24 @@
+@use 'functions';
+
+.modal__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: functions.spacing(3);
+  background: var(--modal-backdrop-bg);
+}
+
+.modal__dialog {
+  width: min(100%, 22rem);
+  margin-bottom: 0;
+  box-shadow: var(--shadow-elevation-panel);
+}
+
+.modal__actions {
+  margin-top: functions.spacing(3);
+  display: flex;
+  justify-content: flex-end;
+}

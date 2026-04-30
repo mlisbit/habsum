@@ -26,13 +26,15 @@ import { dasherize, fromDateKey, toDateKey } from '@habsum/utils';
 import {
   addToTotal,
   closeDb,
+  deleteDailySelect,
+  deleteDailyTotal,
   getAllSelects,
   getAllTotals,
   getFirstDate,
   getHabitFirstDate,
   getSelect,
   getSeries,
-  getTotal,
+  getSummationDayTotal,
   purgeUserData,
   setSelect,
   setTotal,
@@ -199,7 +201,7 @@ app.get(
       return {
         ...base,
         type: 'summation' as const,
-        total: getTotal(user, h.name, date),
+        total: getSummationDayTotal(user, h.name, date),
       } satisfies Habit;
     });
     const body: HabitsResponse = {
@@ -302,6 +304,21 @@ app.patch(
     }
 
     if (known.type === 'single_select') {
+      const mode = typeof action === 'string' ? action : undefined;
+      if (mode === 'clear') {
+        deleteDailySelect(user, habit, date);
+        const opts = known.options ?? [];
+        const out: PatchHabitResponse = {
+          user,
+          date,
+          habit,
+          value: null,
+          type: known.type,
+          options: opts,
+        };
+        return res.json(out);
+      }
+
       if (typeof value !== 'string' || value.length === 0) {
         return res.status(400).json({ error: 'value is required' });
       }
@@ -321,12 +338,26 @@ app.patch(
       return res.json(out);
     }
 
+    const mode = typeof action === 'string' ? action : 'add';
+
+    if (mode === 'clear') {
+      deleteDailyTotal(user, habit, date);
+      const out: PatchHabitResponse = {
+        user,
+        date,
+        habit,
+        total: null,
+        type: known.type,
+        goal: known.goal,
+      };
+      return res.json(out);
+    }
+
     const numericTotal = Number(total);
     if (!Number.isFinite(numericTotal)) {
       return res.status(400).json({ error: 'total must be a number' });
     }
 
-    const mode = typeof action === 'string' ? action : 'add';
     let next: number;
     if (mode === 'add') {
       next = addToTotal(user, habit, date, numericTotal);

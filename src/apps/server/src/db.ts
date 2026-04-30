@@ -120,9 +120,10 @@ export function getFirstDate(user: string): string | null {
   return row?.date ?? null;
 }
 
-export function getTotal(user: string, habit: string, date: string): number {
+/** Stored total for that calendar day, or `null` when no row exists. */
+export function getSummationDayTotal(user: string, habit: string, date: string): number | null {
   const row = getDailyTotalStmt.get(user, habit, date);
-  return row?.total ?? 0;
+  return row === undefined ? null : row.total;
 }
 
 export function setTotal(user: string, habit: string, date: string, total: number): number {
@@ -132,8 +133,17 @@ export function setTotal(user: string, habit: string, date: string, total: numbe
 }
 
 export function addToTotal(user: string, habit: string, date: string, delta: number): number {
-  const current = getTotal(user, habit, date);
-  return setTotal(user, habit, date, current + Math.trunc(delta));
+  const current = getSummationDayTotal(user, habit, date);
+  const base = current ?? 0;
+  return setTotal(user, habit, date, base + Math.trunc(delta));
+}
+
+const deleteDailyTotalStmt = db.prepare<[string, string, string], unknown>(
+  'DELETE FROM habit_daily_totals WHERE user = ? AND habit = ? AND date = ?',
+);
+
+export function deleteDailyTotal(user: string, habit: string, date: string): void {
+  deleteDailyTotalStmt.run(user, habit, date);
 }
 
 export function getSeries(
@@ -183,6 +193,14 @@ export function getSelect(user: string, habit: string, date: string): string | n
 export function setSelect(user: string, habit: string, date: string, value: string): string {
   upsertSelectStmt.run({ user, habit, date, value });
   return value;
+}
+
+const deleteDailySelectStmt = db.prepare<[string, string, string], unknown>(
+  'DELETE FROM habit_daily_selects WHERE user = ? AND habit = ? AND date = ?',
+);
+
+export function deleteDailySelect(user: string, habit: string, date: string): void {
+  deleteDailySelectStmt.run(user, habit, date);
 }
 
 export function purgeUserData(user: string) {

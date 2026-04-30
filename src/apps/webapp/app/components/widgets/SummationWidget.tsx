@@ -1,21 +1,25 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { Link } from '@remix-run/react';
 import type { HabitRowSummation } from '@habsum/api-types';
 import { habitIdPathSegment } from '~/utils/habit-id';
-import { Button } from '~/core-components/Button';
 import { HistoryDisplay } from '~/components/HistoryDisplay';
 import { ProgressBar } from '~/core-components/ProgressBar';
+import { CountControl } from '~/components/CountControl';
 
 type SummationWidgetProps = {
   user: string;
   habit: HabitRowSummation;
   onAddAmount: (delta: number) => Promise<void>;
+  onClearTotal: () => Promise<void>;
+  /** Amount added or subtracted per tap on + / −; manual entry is unchanged. */
+  interval?: number;
   /** Extra root class(es), e.g. page layout hooks (`habits-page__tile`). */
   surfaceClassName?: string;
 };
 
 function summationIsComplete(habit: HabitRowSummation): boolean {
-  const { total, goal } = habit;
+  const total = habit.total ?? 0;
+  const { goal } = habit;
   if (goal != null && goal > 0) return total >= goal;
   return total > 0;
 }
@@ -24,12 +28,13 @@ export function SummationWidget({
   user,
   habit,
   onAddAmount,
+  onClearTotal,
+  interval = 1,
   surfaceClassName,
 }: SummationWidgetProps) {
   const total = habit.total;
   const goal = habit.goal;
   const isComplete = summationIsComplete(habit);
-  const addAmountRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -38,18 +43,11 @@ export function SummationWidget({
     typeof window !== 'undefined' ? window.location.search : ''
   }`;
 
-  const submitAdd = async () => {
-    const rawValue = addAmountRef.current?.value ?? '1';
-    const delta = Number(rawValue);
-    if (!Number.isFinite(delta)) return;
-
+  const runOp = async (fn: () => Promise<void>) => {
     setPending(true);
     setError(null);
     try {
-      await onAddAmount(delta);
-      if (addAmountRef.current) {
-        addAmountRef.current.value = '1';
-      }
+      await fn();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -75,37 +73,26 @@ export function SummationWidget({
               {habit.name}
             </Link>
           </h2>
-          {goal == null ? <div className="text-light text-b-m">{total}</div> : null}
+          {goal == null ? (
+            <div className="text-light text-b-m">{total == null ? '—' : total}</div>
+          ) : null}
         </div>
-        <div className="habit-summation__add">
-          <input
-            ref={addAmountRef}
-            type="number"
-            className="number-input"
-            defaultValue="1"
-            disabled={pending}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault();
-                void submitAdd();
-              }
-            }}
-            aria-label={`Amount to add to ${habit.name}`}
-          />
-          <Button
-            type="primary"
-            icon="plus"
-            circle
-            text=""
-            onClick={() => void submitAdd()}
-            disabled={pending}
-            aria-label={`Add amount to ${habit.name}`}
-          />
-        </div>
+        <CountControl
+          interval={interval}
+          displayTotal={total}
+          habitName={habit.name}
+          pending={pending}
+          onAddDelta={(delta) => runOp(() => onAddAmount(delta))}
+          onClearTotal={() => runOp(() => onClearTotal())}
+        />
       </div>
       {error ? <p className="warn text-b-s habit-summation__error">{error}</p> : null}
       {goal != null ? (
-        <ProgressBar value={total} max={goal} aria-label={`${habit.name}: ${total} of ${goal}`} />
+        <ProgressBar
+          value={total ?? 0}
+          max={goal}
+          aria-label={`${habit.name}: ${total ?? 0} of ${goal}`}
+        />
       ) : null}
       <HistoryDisplay history={habit.history} />
     </div>

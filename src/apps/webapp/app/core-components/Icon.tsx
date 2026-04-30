@@ -2,6 +2,7 @@ import {
   ChevronLeft,
   ChevronRight,
   type LucideIcon,
+  Minus,
   PartyPopper,
   Plus,
   Settings,
@@ -14,6 +15,7 @@ const ICON_COMPONENTS = {
   chevronRight: ChevronRight,
   /** Same glyph as `chevronLeft`, for semantics (e.g. “back”). */
   chevronBack: ChevronLeft,
+  minus: Minus,
   plus: Plus,
   party: PartyPopper,
 } as const satisfies Record<string, LucideIcon>;
@@ -39,6 +41,6 @@ type IconProps = {
 export function Icon({ name, size = 'medium', sizePx, className }: IconProps) {
   const Lucide = ICON_COMPONENTS[name];
   const px = sizePx ?? ICON_SIZES_PX[size];
-  const strokeWidth = name === 'plus' ? 2.5 : 2;
+  const strokeWidth = name === 'plus' || name === 'minus' ? 2.5 : 2;
   return <Lucide className={className} size={px} strokeWidth={strokeWidth} aria-hidden />;
 }

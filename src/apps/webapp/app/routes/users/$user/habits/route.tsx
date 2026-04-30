@@ -109,6 +109,14 @@ export default function HabitsPage() {
             );
             onHabitUpdated({ ...h, ...updated, value: opt } as Habit);
           }}
+          onClearSelection={async () => {
+            const updated = await patchHabit(
+              state!.user,
+              { habit: h.name, action: 'clear' },
+              { date: effectiveDate },
+            );
+            onHabitUpdated({ ...h, ...updated } as Habit);
+          }}
         />
       );
     }
@@ -122,6 +130,14 @@ export default function HabitsPage() {
           const updated = await patchHabit(
             state!.user,
             { habit: h.name, total: delta },
+            { date: effectiveDate },
+          );
+          onHabitUpdated({ ...h, ...updated } as Habit);
+        }}
+        onClearTotal={async () => {
+          const updated = await patchHabit(
+            state!.user,
+            { habit: h.name, action: 'clear' },
             { date: effectiveDate },
           );
           onHabitUpdated({ ...h, ...updated } as Habit);

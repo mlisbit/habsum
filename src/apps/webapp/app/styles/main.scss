@@ -5,12 +5,14 @@
 @use 'foundation/text';
 @use 'foundation/number-input';
 @use 'core-components/button';
+@use 'core-components/modal';
 @use 'core-components/progress';
 @use 'core-components/hover-layer';
 @use 'components/day-nav';
 @use 'components/calendar';
 @use 'components/history-display';
 @use 'components/habit-select';
+@use 'components/count-control';
 @use 'components/habit-summation';
 @use 'components/habit-widget';
 @use 'components/footer';

@@ -27,7 +27,7 @@ export function Button({
     visual === 'tertiary' && 'button--tertiary',
     size !== 'medium' && `button--${size}`,
     circle && isIconOnly && 'button--icon',
-    icon === 'plus' && circle && isIconOnly && 'button--plus',
+    (icon === 'plus' || icon === 'minus') && circle && isIconOnly && `button--icon-stroke`,
     className,
   ]
     .filter(Boolean)

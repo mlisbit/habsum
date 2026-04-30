@@ -1,14 +1,18 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Link } from '@remix-run/react';
 import type { HabitRowSingleSelect } from '@habsum/api-types';
 import { habitIdPathSegment } from '~/utils/habit-id';
+import { useLongPress } from '~/utils/use-long-press';
 import { Button } from '~/core-components/Button';
 import { HistoryDisplay } from '~/components/HistoryDisplay';
+import { ModalActions, ModalBody, useModal } from '~/context/modal';
 
 type SingleSelectWidgetProps = {
   user: string;
   habit: HabitRowSingleSelect;
   onSelectOption: (option: string) => Promise<void>;
+  /** Clears the stored selection for today (`null` in the API). */
+  onClearSelection: () => Promise<void>;
   /** Extra root class(es), e.g. page layout hooks (`habits-page__tile`). */
   surfaceClassName?: string;
 };
@@ -21,11 +25,46 @@ export function SingleSelectWidget({
   user,
   habit,
   onSelectOption,
+  onClearSelection,
   surfaceClassName,
 }: SingleSelectWidgetProps) {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const isComplete = singleSelectIsComplete(habit);
+  const { present, closeModal } = useModal();
+
+  const openResetModal = useCallback(() => {
+    const runClear = async () => {
+      setPending(true);
+      setError(null);
+      try {
+        await onClearSelection();
+        closeModal();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : String(e));
+      } finally {
+        setPending(false);
+      }
+    };
+
+    present({
+      content: (
+        <>
+          <ModalBody>
+            <p id="modal-title" className="text-b-m">
+              Reset?
+            </p>
+          </ModalBody>
+          <ModalActions>
+            <Button type="secondary" size="small" text="Cancel" onClick={closeModal} />
+            <Button type="secondary" size="small" text="Reset" onClick={() => void runClear()} />
+          </ModalActions>
+        </>
+      ),
+    });
+  }, [present, closeModal, onClearSelection]);
+
+  const longPress = useLongPress(openResetModal);
 
   const idSeg = habitIdPathSegment(habit.name);
   const to = `/users/${encodeURIComponent(user)}/habits/${encodeURIComponent(idSeg)}${
@@ -65,7 +104,8 @@ export function SingleSelectWidget({
                 className={
                   dim ? 'habit-select__option habit-select__option--dim' : 'habit-select__option'
                 }
-                onClick={async () => {
+                {...longPress.pointerProps}
+                onClick={longPress.wrapOnClick(async () => {
                   setPending(true);
                   setError(null);
                   try {
@@ -75,7 +115,7 @@ export function SingleSelectWidget({
                   } finally {
                     setPending(false);
                   }
-                }}
+                })}
               />
             );
           })}

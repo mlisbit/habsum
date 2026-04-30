@@ -20,6 +20,8 @@ html[data-theme='dark'] {
   --semantic-warning-bg: #3a2410;
   --semantic-warning-border: #6b3e1a;
   --indicator-calendar-dot: #d64545;
+  --text-error: #f87171;
+  --modal-backdrop-bg: rgb(0 0 0 / 45%);
 }
 
 html[data-theme='light'] {
@@ -42,4 +44,6 @@ html[data-theme='light'] {
   --semantic-warning-bg: #fff4ed;
   --semantic-warning-border: #ffd8b2;
   --indicator-calendar-dot: #d64545;
+  --text-error: #c62828;
+  --modal-backdrop-bg: rgb(0 0 0 / 45%);
 }

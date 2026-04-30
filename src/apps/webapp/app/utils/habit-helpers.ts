@@ -39,13 +39,14 @@ function hasPositiveGoal(h: Habit): h is HabitRowSummation & { goal: number } {
 function otherHabitCompleted(h: Habit): boolean {
   if (h.type === 'single_select') return h.value != null;
   if (h.goal != null && h.goal > 0) return false;
-  return h.total > 0;
+  return (h.total ?? 0) > 0;
 }
 
 /** 0 = none, 1 = fully done for today (toward goal or binary “has data”). */
 function habitCompletionFraction(h: Habit): number {
   if (hasPositiveGoal(h)) {
-    return Math.min(Math.max(h.total / h.goal, 0), 1);
+    const t = h.total ?? 0;
+    return Math.min(Math.max(t / h.goal, 0), 1);
   }
   return otherHabitCompleted(h) ? 1 : 0;
 }
@@ -81,7 +82,7 @@ export function getProgress(habits: readonly Habit[]): DayProgressBreakdown {
 
     if (hasPositiveGoal(h)) {
       goalsTotal += h.goal;
-      goalsCurrent += Math.min(h.total, h.goal);
+      goalsCurrent += Math.min(h.total ?? 0, h.goal);
     } else {
       otherTotal += 1;
       if (otherHabitCompleted(h)) otherCurrent += 1;

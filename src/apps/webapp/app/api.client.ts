@@ -85,7 +85,10 @@ export async function getHabitDetail(user: string, habitId: string) {
 
 export async function patchHabit(
   user: string,
-  body: { habit: string; total: number } | { habit: string; value: string },
+  body:
+    | { habit: string; total: number }
+    | { habit: string; value: string }
+    | { habit: string; action: 'clear' },
   opts?: { date?: string },
 ) {
   const qs = opts?.date ? `?date=${encodeURIComponent(opts.date)}` : '';
@@ -104,7 +107,7 @@ export async function patchHabit(
   }
   return {
     name: res.habit,
-    total: res.total,
+    total: res.total ?? null,
     type: res.type,
     goal: res.goal,
   } satisfies Habit;
