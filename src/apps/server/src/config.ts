@@ -8,6 +8,7 @@ import {
 } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import type { SummationOptions } from '@habsum/api-types';
 import yaml from 'js-yaml';
 
 const rawDir = process.env.HABSUM_CONFIG_DIR;
@@ -30,6 +31,8 @@ export type HabitDef = {
   type: HabitType;
   goal: number | null;
   options?: string[];
+  /** Fixed +/− steps from YAML: `[sub, add]`, `[sub, input, add]`, or `{ add, sub }`. */
+  summationOptions?: SummationOptions;
   history?: {
     period: string;
     display: 'average';
@@ -45,6 +48,9 @@ type RawHabit = {
   type?: HabitType;
   goal?: number;
   options?: string[];
+  /** `[subtract, add]` or `{ sub, add }` / `{ add, sub }` */
+  summation_options?: unknown;
+  summationOptions?: unknown;
   history?:
     | { period?: string; display?: 'average' }
     | Array<{ period?: string } | { display?: 'average' }>;
@@ -117,17 +123,64 @@ export function loadUserConfig(user: string): UserConfig | null {
 
   return {
     user,
-    habits: Object.entries(habits).map(([name, def]) => ({
-      name,
-      type: def?.type ?? 'summation',
-      goal: def?.goal ?? null,
-      options:
-        def?.type === 'single_select' && Array.isArray(def?.options)
-          ? def.options.filter((x) => typeof x === 'string')
-          : undefined,
-      history: normalizeHistory(def?.history),
-    })),
+    habits: Object.entries(habits).map(([name, def]) => {
+      const type = def?.type ?? 'summation';
+      return {
+        name,
+        type,
+        goal: def?.goal ?? null,
+        options:
+          type === 'single_select' && Array.isArray(def?.options)
+            ? def.options.filter((x) => typeof x === 'string')
+            : undefined,
+        summationOptions: type === 'summation' ? parseSummationOptions(def) : undefined,
+        history: normalizeHistory(def?.history),
+      };
+    }),
   };
+}
+
+function parseSummationOptions(def: RawHabit): SummationOptions | undefined {
+  const raw = def.summation_options ?? def.summationOptions;
+  if (raw == null) return undefined;
+
+  // summation_options: [sub, add] — first value subtracts, second adds
+  // summation_options: [sub, input, add] — same steps; middle marks editable + amount (defaults to add)
+  if (Array.isArray(raw)) {
+    if (raw.length === 2) {
+      const subN = Math.trunc(Number(raw[0]));
+      const addN = Math.trunc(Number(raw[1]));
+      if (!Number.isFinite(subN) || !Number.isFinite(addN)) return undefined;
+      if (subN < 1 || addN < 1) return undefined;
+      return { add: addN, sub: subN };
+    }
+    if (raw.length === 3) {
+      const subN = Math.trunc(Number(raw[0]));
+      const mid = raw[1];
+      const addN = Math.trunc(Number(raw[2]));
+      const midLabel = typeof mid === 'string' ? mid.trim().toLowerCase() : '';
+      if (midLabel !== 'input') return undefined;
+      if (!Number.isFinite(subN) || !Number.isFinite(addN)) return undefined;
+      if (subN < 1 || addN < 1) return undefined;
+      return { add: addN, sub: subN, inputBetween: true };
+    }
+    return undefined;
+  }
+
+  if (typeof raw !== 'object') return undefined;
+  const rec = raw as Record<string, unknown>;
+  const add = Number(rec.add);
+  const sub = Number(rec.sub);
+  if (!Number.isFinite(add) || !Number.isFinite(sub)) return undefined;
+  const addN = Math.trunc(add);
+  const subN = Math.trunc(sub);
+  if (addN < 1 || subN < 1) return undefined;
+  const inputBetween =
+    rec.inputBetween === true ||
+    rec.input_between === true ||
+    rec.inputBetween === 'true' ||
+    rec.input_between === 'true';
+  return inputBetween ? { add: addN, sub: subN, inputBetween: true } : { add: addN, sub: subN };
 }
 
 function normalizeHistory(raw: RawHabit['history']): HabitDef['history'] | undefined {

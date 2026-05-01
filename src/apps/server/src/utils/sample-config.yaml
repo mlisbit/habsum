@@ -12,3 +12,7 @@ habits:
 
   pull ups:
     type: summation
+    summation_options: [1, 5]
+
+    # Fixed −sub, editable middle (defaults to add); + shows `+add` or icon + when amount ≠ add:
+    # summation_options: [1, input, 5]

@@ -1,5 +1,31 @@
 @use 'functions';
 
+/** Matches habits layout wide breakpoint (`useWideHabitsLayout`). */
+$habit-step-sub-hover-min-width: 721px;
+
+.habit-summation__step-minus-wrap {
+  display: inline-flex;
+  flex-shrink: 0;
+  max-width: 10rem;
+  opacity: 1;
+  overflow: visible;
+  transition:
+    max-width 0.18s ease,
+    opacity 0.15s ease;
+}
+
+/* Fixed-step habits: hide − until card hover on hover-capable wide viewports; always show on narrow / touch-first. */
+.habit-summation--step-sub-on-card-hover {
+  @media (hover: hover) and (pointer: fine) and (min-width: $habit-step-sub-hover-min-width) {
+    &:not(:hover, :focus-within) .habit-summation__step-minus-wrap {
+      max-width: 0;
+      opacity: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+  }
+}
+
 .habit-summation__error {
   margin-top: functions.spacing(2);
 }

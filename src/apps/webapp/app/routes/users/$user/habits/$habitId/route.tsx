@@ -102,6 +102,9 @@ export default function HabitDetailRoute() {
       type: 'summation',
       goal: habitData.habitGoal,
       total: null,
+      ...(habitData.habitSummationOptions != null
+        ? { summationOptions: habitData.habitSummationOptions }
+        : {}),
     } satisfies Habit);
   }, [habitData, effectiveDate]);
 
@@ -126,6 +129,11 @@ export default function HabitDetailRoute() {
               type: 'summation',
               goal: updated.goal,
               total: updated.total,
+              ...(prevHabit?.type === 'summation' && prevHabit.summationOptions != null
+                ? { summationOptions: prevHabit.summationOptions }
+                : prev.habitSummationOptions != null
+                  ? { summationOptions: prev.habitSummationOptions }
+                  : {}),
             } satisfies Habit);
 
       return {

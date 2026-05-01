@@ -60,6 +60,7 @@ export function SummationWidget({
       className={[
         'card',
         'habit-summation',
+        habit.summationOptions ? 'habit-summation--step-sub-on-card-hover' : '',
         surfaceClassName,
         isComplete ? 'habit-widget--complete' : '',
       ]
@@ -79,6 +80,7 @@ export function SummationWidget({
         </div>
         <CountControl
           interval={interval}
+          summationSteps={habit.summationOptions}
           displayTotal={total}
           habitName={habit.name}
           pending={pending}

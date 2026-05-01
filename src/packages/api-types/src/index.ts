@@ -22,6 +22,14 @@ export type HabitRowSingleSelect = {
   history?: HabitHistory;
 };
 
+/** Parsed from YAML `summation_options` for summation habits. */
+export type SummationOptions = {
+  add: number;
+  sub: number;
+  /** True when config is `[sub, input, add]` — − uses `sub`, middle field sets + amount (defaults to `add`). */
+  inputBetween?: boolean;
+};
+
 /** A summation row from `GET /users/:user/habits` */
 export type HabitRowSummation = {
   name: string;
@@ -29,6 +37,8 @@ export type HabitRowSummation = {
   goal: number | null;
   /** Logged total for the requested day; `null` means no row stored (distinct from explicit `0`). */
   total: number | null;
+  /** Fixed +/− amounts from config (`summation_options`); omit for free-form count control. */
+  summationOptions?: SummationOptions;
   history?: HabitHistory;
 };
 
@@ -54,6 +64,8 @@ export type HabitDetailResponse = {
   habitType: Habit['type'];
   habitGoal: number | null;
   habitOptions: string[];
+  /** From config when `habitType` is `summation`; drives fixed-step count UI. */
+  habitSummationOptions: SummationOptions | null;
   firstDate: string | null;
   data: {
     user: Array<{

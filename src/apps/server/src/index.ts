@@ -202,6 +202,7 @@ app.get(
         ...base,
         type: 'summation' as const,
         total: getSummationDayTotal(user, h.name, date),
+        ...(h.summationOptions ? { summationOptions: h.summationOptions } : {}),
       } satisfies Habit;
     });
     const body: HabitsResponse = {
@@ -256,6 +257,9 @@ app.get(
                   type: 'summation',
                   goal: habitDef.goal ?? null,
                   total: r.total,
+                  ...(habitDef.summationOptions
+                    ? { summationOptions: habitDef.summationOptions }
+                    : {}),
                 } satisfies Habit,
               ],
             })),
@@ -268,6 +272,8 @@ app.get(
       habitType: habitDef.type,
       habitGoal: habitDef.goal,
       habitOptions: habitDef.type === 'single_select' ? (habitDef.options ?? []) : [],
+      habitSummationOptions:
+        habitDef.type === 'summation' ? (habitDef.summationOptions ?? null) : null,
       firstDate,
       data,
       serverTime: new Date().toISOString(),
