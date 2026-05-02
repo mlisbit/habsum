@@ -55,6 +55,15 @@
         "habsum/bem-block-matches-filename": null,
         "habsum/single-block-per-file": null
       }
+    },
+    {
+      "files": ["src/apps/webapp/app/styles/_theme.scss"],
+      "rules": {
+        "selector-max-type": null,
+        "property-disallowed-list": null,
+        "habsum/bem-block-matches-filename": null,
+        "habsum/single-block-per-file": null
+      }
     }
   ],
   "rules": {

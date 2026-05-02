@@ -16,10 +16,15 @@ function renderWithModal(ui: ReactElement) {
   return render(<ModalProvider>{ui}</ModalProvider>);
 }
 
+async function openAmountEditor(user: ReturnType<typeof userEvent.setup>) {
+  await user.click(screen.getByRole('button', { name: /Edit amount to add for/ }));
+}
+
 describe('CountControl', () => {
   const onClearTotal = vi.fn(async () => {});
 
-  it('free-form: numeric input and add button; no minus when total is unset', () => {
+  it('free-form: tertiary trigger shows interval; spinbutton after edit click', async () => {
+    const user = userEvent.setup();
     renderWithModal(
       <CountControl
         interval={3}
@@ -30,9 +35,14 @@ describe('CountControl', () => {
         onClearTotal={onClearTotal}
       />,
     );
-    const input = screen.getByRole('spinbutton', { name: /Amount to add to/ }) as HTMLInputElement;
-    expect(input.value).toBe('3');
-    expect(screen.getByRole('button', { name: /Add amount to/ })).toBeTruthy();
+    const trigger = screen.getByRole('button', { name: /Edit amount to add for/ });
+    expect(trigger.textContent?.trim()).toBe('3');
+    expect(screen.queryByRole('spinbutton')).toBeNull();
+    await openAmountEditor(user);
+    const input = screen.getByRole('spinbutton') as HTMLInputElement;
+    expect(input.value).toBe('');
+    expect(screen.queryByRole('button', { name: /Add amount to/ })).toBeNull();
+    expect(screen.getByRole('button', { name: /Apply amount for/ })).toBeTruthy();
     expect(screen.queryByRole('button', { name: /Subtract amount from/ })).toBeNull();
   });
 
@@ -228,7 +238,8 @@ describe('CountControl', () => {
     expect(plusBtn.className).toContain('button--icon');
   });
 
-  it('input-between: middle field defaults to add and shows +5', () => {
+  it('input-between: tertiary trigger shows add step; spinbutton after edit click', async () => {
+    const user = userEvent.setup();
     renderWithModal(
       <CountControl
         interval={1}
@@ -240,12 +251,17 @@ describe('CountControl', () => {
         onClearTotal={onClearTotal}
       />,
     );
-    const input = screen.getByRole('spinbutton', { name: /Amount to add to/ }) as HTMLInputElement;
-    expect(input.value).toBe('5');
-    expect(screen.getByRole('button', { name: /Add 5 to/ }).textContent).toContain('+5');
+    const trigger = screen.getByRole('button', { name: /Edit amount to add for/ });
+    expect(trigger.textContent?.trim()).toBe('5');
+    expect(screen.queryByRole('spinbutton')).toBeNull();
+    await openAmountEditor(user);
+    const input = screen.getByRole('spinbutton') as HTMLInputElement;
+    expect(input.value).toBe('');
+    expect(screen.queryByRole('button', { name: /Add 5 to/ })).toBeNull();
+    expect(screen.getByRole('button', { name: /Apply amount for/ })).toBeTruthy();
   });
 
-  it('input-between: typed amount updates accessible name and sends delta', async () => {
+  it('input-between: typed amount sends delta via inner apply', async () => {
     const user = userEvent.setup();
     const onAddDelta = vi.fn(async () => {});
     renderWithModal(
@@ -259,10 +275,11 @@ describe('CountControl', () => {
         onClearTotal={onClearTotal}
       />,
     );
-    const input = screen.getByRole('spinbutton', { name: /Amount to add to/ });
+    await openAmountEditor(user);
+    const input = screen.getByRole('spinbutton');
     await user.clear(input);
     await user.type(input, '20');
-    await user.click(screen.getByRole('button', { name: /Add 20 to/ }));
+    await user.click(screen.getByRole('button', { name: /Apply amount for/ }));
     expect(onAddDelta).toHaveBeenCalledWith(20);
   });
 

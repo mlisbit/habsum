@@ -11,8 +11,10 @@
 @use 'components/day-nav';
 @use 'components/calendar';
 @use 'components/history-display';
+@use 'components/input-with-cta';
 @use 'components/habit-select';
 @use 'components/count-control';
+@use 'theme';
 @use 'components/habit-summation';
 @use 'components/habit-widget';
 @use 'components/footer';

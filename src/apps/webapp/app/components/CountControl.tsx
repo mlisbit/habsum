@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import type { AnimationEvent, CSSProperties } from 'react';
 import type { SummationOptions } from '@habsum/api-types';
 import { Button } from '~/core-components/Button';
+import { InputWithCTA } from '~/components/InputWithCTA';
 import { ModalActions, ModalBody, useModal } from '~/context/modal';
 import { useLongPress } from '~/utils/use-long-press';
 
@@ -47,8 +48,8 @@ function hideSummationStepLabels(sub: number, add: number): boolean {
   return sub === add;
 }
 
-function inputBetweenPlusShowsStepText(sub: number, add: number, plusMagnitude: number): boolean {
-  return plusMagnitude === add && sub !== add;
+function amountStrDiffersBaseline(amountStr: string, baseline: string): boolean {
+  return amountStr.trim() !== baseline.trim();
 }
 
 export type CountControlProps = {
@@ -179,35 +180,31 @@ export function CountControl({
   onClearTotal,
 }: CountControlProps) {
   const { simpleStepsMode, inputBetweenStepsMode } = getCountControlModes(summationSteps);
-  const showsAmountField = !simpleStepsMode;
 
   const [amountStr, setAmountStr] = useState(() =>
     summationSteps?.inputBetween ? String(summationSteps.add) : String(interval),
   );
   const [minusHovered, setMinusHovered] = useState(false);
   const [pulseKind, setPulseKind] = useState<'plus' | 'minus' | null>(null);
-  const mirrorRef = useRef<HTMLSpanElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [amountWidthPx, setAmountWidthPx] = useState<number>();
+  const [amountEditorOpen, setAmountEditorOpen] = useState(false);
   const { present, closeModal } = useModal();
 
   useEffect(() => {
     if (simpleStepsMode || inputBetweenStepsMode) return;
     setAmountStr(String(interval));
+    setAmountEditorOpen(false);
   }, [interval, simpleStepsMode, inputBetweenStepsMode]);
 
   useEffect(() => {
     if (!inputBetweenStepsMode || !summationSteps) return;
     setAmountStr(String(summationSteps.add));
+    setAmountEditorOpen(false);
   }, [inputBetweenStepsMode, summationSteps?.add]);
 
-  useLayoutEffect(() => {
-    if (!showsAmountField) return;
-    const m = mirrorRef.current;
-    if (!m) return;
-    const w = Math.ceil(m.getBoundingClientRect().width);
-    setAmountWidthPx(Math.max(w, 1));
-  }, [amountStr, showsAmountField]);
+  const openAmountEditor = useCallback(() => {
+    setAmountStr('');
+    setAmountEditorOpen(true);
+  }, []);
 
   const openAdjustModal = useCallback(() => {
     const tapHint =
@@ -245,8 +242,21 @@ export function CountControl({
     setAmountStr(String(interval));
   };
 
+  const revertAmountInput = () => {
+    if (inputBetweenStepsMode && summationSteps) {
+      setAmountStr(String(summationSteps.add));
+      return;
+    }
+    resetInputToInterval();
+  };
+
+  const handleAmountEditorRevert = () => {
+    revertAmountInput();
+    setAmountEditorOpen(false);
+  };
+
   const readAmountMagnitude = (fallback: number): number =>
-    parseAmountToNumber(inputRef.current?.value ?? amountStr, fallback);
+    parseAmountToNumber(amountStr, fallback);
 
   const applyDelta = async (delta: number, opts?: { pulse?: 'plus' | 'minus' }) => {
     const { pulse } = opts ?? {};
@@ -269,6 +279,7 @@ export function CountControl({
     if (!Number.isFinite(parsed)) return;
     const delta = Math.max(0, Math.trunc(parsed));
     await applyDelta(delta);
+    setAmountEditorOpen(false);
   };
 
   const effectiveTotal = displayTotal ?? 0;
@@ -278,11 +289,7 @@ export function CountControl({
     if (!showMinus) setMinusHovered(false);
   }, [showMinus]);
 
-  const amountClass = [
-    'count-control__amount',
-    'text-b-m',
-    minusHovered && showMinus ? 'text-error' : '',
-  ]
+  const amountInputClassName = ['text-b-m', minusHovered && showMinus ? 'text-error' : '']
     .filter(Boolean)
     .join(' ');
 
@@ -346,9 +353,10 @@ export function CountControl({
   if (inputBetweenStepsMode && summationSteps) {
     const { add: addStep, sub: subStep } = summationSteps;
     const hideStepNumbers = hideSummationStepLabels(subStep, addStep);
+    const baselineAmountStr = String(addStep);
+    const amountDirty = amountStrDiffersBaseline(amountStr, baselineAmountStr);
     const plusMag = readAmountMagnitude(addStep);
     const plusUsesDefaultStepLabel = plusMag === addStep;
-    const plusShowsStepText = inputBetweenPlusShowsStepText(subStep, addStep, plusMag);
 
     return (
       <div className="count-control">
@@ -356,7 +364,7 @@ export function CountControl({
           className={['count-control__steps', pulseClasses].filter(Boolean).join(' ')}
           onAnimationEnd={onPulseEnd}
         >
-          {showMinus ? (
+          {showMinus && !amountEditorOpen && !amountDirty ? (
             <span className="habit-summation__step-minus-wrap">
               <Button
                 type="secondary"
@@ -377,40 +385,31 @@ export function CountControl({
             </span>
           ) : null}
           <div className="count-control__amount-slot">
-            <span ref={mirrorRef} className="count-control__mirror text-b-m">
-              {amountStr === '' ? '\u00a0' : amountStr}
-            </span>
-            <input
-              ref={inputRef}
-              type="number"
-              min={0}
-              step={1}
-              className={amountClass}
-              style={amountWidthPx != null ? { width: `${amountWidthPx}px` } : undefined}
-              value={amountStr}
-              onChange={(e) => setAmountStr(e.target.value)}
-              disabled={pending}
-              inputMode="numeric"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  void submitParsedAmount(e.currentTarget.value);
-                }
-              }}
-              aria-label={`Amount to add to ${habitName}`}
-            />
+            {amountEditorOpen ? (
+              <InputWithCTA
+                value={amountStr}
+                dismissAlwaysVisible
+                onSubmit={(raw) => void submitParsedAmount(raw)}
+                onRevert={handleAmountEditorRevert}
+                disabled={pending}
+                inputClassName={amountInputClassName}
+                applyAriaLabel={`Apply amount for ${habitName}`}
+                revertAriaLabel={`Discard amount edit for ${habitName}`}
+              />
+            ) : (
+              <Button
+                type="tertiary"
+                size="small"
+                text={amountStr}
+                disabled={pending}
+                className="count-control__amount-trigger text-b-m"
+                aria-expanded={false}
+                aria-label={`Edit amount to add for ${habitName}`}
+                onClick={openAmountEditor}
+              />
+            )}
           </div>
-          {plusShowsStepText ? (
-            <Button
-              type="secondary"
-              size="small"
-              text={`+${addStep}`}
-              {...plusLongPress.pointerProps}
-              onClick={plusLongPress.wrapOnClick(() => void applyDelta(plusMag, { pulse: 'plus' }))}
-              disabled={pending}
-              aria-label={`Add ${addStep} to ${habitName}`}
-            />
-          ) : (
+          {!amountDirty && !amountEditorOpen ? (
             <Button
               type="secondary"
               size="small"
@@ -426,15 +425,18 @@ export function CountControl({
                   : `Add ${plusMag} to ${habitName}`
               }
             />
-          )}
+          ) : null}
         </div>
       </div>
     );
   }
 
+  const baselineAmountStrFree = String(interval);
+  const amountDirtyFree = amountStrDiffersBaseline(amountStr, baselineAmountStrFree);
+
   return (
     <div className="count-control">
-      {showMinus ? (
+      {showMinus && !amountEditorOpen && !amountDirtyFree ? (
         <Button
           type="secondary"
           size="small"
@@ -455,42 +457,45 @@ export function CountControl({
         className={['count-control__amount-slot', pulseClasses].filter(Boolean).join(' ')}
         onAnimationEnd={onPulseEnd}
       >
-        <span ref={mirrorRef} className="count-control__mirror text-b-m">
-          {amountStr === '' ? '\u00a0' : amountStr}
-        </span>
-        <input
-          ref={inputRef}
-          type="number"
-          min={0}
-          step={1}
-          className={amountClass}
-          style={amountWidthPx != null ? { width: `${amountWidthPx}px` } : undefined}
-          value={amountStr}
-          onChange={(e) => setAmountStr(e.target.value)}
-          disabled={pending}
-          inputMode="numeric"
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              void submitParsedAmount(e.currentTarget.value);
-            }
-          }}
-          aria-label={`Amount to add to ${habitName}`}
-        />
-      </div>
-      <Button
-        type="secondary"
-        size="small"
-        icon="plus"
-        circle
-        text=""
-        {...plusLongPress.pointerProps}
-        onClick={plusLongPress.wrapOnClick(
-          () => void applyDelta(readAmountMagnitude(interval), { pulse: 'plus' }),
+        {amountEditorOpen ? (
+          <InputWithCTA
+            value={amountStr}
+            dismissAlwaysVisible
+            onSubmit={(raw) => void submitParsedAmount(raw)}
+            onRevert={handleAmountEditorRevert}
+            disabled={pending}
+            inputClassName={amountInputClassName}
+            applyAriaLabel={`Apply amount for ${habitName}`}
+            revertAriaLabel={`Discard amount edit for ${habitName}`}
+          />
+        ) : (
+          <Button
+            type="tertiary"
+            size="small"
+            text={amountStr}
+            disabled={pending}
+            className="count-control__amount-trigger text-b-m"
+            aria-expanded={false}
+            aria-label={`Edit amount to add for ${habitName}`}
+            onClick={openAmountEditor}
+          />
         )}
-        disabled={pending}
-        aria-label={`Add amount to ${habitName}`}
-      />
+      </div>
+      {!amountDirtyFree && !amountEditorOpen ? (
+        <Button
+          type="secondary"
+          size="small"
+          icon="plus"
+          circle
+          text=""
+          {...plusLongPress.pointerProps}
+          onClick={plusLongPress.wrapOnClick(
+            () => void applyDelta(readAmountMagnitude(interval), { pulse: 'plus' }),
+          )}
+          disabled={pending}
+          aria-label={`Add amount to ${habitName}`}
+        />
+      ) : null}
     </div>
   );
 }

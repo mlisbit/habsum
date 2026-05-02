@@ -11,6 +11,7 @@ html[data-theme='dark'] {
   --foreground: #e8e8ea;
   --text-muted: #9aa0a6;
   --border: #272b36;
+  --input-background: color-mix(in srgb, var(--background-secondary) 86%, rgb(255 255 255) 14%);
   --text-link: #6ea8ff;
   --interactive-accent: #6ea8ff;
   --background-button-cta-primary: #6ea8ff;
@@ -35,6 +36,7 @@ html[data-theme='light'] {
   --foreground: #14161a;
   --text-muted: #5f6368;
   --border: #e3e5ea;
+  --input-background: color-mix(in srgb, var(--background-secondary) 94%, var(--background) 6%);
   --text-link: #2d6cdf;
   --interactive-accent: #2d6cdf;
   --background-button-cta-primary: #2d6cdf;

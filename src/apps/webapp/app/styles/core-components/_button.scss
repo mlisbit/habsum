@@ -39,6 +39,10 @@
   padding: functions.spacing(1, 2);
 }
 
+.button--tiny {
+  padding: functions.spacing(1);
+}
+
 .button--large {
   padding: functions.spacing(3, 5);
 }
@@ -83,6 +87,11 @@
 .button--icon.button--small {
   width: 2rem;
   height: 2rem;
+}
+
+.button--icon.button--tiny {
+  width: 1.5rem;
+  height: 1.5rem;
 }
 
 .button--icon.button--large {

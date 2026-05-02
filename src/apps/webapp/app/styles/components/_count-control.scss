@@ -4,6 +4,8 @@
   display: flex;
   gap: functions.spacing(2);
   align-items: center;
+  flex-shrink: 0;
+  min-inline-size: max-content;
 }
 
 .count-control__amount-slot {
@@ -11,6 +13,8 @@
   display: inline-flex;
   vertical-align: middle;
   transform-origin: inline-end center;
+  flex-shrink: 0;
+  min-inline-size: max-content;
 }
 
 .count-control__steps {
@@ -18,6 +22,8 @@
   gap: functions.spacing(2);
   align-items: center;
   transform-origin: center center;
+  flex-shrink: 0;
+  min-inline-size: max-content;
 }
 
 .count-control__pulse-plus {
@@ -56,25 +62,12 @@
   }
 }
 
-.count-control__mirror {
-  position: absolute;
-  inset-block-start: 0;
-  inset-inline-start: 0;
-  visibility: hidden;
-  pointer-events: none;
-  white-space: pre;
-  font: inherit;
-  padding-inline: functions.spacing(1);
-}
-
 .count-control__amount {
   box-sizing: content-box;
   font: inherit;
   margin: 0;
   padding-block: functions.spacing(1);
   padding-inline: functions.spacing(1);
-  border: none;
-  background: transparent;
   text-align: right;
   min-width: 0;
   appearance: textfield;
@@ -90,7 +83,7 @@
   }
 
   &:focus-visible {
-    border-radius: var(--border-radius-s);
+    border-radius: var(--border-radius-m);
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--foreground) 25%, transparent);
   }
 

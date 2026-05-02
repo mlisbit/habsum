@@ -1,11 +1,11 @@
 import type { ButtonHTMLAttributes } from 'react';
-import { Icon, type IconName } from './Icon';
+import { Icon, type IconName, ICON_SIZES_PX } from './Icon';
 
 export type ButtonIcon = IconName;
 
 type ButtonProps = {
   type: 'primary' | 'secondary' | 'tertiary';
-  size?: 'small' | 'medium' | 'large';
+  size?: keyof typeof ICON_SIZES_PX;
   icon?: IconName;
   circle?: boolean;
   text: string;

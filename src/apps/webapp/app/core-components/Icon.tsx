@@ -1,4 +1,5 @@
 import {
+  ArrowUp,
   ChevronLeft,
   ChevronRight,
   type LucideIcon,
@@ -6,6 +7,7 @@ import {
   PartyPopper,
   Plus,
   Settings,
+  X,
 } from 'lucide-react';
 
 /** Named icons usable with {@link Icon} (shared lucide mappings). */
@@ -15,6 +17,8 @@ const ICON_COMPONENTS = {
   chevronRight: ChevronRight,
   /** Same glyph as `chevronLeft`, for semantics (e.g. “back”). */
   chevronBack: ChevronLeft,
+  arrowUp: ArrowUp,
+  close: X,
   minus: Minus,
   plus: Plus,
   party: PartyPopper,
@@ -23,7 +27,7 @@ const ICON_COMPONENTS = {
 export type IconName = keyof typeof ICON_COMPONENTS;
 
 /** Default pixel heights per preset (used by `Button` and `Icon`). */
-export const ICON_SIZES_PX = { small: 16, medium: 18, large: 20 } as const;
+export const ICON_SIZES_PX = { tiny: 13, small: 16, medium: 18, large: 20 } as const;
 
 type IconProps = {
   /** Which glyph to render. */
