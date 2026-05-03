@@ -8,7 +8,7 @@ type ButtonProps = {
   size?: keyof typeof ICON_SIZES_PX;
   icon?: IconName;
   circle?: boolean;
-  text: string;
+  text?: string;
 } & Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'type' | 'children'>;
 
 export function Button({
@@ -20,14 +20,14 @@ export function Button({
   className,
   ...rest
 }: ButtonProps) {
-  const isIconOnly = icon != null && text === '';
+  const isIconOnly = icon != null && !text;
   const classes = [
     'button',
     visual === 'secondary' && 'button--secondary',
     visual === 'tertiary' && 'button--tertiary',
     size !== 'medium' && `button--${size}`,
     circle && isIconOnly && 'button--icon',
-    (icon === 'plus' || icon === 'minus') && circle && isIconOnly && `button--icon-stroke`,
+    circle && isIconOnly && 'button--circle',
     className,
   ]
     .filter(Boolean)

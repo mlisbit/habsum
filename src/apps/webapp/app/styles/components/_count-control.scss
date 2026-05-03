@@ -17,6 +17,16 @@
   min-inline-size: max-content;
 }
 
+.count-control__modal-input {
+  width: 100%;
+}
+
+.count-control__modal {
+  display: flex;
+  flex-direction: column;
+  gap: functions.spacing(2);
+}
+
 .count-control__steps {
   display: inline-flex;
   gap: functions.spacing(2);

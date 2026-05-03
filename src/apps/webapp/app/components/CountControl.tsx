@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { AnimationEvent, CSSProperties } from 'react';
+import type { AnimationEvent } from 'react';
 import type { SummationOptions } from '@habsum/api-types';
 import { Button } from '~/core-components/Button';
-import { InputWithCTA } from '~/components/InputWithCTA';
+import { Input } from '~/core-components/Input';
 import { ModalActions, ModalBody, useModal } from '~/context/modal';
 import { useLongPress } from '~/utils/use-long-press';
 
@@ -72,14 +72,6 @@ type SummationAdjustModalProps = {
   closeModal: () => void;
   onClearTotal: () => Promise<void>;
   onManualAdd: (delta: number) => Promise<void>;
-  /** Fixed-step habits only — informational */
-  tapHint?: { sub: number; add: number };
-};
-
-const summationAdjustModalInputStyle: CSSProperties = {
-  width: '100%',
-  marginTop: '8px',
-  boxSizing: 'border-box',
 };
 
 /** Long-press: enter a manual delta (+ or −); does not change configured tap steps */
@@ -89,65 +81,32 @@ function SummationAdjustModalContent({
   closeModal,
   onClearTotal,
   onManualAdd,
-  tapHint,
 }: SummationAdjustModalProps) {
-  const [draft, setDraft] = useState('');
-  const manualDelta = parseManualAdjustDelta(draft);
-  const canApply = manualDelta != null;
-
   return (
     <>
-      <ModalBody>
+      <ModalBody className="count-control__modal">
         <p id="modal-title" className="text-b-m">
           Adjust
         </p>
-        <p className="text-light text-b-m">{habitName}</p>
-        {tapHint ? (
-          <p className="text-light text-b-s">
-            Taps: −{tapHint.sub} / +{tapHint.add}
-          </p>
-        ) : null}
-        <label htmlFor="count-control-manual-add" className="text-b-s">
-          Amount (+ / −)
-        </label>
-        <input
-          id="count-control-manual-add"
+
+        <Input
           type="number"
-          step={1}
-          className="count-control__amount text-b-m"
-          style={summationAdjustModalInputStyle}
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          disabled={pending}
-          inputMode="numeric"
+          value=""
           placeholder="e.g. 12 or −3"
-          aria-label={`Manual change for ${habitName}`}
-        />
-      </ModalBody>
-      <ModalActions>
-        <Button
-          type="secondary"
-          size="small"
-          text="Cancel"
-          onClick={closeModal}
           disabled={pending}
-        />
-        <Button
-          type="secondary"
-          size="small"
-          text="Apply"
-          disabled={pending || !canApply}
-          onClick={() => {
-            if (manualDelta == null) return;
+          onSubmit={(raw) => {
+            const delta = parseManualAdjustDelta(raw);
+            if (delta == null) return;
             void (async () => {
               try {
-                await onManualAdd(manualDelta);
+                await onManualAdd(delta);
                 closeModal();
               } catch {
                 /* Parent surfaces error via SummationWidget */
               }
             })();
           }}
+          className="count-control__modal-input"
         />
         <Button
           type="secondary"
@@ -165,7 +124,14 @@ function SummationAdjustModalContent({
             })();
           }}
         />
-      </ModalActions>
+        <Button
+          type="secondary"
+          size="small"
+          text="Cancel"
+          onClick={closeModal}
+          disabled={pending}
+        />
+      </ModalBody>
     </>
   );
 }
@@ -207,11 +173,6 @@ export function CountControl({
   }, []);
 
   const openAdjustModal = useCallback(() => {
-    const tapHint =
-      simpleStepsMode && summationSteps
-        ? { sub: summationSteps.sub, add: summationSteps.add }
-        : undefined;
-
     present({
       content: (
         <SummationAdjustModalContent
@@ -220,7 +181,6 @@ export function CountControl({
           closeModal={closeModal}
           onClearTotal={onClearTotal}
           onManualAdd={onAddDelta}
-          tapHint={tapHint}
         />
       ),
     });
@@ -242,16 +202,12 @@ export function CountControl({
     setAmountStr(String(interval));
   };
 
-  const revertAmountInput = () => {
+  const closeAmountEditor = () => {
     if (inputBetweenStepsMode && summationSteps) {
       setAmountStr(String(summationSteps.add));
-      return;
+    } else {
+      resetInputToInterval();
     }
-    resetInputToInterval();
-  };
-
-  const handleAmountEditorRevert = () => {
-    revertAmountInput();
     setAmountEditorOpen(false);
   };
 
@@ -386,11 +342,12 @@ export function CountControl({
           ) : null}
           <div className="count-control__amount-slot">
             {amountEditorOpen ? (
-              <InputWithCTA
+              <Input
+                type="number"
                 value={amountStr}
-                dismissAlwaysVisible
+                dismissable
                 onSubmit={(raw) => void submitParsedAmount(raw)}
-                onRevert={handleAmountEditorRevert}
+                onReject={closeAmountEditor}
                 disabled={pending}
                 inputClassName={amountInputClassName}
                 applyAriaLabel={`Apply amount for ${habitName}`}
@@ -458,11 +415,12 @@ export function CountControl({
         onAnimationEnd={onPulseEnd}
       >
         {amountEditorOpen ? (
-          <InputWithCTA
+          <Input
+            type="number"
             value={amountStr}
-            dismissAlwaysVisible
+            dismissable
             onSubmit={(raw) => void submitParsedAmount(raw)}
-            onRevert={handleAmountEditorRevert}
+            onReject={closeAmountEditor}
             disabled={pending}
             inputClassName={amountInputClassName}
             applyAriaLabel={`Apply amount for ${habitName}`}

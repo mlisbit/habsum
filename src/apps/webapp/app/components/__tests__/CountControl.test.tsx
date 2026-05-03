@@ -153,7 +153,7 @@ describe('CountControl', () => {
       name: new RegExp(`^Manual change for ${habitName}$`),
     });
     fireEvent.change(modalInput, { target: { value: '12' } });
-    fireEvent.click(screen.getByRole('button', { name: /^Apply$/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Apply manual change for/ }));
 
     expect(onAddDelta).toHaveBeenCalledWith(12);
   });
@@ -181,7 +181,7 @@ describe('CountControl', () => {
       name: new RegExp(`^Manual change for ${habitName}$`),
     });
     fireEvent.change(modalInput, { target: { value: '-4' } });
-    fireEvent.click(screen.getByRole('button', { name: /^Apply$/ }));
+    fireEvent.click(screen.getByRole('button', { name: /Apply manual change for/ }));
 
     expect(onAddDelta).toHaveBeenCalledWith(-4);
   });

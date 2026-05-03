@@ -1,23 +1,30 @@
 @use 'reset';
 @use 'tokens';
+
+// foundation
 @use 'foundation/app';
 @use 'foundation/layout';
 @use 'foundation/text';
 @use 'foundation/number-input';
+
+// core components
 @use 'core-components/button';
+@use 'core-components/input';
 @use 'core-components/modal';
 @use 'core-components/progress';
 @use 'core-components/hover-layer';
+
+// components
 @use 'components/day-nav';
 @use 'components/calendar';
 @use 'components/history-display';
-@use 'components/input-with-cta';
 @use 'components/habit-select';
 @use 'components/count-control';
-@use 'theme';
 @use 'components/habit-summation';
 @use 'components/habit-widget';
 @use 'components/footer';
+
+// pages
 @use 'pages/settings';
 @use 'pages/config-page';
 @use 'pages/top-nav';
