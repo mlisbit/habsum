@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Calendar, type CalendarDataRender } from '~/components/Calendar';
 import { Button } from '~/core-components/Button';
+import { InfoText } from '~/core-components/InfoText';
 import { ProgressBar } from '~/core-components/ProgressBar';
 import { SingleSelectWidget, SummationWidget } from '~/components/widgets';
 import { getHabitDetail, patchHabit, type Habit } from '~/api.client';
@@ -245,7 +246,7 @@ export default function HabitDetailRoute() {
         </div>
 
         <div className="habit-history__widget">
-          {habitError ? <p className="warn text-b-s">{habitError}</p> : null}
+          {habitError ? <InfoText variant="error">{habitError}</InfoText> : null}
           {!habitError && habitData == null ? (
             <p className="text-light text-b-m" aria-busy>
               Loading habit data…

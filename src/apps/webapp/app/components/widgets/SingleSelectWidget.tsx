@@ -4,6 +4,7 @@ import type { HabitRowSingleSelect } from '@habsum/api-types';
 import { habitIdPathSegment } from '~/utils/habit-id';
 import { useLongPress } from '~/utils/use-long-press';
 import { Button } from '~/core-components/Button';
+import { InfoText } from '~/core-components/InfoText';
 import { HistoryDisplay } from '~/components/HistoryDisplay';
 import { ModalActions, ModalBody, useModal } from '~/context/modal';
 
@@ -121,7 +122,11 @@ export function SingleSelectWidget({
           })}
         </div>
       </div>
-      {error ? <p className="warn text-b-s habit-select__error">{error}</p> : null}
+      {error ? (
+        <InfoText variant="error" className="habit-select__error">
+          {error}
+        </InfoText>
+      ) : null}
       <HistoryDisplay history={habit.history} />
     </div>
   );

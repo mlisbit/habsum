@@ -68,10 +68,6 @@
   color: var(--text-error);
 }
 
-.warn {
-  color: var(--semantic-warning-fg);
-  background: var(--semantic-warning-bg);
-  border: 1px solid var(--semantic-warning-border);
-  padding: functions.spacing(1, 2);
-  border-radius: var(--border-radius-full);
+.text-success {
+  color: var(--text-success);
 }

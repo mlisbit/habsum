@@ -3,6 +3,7 @@ import { Link } from '@remix-run/react';
 import type { HabitRowSummation } from '@habsum/api-types';
 import { habitIdPathSegment } from '~/utils/habit-id';
 import { HistoryDisplay } from '~/components/HistoryDisplay';
+import { InfoText } from '~/core-components/InfoText';
 import { ProgressBar } from '~/core-components/ProgressBar';
 import { CountControl } from '~/components/CountControl';
 
@@ -88,7 +89,11 @@ export function SummationWidget({
           onClearTotal={() => runOp(() => onClearTotal())}
         />
       </div>
-      {error ? <p className="warn text-b-s habit-summation__error">{error}</p> : null}
+      {error ? (
+        <InfoText variant="error" className="habit-summation__error">
+          {error}
+        </InfoText>
+      ) : null}
       {goal != null ? (
         <ProgressBar
           value={total ?? 0}

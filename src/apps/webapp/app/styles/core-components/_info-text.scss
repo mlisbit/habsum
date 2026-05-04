@@ -1,0 +1,11 @@
+@use 'functions';
+
+.info-text {
+  display: flex;
+  align-items: center;
+  gap: functions.spacing(1);
+}
+
+.info-text__icon {
+  flex-shrink: 0;
+}

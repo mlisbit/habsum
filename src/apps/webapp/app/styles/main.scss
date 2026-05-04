@@ -6,10 +6,12 @@
 @use 'foundation/card';
 @use 'foundation/text';
 @use 'foundation/number-input';
+@use 'foundation/spacing-classes';
 
 // core components
 @use 'core-components/button';
 @use 'core-components/input';
+@use 'core-components/info-text';
 @use 'core-components/modal';
 @use 'core-components/progress';
 @use 'core-components/hover-layer';

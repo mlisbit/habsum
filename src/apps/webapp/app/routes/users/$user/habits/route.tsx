@@ -3,6 +3,7 @@ import { getHabits, patchHabit, type Habit } from '~/api.client';
 import { Footer } from '~/components/Footer';
 import { TopNav } from '~/components/TopNav';
 import { SingleSelectWidget, SummationWidget } from '~/components/widgets';
+import { InfoText } from '~/core-components/InfoText';
 import { clearSelectedUser } from '~/cookies.client';
 import { getProgress } from '~/utils/habit-helpers';
 import { toDateKey } from '@habsum/utils';
@@ -164,7 +165,7 @@ export default function HabitsPage() {
         progress={dayProgress}
       />
 
-      {error ? <p className="warn text-b-s">{error}</p> : null}
+      {error ? <InfoText variant="error">{error}</InfoText> : null}
 
       {!state ? (
         <p className="text-light text-b-m" aria-busy>

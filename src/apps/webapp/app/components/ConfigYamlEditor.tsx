@@ -4,6 +4,7 @@ import { yaml } from '@codemirror/lang-yaml';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { getUserConfig, putUserConfig } from '~/api.client';
 import { Button } from '~/core-components/Button';
+import { InfoText } from '~/core-components/InfoText';
 
 function usePrefersDark() {
   return useSyncExternalStore(
@@ -66,7 +67,7 @@ export function ConfigYamlEditor({ user }: ConfigYamlEditorProps) {
   }
 
   if (loadError) {
-    return <p className="warn text-b-s">{loadError}</p>;
+    return <InfoText variant="error">{loadError}</InfoText>;
   }
 
   return (
@@ -83,7 +84,11 @@ export function ConfigYamlEditor({ user }: ConfigYamlEditorProps) {
           disabled={!dirty || saving}
           onClick={onSave}
         />
-        {saveError ? <p className="warn text-b-s config-page__error">{saveError}</p> : null}
+        {saveError ? (
+          <InfoText variant="error" className="config-page__error">
+            {saveError}
+          </InfoText>
+        ) : null}
       </div>
       <div className="config-page__editor">
         <CodeMirror

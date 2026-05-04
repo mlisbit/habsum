@@ -27,6 +27,26 @@
   gap: functions.spacing(2);
 }
 
+.users-index__add-user-anchor {
+  display: flex;
+}
+
+.users-index__add-user-tooltip.hover-layer__panel {
+  min-width: unset;
+}
+
+.users-index__add-user-modal {
+  display: flex;
+  flex-direction: column;
+  gap: functions.spacing(2);
+  margin-block: functions.spacing(3);
+}
+
+.users-index__username-input {
+  inline-size: 100%;
+  min-inline-size: 0;
+}
+
 .users-index__error {
   margin-top: functions.spacing(2);
 }

@@ -346,6 +346,7 @@ export function CountControl({
                 type="number"
                 value={amountStr}
                 dismissable
+                alwaysDismissable
                 onSubmit={(raw) => void submitParsedAmount(raw)}
                 onReject={closeAmountEditor}
                 disabled={pending}

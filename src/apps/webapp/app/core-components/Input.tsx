@@ -15,6 +15,7 @@ export type InputProps = {
   onSubmit: (raw: string) => void;
   onReject?: () => void;
   dismissable?: boolean;
+  alwaysDismissable?: boolean;
   submittable?: boolean;
   placeholder?: string;
   disabled?: boolean;
@@ -34,8 +35,8 @@ export function Input({
   onReject,
   submittable = true,
   disabled = false,
+  alwaysDismissable = false,
   className,
-  dismissable = false,
   placeholder,
 }: InputProps) {
   const inputId = useId();
@@ -48,7 +49,7 @@ export function Input({
   const rejectFlashEndTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const canSubmit = draft.trim() !== '';
-  const revertOpen = canSubmit || dismissable;
+  const showDismissButton = alwaysDismissable || canSubmit;
 
   useLayoutEffect(() => {
     queueMicrotask(() => inputRef.current?.focus());
@@ -65,7 +66,8 @@ export function Input({
 
   const rootClass = [
     'input',
-    revertOpen && 'input--dismissable',
+    !submittable && 'input--not-submittable',
+    showDismissButton && 'input--dismissable',
     rejectFlash && 'input--reject-flash',
     className,
   ]
@@ -94,14 +96,18 @@ export function Input({
       onReject();
       return;
     }
-    setDraft(computeSeedDraft(value));
+    const nextDraft = computeSeedDraft(value);
+    setDraft(nextDraft);
+    if (!submittable) onSubmit(nextDraft);
   };
 
   const handleDraftChange = (raw: string) => {
     if (isNumberField && sanitizeDigitsOnly(raw) !== raw) {
       pulseRejectFlash();
     }
-    setDraft(isNumberField ? sanitizeDigitsOnly(raw) : raw);
+    const nextDraft = isNumberField ? sanitizeDigitsOnly(raw) : raw;
+    setDraft(nextDraft);
+    if (!submittable) onSubmit(nextDraft);
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -112,23 +118,27 @@ export function Input({
     }
     if (e.key === 'Enter') {
       e.preventDefault();
+      if (!submittable) return;
       if (!canSubmit) return;
       onSubmit(draft);
     }
   };
 
+  const dismissButton = showDismissButton ? (
+    <Button
+      type="tertiary"
+      size="tiny"
+      icon="close"
+      circle
+      disabled={disabled}
+      className="input__cta"
+      onClick={handleReject}
+    />
+  ) : null;
+
   return (
     <label className={rootClass} htmlFor={inputId}>
-      <Button
-        type="tertiary"
-        size="tiny"
-        icon="close"
-        circle
-        tabIndex={revertOpen ? undefined : -1}
-        disabled={disabled || !revertOpen}
-        className="input__cta"
-        onClick={handleReject}
-      />
+      {submittable ? dismissButton : null}
       <input
         ref={inputRef}
         id={inputId}
@@ -144,6 +154,7 @@ export function Input({
         disabled={disabled}
         onKeyDown={handleKeyDown}
       />
+      {!submittable ? dismissButton : null}
       {submittable && (
         <Button
           type="primary"
