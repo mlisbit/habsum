@@ -10,18 +10,22 @@ export default function UserSettingsLayout() {
   return (
     <div className="settings">
       <aside className="settings__sidebar">
-        <Button
-          type="secondary"
-          icon="chevronBack"
-          circle
-          text=""
-          title="Back to habits"
-          aria-label="Back to habits"
-          onClick={() => window.location.assign(`/users/${encodeURIComponent(user ?? '')}/habits`)}
-        />
+        <div className="flex align-items-center mb-3">
+          <Button
+            type="tertiary"
+            icon="chevronBack"
+            circle
+            title="Back to habits"
+            aria-label="Back to habits"
+            className="mr-1"
+            onClick={() =>
+              window.location.assign(`/users/${encodeURIComponent(user ?? '')}/habits`)
+            }
+          />
 
-        <h1 className="settings__title text-h-l">Settings</h1>
-        <div className="text-light text-b-m settings__user-line">{user}</div>
+          <h1 className="text-h-l">{user}'s settings</h1>
+        </div>
+
         <nav className="settings__nav">
           <Link
             className={`settings__link text-b-l${
@@ -41,7 +45,7 @@ export default function UserSettingsLayout() {
           </Link>
         </nav>
       </aside>
-      <main className="settings__main">
+      <main className="card pt-3">
         <Outlet />
       </main>
     </div>

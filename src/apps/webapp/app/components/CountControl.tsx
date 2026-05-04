@@ -94,6 +94,7 @@ function SummationAdjustModalContent({
           value=""
           placeholder="e.g. 12 or −3"
           disabled={pending}
+          submittable
           onSubmit={(raw) => {
             const delta = parseManualAdjustDelta(raw);
             if (delta == null) return;
@@ -347,6 +348,7 @@ export function CountControl({
                 value={amountStr}
                 dismissable
                 alwaysDismissable
+                submittable
                 onSubmit={(raw) => void submitParsedAmount(raw)}
                 onReject={closeAmountEditor}
                 disabled={pending}
@@ -420,6 +422,7 @@ export function CountControl({
             type="number"
             value={amountStr}
             dismissable
+            submittable
             onSubmit={(raw) => void submitParsedAmount(raw)}
             onReject={closeAmountEditor}
             disabled={pending}

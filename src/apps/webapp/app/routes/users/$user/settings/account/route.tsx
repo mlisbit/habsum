@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { deleteUser, patchUser, purgeUserData } from '~/api.client';
 import { Button } from '~/core-components/Button';
 import { setSelectedUser } from '~/cookies.client';
+import { Input } from '~/core-components/Input';
 
 export default function UserSettingsAccount() {
   const { user } = useParams();
@@ -44,16 +45,17 @@ export default function UserSettingsAccount() {
             }
           }}
         >
-          <input
+          <Input
             className="account-page__rename-input"
             value={nextName}
-            onChange={(e) => setNextName(e.target.value)}
+            onChange={setNextName}
             placeholder="username"
             autoCapitalize="none"
             autoCorrect="off"
             spellCheck={false}
             inputMode="text"
           />
+
           <button type="submit" style={{ display: 'none' }} aria-hidden />
           <Button
             type="primary"
@@ -84,8 +86,9 @@ export default function UserSettingsAccount() {
           totals, selections, legacy totals). YAML config is not removed.
         </p>
         <Button
-          type="primary"
+          type="secondary"
           text={busy ? 'Purging…' : 'Purge all data'}
+          className="mr-2"
           disabled={!user || busy}
           onClick={async () => {
             if (!user) return;

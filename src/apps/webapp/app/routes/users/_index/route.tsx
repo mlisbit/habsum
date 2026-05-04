@@ -48,7 +48,7 @@ function AddUserModal({ onUsersLoaded, onClose }: AddUserModalProps) {
           disabled={isCreating}
           dismissable
           submittable={false}
-          onSubmit={setUsername}
+          onChange={setUsername}
         />
         {error ? <InfoText variant="error">{error}</InfoText> : null}
       </ModalBody>

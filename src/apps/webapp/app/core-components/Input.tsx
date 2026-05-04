@@ -1,5 +1,5 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
-import type { KeyboardEvent } from 'react';
+import type { InputHTMLAttributes, KeyboardEvent } from 'react';
 import { Button } from '~/core-components/Button';
 
 function sanitizeDigitsOnly(raw: string): string {
@@ -9,10 +9,14 @@ function sanitizeDigitsOnly(raw: string): string {
 /** Must match `input--reject-flash` animation duration in SCSS. */
 const REJECT_FLASH_MS = 480;
 
-export type InputProps = {
+export type InputProps = Omit<
+  InputHTMLAttributes<HTMLInputElement>,
+  'type' | 'value' | 'onSubmit' | 'onChange' | 'className' | 'disabled' | 'placeholder'
+> & {
   type?: 'string' | 'number';
   value?: string;
-  onSubmit: (raw: string) => void;
+  onChange?: (raw: string) => void;
+  onSubmit?: (raw: string) => void;
   onReject?: () => void;
   dismissable?: boolean;
   alwaysDismissable?: boolean;
@@ -20,6 +24,9 @@ export type InputProps = {
   placeholder?: string;
   disabled?: boolean;
   className?: string;
+  inputClassName?: string;
+  applyAriaLabel?: string;
+  revertAriaLabel?: string;
 };
 
 /**
@@ -31,13 +38,22 @@ export type InputProps = {
 export function Input({
   value = '',
   type: fieldType = 'string',
+  onChange,
   onSubmit,
   onReject,
-  submittable = true,
+  dismissable = false,
+  submittable = false,
   disabled = false,
   alwaysDismissable = false,
   className,
+  inputClassName,
+  applyAriaLabel,
+  revertAriaLabel,
   placeholder,
+  autoComplete,
+  inputMode,
+  pattern,
+  ...inputProps
 }: InputProps) {
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -48,8 +64,12 @@ export function Input({
   const [rejectFlash, setRejectFlash] = useState(false);
   const rejectFlashEndTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
+  useEffect(() => {
+    setDraft(fieldType === 'number' ? sanitizeDigitsOnly(value) : value);
+  }, [fieldType, value]);
+
   const canSubmit = draft.trim() !== '';
-  const showDismissButton = alwaysDismissable || canSubmit;
+  const showDismissButton = alwaysDismissable || (dismissable && canSubmit);
 
   useLayoutEffect(() => {
     queueMicrotask(() => inputRef.current?.focus());
@@ -98,7 +118,7 @@ export function Input({
     }
     const nextDraft = computeSeedDraft(value);
     setDraft(nextDraft);
-    if (!submittable) onSubmit(nextDraft);
+    if (!submittable) onChange?.(nextDraft);
   };
 
   const handleDraftChange = (raw: string) => {
@@ -107,7 +127,7 @@ export function Input({
     }
     const nextDraft = isNumberField ? sanitizeDigitsOnly(raw) : raw;
     setDraft(nextDraft);
-    if (!submittable) onSubmit(nextDraft);
+    if (!submittable) onChange?.(nextDraft);
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -120,7 +140,7 @@ export function Input({
       e.preventDefault();
       if (!submittable) return;
       if (!canSubmit) return;
-      onSubmit(draft);
+      onSubmit?.(draft);
     }
   };
 
@@ -132,6 +152,7 @@ export function Input({
       circle
       disabled={disabled}
       className="input__cta"
+      aria-label={revertAriaLabel}
       onClick={handleReject}
     />
   ) : null;
@@ -140,15 +161,16 @@ export function Input({
     <label className={rootClass} htmlFor={inputId}>
       {submittable ? dismissButton : null}
       <input
+        {...inputProps}
         ref={inputRef}
         id={inputId}
         type="text"
         placeholder={placeholder}
-        inputMode={isNumberField ? 'numeric' : undefined}
-        pattern={isNumberField ? '[0-9]*' : undefined}
-        autoComplete={isNumberField ? 'off' : undefined}
+        inputMode={isNumberField ? 'numeric' : inputMode}
+        pattern={isNumberField ? '[0-9]*' : pattern}
+        autoComplete={isNumberField ? 'off' : autoComplete}
         aria-valuemin={fieldType === 'number' ? 0 : undefined}
-        className="input__input"
+        className={['input__input', inputClassName].filter(Boolean).join(' ')}
         value={draft}
         onChange={(e) => handleDraftChange(e.target.value)}
         disabled={disabled}
@@ -163,9 +185,10 @@ export function Input({
           circle
           disabled={disabled || !canSubmit}
           className="input__cta"
+          aria-label={applyAriaLabel}
           onClick={() => {
             if (!canSubmit) return;
-            onSubmit(draft);
+            onSubmit?.(draft);
           }}
         />
       )}

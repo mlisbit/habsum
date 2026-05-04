@@ -49,7 +49,7 @@
     {
       "files": [
         "src/apps/webapp/app/styles/foundation/_text.scss",
-        "src/apps/webapp/app/styles/foundation/_layout.scss"
+        "src/apps/webapp/app/styles/foundation/_atomic.scss"
       ],
       "rules": {
         "habsum/bem-block-matches-filename": null,
