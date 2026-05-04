@@ -1,10 +1,41 @@
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
+import { autocompletion, type Completion, type CompletionContext } from '@codemirror/autocomplete';
 import { yaml } from '@codemirror/lang-yaml';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { getUserConfig, putUserConfig } from '~/api.client';
 import { Button } from '~/core-components/Button';
 import { InfoText } from '~/core-components/InfoText';
+
+const HABIT_TYPE_COMPLETIONS: Completion[] = [
+  {
+    label: 'summation',
+    type: 'constant',
+    detail: 'numeric habit',
+    info: 'Tracks a numeric total. Optional summation_options can configure fixed subtract/add steps.',
+  },
+  {
+    label: 'single_select',
+    type: 'constant',
+    detail: 'choice habit',
+    info: 'Tracks one selected option. Use options to define the allowed choices.',
+  },
+];
+
+function habitTypeCompletion(context: CompletionContext) {
+  const line = context.state.doc.lineAt(context.pos);
+  const cursorInLine = context.pos - line.from;
+  const beforeCursor = line.text.slice(0, cursorInLine);
+  const match = beforeCursor.match(/^(\s*type:\s*)([\w-]*)$/);
+
+  if (!match) return null;
+
+  return {
+    from: line.from + match[1].length,
+    options: HABIT_TYPE_COMPLETIONS,
+    validFor: /^[\w-]*$/,
+  };
+}
 
 function usePrefersDark() {
   return useSyncExternalStore(
@@ -94,7 +125,7 @@ export function ConfigYamlEditor({ user }: ConfigYamlEditorProps) {
         <CodeMirror
           value={text}
           onChange={setText}
-          extensions={[yaml()]}
+          extensions={[yaml(), autocompletion({ override: [habitTypeCompletion] })]}
           height="100%"
           minHeight="min(60vh, 640px)"
           theme={prefersDark ? oneDark : 'light'}
