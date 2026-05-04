@@ -26,7 +26,7 @@ export function Button({
     visual === 'secondary' && 'button--secondary',
     visual === 'tertiary' && 'button--tertiary',
     size !== 'medium' && `button--${size}`,
-    circle && isIconOnly && 'button--icon',
+    isIconOnly && 'button--icon',
     circle && isIconOnly && 'button--circle',
     className,
   ]

@@ -3,6 +3,13 @@
 /** Matches habits layout wide breakpoint (`useWideHabitsLayout`). */
 $habit-step-sub-hover-min-width: 721px;
 
+.habit-summation__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: functions.spacing(3);
+}
+
 .habit-summation__step-minus-wrap {
   display: inline-flex;
   flex-shrink: 0;

@@ -1,5 +1,12 @@
 @use 'functions';
 
+.habit-select__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: functions.spacing(3);
+}
+
 .habit-select__options {
   display: flex;
   gap: functions.spacing(2);

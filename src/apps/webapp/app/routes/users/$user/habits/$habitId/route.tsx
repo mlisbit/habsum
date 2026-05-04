@@ -210,7 +210,7 @@ export default function HabitDetailRoute() {
 
   return (
     <div>
-      <div className="header-row">
+      <div className="habit-history__header">
         <Button
           type="secondary"
           icon="chevronBack"

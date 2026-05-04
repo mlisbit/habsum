@@ -1,8 +1,24 @@
 @use 'functions';
 
-// Block: users-index (layout: .container, .header-row, .card, .row)
+// Block: users-index (layout: .container, .card)
 .users-index {
-  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+}
+
+.users-index__card {
+  display: flex;
+  flex-flow: column;
+  min-width: 400px;
+}
+
+.users-index__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: functions.spacing(3);
 }
 
 .users-index__actions {
@@ -13,4 +29,11 @@
 
 .users-index__error {
   margin-top: functions.spacing(2);
+}
+
+.users-index__user-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: functions.spacing(3);
 }

@@ -1,6 +1,13 @@
 @use 'functions';
 
 // app/routes/users/$user/habits/$habitId/route.tsx
+.habit-history__header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: functions.spacing(3);
+}
+
 .habit-history {
   display: grid;
   grid-template-columns: 1fr;

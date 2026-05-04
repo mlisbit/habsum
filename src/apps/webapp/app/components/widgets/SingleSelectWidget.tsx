@@ -82,7 +82,7 @@ export function SingleSelectWidget({
         .filter(Boolean)
         .join(' ')}
     >
-      <div className="row">
+      <div className="habit-select__row">
         <div>
           <h2 className="text-h-l">
             <Link className="habit-widget__title text-h-l" to={to}>
