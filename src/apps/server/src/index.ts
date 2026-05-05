@@ -19,6 +19,7 @@ import {
   renameUserConfigFile,
   deleteUserConfigFile,
   loadUserConfig,
+  ConfigValidationError,
   readUserConfigFileText,
   writeUserConfigFileText,
 } from './config.js';
@@ -27,13 +28,14 @@ import {
   addToTotal,
   closeDb,
   deleteDailySelect,
-  deleteDailyTotal,
+  deleteSummationEventsForDay,
   getAllSelects,
   getAllTotals,
   getFirstDate,
   getHabitFirstDate,
   getSelect,
   getSeries,
+  getSummationEvents,
   getSummationDayTotal,
   purgeUserData,
   setSelect,
@@ -75,6 +77,22 @@ function isSafeConfigUserId(user: string): boolean {
   if (user.length === 0 || user.length > 200) return false;
   if (/[/\\]/.test(user) || user.includes('..')) return false;
   return true;
+}
+
+function loadUserConfigForRequest(user: string, res: Response) {
+  try {
+    const config = loadUserConfig(user);
+    if (!config) {
+      res.status(404).json({ error: 'user not found' });
+    }
+    return config;
+  } catch (e) {
+    if (e instanceof ConfigValidationError) {
+      res.status(400).json({ error: e.message });
+      return null;
+    }
+    throw e;
+  }
 }
 
 const app = express();
@@ -163,8 +181,8 @@ app.get(
   '/users/:user/habits',
   (req: Request<{ user: string }, unknown, unknown, { date?: string }>, res: Response) => {
     const { user } = req.params;
-    const config = loadUserConfig(user);
-    if (!config) return res.status(404).json({ error: 'user not found' });
+    const config = loadUserConfigForRequest(user, res);
+    if (!config) return;
 
     const firstDate = getFirstDate(user);
     const date = parseDateParam(req.query.date) ?? todayUtc();
@@ -223,8 +241,8 @@ app.get(
     const habitId = typeof req.query.habitId === 'string' ? req.query.habitId : '';
     if (!habitId) return res.status(400).json({ error: 'habitId is required' });
 
-    const config = loadUserConfig(user);
-    if (!config) return res.status(404).json({ error: 'user not found' });
+    const config = loadUserConfigForRequest(user, res);
+    if (!config) return;
 
     const habitDef = config.habits.find((h) => dasherize(h.name) === habitId);
     if (!habitDef) {
@@ -249,20 +267,24 @@ app.get(
                 } satisfies Habit,
               ],
             }))
-          : getAllTotals(user, habitName).map((r) => ({
-              day: r.date,
-              habits: [
-                {
-                  name: habitName,
-                  type: 'summation',
-                  goal: habitDef.goal ?? null,
-                  total: r.total,
-                  ...(habitDef.summationOptions
-                    ? { summationOptions: habitDef.summationOptions }
-                    : {}),
-                } satisfies Habit,
-              ],
-            })),
+          : getAllTotals(user, habitName).map((r) => {
+              const events = getSummationEvents(user, habitName, r.date);
+              return {
+                day: r.date,
+                habits: [
+                  {
+                    name: habitName,
+                    type: 'summation',
+                    goal: habitDef.goal ?? null,
+                    total: r.total,
+                    events,
+                    ...(habitDef.summationOptions
+                      ? { summationOptions: habitDef.summationOptions }
+                      : {}),
+                  } satisfies Habit,
+                ],
+              };
+            }),
     };
 
     const body: HabitDetailResponse = {
@@ -294,8 +316,8 @@ app.patch(
   '/users/:user/habits',
   (req: Request<{ user: string }, unknown, PatchBody, { date?: string }>, res: Response) => {
     const { user } = req.params;
-    const config = loadUserConfig(user);
-    if (!config) return res.status(404).json({ error: 'user not found' });
+    const config = loadUserConfigForRequest(user, res);
+    if (!config) return;
 
     const date = parseDateParam(req.query.date) ?? todayUtc();
 
@@ -347,12 +369,13 @@ app.patch(
     const mode = typeof action === 'string' ? action : 'add';
 
     if (mode === 'clear') {
-      deleteDailyTotal(user, habit, date);
+      deleteSummationEventsForDay(user, habit, date);
       const out: PatchHabitResponse = {
         user,
         date,
         habit,
         total: null,
+        events: [],
         type: known.type,
         goal: known.goal,
       };
@@ -364,11 +387,15 @@ app.patch(
       return res.status(400).json({ error: 'total must be a number' });
     }
 
-    let next: number;
+    let next: number | null;
+    let events = getSummationEvents(user, habit, date);
     if (mode === 'add') {
-      next = addToTotal(user, habit, date, numericTotal);
+      const result = addToTotal(user, habit, date, numericTotal);
+      next = result.total;
+      events = result.event ? [...events, result.event] : events;
     } else if (mode === 'set') {
       next = setTotal(user, habit, date, numericTotal);
+      events = getSummationEvents(user, habit, date);
     } else {
       return res.status(400).json({ error: `unknown action "${mode}"` });
     }
@@ -378,6 +405,7 @@ app.patch(
       date,
       habit,
       total: next,
+      events,
       type: known.type,
       goal: known.goal,
     };
@@ -418,8 +446,8 @@ app.put(
 
 app.delete('/users/:user/data', (req: Request<{ user: string }>, res: Response) => {
   const { user } = req.params;
-  const config = loadUserConfig(user);
-  if (!config) return res.status(404).json({ error: 'user not found' });
+  const config = loadUserConfigForRequest(user, res);
+  if (!config) return;
   purgeUserData(user);
   const body: PurgeUserDataResponse = { ok: true, user };
   res.json(body);

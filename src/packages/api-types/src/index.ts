@@ -30,6 +30,13 @@ export type SummationOptions = {
   inputBetween?: boolean;
 };
 
+export type SummationEvent = {
+  id: number;
+  date: string;
+  amount: number;
+  createdAt: string;
+};
+
 /** A summation row from `GET /users/:user/habits` */
 export type HabitRowSummation = {
   name: string;
@@ -37,6 +44,8 @@ export type HabitRowSummation = {
   goal: number | null;
   /** Logged total for the requested day; `null` means no row stored (distinct from explicit `0`). */
   total: number | null;
+  /** Individual events for detail views. Omitted from list views. */
+  events?: SummationEvent[];
   /** Fixed +/− amounts from config (`summation_options`); omit for free-form count control. */
   summationOptions?: SummationOptions;
   history?: HabitHistory;
@@ -90,6 +99,7 @@ export type PatchHabitResponse =
       date: string;
       habit: string;
       total: number | null;
+      events?: SummationEvent[];
       type: 'summation';
       goal: number | null;
     };

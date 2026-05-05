@@ -51,14 +51,23 @@ type RawHabit = {
   /** `[subtract, add]` or `{ sub, add }` / `{ add, sub }` */
   summation_options?: unknown;
   summationOptions?: unknown;
-  history?:
-    | { period?: string; display?: 'average' }
-    | Array<{ period?: string } | { display?: 'average' }>;
+  history?: { period?: unknown; display?: unknown };
 };
 
 type RawConfig = {
   habits?: Record<string, RawHabit>;
 };
+
+export class ConfigValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ConfigValidationError';
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value != null && typeof value === 'object' && !Array.isArray(value);
+}
 
 export function listUsers(): string[] {
   if (!existsSync(USERS_DIR)) {
@@ -106,6 +115,14 @@ export function writeUserConfigFileText(
     return { ok: false, error: 'config must be a yaml mapping' };
   }
   try {
+    parseUserConfig(user, parsed);
+  } catch (e) {
+    if (e instanceof ConfigValidationError) {
+      return { ok: false, error: e.message };
+    }
+    return { ok: false, error: e instanceof Error ? e.message : 'invalid config' };
+  }
+  try {
     writeFileSync(path, content, 'utf8');
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : 'write failed' };
@@ -118,23 +135,39 @@ export function loadUserConfig(user: string): UserConfig | null {
   if (!path) return null;
 
   const raw = readFileSync(path, 'utf8');
-  const parsed = (yaml.load(raw) as RawConfig | null) ?? {};
-  const habits = parsed.habits ?? {};
+  const parsed = yaml.load(raw);
+
+  return parseUserConfig(user, parsed);
+}
+
+function parseUserConfig(user: string, parsed: unknown): UserConfig {
+  if (parsed != null && !isRecord(parsed)) {
+    throw new ConfigValidationError('config must be a yaml mapping');
+  }
+  const rawConfig = (parsed ?? {}) as RawConfig;
+  const habits = rawConfig.habits ?? {};
+  if (!isRecord(habits)) {
+    throw new ConfigValidationError('habits must be a yaml mapping');
+  }
 
   return {
     user,
     habits: Object.entries(habits).map(([name, def]) => {
-      const type = def?.type ?? 'summation';
+      if (!isRecord(def)) {
+        throw new ConfigValidationError(`habit "${name}" must be a yaml mapping`);
+      }
+      const rawHabit = def as RawHabit;
+      const type = rawHabit.type ?? 'summation';
       return {
         name,
         type,
-        goal: def?.goal ?? null,
+        goal: rawHabit.goal ?? null,
         options:
-          type === 'single_select' && Array.isArray(def?.options)
-            ? def.options.filter((x) => typeof x === 'string')
+          type === 'single_select' && Array.isArray(rawHabit.options)
+            ? rawHabit.options.filter((x) => typeof x === 'string')
             : undefined,
-        summationOptions: type === 'summation' ? parseSummationOptions(def) : undefined,
-        history: normalizeHistory(def?.history),
+        summationOptions: type === 'summation' ? parseSummationOptions(rawHabit) : undefined,
+        history: normalizeHistory(rawHabit.history, name),
       };
     }),
   };
@@ -183,29 +216,27 @@ function parseSummationOptions(def: RawHabit): SummationOptions | undefined {
   return inputBetween ? { add: addN, sub: subN, inputBetween: true } : { add: addN, sub: subN };
 }
 
-function normalizeHistory(raw: RawHabit['history']): HabitDef['history'] | undefined {
+function normalizeHistory(
+  raw: RawHabit['history'],
+  habitName: string,
+): HabitDef['history'] | undefined {
   if (!raw) return undefined;
 
-  // Support either:
-  // history: { period: 1w, display: average }
-  // OR the YAML list style the repo currently uses:
-  // history:
-  //   - period: 1w
-  //   - display: average
-  const period = Array.isArray(raw)
-    ? (raw.find((x) => typeof (x as any)?.period === 'string') as { period?: string } | undefined)
-        ?.period
-    : raw.period;
-  const display = Array.isArray(raw)
-    ? (
-        raw.find((x) => typeof (x as any)?.display === 'string') as
-          | { display?: 'average' }
-          | undefined
-      )?.display
-    : raw.display;
+  if (!isRecord(raw)) {
+    throw new ConfigValidationError(
+      `habit "${habitName}" history must be a yaml mapping with period and display`,
+    );
+  }
 
-  if (typeof period !== 'string' || period.length === 0) return undefined;
-  if (display !== 'average') return undefined;
+  const { period, display } = raw;
+  if (typeof period !== 'string' || period.length === 0) {
+    throw new ConfigValidationError(
+      `habit "${habitName}" history.period must be a non-empty string`,
+    );
+  }
+  if (display !== 'average') {
+    throw new ConfigValidationError(`habit "${habitName}" history.display must be "average"`);
+  }
   return { period, display: 'average' };
 }
 

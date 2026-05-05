@@ -16,6 +16,16 @@ function withoutHistory<T extends Habit>(habit: T): T {
   return rest as T;
 }
 
+function formatEventAmount(amount: number) {
+  return amount > 0 ? `+${amount}` : String(amount);
+}
+
+function formatEventTime(createdAt: string) {
+  const date = new Date(`${createdAt.replace(' ', 'T')}Z`);
+  if (Number.isNaN(date.getTime())) return createdAt;
+  return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
+
 function upsertDayRow(
   rows: Array<{ day: string; habits: Habit[] }>,
   day: string,
@@ -109,6 +119,13 @@ export default function HabitDetailRoute() {
     } satisfies Habit);
   }, [habitData, effectiveDate]);
 
+  const selectedSummationEvents = useMemo(() => {
+    if (!habitData || habitData.habitType !== 'summation') return [];
+    const row = habitData.data.user.find((r) => r.day === effectiveDate);
+    const habit = row?.habits.find((h) => h.name === habitData.habitName);
+    return habit?.type === 'summation' ? (habit.events ?? []) : [];
+  }, [habitData, effectiveDate]);
+
   const onHabitPatched = (updated: Habit) => {
     setHabitData((prev) => {
       if (!prev) return prev;
@@ -130,6 +147,7 @@ export default function HabitDetailRoute() {
               type: 'summation',
               goal: updated.goal,
               total: updated.total,
+              ...(updated.events ? { events: updated.events } : {}),
               ...(prevHabit?.type === 'summation' && prevHabit.summationOptions != null
                 ? { summationOptions: prevHabit.summationOptions }
                 : prev.habitSummationOptions != null
@@ -296,6 +314,25 @@ export default function HabitDetailRoute() {
                 }}
               />
             )
+          ) : null}
+          {!habitError && habitData?.habitType === 'summation' ? (
+            <div className="card habit-history__events">
+              <h2 className="text-h-m">Events for {effectiveDate}</h2>
+              {selectedSummationEvents.length > 0 ? (
+                <ul className="habit-history__events-list">
+                  {selectedSummationEvents.map((event) => (
+                    <li key={event.id} className="habit-history__event">
+                      <span className="text-h-m">{formatEventAmount(event.amount)}</span>
+                      <span className="text-light text-b-m">
+                        {formatEventTime(event.createdAt)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-light text-b-m">No summation events recorded for this day.</p>
+              )}
+            </div>
           ) : null}
         </div>
       </div>
