@@ -34,7 +34,7 @@
   },
   "lint-staged": {
     "*.{css,scss}": [
-      "stylelint --fix",
+      "stylelint --fix --allow-empty-input",
       "prettier --write"
     ],
     "*.{js,jsx,ts,tsx,json,md,yml,yaml,html}": [

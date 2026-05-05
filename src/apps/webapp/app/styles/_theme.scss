@@ -1,0 +1,22 @@
+// Border-box globally: every element and generated pseudo-elements. `*` does not hit
+// `::backdrop` (top-layer pseudo for `<dialog>`), so declare it separately.
+*,
+*::before,
+*::after,
+::backdrop {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  font-family: var(--font-sans);
+}
+
+a {
+  color: var(--text-link);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}

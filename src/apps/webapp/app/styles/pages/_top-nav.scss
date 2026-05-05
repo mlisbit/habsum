@@ -138,6 +138,14 @@ $back-button-slot: 2.25rem; // matches `.button.button--icon` width
   margin-bottom: 0;
 }
 
+.top-nav__actionable {
+  text-align: right;
+
+  &:empty {
+    position: absolute;
+  }
+}
+
 @media (max-width: 840px) {
   .top-nav {
     flex-direction: column;

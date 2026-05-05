@@ -58,9 +58,11 @@ export function TopNav({
 }: TopNavProps) {
   const countdown = useTimeUntilEndOfDayLabel(effectiveDate, tzOffsetMinutes);
   const today = useMemo(() => toDateKey(new Date(), tzOffsetMinutes), [tzOffsetMinutes]);
-  const prevDisabled = firstDate == null || effectiveDate <= firstDate;
   const nextDisabled = effectiveDate >= today;
-  const showJumpToToday = Math.abs(diffDays(effectiveDate, today, tzOffsetMinutes)) > 7;
+  const showBeforeDataNotice = firstDate != null && effectiveDate < firstDate;
+
+  const showJumpToToday =
+    Math.abs(diffDays(effectiveDate, today, tzOffsetMinutes)) > 1 || showBeforeDataNotice;
 
   const averageCompletionPercent = useMemo(() => {
     const { done, total } = progress.total;
@@ -176,7 +178,6 @@ export function TopNav({
                 title="Previous day"
                 aria-label="Previous day"
                 onClick={() => onChangeDate(addDays(effectiveDate, -1, tzOffsetMinutes))}
-                disabled={prevDisabled}
               />
               <Button
                 type="tertiary"
@@ -190,16 +191,19 @@ export function TopNav({
                 disabled={nextDisabled}
               />
             </div>
-            {showJumpToToday ? (
-              <button
-                type="button"
-                className="day-nav__jump text-b-s text-light"
-                onClick={() => onChangeDate(today)}
-              >
-                Jump to today
-              </button>
-            ) : null}
           </div>
+        </div>
+        <div className="top-nav__actionable text-b-s text-light">
+          {showBeforeDataNotice ? <span className="">No data past this day. </span> : null}
+          {showJumpToToday ? (
+            <button
+              type="button"
+              className="day-nav__jump text-b-s text-light"
+              onClick={() => onChangeDate(today)}
+            >
+              Jump to today.
+            </button>
+          ) : null}
         </div>
         <div className="top-nav__progress-wrap">
           {averageCompletionPercent != null ? (
