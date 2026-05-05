@@ -25,7 +25,7 @@ export default defineConfig({
             route('', 'routes/_index/route.tsx', { index: true });
             route('users', 'routes/users/_index/route.tsx', { index: true });
             route('users/:user/habits', 'routes/users/$user/habits/route.tsx');
-            route('users/:user/habits/:habitId', 'routes/users/$user/habits/$habitId/route.tsx');
+            route('users/:user/habits/detail', 'routes/users/$user/habits/detail/route.tsx');
             route('users/:user/settings', 'routes/users/$user/settings/route.tsx', () => {
               route('', 'routes/users/$user/settings/_index/route.tsx', {
                 index: true,

@@ -36,3 +36,27 @@ $habit-step-sub-hover-min-width: 721px;
 .habit-summation__error {
   margin-top: functions.spacing(2);
 }
+
+.habit-summation__events {
+  display: grid;
+  gap: functions.spacing(2);
+  margin-top: functions.spacing(3);
+}
+
+.habit-summation__events-list {
+  display: grid;
+  gap: functions.spacing(1);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.habit-summation__event {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: functions.spacing(2);
+  padding-block: functions.spacing(1);
+  padding-inline: 0;
+  border-top: 1px solid color-mix(in srgb, var(--foreground) 10%, transparent);
+}

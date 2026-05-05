@@ -22,6 +22,12 @@ function useWideHabitsLayout(): boolean {
 
 type HabitsState = { user: string; habits: Habit[] };
 
+function toListHabit(habit: Habit): Habit {
+  if (habit.type === 'single_select') return habit;
+  const { events: _events, ...listHabit } = habit;
+  return listHabit;
+}
+
 export default function HabitsPage() {
   const [user, setUser] = useState<string>('');
   // Source of truth: the URL. `null` means "today" (clean URL).
@@ -86,7 +92,9 @@ export default function HabitsPage() {
       if (!prev) return prev;
       return {
         ...prev,
-        habits: prev.habits.map((x) => (x.name === updated.name ? { ...x, ...updated } : x)),
+        habits: prev.habits.map((x) =>
+          x.name === updated.name ? toListHabit({ ...x, ...updated }) : x,
+        ),
       };
     });
   };

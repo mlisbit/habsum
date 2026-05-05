@@ -1,7 +1,7 @@
 import type {
   Habit,
-  HabitDetailResponse,
   HabitsResponse,
+  HistoryGetResponse,
   ListUsersResponse,
   PatchHabitResponse,
   PurgeUserDataResponse,
@@ -18,6 +18,7 @@ export type {
   HabitRowSummation,
   HabitsResponse,
   HealthResponse,
+  HistoryGetResponse,
   ListUsersResponse,
   PatchHabitResponse,
   PurgeUserDataResponse,
@@ -28,6 +29,7 @@ export type {
 const OVERRIDE_SERVER_URL = import.meta.env.VITE_HABSUM_SERVER_URL;
 const API_PREFIX = OVERRIDE_SERVER_URL ? '' : '/api';
 const SERVER_URL = OVERRIDE_SERVER_URL ?? '';
+const habitHistoryRequests = new Map<string, Promise<HistoryGetResponse>>();
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${SERVER_URL}${API_PREFIX}${path}`, {
@@ -78,9 +80,17 @@ export async function getHabits(user: string, date?: string) {
   return request<HabitsResponse>(`/users/${encodeURIComponent(user)}/habits${qs}`);
 }
 
-export async function getHabitDetail(user: string, habitId: string) {
-  const qs = `?habitId=${encodeURIComponent(habitId)}`;
-  return request<HabitDetailResponse>(`/users/${encodeURIComponent(user)}/habits/history${qs}`);
+export async function getHabitHistory(user: string, filter: string[]) {
+  const qs = `?filter=${encodeURIComponent(filter.join(','))}`;
+  const path = `/users/${encodeURIComponent(user)}/habits/history${qs}`;
+  const pending = habitHistoryRequests.get(path);
+  if (pending) return pending;
+
+  const next = request<HistoryGetResponse>(path).finally(() => {
+    habitHistoryRequests.delete(path);
+  });
+  habitHistoryRequests.set(path, next);
+  return next;
 }
 
 export async function patchHabit(

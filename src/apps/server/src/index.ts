@@ -1,8 +1,8 @@
 import type {
   Habit,
-  HabitDetailResponse,
   HabitsResponse,
   HealthResponse,
+  HistoryGetResponse,
   ListUsersResponse,
   PatchHabitResponse,
   PurgeUserDataResponse,
@@ -22,6 +22,7 @@ import {
   ConfigValidationError,
   readUserConfigFileText,
   writeUserConfigFileText,
+  type HabitDef,
 } from './config.js';
 import { dasherize, fromDateKey, toDateKey } from '@habsum/utils';
 import {
@@ -56,6 +57,59 @@ function todayUtc(): string {
 function parseDateParam(value: unknown): string | null {
   if (typeof value !== 'string' || value.length === 0) return null;
   return /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null;
+}
+
+function parseHabitFilter(value: unknown): string[] {
+  if (typeof value !== 'string') return [];
+  const seen = new Set<string>();
+  return value
+    .split(',')
+    .map((x) => x.trim())
+    .filter((x) => {
+      if (!x || seen.has(x)) return false;
+      seen.add(x);
+      return true;
+    });
+}
+
+function minDate(dates: Array<string | null>): string | null {
+  return dates.reduce<string | null>((min, date) => {
+    if (date == null) return min;
+    return min == null || date < min ? date : min;
+  }, null);
+}
+
+function habitRowsForHistory(
+  user: string,
+  habitDef: HabitDef,
+): Array<{ day: string; habit: Habit }> {
+  if (habitDef.type === 'single_select') {
+    return getAllSelects(user, habitDef.name).map((r) => ({
+      day: r.date,
+      habit: {
+        name: habitDef.name,
+        type: 'single_select',
+        goal: habitDef.goal,
+        options: habitDef.options ?? [],
+        value: r.value,
+      } satisfies Habit,
+    }));
+  }
+
+  return getAllTotals(user, habitDef.name).map((r) => {
+    const events = getSummationEvents(user, habitDef.name, r.date);
+    return {
+      day: r.date,
+      habit: {
+        name: habitDef.name,
+        type: 'summation',
+        goal: habitDef.goal ?? null,
+        total: r.total,
+        events,
+        ...(habitDef.summationOptions ? { summationOptions: habitDef.summationOptions } : {}),
+      } satisfies Habit,
+    };
+  });
 }
 
 function addDaysUtc(date: string, delta: number) {
@@ -236,68 +290,41 @@ app.get(
 
 app.get(
   '/users/:user/habits/history',
-  (req: Request<{ user: string }, unknown, unknown, { habitId?: string }>, res: Response) => {
+  (
+    req: Request<{ user: string }, unknown, unknown, { filter?: string; habitId?: string }>,
+    res: Response,
+  ) => {
     const { user } = req.params;
-    const habitId = typeof req.query.habitId === 'string' ? req.query.habitId : '';
-    if (!habitId) return res.status(400).json({ error: 'habitId is required' });
+    const habitIds = parseHabitFilter(req.query.filter ?? req.query.habitId);
+    if (habitIds.length === 0) return res.status(400).json({ error: 'filter is required' });
 
     const config = loadUserConfigForRequest(user, res);
     if (!config) return;
 
-    const habitDef = config.habits.find((h) => dasherize(h.name) === habitId);
-    if (!habitDef) {
-      return res.status(404).json({ error: 'habit not configured' });
+    const habitDefs: HabitDef[] = [];
+    for (const habitId of habitIds) {
+      const habitDef = config.habits.find((h) => dasherize(h.name) === habitId);
+      if (!habitDef) {
+        return res.status(404).json({ error: `habit not configured: ${habitId}` });
+      }
+      habitDefs.push(habitDef);
     }
-    const habitName = habitDef.name;
 
-    const firstDate = getHabitFirstDate(user, habitName);
+    const habitsByDate = new Map<string, Habit[]>();
+    for (const habitDef of habitDefs) {
+      for (const { day, habit } of habitRowsForHistory(user, habitDef)) {
+        habitsByDate.set(day, [...(habitsByDate.get(day) ?? []), habit]);
+      }
+    }
 
-    const data: HabitDetailResponse['data'] = {
-      user:
-        habitDef.type === 'single_select'
-          ? getAllSelects(user, habitName).map((r) => ({
-              day: r.date,
-              habits: [
-                {
-                  name: habitName,
-                  type: 'single_select',
-                  goal: habitDef.goal,
-                  options: habitDef.options ?? [],
-                  value: r.value,
-                } satisfies Habit,
-              ],
-            }))
-          : getAllTotals(user, habitName).map((r) => {
-              const events = getSummationEvents(user, habitName, r.date);
-              return {
-                day: r.date,
-                habits: [
-                  {
-                    name: habitName,
-                    type: 'summation',
-                    goal: habitDef.goal ?? null,
-                    total: r.total,
-                    events,
-                    ...(habitDef.summationOptions
-                      ? { summationOptions: habitDef.summationOptions }
-                      : {}),
-                  } satisfies Habit,
-                ],
-              };
-            }),
-    };
-
-    const body: HabitDetailResponse = {
+    const body: HistoryGetResponse = {
       user,
-      habitId,
-      habitName,
-      habitType: habitDef.type,
-      habitGoal: habitDef.goal,
-      habitOptions: habitDef.type === 'single_select' ? (habitDef.options ?? []) : [],
-      habitSummationOptions:
-        habitDef.type === 'summation' ? (habitDef.summationOptions ?? null) : null,
-      firstDate,
-      data,
+      firstDate: minDate(habitDefs.map((habitDef) => getHabitFirstDate(user, habitDef.name))),
+      data: {
+        user: Array.from(habitsByDate.entries())
+          .map(([day, habits]) => ({ day, habits }))
+          .sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : 0)),
+      },
       serverTime: new Date().toISOString(),
     };
     res.json(body);
@@ -308,7 +335,7 @@ app.get(
 // Must be registered AFTER the explicit `/history` route.
 app.get('/users/:user/habits/:habitId', (req, res) => {
   const { user, habitId } = req.params;
-  const qs = new URLSearchParams({ habitId });
+  const qs = new URLSearchParams({ filter: habitId });
   res.redirect(307, `/users/${encodeURIComponent(user)}/habits/history?${qs.toString()}`);
 });
 

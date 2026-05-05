@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from '@remix-run/react';
 import type { HabitRowSummation } from '@habsum/api-types';
-import { habitIdPathSegment } from '~/utils/habit-id';
+import { habitDetailUrl } from '~/utils/habit-id';
 import { HistoryDisplay } from '~/components/HistoryDisplay';
 import { InfoText } from '~/core-components/InfoText';
 import { ProgressBar } from '~/core-components/ProgressBar';
@@ -25,6 +25,16 @@ function summationIsComplete(habit: HabitRowSummation): boolean {
   return total > 0;
 }
 
+function formatEventAmount(amount: number) {
+  return amount > 0 ? `+${amount}` : String(amount);
+}
+
+function formatEventTime(createdAt: string) {
+  const date = new Date(`${createdAt.replace(' ', 'T')}Z`);
+  if (Number.isNaN(date.getTime())) return createdAt;
+  return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
+
 export function SummationWidget({
   user,
   habit,
@@ -39,10 +49,11 @@ export function SummationWidget({
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
-  const idSeg = habitIdPathSegment(habit.name);
-  const to = `/users/${encodeURIComponent(user)}/habits/${encodeURIComponent(idSeg)}${
-    typeof window !== 'undefined' ? window.location.search : ''
-  }`;
+  const to = habitDetailUrl(
+    user,
+    habit.name,
+    typeof window !== 'undefined' ? window.location.search : '',
+  );
 
   const runOp = async (fn: () => Promise<void>) => {
     setPending(true);
@@ -100,6 +111,23 @@ export function SummationWidget({
           max={goal}
           aria-label={`${habit.name}: ${total ?? 0} of ${goal}`}
         />
+      ) : null}
+      {habit.events ? (
+        <div className="habit-summation__events">
+          <h3 className="text-h-m">Events</h3>
+          {habit.events.length > 0 ? (
+            <ul className="habit-summation__events-list">
+              {habit.events.map((event) => (
+                <li key={event.id} className="habit-summation__event">
+                  <span className="text-h-m">{formatEventAmount(event.amount)}</span>
+                  <span className="text-light text-b-m">{formatEventTime(event.createdAt)}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-light text-b-m">No summation events recorded for this day.</p>
+          )}
+        </div>
       ) : null}
       <HistoryDisplay history={habit.history} />
     </div>

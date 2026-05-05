@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react';
 import { Link } from '@remix-run/react';
 import type { HabitRowSingleSelect } from '@habsum/api-types';
-import { habitIdPathSegment } from '~/utils/habit-id';
+import { habitDetailUrl } from '~/utils/habit-id';
 import { useLongPress } from '~/utils/use-long-press';
 import { Button } from '~/core-components/Button';
 import { InfoText } from '~/core-components/InfoText';
@@ -67,10 +67,11 @@ export function SingleSelectWidget({
 
   const longPress = useLongPress(openResetModal);
 
-  const idSeg = habitIdPathSegment(habit.name);
-  const to = `/users/${encodeURIComponent(user)}/habits/${encodeURIComponent(idSeg)}${
-    typeof window !== 'undefined' ? window.location.search : ''
-  }`;
+  const to = habitDetailUrl(
+    user,
+    habit.name,
+    typeof window !== 'undefined' ? window.location.search : '',
+  );
 
   return (
     <div

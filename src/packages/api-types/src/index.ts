@@ -5,6 +5,7 @@ export type HealthResponse = { ok: true };
 
 export type ListUsersResponse = { users: string[] };
 
+export type { HistoryGetResponse } from './history-get.js';
 export type { UsersPatchRequest } from './users-patch.js';
 
 export type HabitHistory = {
@@ -62,26 +63,6 @@ export type HabitsResponse = {
   date: string;
   firstDate: string | null;
   habits: Habit[];
-  serverTime: string;
-};
-
-export type HabitDetailResponse = {
-  user: string;
-  habitId: string;
-  habitName: string;
-  /** From user config — used when a selected day has no stored row yet. */
-  habitType: Habit['type'];
-  habitGoal: number | null;
-  habitOptions: string[];
-  /** From config when `habitType` is `summation`; drives fixed-step count UI. */
-  habitSummationOptions: SummationOptions | null;
-  firstDate: string | null;
-  data: {
-    user: Array<{
-      day: string;
-      habits: Habit[];
-    }>;
-  };
   serverTime: string;
 };
 
