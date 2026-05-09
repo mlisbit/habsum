@@ -107,7 +107,7 @@ export function Calendar({
   weekStartsOn?: 0 | 1 | 2 | 3 | 4 | 5 | 6;
   tzOffsetMinutes: number;
   lastData?: string; // YYYY-MM-DD (UTC). Dates after this are future/disabled.
-  firstDate?: string; // YYYY-MM-DD (UTC). Dates before this are disabled.
+  firstDate?: string; // YYYY-MM-DD (UTC). Dates before this have no data.
   selectedDate?: string; // YYYY-MM-DD (UTC). Highlighted day cell.
   onDaySelect?: (date: string) => void;
   dataRenders?: CalendarDataRender[];
@@ -162,14 +162,23 @@ export function Calendar({
     [monthStart, tzOffsetMinutes],
   );
   const nextDisabled = addMonths(monthStart, 1, tzOffsetMinutes) > maxMonthStart;
-  const prevDisabled = minMonthStart
-    ? addMonths(monthStart, -1, tzOffsetMinutes) < minMonthStart
-    : false;
+  const beforeFirstData = minMonthStart != null && monthStart < minMonthStart;
+  const firstDateLabel = useMemo(
+    () => (firstDate ? fromDateKey(firstDate, tzOffsetMinutes).toLocaleDateString() : null),
+    [firstDate, tzOffsetMinutes],
+  );
 
   return (
     <section className="calendar" aria-label="Calendar">
       <div className="calendar__header">
-        <div className="calendar__title text-bold">{monthLabel}</div>
+        <div>
+          <div className="calendar__title text-bold">{monthLabel}</div>
+          {beforeFirstData && firstDateLabel ? (
+            <div className="calendar__no-data-note text-b-s text-light">
+              No data before {firstDateLabel}
+            </div>
+          ) : null}
+        </div>
         <div className="calendar__controls">
           <Button
             type="secondary"
@@ -180,12 +189,9 @@ export function Calendar({
             title="Previous month"
             onClick={() =>
               setMonthStart((m) => {
-                const next = addMonths(m, -1, tzOffsetMinutes);
-                if (minMonthStart && next < minMonthStart) return minMonthStart;
-                return next;
+                return addMonths(m, -1, tzOffsetMinutes);
               })
             }
-            disabled={prevDisabled}
           />
           <Button
             type="secondary"
@@ -220,14 +226,17 @@ export function Calendar({
           const isToday = date === today;
           const isFuture = date > maxDate;
           const isBefore = firstDate != null && date < firstDate;
-          const isSelected = selectedDate != null && date === selectedDate;
-          const isClickable = !isFuture && !isBefore && onDaySelect != null;
-          const hasDataMarker = !isFuture && !isBefore && metaByDate.has(date);
+          const isBeforeFirstData = inCurrentMonth && isBefore;
+          const isSelected = inCurrentMonth && selectedDate != null && date === selectedDate;
+          const isClickable = inCurrentMonth && !isFuture && onDaySelect != null;
+          const hasDataMarker = inCurrentMonth && !isFuture && !isBefore && metaByDate.has(date);
           const isNoDataMuted = greyOutDaysWithoutData && isClickable && !hasDataMarker;
           const dayNumber = Number(date.slice(8, 10));
-          const meta = isFuture || isBefore ? undefined : metaByDate.get(date);
+          const meta = !inCurrentMonth || isFuture || isBefore ? undefined : metaByDate.get(date);
           const maybe = meta?.callRender;
-          const hoverBody = meta?.hoverContent;
+          const hoverBody = isBeforeFirstData
+            ? () => <div className="text-b-m">You have no data before {firstDateLabel}.</div>
+            : meta?.hoverContent;
           const cellInfo: CalendarCellInfo = { date, inCurrentMonth, isToday };
 
           const cellClassName = [
@@ -236,6 +245,7 @@ export function Calendar({
             isToday && 'calendar__cell--today',
             isFuture && 'calendar__cell--future',
             isBefore && 'calendar__cell--before',
+            isBeforeFirstData && 'calendar__cell--before-first-data',
             isNoDataMuted && 'calendar__cell--no-data',
             isSelected && 'calendar__cell--selected',
             isClickable && 'calendar__cell--clickable',
@@ -245,8 +255,12 @@ export function Calendar({
 
           const cellBody = (
             <>
-              <div className="calendar__day-number text-b-m text-bold">{dayNumber}</div>
-              <div className="calendar__cell-content">{maybe ? maybe(cellInfo) : null}</div>
+              {inCurrentMonth ? (
+                <>
+                  <div className="calendar__day-number text-b-m text-bold">{dayNumber}</div>
+                  <div className="calendar__cell-content">{maybe ? maybe(cellInfo) : null}</div>
+                </>
+              ) : null}
             </>
           );
 
@@ -258,7 +272,7 @@ export function Calendar({
                   role="gridcell"
                   aria-label={date}
                   data-date={date}
-                  aria-disabled={isFuture || isBefore || undefined}
+                  aria-disabled={isFuture || undefined}
                   aria-selected={isSelected || undefined}
                   onClick={
                     isClickable
@@ -284,7 +298,7 @@ export function Calendar({
               role="gridcell"
               aria-label={date}
               data-date={date}
-              aria-disabled={isFuture || isBefore || undefined}
+              aria-disabled={isFuture || undefined}
               aria-selected={isSelected || undefined}
               onClick={
                 isClickable

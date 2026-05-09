@@ -1,0 +1,46 @@
+@use 'functions';
+
+.pill {
+  background: transparent;
+  border: 1px solid var(--button-primary-color);
+  border-radius: var(--border-radius-m);
+  padding: functions.spacing(2, 3);
+  cursor: pointer;
+  transition:
+    transform 0.05s ease,
+    filter 0.12s ease,
+    box-shadow 0.12s ease,
+    background 0.12s ease;
+
+  &:hover {
+    background: color-mix(in srgb, var(--foreground) 7%, transparent);
+  }
+
+  &:active {
+    transform: translateY(1px);
+    background: color-mix(in srgb, var(--foreground) 10%, transparent);
+    filter: brightness(0.98);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--background-button-cta-primary) 35%, transparent);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    filter: none;
+  }
+}
+
+.pill--selected {
+  background: var(--background-button-cta-primary);
+  border-color: transparent;
+
+  &:hover {
+    background: var(--background-button-cta-primary);
+    filter: brightness(1.05);
+  }
+}

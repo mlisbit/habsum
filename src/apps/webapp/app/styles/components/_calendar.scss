@@ -17,6 +17,10 @@
   gap: functions.spacing(2);
 }
 
+.calendar__no-data-note {
+  margin-top: functions.spacing(1);
+}
+
 .calendar__weekdays {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -43,6 +47,10 @@
   border-radius: var(--border-radius-m);
   padding: functions.spacing(1);
   background: var(--background-secondary);
+
+  &:empty {
+    opacity: 0;
+  }
 }
 
 .calendar__cell--clickable {
@@ -53,14 +61,6 @@
   border-color: color-mix(in srgb, var(--interactive-accent) 45%, var(--border));
 }
 
-.calendar__cell--outside {
-  opacity: 0.55;
-}
-
-.calendar__cell--today {
-  border-color: color-mix(in srgb, var(--interactive-accent) 65%, var(--border));
-}
-
 .calendar__cell--selected {
   outline: 2px solid color-mix(in srgb, var(--interactive-accent) 70%, transparent);
   outline-offset: 2px;
@@ -69,6 +69,7 @@
 .calendar__cell--future {
   opacity: 0.4;
   background: color-mix(in srgb, var(--background-secondary) 75%, var(--background));
+  background: var(--border) !important;
 }
 
 .calendar__cell--before {
@@ -76,9 +77,9 @@
   background: color-mix(in srgb, var(--background-secondary) 75%, var(--background));
 }
 
-.calendar__cell--no-data {
-  opacity: 0.55;
-  background: color-mix(in srgb, var(--background-secondary) 82%, var(--background));
+.calendar__cell--before-first-data {
+  background: color-mix(in srgb, var(--background-secondary) 75%, var(--background));
+  background: var(--border) !important;
 }
 
 .calendar__cell-content {

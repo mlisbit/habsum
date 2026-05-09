@@ -2,15 +2,20 @@
 
 .day-nav {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: functions.spacing(3);
-  margin-bottom: functions.spacing(3);
+  flex-flow: column;
 }
 
-/** In the habits top column, vertical rhythm is from `.top-nav__right` flex gap — drop default bottom margin. */
-.day-nav--flush {
-  margin-bottom: 0;
+.day-nav__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.day-nav__bottom {
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
 }
 
 .day-nav__controls {
@@ -18,10 +23,9 @@
   gap: functions.spacing(2);
 }
 
-.day-nav__right {
+.day-nav__actions {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
+  align-items: center;
   gap: functions.spacing(1);
 }
 
@@ -34,9 +38,4 @@
   &:hover {
     text-decoration: underline;
   }
-}
-
-.day-nav__actionable {
-  margin: 0;
-  text-align: right;
 }

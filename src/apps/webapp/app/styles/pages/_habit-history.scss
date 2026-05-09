@@ -3,9 +3,28 @@
 // app/routes/users/$user/habits/detail/route.tsx
 .habit-history__header {
   display: flex;
-  align-items: baseline;
+  align-items: flex-start;
   justify-content: space-between;
   margin-bottom: functions.spacing(3);
+  padding-top: functions.spacing(4);
+}
+
+.habit-history__header-left {
+  display: flex;
+  gap: functions.spacing(2);
+  align-items: center;
+  min-width: 0;
+}
+
+.habit-history__filter-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: functions.spacing(1);
+}
+
+.habit-history__day-nav {
+  flex-shrink: 0;
+  min-width: min(320px, 100%);
 }
 
 .habit-history {

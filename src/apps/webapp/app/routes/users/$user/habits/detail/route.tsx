@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from '@remix-run/react';
 import { Calendar, type CalendarDataRender } from '~/components/Calendar';
+import { DayNav } from '~/components/DayNav';
 import { Button } from '~/core-components/Button';
 import { InfoText } from '~/core-components/InfoText';
+import { Pill } from '~/core-components/Pill';
 import { ProgressBar } from '~/core-components/ProgressBar';
 import { SingleSelectWidget, SummationWidget } from '~/components/widgets';
 import { getHabitHistory, patchHabit, type Habit } from '~/api.client';
@@ -151,6 +153,7 @@ export default function HabitDetailRoute() {
   const tzOffsetMinutes = useMemo(() => new Date().getTimezoneOffset(), []);
   const today = useMemo(() => toDateKey(new Date(), tzOffsetMinutes), [tzOffsetMinutes]);
   const effectiveDate = selectedDate ?? today;
+  const showJumpToToday = effectiveDate !== today;
 
   useEffect(() => {
     if (habitIds.length === 0 || !user) {
@@ -206,6 +209,16 @@ export default function HabitDetailRoute() {
     navigate(`${location.pathname}?${qs.toString()}`);
   };
 
+  const setHabitFilterInUrl = (habitId: string, checked: boolean) => {
+    const nextHabitIds = checked ? [...habitIds, habitId] : habitIds.filter((id) => id !== habitId);
+
+    if (nextHabitIds.length === 0) return;
+
+    const qs = new URLSearchParams(location.search);
+    qs.set('filter', nextHabitIds.join(','));
+    navigate(`${location.pathname}?${qs.toString()}`);
+  };
+
   const onHabitPatched = (updated: Habit) => {
     setHistory((prev) =>
       prev
@@ -237,30 +250,50 @@ export default function HabitDetailRoute() {
     [history],
   );
 
-  const title =
-    representativeHabits.length > 0
-      ? representativeHabits.map((habit) => habit.name).join(', ')
-      : habitFilterKey || 'Habit';
-
   return (
     <div>
       <div className="habit-history__header">
-        <Button
-          type="secondary"
-          icon="chevronBack"
-          circle
-          text=""
-          title="Back to habits"
-          aria-label="Back to habits"
-          onClick={() =>
-            window.location.assign(
-              `/users/${encodeURIComponent(user)}/habits${
-                selectedDate ? `?date=${encodeURIComponent(selectedDate)}` : ''
-              }`,
-            )
-          }
+        <div className="habit-history__header-left">
+          <Button
+            type="tertiary"
+            icon="chevronBack"
+            circle
+            text=""
+            title="Back to habits"
+            aria-label="Back to habits"
+            onClick={() =>
+              window.location.assign(
+                `/users/${encodeURIComponent(user)}/habits${
+                  selectedDate ? `?date=${encodeURIComponent(selectedDate)}` : ''
+                }`,
+              )
+            }
+          />
+          {history ? (
+            <div className="habit-history__filter-pills">
+              {Object.entries(history.habits).map(([habitId, habitName]) => (
+                <Pill
+                  key={habitId}
+                  selected={habitIds.includes(habitId)}
+                  className="text-b-m"
+                  onToggle={(nextSelected) => setHabitFilterInUrl(habitId, nextSelected)}
+                >
+                  {habitName}
+                </Pill>
+              ))}
+            </div>
+          ) : (
+            <h1 className="text-h-xl">{habitFilterKey || 'Habit'}</h1>
+          )}
+        </div>
+        <DayNav
+          className="habit-history__day-nav"
+          date={effectiveDate}
+          tzOffsetMinutes={tzOffsetMinutes}
+          today={today}
+          onChangeDate={setSelectedDateInUrl}
+          showJumpToToday={showJumpToToday}
         />
-        <h1 className="text-h-xl">{title}</h1>
       </div>
 
       <div className="habit-history">
@@ -270,7 +303,7 @@ export default function HabitDetailRoute() {
               tzOffsetMinutes={tzOffsetMinutes}
               lastData={toDateKey(new Date(), tzOffsetMinutes)}
               firstDate={history?.firstDate ?? undefined}
-              selectedDate={selectedDate ?? undefined}
+              selectedDate={effectiveDate}
               onDaySelect={setSelectedDateInUrl}
               dataRenders={dataRenders}
               greyOutDaysWithoutData

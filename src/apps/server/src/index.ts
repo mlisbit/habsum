@@ -112,6 +112,27 @@ function habitRowsForHistory(
   });
 }
 
+function emptyHabitForHistory(habitDef: HabitDef): Habit {
+  if (habitDef.type === 'single_select') {
+    return {
+      name: habitDef.name,
+      type: 'single_select',
+      goal: habitDef.goal,
+      options: habitDef.options ?? [],
+      value: null,
+    } satisfies Habit;
+  }
+
+  return {
+    name: habitDef.name,
+    type: 'summation',
+    goal: habitDef.goal ?? null,
+    total: null,
+    events: [],
+    ...(habitDef.summationOptions ? { summationOptions: habitDef.summationOptions } : {}),
+  } satisfies Habit;
+}
+
 function addDaysUtc(date: string, delta: number) {
   const dt = fromDateKey(date, 0);
   const next = new Date(dt.getTime() + delta * 86_400_000);
@@ -317,8 +338,21 @@ app.get(
       }
     }
 
+    for (const [day, habits] of habitsByDate) {
+      const habitsForDay = new Map(habits.map((habit) => [habit.name, habit]));
+      habitsByDate.set(
+        day,
+        habitDefs.map(
+          (habitDef) => habitsForDay.get(habitDef.name) ?? emptyHabitForHistory(habitDef),
+        ),
+      );
+    }
+
     const body: HistoryGetResponse = {
       user,
+      habits: Object.fromEntries(
+        config.habits.map((habitDef) => [dasherize(habitDef.name), habitDef.name]),
+      ),
       firstDate: minDate(habitDefs.map((habitDef) => getHabitFirstDate(user, habitDef.name))),
       data: {
         user: Array.from(habitsByDate.entries())

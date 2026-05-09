@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { fromDateKey, toDateKey } from '@habsum/utils';
-import { addDays, diffDays } from '~/utils/date-utils';
+import { diffDays } from '~/utils/date-utils';
 import { Button } from '~/core-components/Button';
-import { HumanDate } from '~/core-components/HumanDate';
+import { DayNav } from '~/components/DayNav';
 import { Hoverable } from '~/core-components/Hoverable';
 import { Icon } from '~/core-components/Icon';
 import { ProgressBar } from '~/core-components/ProgressBar';
@@ -161,50 +161,15 @@ export function TopNav({
         <p className="top-nav__countdown text-b-m text-light">{countdown}</p>
       </div>
       <div className="top-nav__right">
-        <div className="day-nav day-nav--flush">
-          <div>
-            <div className="text-h-l">
-              <HumanDate date={effectiveDate} tzOffsetMinutes={tzOffsetMinutes} today={today} />
-            </div>
-          </div>
-          <div className="day-nav__right">
-            <div className="day-nav__controls">
-              <Button
-                type="tertiary"
-                size="small"
-                icon="chevronLeft"
-                text=""
-                circle
-                title="Previous day"
-                aria-label="Previous day"
-                onClick={() => onChangeDate(addDays(effectiveDate, -1, tzOffsetMinutes))}
-              />
-              <Button
-                type="tertiary"
-                size="small"
-                icon="chevronRight"
-                text=""
-                circle
-                title="Next day"
-                aria-label="Next day"
-                onClick={() => onChangeDate(addDays(effectiveDate, 1, tzOffsetMinutes))}
-                disabled={nextDisabled}
-              />
-            </div>
-          </div>
-        </div>
-        <div className="top-nav__actionable text-b-s text-light">
-          {showBeforeDataNotice ? <span className="">No data past this day. </span> : null}
-          {showJumpToToday ? (
-            <button
-              type="button"
-              className="day-nav__jump text-b-s text-light"
-              onClick={() => onChangeDate(today)}
-            >
-              Jump to today.
-            </button>
-          ) : null}
-        </div>
+        <DayNav
+          date={effectiveDate}
+          tzOffsetMinutes={tzOffsetMinutes}
+          today={today}
+          onChangeDate={onChangeDate}
+          nextDisabled={nextDisabled}
+          showJumpToToday={showJumpToToday}
+          onDateTooFarText={showBeforeDataNotice ? 'No data past this day.' : undefined}
+        />
         <div className="top-nav__progress-wrap">
           {averageCompletionPercent != null ? (
             <Hoverable.Root>
