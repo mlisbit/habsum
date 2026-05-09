@@ -52,7 +52,7 @@
   .calendar__dot {
     width: 8px;
     height: 8px;
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--indicator-calendar-dot) 22%, transparent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-red-1) 22%, transparent);
   }
 }
 

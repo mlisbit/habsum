@@ -8,7 +8,7 @@
   justify-content: center;
   min-height: 1.5rem;
   padding: functions.spacing(1, 2);
-  background: var(--border);
+  background: var(--border-color-faint);
   border-radius: var(--border-radius-full);
   overflow: hidden;
   margin-top: functions.spacing(2);
@@ -26,7 +26,7 @@
   bottom: 0;
   width: 0;
   max-width: 100%;
-  background: var(--interactive-accent);
+  background: var(--accent-selected);
   border-radius: var(--border-radius-full);
   transition: width 0.2s ease;
 }

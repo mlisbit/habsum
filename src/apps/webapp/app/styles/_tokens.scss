@@ -7,46 +7,71 @@
 html[data-theme='dark'] {
   color-scheme: dark;
 
+  // borders
   --border-radius-m: 10px;
   --border-radius-full: 999px;
+  --border-color-faint: #272b36;
+
+  // background colors
   --background: #0f1115;
   --background-secondary: #161922;
   --background-tertiary: #0f1115;
-  --foreground: #e8e8ea;
+  --background-disabled: #272b36;
+  --background-input: color-mix(in srgb, var(--background-secondary) 86%, rgb(255 255 255) 14%);
+  --background-modal-backdrop: rgb(0 0 0 / 45%);
+
+  // text colors
+  --text-color: #e8e8ea;
   --text-muted: #9aa0a6;
-  --border: #272b36;
-  --input-background: color-mix(in srgb, var(--background-secondary) 86%, rgb(255 255 255) 14%);
-  --text-link: #6ea8ff;
-  --interactive-accent: #6ea8ff;
-  --background-button-cta-primary: #6ea8ff;
-  --button-primary-color: #4b5057;
-  --foreground-on-cta-primary: #fff;
-  --shadow-elevation-panel: 0 1px 2px rgb(0 0 0 / 6%), 0 2px 8px rgb(0 0 0 / 8%);
-  --indicator-calendar-dot: #d64545;
   --text-error: #f87171;
   --text-success: #4ade80;
-  --modal-backdrop-bg: rgb(0 0 0 / 45%);
+  --text-link: #6ea8ff;
+
+  // ctas
+  --cta-base-background: #6ea8ff;
+  --cta-base-text-color: #fff;
+  --cta-secondary-border: #4b5057;
+
+  // accents
+  --accent-selected: #6ea8ff;
+  --accent-red-1: #d64545;
+
+  // other
+  --elevation-shadow: 0 1px 2px rgb(0 0 0 / 6%), 0 2px 8px rgb(0 0 0 / 8%);
 }
 
 html[data-theme='light'] {
   color-scheme: light;
 
+  // borders
   --border-radius-m: 10px;
   --border-radius-full: 999px;
+  --border-color-faint: #e8e8ea;
+
+  // background colors
   --background: #f7f8fa;
   --background-secondary: #fff;
   --background-tertiary: #f7f8fa;
-  --foreground: #14161a;
+  --background-disabled: #272b36;
+  --background-input: color-mix(in srgb, var(--background-secondary) 94%, var(--background) 6%);
+  --background-modal-backdrop: rgb(0 0 0 / 45%);
+
+  // text colors
+  --text-color: #14161a;
   --text-muted: #5f6368;
-  --border: #e3e5ea;
-  --input-background: color-mix(in srgb, var(--background-secondary) 94%, var(--background) 6%);
-  --text-link: #2d6cdf;
-  --interactive-accent: #2d6cdf;
-  --background-button-cta-primary: #2d6cdf;
-  --foreground-on-cta-primary: #fff;
-  --shadow-elevation-panel: 0 1px 2px rgb(0 0 0 / 4%), 0 2px 8px rgb(0 0 0 / 6%);
-  --indicator-calendar-dot: #d64545;
   --text-error: #c62828;
   --text-success: #2e7d32;
-  --modal-backdrop-bg: rgb(0 0 0 / 45%);
+  --text-link: #2d6cdf;
+
+  // ctas
+  --cta-base-background: #2d6cdf;
+  --cta-base-text-color: #fff;
+  --cta-secondary-border: #4b5057;
+
+  // accents
+  --accent-selected: #2d6cdf;
+  --accent-red-1: #d64545;
+
+  // other
+  --elevation-shadow: 0 1px 2px rgb(0 0 0 / 4%), 0 2px 8px rgb(0 0 0 / 6%);
 }

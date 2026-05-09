@@ -2,7 +2,7 @@
 
 .pill {
   background: transparent;
-  border: 1px solid var(--button-primary-color);
+  border: 1px solid var(--cta-secondary-border);
   border-radius: var(--border-radius-m);
   padding: functions.spacing(2, 3);
   cursor: pointer;
@@ -13,18 +13,18 @@
     background 0.12s ease;
 
   &:hover {
-    background: color-mix(in srgb, var(--foreground) 7%, transparent);
+    background: color-mix(in srgb, var(--text-color) 7%, transparent);
   }
 
   &:active {
     transform: translateY(1px);
-    background: color-mix(in srgb, var(--foreground) 10%, transparent);
+    background: color-mix(in srgb, var(--text-color) 10%, transparent);
     filter: brightness(0.98);
   }
 
   &:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--background-button-cta-primary) 35%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--cta-base-background) 35%, transparent);
   }
 
   &:disabled {
@@ -36,11 +36,11 @@
 }
 
 .pill--selected {
-  background: var(--background-button-cta-primary);
+  background: var(--cta-base-background);
   border-color: transparent;
 
   &:hover {
-    background: var(--background-button-cta-primary);
+    background: var(--cta-base-background);
     filter: brightness(1.05);
   }
 }

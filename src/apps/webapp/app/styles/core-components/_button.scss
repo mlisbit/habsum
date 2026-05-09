@@ -2,8 +2,8 @@
 
 .button {
   font: inherit;
-  background: var(--background-button-cta-primary);
-  color: var(--foreground-on-cta-primary);
+  background: var(--cta-base-background);
+  color: var(--cta-base-text-color);
   border: none;
   border-radius: var(--border-radius-m);
   padding: functions.spacing(2, 3);
@@ -24,7 +24,7 @@
 
   &:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--background-button-cta-primary) 35%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--cta-base-background) 35%, transparent);
   }
 
   &:disabled {
@@ -49,29 +49,29 @@
 
 .button--secondary {
   background: transparent;
-  color: var(--foreground);
-  border: 1px solid var(--button-primary-color);
+  color: var(--text-color);
+  border: 1px solid var(--cta-secondary-border);
 
   &:hover {
-    background: color-mix(in srgb, var(--foreground) 7%, transparent);
+    background: color-mix(in srgb, var(--text-color) 7%, transparent);
   }
 
   &:active {
-    background: color-mix(in srgb, var(--foreground) 10%, transparent);
+    background: color-mix(in srgb, var(--text-color) 10%, transparent);
   }
 }
 
 .button--tertiary {
   background: transparent;
-  color: var(--foreground);
+  color: var(--text-color);
   border: none;
 
   &:hover {
-    background: color-mix(in srgb, var(--foreground) 7%, transparent);
+    background: color-mix(in srgb, var(--text-color) 7%, transparent);
   }
 
   &:active {
-    background: color-mix(in srgb, var(--foreground) 10%, transparent);
+    background: color-mix(in srgb, var(--text-color) 10%, transparent);
   }
 }
 

@@ -58,5 +58,5 @@ $habit-step-sub-hover-min-width: 721px;
   gap: functions.spacing(2);
   padding-block: functions.spacing(1);
   padding-inline: 0;
-  border-top: 1px solid color-mix(in srgb, var(--foreground) 10%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--text-color) 10%, transparent);
 }

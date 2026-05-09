@@ -15,18 +15,18 @@
   align-items: center;
   gap: functions.spacing(1);
   padding: functions.spacing(1, 2);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-color-faint);
   border-radius: var(--border-radius-full);
   background: var(--background-secondary);
-  box-shadow: var(--shadow-elevation-panel);
+  box-shadow: var(--elevation-shadow);
   transform: translateX(-50%);
 }
 
 .loader__spinner {
   width: 1rem;
   height: 1rem;
-  border: 2px solid color-mix(in srgb, var(--foreground) 20%, transparent);
-  border-top-color: var(--interactive-accent);
+  border: 2px solid color-mix(in srgb, var(--text-color) 20%, transparent);
+  border-top-color: var(--accent-selected);
   border-radius: var(--border-radius-full);
   animation: loader-spin 0.75s linear infinite;
 }

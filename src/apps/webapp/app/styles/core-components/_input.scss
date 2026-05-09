@@ -3,7 +3,7 @@
 @keyframes input-reject-flash {
   0%,
   100% {
-    border-color: var(--border);
+    border-color: var(--border-color-faint);
     box-shadow: none;
   }
 
@@ -29,8 +29,8 @@
   box-sizing: border-box;
   cursor: text;
   border-radius: var(--border-radius-m);
-  border: 1px solid var(--border);
-  background: var(--input-background);
+  border: 1px solid var(--border-color-faint);
+  background: var(--background-input);
   transition:
     box-shadow 0.15s ease,
     border-color 0.15s ease;
@@ -47,7 +47,7 @@
 
   &:focus-within {
     outline: none;
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--foreground) 25%, transparent);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--text-color) 25%, transparent);
   }
 }
 

@@ -8,13 +8,13 @@
   align-items: center;
   justify-content: center;
   padding: functions.spacing(3);
-  background: var(--modal-backdrop-bg);
+  background: var(--background-modal-backdrop);
 }
 
 .modal__dialog {
   width: min(100%, 22rem);
   margin-bottom: 0;
-  box-shadow: var(--shadow-elevation-panel);
+  box-shadow: var(--elevation-shadow);
 }
 
 .modal__actions {

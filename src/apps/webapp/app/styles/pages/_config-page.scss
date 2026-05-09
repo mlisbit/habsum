@@ -31,7 +31,7 @@
 .config-page__editor {
   min-width: 0;
   min-height: min(60vh, 640px);
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-color-faint);
   border-radius: var(--border-radius-m);
   overflow: hidden;
   background: var(--background-secondary);

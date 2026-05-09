@@ -43,7 +43,7 @@
 .calendar__cell {
   position: relative;
   min-height: 46px;
-  border: 1px solid var(--border);
+  border: 1px solid var(--border-color-faint);
   border-radius: var(--border-radius-m);
   padding: functions.spacing(1);
   background: var(--background-secondary);
@@ -58,18 +58,18 @@
 }
 
 .calendar__cell--clickable:hover {
-  border-color: color-mix(in srgb, var(--interactive-accent) 45%, var(--border));
+  border-color: color-mix(in srgb, var(--accent-selected) 45%, var(--border-color-faint));
 }
 
 .calendar__cell--selected {
-  outline: 2px solid color-mix(in srgb, var(--interactive-accent) 70%, transparent);
+  outline: 2px solid color-mix(in srgb, var(--accent-selected) 70%, transparent);
   outline-offset: 2px;
 }
 
 .calendar__cell--future {
   opacity: 0.4;
   background: color-mix(in srgb, var(--background-secondary) 75%, var(--background));
-  background: var(--border) !important;
+  background: var(--background-disabled) !important;
 }
 
 .calendar__cell--before {
@@ -79,7 +79,7 @@
 
 .calendar__cell--before-first-data {
   background: color-mix(in srgb, var(--background-secondary) 75%, var(--background));
-  background: var(--border) !important;
+  background: var(--background-disabled) !important;
 }
 
 .calendar__cell-content {
@@ -94,8 +94,8 @@
   width: 14px;
   height: 14px;
   border-radius: var(--border-radius-full);
-  background: var(--indicator-calendar-dot);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--indicator-calendar-dot) 22%, transparent);
+  background: var(--accent-red-1);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-red-1) 22%, transparent);
 }
 
 // Calendar day hover panel — match app shell background (not card)

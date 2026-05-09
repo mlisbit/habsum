@@ -9,6 +9,6 @@
 }
 
 .habit-widget--complete {
-  outline: 2px solid color-mix(in srgb, var(--interactive-accent) 58%, var(--border));
+  outline: 2px solid color-mix(in srgb, var(--accent-selected) 58%, var(--border-color-faint));
   outline-offset: 3px;
 }
