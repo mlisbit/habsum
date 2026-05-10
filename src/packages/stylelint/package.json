@@ -1,0 +1,22 @@
+{
+  "name": "@habsum/stylelint-plugins",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Custom Stylelint rules for Habsum (BEM, spacing, theme tokens)",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "watch": "tsc -p tsconfig.json --watch"
+  },
+  "peerDependencies": {
+    "stylelint": "^17.9.0"
+  },
+  "dependencies": {
+    "postcss": "^8.5.0",
+    "postcss-value-parser": "^4.2.0"
+  },
+  "devDependencies": {
+    "stylelint": "17.9.1",
+    "typescript": "5.6.2"
+  }
+}

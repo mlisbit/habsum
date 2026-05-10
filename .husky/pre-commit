@@ -1,2 +1,2 @@
-npm run --silent tools:build
+npm run --silent stylelint-plugins:build && npm run --silent eslint-plugins:build
 npx lint-staged

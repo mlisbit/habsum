@@ -1,3 +1,4 @@
+// exclusive-bem-block: history-display
 import type { Habit } from '~/api.client';
 
 export function History({ history }: { history: Habit['history'] }) {

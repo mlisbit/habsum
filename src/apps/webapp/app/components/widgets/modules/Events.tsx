@@ -1,3 +1,4 @@
+// exclusive-bem-block: events
 import { useCallback } from 'react';
 import type { SummationEvent, SummationEventCreatedAt } from '@habsum/api-types';
 import { Button } from '~/core-components/Button';

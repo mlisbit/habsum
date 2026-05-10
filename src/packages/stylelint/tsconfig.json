@@ -7,10 +7,10 @@
     "noUncheckedIndexedAccess": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "rootDir": ".",
+    "rootDir": "src",
     "outDir": "dist",
     "declaration": false,
     "sourceMap": false
   },
-  "include": ["**/*.mts"]
+  "include": ["src/**/*.mts"]
 }
