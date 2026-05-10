@@ -1,15 +1,9 @@
-:root {
-  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
 // Theme tokens on `html` so `document.body` portals (e.g. hover panels) inherit the same variables.
 // Toggle with `document.documentElement.dataset.theme = "light" | "dark"`.
 html[data-theme='dark'] {
   color-scheme: dark;
 
   // borders
-  --border-radius-m: 10px;
-  --border-radius-full: 999px;
   --border-color-faint: #272b36;
 
   // background colors
@@ -44,8 +38,6 @@ html[data-theme='light'] {
   color-scheme: light;
 
   // borders
-  --border-radius-m: 10px;
-  --border-radius-full: 999px;
   --border-color-faint: #e8e8ea;
 
   // background colors
@@ -74,4 +66,11 @@ html[data-theme='light'] {
 
   // other
   --elevation-shadow: 0 1px 2px rgb(0 0 0 / 4%), 0 2px 8px rgb(0 0 0 / 6%);
+}
+
+:root {
+  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --border-radius-s: 4px;
+  --border-radius-m: 10px;
+  --border-radius-full: 999px;
 }

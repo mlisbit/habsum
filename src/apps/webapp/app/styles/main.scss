@@ -23,6 +23,8 @@
 // components
 @use 'components/day-nav';
 @use 'components/calendar';
+@use 'components/cell-data-display';
+@use 'components/cell-hover-display';
 @use 'components/history-display';
 @use 'components/habit-select';
 @use 'components/count-control';

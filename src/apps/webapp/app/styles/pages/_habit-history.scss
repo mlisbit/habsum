@@ -44,33 +44,8 @@
   min-width: 0;
 }
 
-.habit-history__calendar-dots {
-  display: flex;
-  gap: functions.spacing(1);
-  align-items: center;
-
-  .calendar__dot {
-    width: 8px;
-    height: 8px;
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-red-1) 22%, transparent);
-  }
-}
-
 .habit-history__widget {
   min-width: 0;
   display: grid;
   gap: functions.spacing(3);
-}
-
-// Hoverable popover body when hovering a calendar day (`Hoverable.Content`)
-.habit-history__calendar-day-hover-habit {
-  margin-top: functions.spacing(1);
-
-  &:first-of-type {
-    margin-top: 0;
-  }
-}
-
-.habit-history__calendar-day-hover-progress.progress {
-  margin-top: functions.spacing(1);
 }

@@ -1,0 +1,13 @@
+@use 'functions';
+
+.cell-hover-display__habit {
+  margin-top: functions.spacing(1);
+
+  &:first-of-type {
+    margin-top: 0;
+  }
+}
+
+.cell-hover-display__progress.progress {
+  margin-top: functions.spacing(1);
+}

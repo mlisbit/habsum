@@ -46,6 +46,7 @@
   border: 1px solid var(--border-color-faint);
   border-radius: var(--border-radius-m);
   padding: functions.spacing(1);
+  overflow: hidden;
   background: var(--background-secondary);
 
   &:empty {
@@ -90,15 +91,11 @@
   pointer-events: none;
 }
 
-.calendar__dot {
-  width: 14px;
-  height: 14px;
-  border-radius: var(--border-radius-full);
-  background: var(--accent-red-1);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent-red-1) 22%, transparent);
+.calendar__day-number {
+  position: relative;
+  z-index: 1;
 }
 
-// Calendar day hover panel — match app shell background (not card)
 .calendar__hoverable.hover-layer__panel {
   background: var(--background-tertiary);
 }

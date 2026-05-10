@@ -28,6 +28,17 @@ export type DayProgressBreakdown = {
   total: DayProgressSlice;
 };
 
+/**
+ * True when the habit has no logged data for the day: single-select has no choice,
+ * summation has no row (`total` is `null`; explicit `0` counts as data).
+ */
+export function isEmpty(habit: Habit): boolean {
+  if (habit.type === 'single_select') {
+    return habit.value == null || habit.value === '';
+  }
+  return habit.total == null;
+}
+
 function isSummation(h: Habit): h is HabitRowSummation {
   return h.type === 'summation';
 }

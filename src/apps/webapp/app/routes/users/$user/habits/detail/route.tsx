@@ -1,24 +1,41 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from '@remix-run/react';
 import { Calendar, type CalendarDataRender } from '~/components/Calendar';
+import { CellDataDisplay } from '~/components/CellDataDisplay';
+import { CellHoverDisplay } from '~/components/CellHoverDisplay';
 import { DayNav } from '~/components/DayNav';
 import { Button } from '~/core-components/Button';
 import { InfoText } from '~/core-components/InfoText';
 import { Pill } from '~/core-components/Pill';
-import { ProgressBar } from '~/core-components/ProgressBar';
 import { SingleSelectWidget, SummationWidget } from '~/components/widgets';
 import { getHabitHistory, patchHabit, type Habit } from '~/api.client';
 import { toDateKey } from '@habsum/utils';
+import { addDays } from '~/utils/date-utils';
 
 type HistoryGetPayload = Awaited<ReturnType<typeof getHabitHistory>>;
-
-function clamp(n: number, min: number, max: number) {
-  return Math.max(min, Math.min(max, n));
-}
 
 function withoutHistory<T extends Habit>(habit: T): T {
   const { history: _omit, ...rest } = habit;
   return rest as T;
+}
+
+function blankHabitFrom(habit: Habit): Habit {
+  if (habit.type === 'single_select') {
+    return withoutHistory({
+      name: habit.name,
+      type: 'single_select',
+      goal: habit.goal,
+      options: habit.options,
+      value: null,
+    } satisfies Habit);
+  }
+  return withoutHistory({
+    name: habit.name,
+    type: 'summation',
+    goal: habit.goal,
+    total: null,
+    ...(habit.summationOptions != null ? { summationOptions: habit.summationOptions } : {}),
+  } satisfies Habit);
 }
 
 function parseHabitFilters(raw: string | null): string[] {
@@ -31,65 +48,6 @@ function parseHabitFilters(raw: string | null): string[] {
       seen.add(x);
       return true;
     });
-}
-
-function renderCalendarDot(habit: Habit) {
-  const scale =
-    habit.type === 'summation'
-      ? (() => {
-          const goal = habit.goal ?? 0;
-          if (goal <= 0) return 1;
-          const ratio = (habit.total ?? 0) / goal;
-          // Map 0..1..2+ -> 0.6..1.2..1.5 (clamped)
-          return clamp(0.6 + ratio * 0.6, 0.6, 1.5);
-        })()
-      : 1;
-
-  return (
-    <span
-      key={habit.name}
-      className="calendar__dot"
-      aria-hidden
-      style={{ transform: `scale(${scale})` }}
-    />
-  );
-}
-
-function calendarHoverContent(habits: Habit[]) {
-  return (
-    <div className="habit-history__calendar-day-hover">
-      {habits.map((h) => (
-        <div key={h.name} className="habit-history__calendar-day-hover-habit">
-          {h.type === 'summation' ? (
-            <>
-              <strong>{h.name}</strong>
-              {h.goal != null && h.goal > 0 ? (
-                <ProgressBar
-                  className="habit-history__calendar-day-hover-progress"
-                  value={h.total ?? 0}
-                  max={h.goal}
-                  aria-label={`${h.name}: ${h.total ?? 0} of ${h.goal}`}
-                />
-              ) : (
-                <div className="text-light text-b-m">
-                  {h.total == null ? '—' : h.total}
-                  {h.goal != null ? ` / ${h.goal}` : ''}
-                </div>
-              )}
-            </>
-          ) : (
-            <>
-              <strong>{h.name}</strong>
-              <div className="text-light text-b-m">
-                {h.value ?? '—'}
-                {h.options.length > 0 ? <span> · {h.options.join(', ')}</span> : null}
-              </div>
-            </>
-          )}
-        </div>
-      ))}
-    </div>
-  );
 }
 
 // Habit detail — /users/:user/habits/detail?filter=:habitId or :habitId,:habitId
@@ -174,22 +132,52 @@ export default function HabitDetailRoute() {
     navigate(`${location.pathname}?${qs.toString()}`);
   };
 
-  const dataRenders = useMemo<CalendarDataRender[]>(
-    () =>
-      (historyRes?.history.user ?? []).map((row) => ({
+  const dataRenders = useMemo<CalendarDataRender[]>(() => {
+    if (!historyRes) return [];
+
+    const rangeStart = historyRes.firstDate ?? today;
+    const rangeEnd = today;
+    if (rangeStart > rangeEnd) return [];
+
+    const byDay = new Map(historyRes.history.user.map((row) => [row.day, row.habits]));
+    const templates = historyRes.data;
+    if (templates.length === 0) {
+      return (historyRes.history.user ?? []).map((row) => ({
         date: row.day,
-        callRender: () =>
-          row.habits.length === 1 ? (
-            renderCalendarDot(row.habits[0])
-          ) : (
-            <span className="habit-history__calendar-dots" aria-hidden>
-              {row.habits.map(renderCalendarDot)}
-            </span>
-          ),
-        hoverContent: () => calendarHoverContent(row.habits),
-      })),
-    [historyRes],
-  );
+        callRender: () => (
+          <CellDataDisplay
+            date={row.day}
+            rangeStart={rangeStart}
+            rangeEnd={rangeEnd}
+            habits={row.habits}
+          />
+        ),
+        hoverContent: () => <CellHoverDisplay habits={row.habits} />,
+      }));
+    }
+
+    const blanks = templates.map((h) => blankHabitFrom(h));
+    const list: CalendarDataRender[] = [];
+    let d = rangeStart;
+    while (d <= rangeEnd) {
+      const dayKey = d;
+      const habitsForDay = byDay.get(dayKey) ?? blanks;
+      list.push({
+        date: dayKey,
+        callRender: () => (
+          <CellDataDisplay
+            date={dayKey}
+            rangeStart={rangeStart}
+            rangeEnd={rangeEnd}
+            habits={habitsForDay}
+          />
+        ),
+        hoverContent: () => <CellHoverDisplay habits={habitsForDay} />,
+      });
+      d = addDays(d, 1, tzOffsetMinutes);
+    }
+    return list;
+  }, [historyRes, today, tzOffsetMinutes]);
 
   return (
     <div>
