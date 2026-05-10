@@ -1,6 +1,6 @@
 import type { Habit } from '~/api.client';
 
-export function HistoryDisplay({ history }: { history: Habit['history'] }) {
+export function History({ history }: { history: Habit['history'] }) {
   if (!history) return null;
 
   if (history.display === 'average') {

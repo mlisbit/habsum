@@ -11,6 +11,7 @@ import {
   PartyPopper,
   Plus,
   Settings,
+  SquarePen,
   X,
 } from 'lucide-react';
 
@@ -27,6 +28,7 @@ const ICON_COMPONENTS = {
   info: Info,
   minus: Minus,
   'octagon-x': OctagonX,
+  'square-pen': SquarePen,
   'user-round-plus': UserRoundPlus,
   plus: Plus,
   party: PartyPopper,

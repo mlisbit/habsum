@@ -5,7 +5,7 @@ import { habitDetailUrl } from '~/utils/habit-id';
 import { useLongPress } from '~/utils/use-long-press';
 import { Button } from '~/core-components/Button';
 import { InfoText } from '~/core-components/InfoText';
-import { HistoryDisplay } from '~/components/HistoryDisplay';
+import { History } from '~/components/widgets/modules/History';
 import { ModalActions, ModalBody, useModal } from '~/context/modal';
 
 type SingleSelectWidgetProps = {
@@ -128,7 +128,7 @@ export function SingleSelectWidget({
           {error}
         </InfoText>
       ) : null}
-      <HistoryDisplay history={habit.history} />
+      <History history={habit.history} />
     </div>
   );
 }

@@ -42,6 +42,7 @@ import {
   setSelect,
   setTotal,
 } from './db.js';
+import { mapSummationEventsToApi } from './summation-event-api.js';
 
 type PatchBody = {
   habit?: unknown;
@@ -97,7 +98,7 @@ function habitRowsForHistory(
   }
 
   return getAllTotals(user, habitDef.name).map((r) => {
-    const events = getSummationEvents(user, habitDef.name, r.date);
+    const events = mapSummationEventsToApi(getSummationEvents(user, habitDef.name, r.date));
     return {
       day: r.date,
       habit: {
@@ -480,7 +481,7 @@ app.patch(
       date,
       habit,
       total: next,
-      events,
+      events: mapSummationEventsToApi(events),
       type: known.type,
       goal: known.goal,
     };
