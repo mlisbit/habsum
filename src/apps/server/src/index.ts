@@ -312,12 +312,19 @@ app.get(
 app.get(
   '/users/:user/habits/history',
   (
-    req: Request<{ user: string }, unknown, unknown, { filter?: string; habitId?: string }>,
+    req: Request<
+      { user: string },
+      unknown,
+      unknown,
+      { filter?: string; habitId?: string; date?: string }
+    >,
     res: Response,
   ) => {
     const { user } = req.params;
     const habitIds = parseHabitFilter(req.query.filter ?? req.query.habitId);
     if (habitIds.length === 0) return res.status(400).json({ error: 'filter is required' });
+
+    const inspectDate = parseDateParam(req.query.date) ?? todayUtc();
 
     const config = loadUserConfigForRequest(user, res);
     if (!config) return;
@@ -348,13 +355,20 @@ app.get(
       );
     }
 
+    const inspectDayHabits = habitsByDate.get(inspectDate);
+    const inspectMap = inspectDayHabits ? new Map(inspectDayHabits.map((h) => [h.name, h])) : null;
+    const data: Habit[] = habitDefs.map(
+      (habitDef) => inspectMap?.get(habitDef.name) ?? emptyHabitForHistory(habitDef),
+    );
+
     const body: HistoryGetResponse = {
       user,
       habits: Object.fromEntries(
         config.habits.map((habitDef) => [dasherize(habitDef.name), habitDef.name]),
       ),
       firstDate: minDate(habitDefs.map((habitDef) => getHabitFirstDate(user, habitDef.name))),
-      data: {
+      data,
+      history: {
         user: Array.from(habitsByDate.entries())
           .map(([day, habits]) => ({ day, habits }))
           .sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : 0)),

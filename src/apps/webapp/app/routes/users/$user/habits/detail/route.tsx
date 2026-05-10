@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from '@remix-run/react';
 import { Calendar, type CalendarDataRender } from '~/components/Calendar';
 import { DayNav } from '~/components/DayNav';
@@ -8,9 +8,9 @@ import { Pill } from '~/core-components/Pill';
 import { ProgressBar } from '~/core-components/ProgressBar';
 import { SingleSelectWidget, SummationWidget } from '~/components/widgets';
 import { getHabitHistory, patchHabit, type Habit } from '~/api.client';
-import { dasherize, toDateKey } from '@habsum/utils';
+import { toDateKey } from '@habsum/utils';
 
-type HabitHistory = Awaited<ReturnType<typeof getHabitHistory>>;
+type HistoryGetPayload = Awaited<ReturnType<typeof getHabitHistory>>;
 
 function clamp(n: number, min: number, max: number) {
   return Math.max(min, Math.min(max, n));
@@ -31,51 +31,6 @@ function parseHabitFilters(raw: string | null): string[] {
       seen.add(x);
       return true;
     });
-}
-
-function blankHabitFrom(habit: Habit): Habit {
-  if (habit.type === 'single_select') {
-    return withoutHistory({
-      name: habit.name,
-      type: 'single_select',
-      goal: habit.goal,
-      options: habit.options,
-      value: null,
-    } satisfies Habit);
-  }
-
-  return withoutHistory({
-    name: habit.name,
-    type: 'summation',
-    goal: habit.goal,
-    total: null,
-    ...(habit.summationOptions != null ? { summationOptions: habit.summationOptions } : {}),
-  } satisfies Habit);
-}
-
-function upsertDayHabit(
-  rows: HabitHistory['data']['user'],
-  day: string,
-  nextHabit: Habit,
-): HabitHistory['data']['user'] {
-  const idx = rows.findIndex((r) => r.day === day);
-  if (idx === -1) {
-    return [...rows, { day, habits: [nextHabit] }].sort((a, b) =>
-      a.day < b.day ? -1 : a.day > b.day ? 1 : 0,
-    );
-  }
-
-  const copy = rows.slice();
-  const prevHabits = copy[idx].habits;
-  const habitIdx = prevHabits.findIndex((h) => h.name === nextHabit.name);
-  copy[idx] = {
-    ...copy[idx],
-    habits:
-      habitIdx === -1
-        ? [...prevHabits, nextHabit]
-        : prevHabits.map((h, i) => (i === habitIdx ? nextHabit : h)),
-  };
-  return copy;
 }
 
 function renderCalendarDot(habit: Habit) {
@@ -147,7 +102,7 @@ export default function HabitDetailRoute() {
   const habitIds = useMemo(() => parseHabitFilters(query.get('filter')), [query]);
   const habitFilterKey = habitIds.join(',');
   const selectedDate = query.get('date');
-  const [history, setHistory] = useState<HabitHistory | null>(null);
+  const [historyRes, setHistoryRes] = useState<HistoryGetPayload | null>(null);
   const [habitError, setHabitError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const tzOffsetMinutes = useMemo(() => new Date().getTimezoneOffset(), []);
@@ -155,53 +110,53 @@ export default function HabitDetailRoute() {
   const effectiveDate = selectedDate ?? today;
   const showJumpToToday = effectiveDate !== today;
 
+  const fetchHistory = useCallback(
+    async (options: { mode: 'initial' | 'refresh'; cancelled?: { current: boolean } }) => {
+      const { mode, cancelled } = options;
+      if (habitIds.length === 0 || !user) return;
+
+      if (mode === 'initial') {
+        setIsLoading(true);
+        setHistoryRes(null);
+      }
+      setHabitError(null);
+
+      try {
+        const nextHistory = await getHabitHistory(user, habitIds, effectiveDate);
+        if (cancelled?.current) return;
+        setHistoryRes(nextHistory);
+      } catch (e) {
+        if (cancelled?.current) return;
+        setHabitError(e instanceof Error ? e.message : String(e));
+      } finally {
+        if (mode === 'initial' && !cancelled?.current) {
+          setIsLoading(false);
+        }
+      }
+    },
+    [user, habitIds, effectiveDate],
+  );
+
   useEffect(() => {
     if (habitIds.length === 0 || !user) {
       setIsLoading(false);
-      setHistory(null);
+      setHistoryRes(null);
       setHabitError(user ? 'filter is required' : null);
       return;
     }
 
-    let ignore = false;
-    setIsLoading(true);
-    setHabitError(null);
-    setHistory(null);
-
-    getHabitHistory(user, habitIds)
-      .then((nextHistory) => {
-        if (!ignore) setHistory(nextHistory);
-      })
-      .catch((e) => {
-        if (!ignore) setHabitError(e instanceof Error ? e.message : String(e));
-      })
-      .finally(() => {
-        if (!ignore) setIsLoading(false);
-      });
+    const cancelled = { current: false };
+    void fetchHistory({ mode: 'initial', cancelled });
 
     return () => {
-      ignore = true;
+      cancelled.current = true;
     };
-  }, [habitFilterKey, habitIds, user]);
+  }, [fetchHistory, user, habitFilterKey, effectiveDate]);
 
-  const representativeHabits = useMemo(() => {
-    const byId = new Map<string, Habit>();
-    for (const row of history?.data.user ?? []) {
-      for (const habit of row.habits) {
-        const id = dasherize(habit.name);
-        if (!byId.has(id)) byId.set(id, withoutHistory(habit));
-      }
-    }
-    return habitIds.map((habitId) => byId.get(habitId)).filter((habit): habit is Habit => !!habit);
-  }, [habitIds, history]);
-
-  const widgets = useMemo(() => {
-    const row = history?.data.user.find((r) => r.day === effectiveDate);
-    return representativeHabits.map((representative) => {
-      const fromRow = row?.habits.find((h) => h.name === representative.name);
-      return fromRow ? withoutHistory(fromRow) : blankHabitFrom(representative);
-    });
-  }, [effectiveDate, history, representativeHabits]);
+  const widgets = useMemo(
+    () => (historyRes?.data ?? []).map((h) => withoutHistory(h)),
+    [historyRes],
+  );
 
   const setSelectedDateInUrl = (date: string) => {
     const qs = new URLSearchParams(location.search);
@@ -219,23 +174,9 @@ export default function HabitDetailRoute() {
     navigate(`${location.pathname}?${qs.toString()}`);
   };
 
-  const onHabitPatched = (updated: Habit) => {
-    setHistory((prev) =>
-      prev
-        ? {
-            ...prev,
-            data: {
-              ...prev.data,
-              user: upsertDayHabit(prev.data.user, effectiveDate, updated),
-            },
-          }
-        : prev,
-    );
-  };
-
   const dataRenders = useMemo<CalendarDataRender[]>(
     () =>
-      (history?.data.user ?? []).map((row) => ({
+      (historyRes?.history.user ?? []).map((row) => ({
         date: row.day,
         callRender: () =>
           row.habits.length === 1 ? (
@@ -247,7 +188,7 @@ export default function HabitDetailRoute() {
           ),
         hoverContent: () => calendarHoverContent(row.habits),
       })),
-    [history],
+    [historyRes],
   );
 
   return (
@@ -269,9 +210,9 @@ export default function HabitDetailRoute() {
               )
             }
           />
-          {history ? (
+          {historyRes ? (
             <div className="habit-history__filter-pills">
-              {Object.entries(history.habits).map(([habitId, habitName]) => (
+              {Object.entries(historyRes.habits).map(([habitId, habitName]) => (
                 <Pill
                   key={habitId}
                   selected={habitIds.includes(habitId)}
@@ -302,7 +243,7 @@ export default function HabitDetailRoute() {
             <Calendar
               tzOffsetMinutes={tzOffsetMinutes}
               lastData={toDateKey(new Date(), tzOffsetMinutes)}
-              firstDate={history?.firstDate ?? undefined}
+              firstDate={historyRes ? (historyRes.firstDate ?? today) : undefined}
               selectedDate={effectiveDate}
               onDaySelect={setSelectedDateInUrl}
               dataRenders={dataRenders}
@@ -329,20 +270,20 @@ export default function HabitDetailRoute() {
                     user={user}
                     habit={habitForWidget}
                     onSelectOption={async (opt) => {
-                      const updated = await patchHabit(
+                      await patchHabit(
                         user,
                         { habit: habitForWidget.name, value: opt },
                         { date: effectiveDate },
                       );
-                      onHabitPatched({ ...habitForWidget, ...updated, value: opt } as Habit);
+                      await fetchHistory({ mode: 'refresh' });
                     }}
                     onClearSelection={async () => {
-                      const updated = await patchHabit(
+                      await patchHabit(
                         user,
                         { habit: habitForWidget.name, action: 'clear' },
                         { date: effectiveDate },
                       );
-                      onHabitPatched({ ...habitForWidget, ...updated } as Habit);
+                      await fetchHistory({ mode: 'refresh' });
                     }}
                   />
                 ) : (
@@ -351,20 +292,20 @@ export default function HabitDetailRoute() {
                     user={user}
                     habit={habitForWidget}
                     onAddAmount={async (delta) => {
-                      const updated = await patchHabit(
+                      await patchHabit(
                         user,
                         { habit: habitForWidget.name, total: delta },
                         { date: effectiveDate },
                       );
-                      onHabitPatched({ ...habitForWidget, ...updated } as Habit);
+                      await fetchHistory({ mode: 'refresh' });
                     }}
                     onClearTotal={async () => {
-                      const updated = await patchHabit(
+                      await patchHabit(
                         user,
                         { habit: habitForWidget.name, action: 'clear' },
                         { date: effectiveDate },
                       );
-                      onHabitPatched({ ...habitForWidget, ...updated } as Habit);
+                      await fetchHistory({ mode: 'refresh' });
                     }}
                   />
                 ),

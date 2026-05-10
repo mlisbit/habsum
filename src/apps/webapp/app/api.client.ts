@@ -80,8 +80,11 @@ export async function getHabits(user: string, date?: string) {
   return request<HabitsResponse>(`/users/${encodeURIComponent(user)}/habits${qs}`);
 }
 
-export async function getHabitHistory(user: string, filter: string[]) {
-  const qs = `?filter=${encodeURIComponent(filter.join(','))}`;
+export async function getHabitHistory(user: string, filter: string[], date?: string) {
+  const params = new URLSearchParams();
+  params.set('filter', filter.join(','));
+  if (date) params.set('date', date);
+  const qs = `?${params.toString()}`;
   const path = `/users/${encodeURIComponent(user)}/habits/history${qs}`;
   const pending = habitHistoryRequests.get(path);
   if (pending) return pending;
