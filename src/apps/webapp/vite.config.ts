@@ -31,6 +31,7 @@ export default defineConfig({
                 index: true,
               });
               route('account', 'routes/users/$user/settings/account/route.tsx');
+              route('developer', 'routes/users/$user/settings/developer/route.tsx');
               route('config', 'routes/users/$user/settings/config/route.tsx');
             });
           });

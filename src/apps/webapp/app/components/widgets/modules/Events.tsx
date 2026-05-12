@@ -21,12 +21,20 @@ function formatEventAmount(amount: number) {
 
 function formatEventClockDisplay(createdAt: SummationEventCreatedAt) {
   if (!createdAt.day) return createdAt.time || '—';
-  const wall = createdAt.time
-    ? `${createdAt.day}T${createdAt.time}Z`
-    : `${createdAt.day}T00:00:00Z`;
-  const date = new Date(wall);
-  if (Number.isNaN(date.getTime())) return createdAt.time || createdAt.day;
-  return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  if (!createdAt.time) {
+    const local = new Date(
+      Number(createdAt.day.slice(0, 4)),
+      Number(createdAt.day.slice(5, 7)) - 1,
+      Number(createdAt.day.slice(8, 10)),
+    );
+    if (Number.isNaN(local.getTime())) return createdAt.day;
+    return local.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  }
+  const m = createdAt.time.match(/^(\d{1,2}):(\d{2})/);
+  if (!m) return createdAt.time;
+  const d = new Date(2000, 0, 1, Number(m[1]), Number(m[2]), 0);
+  if (Number.isNaN(d.getTime())) return createdAt.time;
+  return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 }
 
 /** `YYYY-MM-DD` day key from the API — format in local calendar without TZ shift. */

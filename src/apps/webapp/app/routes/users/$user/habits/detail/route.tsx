@@ -65,7 +65,7 @@ export default function HabitDetailRoute() {
   const [isLoading, setIsLoading] = useState(false);
   const tzOffsetMinutes = useMemo(() => new Date().getTimezoneOffset(), []);
   const today = useMemo(() => toDateKey(new Date(), tzOffsetMinutes), [tzOffsetMinutes]);
-  const effectiveDate = selectedDate ?? today;
+  const effectiveDate = selectedDate && selectedDate.length > 0 ? selectedDate : today;
   const showJumpToToday = effectiveDate !== today;
 
   const fetchHistory = useCallback(

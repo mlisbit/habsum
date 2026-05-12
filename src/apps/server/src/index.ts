@@ -43,22 +43,20 @@ import {
   setTotal,
 } from './db.js';
 import { mapSummationEventsToApi } from './summation-event-api.js';
+import {
+  apiServerTimeSnapshot,
+  parseClientCreatedAtIso,
+  resolveHabitApiDateQuery,
+} from './server-time.js';
 
 type PatchBody = {
   habit?: unknown;
   total?: unknown;
   action?: unknown;
   value?: unknown;
+  date?: unknown;
+  clientCreatedAt?: unknown;
 };
-
-function todayUtc(): string {
-  return toDateKey(new Date(), 0);
-}
-
-function parseDateParam(value: unknown): string | null {
-  if (typeof value !== 'string' || value.length === 0) return null;
-  return /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null;
-}
 
 function parseHabitFilter(value: unknown): string[] {
   if (typeof value !== 'string') return [];
@@ -180,6 +178,10 @@ app.get('/health', (_req, res) => {
   res.json(body);
 });
 
+app.get('/time', (_req, res) => {
+  res.json(apiServerTimeSnapshot());
+});
+
 app.get('/users', (_req, res) => {
   const body: ListUsersResponse = { users: listUsers() };
   res.json(body);
@@ -261,7 +263,8 @@ app.get(
     if (!config) return;
 
     const firstDate = getFirstDate(user);
-    const date = parseDateParam(req.query.date) ?? todayUtc();
+    const at = new Date();
+    const date = resolveHabitApiDateQuery(req.query.date, at);
 
     const habits = config.habits.map((h) => {
       const base = {
@@ -304,7 +307,7 @@ app.get(
       date,
       firstDate,
       habits,
-      serverTime: new Date().toISOString(),
+      serverTime: at.toISOString(),
     };
     res.json(body);
   },
@@ -325,7 +328,8 @@ app.get(
     const habitIds = parseHabitFilter(req.query.filter ?? req.query.habitId);
     if (habitIds.length === 0) return res.status(400).json({ error: 'filter is required' });
 
-    const inspectDate = parseDateParam(req.query.date) ?? todayUtc();
+    const at = new Date();
+    const inspectDate = resolveHabitApiDateQuery(req.query.date, at);
 
     const config = loadUserConfigForRequest(user, res);
     if (!config) return;
@@ -374,7 +378,7 @@ app.get(
           .map(([day, habits]) => ({ day, habits }))
           .sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : 0)),
       },
-      serverTime: new Date().toISOString(),
+      serverTime: at.toISOString(),
     };
     res.json(body);
   },
@@ -390,14 +394,21 @@ app.get('/users/:user/habits/:habitId', (req, res) => {
 
 app.patch(
   '/users/:user/habits',
-  (req: Request<{ user: string }, unknown, PatchBody, { date?: string }>, res: Response) => {
+  (req: Request<{ user: string }, unknown, PatchBody>, res: Response) => {
     const { user } = req.params;
     const config = loadUserConfigForRequest(user, res);
     if (!config) return;
 
-    const date = parseDateParam(req.query.date) ?? todayUtc();
+    const body = req.body ?? {};
+    const date =
+      typeof body.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.date) ? body.date : null;
+    if (date == null) {
+      return res.status(400).json({
+        error: 'body.date is required (YYYY-MM-DD)',
+      });
+    }
 
-    const { habit, total, action, value } = req.body ?? {};
+    const { habit, total, action, value, clientCreatedAt } = body;
     if (typeof habit !== 'string' || habit.length === 0) {
       return res.status(400).json({ error: 'habit is required' });
     }
@@ -463,14 +474,22 @@ app.patch(
       return res.status(400).json({ error: 'total must be a number' });
     }
 
+    const createdAtSql = parseClientCreatedAtIso(clientCreatedAt);
+    if (createdAtSql == null) {
+      return res.status(400).json({
+        error:
+          'body.clientCreatedAt is required for summation add/set (YYYY-MM-DD HH:MM:SS client wall clock)',
+      });
+    }
+
     let next: number | null;
     let events = getSummationEvents(user, habit, date);
     if (mode === 'add') {
-      const result = addToTotal(user, habit, date, numericTotal);
+      const result = addToTotal(user, habit, date, numericTotal, createdAtSql);
       next = result.total;
       events = result.event ? [...events, result.event] : events;
     } else if (mode === 'set') {
-      next = setTotal(user, habit, date, numericTotal);
+      next = setTotal(user, habit, date, numericTotal, createdAtSql);
       events = getSummationEvents(user, habit, date);
     } else {
       return res.status(400).json({ error: `unknown action "${mode}"` });

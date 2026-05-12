@@ -3,6 +3,12 @@ export type ApiErrorBody = { error: string };
 
 export type HealthResponse = { ok: true };
 
+/** Current wall-clock info from the API process (habsum server). */
+export type ServerTimeResponse = {
+  iso: string;
+  timezone: string;
+};
+
 export type ListUsersResponse = { users: string[] };
 
 export type {

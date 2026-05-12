@@ -4,13 +4,19 @@ import type { BarGraphData } from '~/components/BarGraph';
 /** Column key / hover label for amounts logged off the habit row day (retroactive timestamps). */
 export const AFTER_HOURS_BAR_KEY = 'after hours';
 
+/** Hour 0–23 from API `createdAt.time` (`HH:MM(:SS)?`); matches stored client wall clock. */
+function hourFromCreatedAtTime(time: string): number | null {
+  const m = time.match(/^(\d{1,2}):/);
+  if (!m) return null;
+  const h = Number(m[1]);
+  if (!Number.isInteger(h) || h < 0 || h > 23) return null;
+  return h;
+}
+
 function summationLocalHour(row: SummationEvent): number | null {
   const { day, time } = row.createdAt;
-  if (!day) return null;
-  const wall = time ? `${day}T${time}Z` : `${day}T00:00:00Z`;
-  const date = new Date(wall);
-  if (Number.isNaN(date.getTime())) return null;
-  return date.getHours();
+  if (!day || !time) return null;
+  return hourFromCreatedAtTime(time);
 }
 
 function formatHourBucketLabel(hour: number): string {

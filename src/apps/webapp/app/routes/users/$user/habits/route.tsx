@@ -45,7 +45,8 @@ export default function HabitsPage() {
 
     const syncFromUrl = () => {
       const q = new URLSearchParams(window.location.search);
-      setUrlDate(q.get('date'));
+      const raw = q.get('date');
+      setUrlDate(raw && raw.length > 0 ? raw : null);
     };
 
     syncFromUrl();

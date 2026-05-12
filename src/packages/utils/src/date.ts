@@ -5,17 +5,25 @@ function pad2(n: number) {
 /**
  * Convert a Date to a YYYY-MM-DD "date key" in a specific timezone offset.
  *
+ * When `includeTime` is true, appends local wall time as ` HH:MM:SS` (API / SQLite
+ * `clientCreatedAt` shape). Time uses the same shifted instant as the date portion.
+ *
  * tzOffsetMinutes uses the same convention as Date#getTimezoneOffset():
  *   UTC = local time + tzOffsetMinutes.
  *
  * Example: Pacific time in winter is typically 480.
  */
-export function toDateKey(date: Date, tzOffsetMinutes: number): string {
+export function toDateKey(date: Date, tzOffsetMinutes: number, includeTime = false): string {
   const shifted = new Date(date.getTime() - tzOffsetMinutes * 60_000);
   const y = shifted.getUTCFullYear();
   const m = shifted.getUTCMonth() + 1;
   const d = shifted.getUTCDate();
-  return `${y}-${pad2(m)}-${pad2(d)}`;
+  const day = `${y}-${pad2(m)}-${pad2(d)}`;
+  if (!includeTime) return day;
+  const hh = shifted.getUTCHours();
+  const mi = shifted.getUTCMinutes();
+  const s = shifted.getUTCSeconds();
+  return `${day} ${pad2(hh)}:${pad2(mi)}:${pad2(s)}`;
 }
 
 /**

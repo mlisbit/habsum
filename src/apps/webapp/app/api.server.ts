@@ -1,6 +1,22 @@
 import type { HabitsResponse, ListUsersResponse, PatchHabitResponse } from '@habsum/api-types';
+import { toDateKey } from '@habsum/utils';
 
 const SERVER_URL = process.env.HABSUM_SERVER_URL ?? 'http://localhost:3001';
+
+function buildHabitPatchPayload(
+  body:
+    | { habit: string; total: number; action?: 'add' | 'set' }
+    | { habit: string; action: 'clear' },
+  date: string,
+): Record<string, unknown> {
+  const d = new Date();
+  const clientCreatedAt = toDateKey(d, d.getTimezoneOffset(), true);
+  return {
+    ...body,
+    date,
+    clientCreatedAt,
+  };
+}
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${SERVER_URL}${path}`, {
@@ -30,9 +46,10 @@ export function patchHabit(
   body:
     | { habit: string; total: number; action?: 'add' | 'set' }
     | { habit: string; action: 'clear' },
+  opts: { date: string },
 ) {
   return request<PatchHabitResponse>(`/users/${encodeURIComponent(user)}/habits`, {
     method: 'PATCH',
-    body: JSON.stringify(body),
+    body: JSON.stringify(buildHabitPatchPayload(body, opts.date)),
   });
 }

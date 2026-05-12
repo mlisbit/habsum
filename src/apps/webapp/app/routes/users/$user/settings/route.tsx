@@ -43,6 +43,14 @@ export default function UserSettingsLayout() {
           >
             Config
           </Link>
+          <Link
+            className={`settings__link text-b-l${
+              path.endsWith('/developer') ? ' settings__link--active' : ''
+            }`}
+            to={`${base}/developer`}
+          >
+            Developer
+          </Link>
         </nav>
       </aside>
       <main className="card pt-3">

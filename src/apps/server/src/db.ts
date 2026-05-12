@@ -73,11 +73,12 @@ const insertSummationEventStmt = db.prepare<
     habit: string;
     date: string;
     amount: number;
+    createdAt: string;
   },
   SummationEventRow
 >(`
   INSERT INTO habit_summation_events (user, habit, date, amount, created_at)
-  VALUES (@user, @habit, @date, @amount, datetime('now'))
+  VALUES (@user, @habit, @date, @amount, @createdAt)
   RETURNING id, date, amount, created_at AS createdAt
 `);
 
@@ -149,11 +150,17 @@ export function getSummationDayTotal(user: string, habit: string, date: string):
   return row === undefined || row.eventCount === 0 ? null : row.total;
 }
 
-export function setTotal(user: string, habit: string, date: string, total: number): number {
+export function setTotal(
+  user: string,
+  habit: string,
+  date: string,
+  total: number,
+  createdAtSql: string,
+): number {
   const next = Math.max(0, Math.trunc(total));
   deleteSummationEventsForDayStmt.run({ user, habit, date });
   if (next > 0) {
-    insertSummationEventStmt.get({ user, habit, date, amount: next });
+    insertSummationEventStmt.get({ user, habit, date, amount: next, createdAt: createdAtSql });
   }
   return next;
 }
@@ -163,6 +170,7 @@ export function addToTotal(
   habit: string,
   date: string,
   delta: number,
+  createdAtSql: string,
 ): { total: number | null; event: SummationEventRow | null } {
   const current = getSummationDayTotal(user, habit, date);
   const base = current ?? 0;
@@ -170,7 +178,13 @@ export function addToTotal(
   const amount = requested < 0 ? Math.max(requested, -base) : requested;
   if (amount === 0) return { total: current, event: null };
 
-  const event = insertSummationEventStmt.get({ user, habit, date, amount });
+  const event = insertSummationEventStmt.get({
+    user,
+    habit,
+    date,
+    amount,
+    createdAt: createdAtSql,
+  });
   if (!event) throw new Error('failed to record summation event');
   return { total: base + amount, event };
 }

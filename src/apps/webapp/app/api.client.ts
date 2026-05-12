@@ -5,10 +5,12 @@ import type {
   ListUsersResponse,
   PatchHabitResponse,
   PurgeUserDataResponse,
+  ServerTimeResponse,
   UserConfigGetResponse,
   UserConfigPutResponse,
   UsersPatchRequest,
 } from '@habsum/api-types';
+import { toDateKey } from '@habsum/utils';
 
 export type {
   ApiErrorBody,
@@ -22,6 +24,7 @@ export type {
   ListUsersResponse,
   PatchHabitResponse,
   PurgeUserDataResponse,
+  ServerTimeResponse,
   UserConfigGetResponse,
   UserConfigPutResponse,
 } from '@habsum/api-types';
@@ -30,6 +33,22 @@ const OVERRIDE_SERVER_URL = import.meta.env.VITE_HABSUM_SERVER_URL;
 const API_PREFIX = OVERRIDE_SERVER_URL ? '' : '/api';
 const SERVER_URL = OVERRIDE_SERVER_URL ?? '';
 const habitHistoryRequests = new Map<string, Promise<HistoryGetResponse>>();
+
+function buildHabitPatchPayload(
+  body:
+    | { habit: string; total: number }
+    | { habit: string; value: string }
+    | { habit: string; action: 'clear' },
+  date: string,
+): Record<string, unknown> {
+  const d = new Date();
+  const clientCreatedAt = toDateKey(d, d.getTimezoneOffset(), true);
+  return {
+    ...body,
+    date,
+    clientCreatedAt,
+  };
+}
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${SERVER_URL}${API_PREFIX}${path}`, {
@@ -55,6 +74,10 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export async function listUsers() {
   return request<ListUsersResponse>('/users');
+}
+
+export async function getServerTime() {
+  return request<ServerTimeResponse>('/time');
 }
 
 export async function createUser(name: string) {
@@ -102,12 +125,11 @@ export async function patchHabit(
     | { habit: string; total: number }
     | { habit: string; value: string }
     | { habit: string; action: 'clear' },
-  opts?: { date?: string },
+  opts: { date: string },
 ) {
-  const qs = opts?.date ? `?date=${encodeURIComponent(opts.date)}` : '';
-  const res = await request<PatchHabitResponse>(`/users/${encodeURIComponent(user)}/habits${qs}`, {
+  const res = await request<PatchHabitResponse>(`/users/${encodeURIComponent(user)}/habits`, {
     method: 'PATCH',
-    body: JSON.stringify(body),
+    body: JSON.stringify(buildHabitPatchPayload(body, opts.date)),
   });
   if (res.type === 'single_select') {
     return {
