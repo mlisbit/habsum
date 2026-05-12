@@ -1,0 +1,54 @@
+@use 'functions';
+
+.bar-graph {
+  display: flex;
+  gap: 3px; // stylelint-disable-line
+  align-items: stretch;
+  min-height: 50px;
+  box-sizing: border-box;
+  block-size: functions.spacing(5);
+  margin-block-start: functions.spacing(2);
+}
+
+.bar-graph__track {
+  flex: 1;
+  min-inline-size: 0;
+  display: flex;
+  height: 100%;
+  flex-direction: column;
+  justify-content: flex-end;
+  overflow: hidden;
+  background: var(--background-disabled);
+  border-radius: var(--border-radius-s);
+  cursor: default;
+}
+
+.bar-graph__track--negative {
+  background: var(--accent-red-1);
+}
+
+.bar-graph__fill {
+  inline-size: 100%;
+  background: var(--accent-selected);
+  min-block-size: 0;
+}
+
+.bar-graph__hover.hover-layer__panel {
+  background: var(--background-tertiary);
+}
+
+.bar-graph__hover-body {
+  display: flex;
+  flex-direction: column;
+  gap: functions.spacing(1);
+  align-items: center;
+  text-align: center;
+}
+
+.bar-graph__hover-range {
+  white-space: nowrap;
+}
+
+.bar-graph__hover-value {
+  font-variant-numeric: tabular-nums;
+}

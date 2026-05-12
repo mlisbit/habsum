@@ -1,12 +1,18 @@
 // exclusive-bem-block: events
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import type { SummationEvent, SummationEventCreatedAt } from '@habsum/api-types';
+import { BarGraph } from '~/components/BarGraph';
 import { Button } from '~/core-components/Button';
 import { ModalActions, ModalBody, ModalTitle, useModal } from '~/context/modal';
+import { summationHourlyBarGraphData } from '~/utils/formatters/summation-hourly-bar-data';
 
 type EventsProps = {
   habitName: string;
+  /** Calendar day for this habit row (`YYYY-MM-DD`); used to split same-day vs retroactive event timestamps. */
+  dayKey: string;
   events: SummationEvent[] | undefined | null;
+  /** Called when the bar graph hover opens for a bucket (`value` = sum of amounts logged in that hour). */
+  onBarHover?: (detail: { key: string; value: number }) => void;
 };
 
 function formatEventAmount(amount: number) {
@@ -72,8 +78,14 @@ function EventsModalContent({
   );
 }
 
-export function Events({ habitName, events }: EventsProps) {
+export function Events({ habitName, dayKey, events, onBarHover }: EventsProps) {
   const { present, closeModal } = useModal();
+
+  const barGraphData = useMemo(
+    () =>
+      events == null || events.length === 0 ? {} : summationHourlyBarGraphData(events, dayKey),
+    [events, dayKey],
+  );
 
   const openEventsModal = useCallback(() => {
     if (events == null) return;
@@ -84,10 +96,18 @@ export function Events({ habitName, events }: EventsProps) {
 
   if (events == null) return null;
 
+  if (events.length === 0) {
+    return (
+      <div className="events">
+        <p className="text-light text-b-m events__empty">No data</p>
+      </div>
+    );
+  }
+
   return (
     <div className="events">
       <div className="text-light text-b-m events__meta">
-        <span>Events</span>
+        <span>Today's events</span>
         <span className="events__summary">
           <span>{events.length}</span>
           <Button
@@ -100,6 +120,7 @@ export function Events({ habitName, events }: EventsProps) {
           />
         </span>
       </div>
+      <BarGraph data={barGraphData} onHover={onBarHover} />
     </div>
   );
 }

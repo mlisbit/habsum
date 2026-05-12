@@ -21,6 +21,10 @@
   gap: functions.spacing(1);
 }
 
+.events__empty {
+  margin: 0;
+}
+
 .events__modal-body {
   display: flex;
   flex-direction: column;

@@ -1,3 +1,4 @@
+// exclusive-bem-block: hover-layer
 import {
   createContext,
   forwardRef,
@@ -120,6 +121,7 @@ type HoverableContentProps = Omit<HTMLAttributes<HTMLDivElement>, 'children'> & 
   side?: HoverablePanelSide;
 };
 
+/** Portal panel; intrinsic width — set min/max sizing via your feature classNames on `Hoverable.Content`. */
 function HoverableContent({
   children,
   className,

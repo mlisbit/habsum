@@ -134,6 +134,7 @@ export default function HabitsPage() {
         key={h.name}
         user={state!.user}
         habit={h}
+        dayKey={effectiveDate}
         surfaceClassName="habits-page__tile"
         onAddAmount={async (delta) => {
           const updated = await patchHabit(

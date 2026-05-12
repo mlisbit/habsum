@@ -11,6 +11,8 @@ import { CountControl } from '~/components/CountControl';
 type SummationWidgetProps = {
   user: string;
   habit: HabitRowSummation;
+  /** `YYYY-MM-DD` for this habit row (same as habits API `date`). */
+  dayKey: string;
   onAddAmount: (delta: number) => Promise<void>;
   onClearTotal: () => Promise<void>;
   /** Amount added or subtracted per tap on + / −; manual entry is unchanged. */
@@ -29,6 +31,7 @@ function summationIsComplete(habit: HabitRowSummation): boolean {
 export function SummationWidget({
   user,
   habit,
+  dayKey,
   onAddAmount,
   onClearTotal,
   interval = 1,
@@ -103,7 +106,7 @@ export function SummationWidget({
           aria-label={`${habit.name}: ${total ?? 0} of ${goal}`}
         />
       ) : null}
-      <Events habitName={habit.name} events={habit.events} />
+      <Events habitName={habit.name} dayKey={dayKey} events={habit.events} />
       <History history={habit.history} />
     </div>
   );

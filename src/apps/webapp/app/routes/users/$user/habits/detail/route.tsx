@@ -279,6 +279,7 @@ export default function HabitDetailRoute() {
                     key={habitForWidget.name}
                     user={user}
                     habit={habitForWidget}
+                    dayKey={effectiveDate}
                     onAddAmount={async (delta) => {
                       await patchHabit(
                         user,

@@ -99,3 +99,7 @@
 .calendar__hoverable.hover-layer__panel {
   background: var(--background-tertiary);
 }
+
+.calendar__hoverable--min-width.hover-layer__panel {
+  min-inline-size: 200px;
+}

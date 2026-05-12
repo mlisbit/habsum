@@ -82,13 +82,6 @@ $back-button-slot: 2.25rem; // matches `.button.button--icon` width
   flex-shrink: 0;
 }
 
-// Compact Hoverable panels for icon buttons + day progress tooltip.
-.top-nav__back-tooltip.hover-layer__panel,
-.top-nav__settings-tooltip.hover-layer__panel,
-.top-nav__progress-tooltip.hover-layer__panel {
-  min-width: unset;
-}
-
 .top-nav__settings-anchor {
   display: flex;
 }
