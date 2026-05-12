@@ -91,6 +91,16 @@ const deleteSummationEventsForDayStmt = db.prepare<{
   WHERE user = @user AND habit = @habit AND date = @date
 `);
 
+const deleteSummationEventStmt = db.prepare<{
+  user: string;
+  habit: string;
+  date: string;
+  id: number;
+}>(`
+  DELETE FROM habit_summation_events
+  WHERE user = @user AND habit = @habit AND date = @date AND id = @id
+`);
+
 const firstDateStmt = db.prepare<[string, string], FirstDateRow>(`
   SELECT MIN(date) AS date
   FROM (
@@ -191,6 +201,17 @@ export function addToTotal(
 
 export function deleteSummationEventsForDay(user: string, habit: string, date: string): void {
   deleteSummationEventsForDayStmt.run({ user, habit, date });
+}
+
+/** Returns whether a row was removed (scoped to user, habit, and calendar day). */
+export function deleteSummationEvent(
+  user: string,
+  habit: string,
+  date: string,
+  id: number,
+): boolean {
+  const result = deleteSummationEventStmt.run({ user, habit, date, id });
+  return result.changes > 0;
 }
 
 export function getSeries(

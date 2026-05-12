@@ -17,6 +17,8 @@ type SummationWidgetProps = {
   onClearTotal: () => Promise<void>;
   /** Amount added or subtracted per tap on + / −; manual entry is unchanged. */
   interval?: number;
+  /** Removes one logged summation event (modal row action). */
+  onDeleteSummationEvent: (eventId: number) => Promise<void>;
   /** Extra root class(es), e.g. page layout hooks (`habits-page__tile`). */
   surfaceClassName?: string;
 };
@@ -34,6 +36,7 @@ export function SummationWidget({
   dayKey,
   onAddAmount,
   onClearTotal,
+  onDeleteSummationEvent,
   interval = 1,
   surfaceClassName,
 }: SummationWidgetProps) {
@@ -106,7 +109,12 @@ export function SummationWidget({
           aria-label={`${habit.name}: ${total ?? 0} of ${goal}`}
         />
       ) : null}
-      <Events habitName={habit.name} dayKey={dayKey} events={habit.events} />
+      <Events
+        habitName={habit.name}
+        dayKey={dayKey}
+        events={habit.events}
+        onDeleteSummationEvent={(eventId) => runOp(() => onDeleteSummationEvent(eventId))}
+      />
       <History history={habit.history} />
     </div>
   );

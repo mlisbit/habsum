@@ -153,6 +153,14 @@ export default function HabitsPage() {
           );
           onHabitUpdated({ ...h, ...updated } as Habit);
         }}
+        onDeleteSummationEvent={async (eventId) => {
+          const updated = await patchHabit(
+            state!.user,
+            { habit: h.name, action: 'delete_event', eventId },
+            { date: effectiveDate },
+          );
+          onHabitUpdated({ ...h, ...updated } as Habit);
+        }}
       />
     );
   }

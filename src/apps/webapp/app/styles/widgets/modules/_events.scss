@@ -49,15 +49,14 @@
   padding-block: functions.spacing(1);
   padding-inline: 0;
   border-top: 1px solid color-mix(in srgb, var(--text-color) 10%, transparent);
+}
 
-  > :first-child,
-  > :last-child {
-    flex-shrink: 0;
-  }
-
-  > :last-child {
-    text-align: end;
-  }
+.events__event-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: functions.spacing(2);
+  flex-shrink: 0;
 }
 
 .events__datetime {

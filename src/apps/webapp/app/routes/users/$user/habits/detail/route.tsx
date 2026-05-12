@@ -296,6 +296,18 @@ export default function HabitDetailRoute() {
                       );
                       await fetchHistory({ mode: 'refresh' });
                     }}
+                    onDeleteSummationEvent={async (eventId) => {
+                      await patchHabit(
+                        user,
+                        {
+                          habit: habitForWidget.name,
+                          action: 'delete_event',
+                          eventId,
+                        },
+                        { date: effectiveDate },
+                      );
+                      await fetchHistory({ mode: 'refresh' });
+                    }}
                   />
                 ),
               )

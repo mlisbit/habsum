@@ -38,7 +38,8 @@ function buildHabitPatchPayload(
   body:
     | { habit: string; total: number }
     | { habit: string; value: string }
-    | { habit: string; action: 'clear' },
+    | { habit: string; action: 'clear' }
+    | { habit: string; action: 'delete_event'; eventId: number },
   date: string,
 ): Record<string, unknown> {
   const d = new Date();
@@ -124,7 +125,8 @@ export async function patchHabit(
   body:
     | { habit: string; total: number }
     | { habit: string; value: string }
-    | { habit: string; action: 'clear' },
+    | { habit: string; action: 'clear' }
+    | { habit: string; action: 'delete_event'; eventId: number },
   opts: { date: string },
 ) {
   const res = await request<PatchHabitResponse>(`/users/${encodeURIComponent(user)}/habits`, {

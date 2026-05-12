@@ -29,6 +29,7 @@ import {
   addToTotal,
   closeDb,
   deleteDailySelect,
+  deleteSummationEvent,
   deleteSummationEventsForDay,
   getAllSelects,
   getAllTotals,
@@ -454,6 +455,29 @@ app.patch(
     }
 
     const mode = typeof action === 'string' ? action : 'add';
+
+    if (mode === 'delete_event') {
+      const rawId = (body as { eventId?: unknown }).eventId;
+      const eventId = typeof rawId === 'number' ? rawId : Number(rawId);
+      if (!Number.isInteger(eventId) || eventId <= 0) {
+        return res.status(400).json({ error: 'eventId is required (positive integer)' });
+      }
+      const removed = deleteSummationEvent(user, habit, date, eventId);
+      if (!removed) {
+        return res.status(404).json({ error: 'summation event not found' });
+      }
+      const events = getSummationEvents(user, habit, date);
+      const out: PatchHabitResponse = {
+        user,
+        date,
+        habit,
+        total: getSummationDayTotal(user, habit, date),
+        events: mapSummationEventsToApi(events),
+        type: known.type,
+        goal: known.goal,
+      };
+      return res.json(out);
+    }
 
     if (mode === 'clear') {
       deleteSummationEventsForDay(user, habit, date);

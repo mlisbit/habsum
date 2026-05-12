@@ -1,5 +1,5 @@
 // exclusive-bem-block: events
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import type { SummationEvent, SummationEventCreatedAt } from '@habsum/api-types';
 import { BarGraph } from '~/components/BarGraph';
 import { Button } from '~/core-components/Button';
@@ -13,6 +13,8 @@ type EventsProps = {
   events: SummationEvent[] | undefined | null;
   /** Called when the bar graph hover opens for a bucket (`value` = sum of amounts logged in that hour). */
   onBarHover?: (detail: { key: string; value: number }) => void;
+  /** Deletes one summation event by id (API); errors surface via parent `runOp` when wrapped there. */
+  onDeleteSummationEvent: (eventId: number) => Promise<void>;
 };
 
 function formatEventAmount(amount: number) {
@@ -54,24 +56,50 @@ function EventsModalContent({
   habitName,
   events,
   closeModal,
+  onDeleteEvent,
 }: {
   habitName: string;
   events: SummationEvent[];
   closeModal: () => void;
+  onDeleteEvent: (eventId: number) => Promise<void>;
 }) {
+  const [rows, setRows] = useState(events);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+
+  const handleDelete = async (eventId: number) => {
+    setDeletingId(eventId);
+    try {
+      await onDeleteEvent(eventId);
+      setRows((prev) => prev.filter((e) => e.id !== eventId));
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   return (
     <>
       <ModalTitle>Events — {habitName}</ModalTitle>
       <ModalBody className="events__modal-body">
-        {events.length > 0 ? (
+        {rows.length > 0 ? (
           <ul className="events__list">
-            {events.map((event) => (
+            {rows.map((event) => (
               <li key={event.id} className="events__event">
                 <span className="text-h-m">{formatEventAmount(event.amount)}</span>
-                <span className="events__datetime text-light text-b-m">
-                  <span>{formatEventClockDisplay(event.createdAt)}</span>
-                  <span>{formatEventDay(event.createdAt.day)}</span>
-                </span>
+                <div className="events__event-actions">
+                  <span className="events__datetime text-light text-b-m">
+                    <span>{formatEventClockDisplay(event.createdAt)}</span>
+                    <span>{formatEventDay(event.createdAt.day)}</span>
+                  </span>
+                  <Button
+                    type="tertiary"
+                    size="small"
+                    icon="close"
+                    circle
+                    aria-label="Remove this event"
+                    disabled={deletingId !== null}
+                    onClick={() => void handleDelete(event.id)}
+                  />
+                </div>
               </li>
             ))}
           </ul>
@@ -86,7 +114,13 @@ function EventsModalContent({
   );
 }
 
-export function Events({ habitName, dayKey, events, onBarHover }: EventsProps) {
+export function Events({
+  habitName,
+  dayKey,
+  events,
+  onBarHover,
+  onDeleteSummationEvent,
+}: EventsProps) {
   const { present, closeModal } = useModal();
 
   const barGraphData = useMemo(
@@ -98,9 +132,16 @@ export function Events({ habitName, dayKey, events, onBarHover }: EventsProps) {
   const openEventsModal = useCallback(() => {
     if (events == null) return;
     present({
-      content: <EventsModalContent habitName={habitName} events={events} closeModal={closeModal} />,
+      content: (
+        <EventsModalContent
+          habitName={habitName}
+          events={events}
+          closeModal={closeModal}
+          onDeleteEvent={onDeleteSummationEvent}
+        />
+      ),
     });
-  }, [present, closeModal, habitName, events]);
+  }, [present, closeModal, habitName, events, onDeleteSummationEvent]);
 
   if (events == null) return null;
 
