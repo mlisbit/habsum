@@ -23,6 +23,10 @@
   cursor: default;
 }
 
+.bar-graph__track--no-data {
+  background: var(--background-bar-track-no-data);
+}
+
 .bar-graph__track--negative {
   background: var(--accent-red-1);
 }

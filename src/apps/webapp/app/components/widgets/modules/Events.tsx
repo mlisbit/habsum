@@ -1,6 +1,6 @@
 // exclusive-bem-block: events
 import { useCallback, useMemo, useState } from 'react';
-import type { SummationEvent, SummationEventCreatedAt } from '@habsum/api-types';
+import type { SummationEvent, SummationEventCreatedAt } from '@habsum/api-types/common/habit';
 import { BarGraph } from '~/components/BarGraph';
 import { Button } from '~/core-components/Button';
 import { ModalActions, ModalBody, ModalTitle, useModal } from '~/context/modal';
@@ -12,7 +12,7 @@ type EventsProps = {
   dayKey: string;
   events: SummationEvent[] | undefined | null;
   /** Called when the bar graph hover opens for a bucket (`value` = sum of amounts logged in that hour). */
-  onBarHover?: (detail: { key: string; value: number }) => void;
+  onBarHover?: (detail: { key: string; value: number | null }) => void;
   /** Deletes one summation event by id (API); errors surface via parent `runOp` when wrapped there. */
   onDeleteSummationEvent: (eventId: number) => Promise<void>;
 };

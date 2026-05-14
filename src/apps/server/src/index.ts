@@ -1,15 +1,16 @@
+import type { BarGraphData } from '@habsum/api-types/common/bar-chart';
+import type { Habit, HabitHistory } from '@habsum/api-types/common/habit';
 import type {
-  Habit,
-  HabitsResponse,
   HealthResponse,
-  HistoryGetResponse,
   ListUsersResponse,
-  PatchHabitResponse,
   PurgeUserDataResponse,
   UserConfigGetResponse,
   UserConfigPutResponse,
-  UsersPatchRequest,
-} from '@habsum/api-types';
+} from '@habsum/api-types/common/misc';
+import type { HabitsResponse } from '@habsum/api-types/api-responses/habits-get';
+import type { PatchHabitResponse } from '@habsum/api-types/api-responses/habit-patch';
+import type { HistoryGetResponse } from '@habsum/api-types/api-responses/history-get';
+import type { UsersPatchRequest } from '@habsum/api-types/api-responses/users-patch';
 import express, { type Request, type Response } from 'express';
 import cors from 'cors';
 import { join, resolve } from 'node:path';
@@ -148,6 +149,51 @@ function parsePeriodDays(period: string): number | null {
   return unit === 'w' ? n * 7 : n;
 }
 
+function formatHistoryDayHoverLabel(dateKey: string): string {
+  const [ys, ms, ds] = dateKey.split('-');
+  const y = Number(ys);
+  const m = Number(ms);
+  const d = Number(ds);
+  if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return dateKey;
+  const dt = new Date(y, m - 1, d);
+  if (Number.isNaN(dt.getTime())) return dateKey;
+  return dt.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+/** Builds `HabitHistory` for the view date window (`period` from config, e.g. `1w` → 7 daily bars). */
+function habitHistoryForConfiguredPeriod(
+  user: string,
+  habitName: string,
+  viewDate: string,
+  firstDate: string | null,
+  periodSpec: string,
+): HabitHistory {
+  const days = parsePeriodDays(periodSpec) ?? 7;
+  const start = addDaysUtc(viewDate, -(days - 1));
+  const rows = getSeries(user, habitName, start, viewDate);
+  const byDate = new Map(rows.map((r) => [r.date, r.total]));
+  const series = Array.from({ length: days }, (_, i) => {
+    const d = addDaysUtc(start, i);
+    if (firstDate && d < firstDate) return null;
+    if (!byDate.has(d)) return null;
+    return byDate.get(d)!;
+  });
+  const numericForTop = series.filter((v): v is number => v != null);
+  const top = numericForTop.length === 0 ? 1 : Math.max(1, ...numericForTop);
+  const graphData: BarGraphData = {};
+  for (let i = 0; i < days; i++) {
+    const d = addDaysUtc(start, i);
+    graphData[d] = {
+      value: series[i]!,
+      top,
+      hoverLabel: formatHistoryDayHoverLabel(d),
+    };
+  }
+  return {
+    data: { user: { graphData } },
+  };
+}
+
 function isSafeConfigUserId(user: string): boolean {
   if (user.length === 0 || user.length > 200) return false;
   if (/[/\\]/.test(user) || user.includes('..')) return false;
@@ -268,34 +314,30 @@ app.get(
     const date = resolveHabitApiDateQuery(req.query.date, at);
 
     const habits = config.habits.map((h) => {
-      const base = {
-        name: h.name,
-        goal: h.goal,
-        ...(h.history
-          ? (() => {
-              const days = parsePeriodDays(h.history.period) ?? 7;
-              const start = addDaysUtc(date, -(days - 1));
-              const rows = getSeries(user, h.name, start, date);
-              const byDate = new Map(rows.map((r) => [r.date, r.total]));
-              const series = Array.from({ length: days }, (_, i) => {
-                const d = addDaysUtc(start, i);
-                if (firstDate && d < firstDate) return null;
-                return byDate.get(d) ?? 0;
-              });
-              return {
-                history: { display: h.history.display, data: { user: series } },
-              };
-            })()
-          : {}),
-      };
       if (h.type === 'single_select') {
         return {
-          ...base,
+          name: h.name,
+          goal: h.goal,
           type: 'single_select' as const,
           options: h.options ?? [],
           value: getSelect(user, h.name, date),
         } satisfies Habit;
       }
+      const base = {
+        name: h.name,
+        goal: h.goal,
+        ...(h.history
+          ? {
+              history: habitHistoryForConfiguredPeriod(
+                user,
+                h.name,
+                date,
+                firstDate,
+                h.history.period,
+              ),
+            }
+          : {}),
+      };
       return {
         ...base,
         type: 'summation' as const,

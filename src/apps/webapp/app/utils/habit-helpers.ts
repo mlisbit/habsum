@@ -1,4 +1,4 @@
-import type { Habit, HabitRowSummation } from '@habsum/api-types';
+import type { Habit, HabitRowSummation } from '@habsum/api-types/common/habit';
 
 /** Habits that have numeric goals weigh this much vs “other” habits in the aggregate bar fraction. */
 const GOAL_WEIGHT = 4;

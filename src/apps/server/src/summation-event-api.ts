@@ -1,4 +1,4 @@
-import type { SummationEvent } from '@habsum/api-types';
+import type { SummationEvent } from '@habsum/api-types/common/habit';
 import type { SummationEventRow } from './db.js';
 
 /**

@@ -11,20 +11,6 @@ export type ServerTimeResponse = {
 
 export type ListUsersResponse = { users: string[] };
 
-export type {
-  Habit,
-  HabitHistory,
-  HabitRowSingleSelect,
-  HabitRowSummation,
-  HabitsResponse,
-  PatchHabitResponse,
-  SummationEvent,
-  SummationEventCreatedAt,
-  SummationOptions,
-} from './habit.js';
-export type { HistoryGetResponse } from './history-get.js';
-export type { UsersPatchRequest } from './users-patch.js';
-
 export type UserConfigGetResponse = { text: string };
 
 export type UserConfigPutResponse = { ok: true; user: string };

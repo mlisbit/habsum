@@ -1,11 +1,10 @@
 import { useCallback, useState } from 'react';
 import { Link } from '@remix-run/react';
-import type { HabitRowSingleSelect } from '@habsum/api-types';
+import type { HabitRowSingleSelect } from '@habsum/api-types/common/habit';
 import { habitDetailUrl } from '~/utils/habit-id';
 import { useLongPress } from '~/utils/use-long-press';
 import { Button } from '~/core-components/Button';
 import { InfoText } from '~/core-components/InfoText';
-import { History } from '~/components/widgets/modules/History';
 import { ModalActions, ModalBody, useModal } from '~/context/modal';
 
 type SingleSelectWidgetProps = {
@@ -128,7 +127,6 @@ export function SingleSelectWidget({
           {error}
         </InfoText>
       ) : null}
-      <History history={habit.history} />
     </div>
   );
 }

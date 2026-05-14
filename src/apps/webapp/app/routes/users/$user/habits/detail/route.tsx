@@ -14,20 +14,21 @@ import { addDays } from '~/utils/date-utils';
 
 type HistoryGetPayload = Awaited<ReturnType<typeof getHabitHistory>>;
 
-function withoutHistory<T extends Habit>(habit: T): T {
+function withoutHistory(habit: Habit): Habit {
+  if (habit.type === 'single_select') return habit;
   const { history: _omit, ...rest } = habit;
-  return rest as T;
+  return rest as Habit;
 }
 
 function blankHabitFrom(habit: Habit): Habit {
   if (habit.type === 'single_select') {
-    return withoutHistory({
+    return {
       name: habit.name,
       type: 'single_select',
       goal: habit.goal,
       options: habit.options,
       value: null,
-    } satisfies Habit);
+    } satisfies Habit;
   }
   return withoutHistory({
     name: habit.name,

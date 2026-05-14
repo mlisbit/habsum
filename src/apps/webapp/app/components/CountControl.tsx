@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { AnimationEvent } from 'react';
-import type { SummationOptions } from '@habsum/api-types';
+import type { SummationOptions } from '@habsum/api-types/common/habit';
 import { Button } from '~/core-components/Button';
 import { Input } from '~/core-components/Input';
 import { ModalActions, ModalBody, useModal } from '~/context/modal';

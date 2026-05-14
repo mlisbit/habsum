@@ -1,30 +1,27 @@
 // exclusive-bem-block: bar-graph
+import type { BarGraphData } from '@habsum/api-types/common/bar-chart';
 import { Hoverable } from '~/core-components/Hoverable';
-
-export type BarGraphDatum = {
-  value: number;
-  /** Scale maximum; bar height is `value / top`. */
-  top: number;
-  /** Shown in the hover panel (e.g. localized time range for this bucket). */
-  hoverLabel: string;
-  /** When set, the track uses `bar-graph__track--negative` (e.g. deficit with no column to absorb into on the left). */
-  trackModifier?: 'negative';
-};
-
-export type BarGraphData = Record<string, BarGraphDatum>;
 
 type BarGraphProps = {
   data: BarGraphData;
-  /** Fired when the pointer enters a bar (`value` is the datum’s summed amount for that bucket). */
-  onHover?: (detail: { key: string; value: number }) => void;
+  /** Fired when the pointer enters a bar (`value` is the datum total for that bucket, or `null` when empty). */
+  onHover?: (detail: { key: string; value: number | null }) => void;
+  /** Shown in the hover value slot when `value` is `null`. */
+  noDataHoverLabel?: string;
 };
 
-function barHeightPercent(value: number, top: number): number {
-  if (top <= 0) return 0;
+const DEFAULT_NO_DATA_HOVER = 'No data';
+
+function barHeightPercent(value: number | null, top: number): number {
+  if (value == null || top <= 0) return 0;
   return Math.max(0, Math.min(100, (value / top) * 100));
 }
 
-export function BarGraph({ data, onHover }: BarGraphProps) {
+export function BarGraph({
+  data,
+  onHover,
+  noDataHoverLabel = DEFAULT_NO_DATA_HOVER,
+}: BarGraphProps) {
   const entries = Object.entries(data);
   if (entries.length === 0) return null;
 
@@ -35,6 +32,7 @@ export function BarGraph({ data, onHover }: BarGraphProps) {
           <Hoverable.Anchor
             className={[
               'bar-graph__track',
+              value == null && 'bar-graph__track--no-data',
               trackModifier === 'negative' && 'bar-graph__track--negative',
             ]
               .filter(Boolean)
@@ -49,7 +47,9 @@ export function BarGraph({ data, onHover }: BarGraphProps) {
           <Hoverable.Content className="bar-graph__hover" side="top">
             <div className="bar-graph__hover-body">
               <span className="bar-graph__hover-range">{hoverLabel}</span>
-              <span className="bar-graph__hover-value text-h-m">{value}</span>
+              <span className="bar-graph__hover-value text-h-m">
+                {value == null ? noDataHoverLabel : value}
+              </span>
             </div>
           </Hoverable.Content>
         </Hoverable.Root>

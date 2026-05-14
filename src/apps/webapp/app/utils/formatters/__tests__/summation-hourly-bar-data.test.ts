@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { SummationEvent } from '@habsum/api-types';
+import type { SummationEvent } from '@habsum/api-types/common/habit';
 
 import {
   AFTER_HOURS_BAR_KEY,
@@ -59,14 +59,14 @@ describe('summationHourlyBarGraphData', () => {
       value: 7,
       hoverLabel: AFTER_HOURS_BAR_KEY,
     });
-    const sumValues = Object.values(data).reduce((s, d) => s + d.value, 0);
+    const sumValues = Object.values(data).reduce((s, d) => s + (d.value ?? 0), 0);
     expect(sumValues).toBe(11);
   });
 
   it('absorbs same-day negatives from a later hour into an earlier hour with balance', () => {
     const data = summationHourlyBarGraphData([rowAt(9, 10), rowAt(11, -3)], DAY);
     const hourKeys = Object.keys(data).filter((k) => k !== AFTER_HOURS_BAR_KEY);
-    const byValue = Object.fromEntries(hourKeys.map((k) => [k, data[k]!.value]));
+    const byValue = Object.fromEntries(hourKeys.map((k) => [k, data[k]!.value ?? 0]));
     expect(Object.values(byValue).some((v) => v === 7)).toBe(true);
     expect(Object.values(byValue).some((v) => v === -3)).toBe(false);
   });

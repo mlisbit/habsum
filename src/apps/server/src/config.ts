@@ -8,7 +8,7 @@ import {
 } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { SummationOptions } from '@habsum/api-types';
+import type { SummationOptions } from '@habsum/api-types/common/habit';
 import yaml from 'js-yaml';
 
 const rawDir = process.env.HABSUM_CONFIG_DIR;
@@ -35,7 +35,6 @@ export type HabitDef = {
   summationOptions?: SummationOptions;
   history?: {
     period: string;
-    display: 'average';
   };
 };
 
@@ -224,20 +223,17 @@ function normalizeHistory(
 
   if (!isRecord(raw)) {
     throw new ConfigValidationError(
-      `habit "${habitName}" history must be a yaml mapping with period and display`,
+      `habit "${habitName}" history must be a yaml mapping with period`,
     );
   }
 
-  const { period, display } = raw;
+  const { period } = raw;
   if (typeof period !== 'string' || period.length === 0) {
     throw new ConfigValidationError(
       `habit "${habitName}" history.period must be a non-empty string`,
     );
   }
-  if (display !== 'average') {
-    throw new ConfigValidationError(`habit "${habitName}" history.display must be "average"`);
-  }
-  return { period, display: 'average' };
+  return { period };
 }
 
 export function createUserFromSampleConfig(

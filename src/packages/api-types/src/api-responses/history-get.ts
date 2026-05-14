@@ -1,4 +1,4 @@
-import type { Habit } from './habit.js';
+import type { Habit } from '../common/habit.js';
 
 export type HistoryGetResponse = {
   user: string;

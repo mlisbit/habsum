@@ -1,4 +1,4 @@
-import type { ServerTimeResponse } from '@habsum/api-types';
+import type { ServerTimeResponse } from '@habsum/api-types/common/misc';
 import { fromDateKey, toDateKey } from '@habsum/utils';
 
 /** `?date=` for GET: `YYYY-MM-DD` or `YYYY-MM-DD|<suffix>`; validates with {@link fromDateKey}. */

@@ -1,6 +1,12 @@
+import type { BarGraphData } from './bar-chart.js';
+
 export type HabitHistory = {
-  display: 'average';
-  data: { user: (number | null)[] };
+  data: {
+    user: {
+      /** Daily buckets for `history.period` (e.g. 7 days for `1w`), keyed by `YYYY-MM-DD`. */
+      graphData: BarGraphData;
+    };
+  };
 };
 
 /** A single-select row from `GET /users/:user/habits` */
@@ -10,7 +16,6 @@ export type HabitRowSingleSelect = {
   goal: number | null;
   options: string[];
   value: string | null;
-  history?: HabitHistory;
 };
 
 /** Parsed from YAML `summation_options` for summation habits. */
@@ -52,30 +57,3 @@ export type HabitRowSummation = {
  * `PATCH` on the client.
  */
 export type Habit = HabitRowSingleSelect | HabitRowSummation;
-
-export type HabitsResponse = {
-  user: string;
-  date: string;
-  firstDate: string | null;
-  habits: Habit[];
-  serverTime: string;
-};
-
-export type PatchHabitResponse =
-  | {
-      user: string;
-      date: string;
-      habit: string;
-      value: string | null;
-      type: 'single_select';
-      options: string[];
-    }
-  | {
-      user: string;
-      date: string;
-      habit: string;
-      total: number | null;
-      events?: SummationEvent[];
-      type: 'summation';
-      goal: number | null;
-    };

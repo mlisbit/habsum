@@ -24,8 +24,7 @@ habits:
     type: summation
     goal: 100
     history:
-      - period: 1w
-      - display: average
+      period: 1w
 
   soda consumption:
     type: single_select
