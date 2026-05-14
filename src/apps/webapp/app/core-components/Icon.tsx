@@ -32,6 +32,7 @@ const ICON_COMPONENTS = {
   'user-round-plus': UserRoundPlus,
   plus: Plus,
   party: PartyPopper,
+  'party-popper': PartyPopper,
 } as const satisfies Record<string, LucideIcon>;
 
 export type IconName = keyof typeof ICON_COMPONENTS;

@@ -6,6 +6,7 @@ import { useLongPress } from '~/utils/use-long-press';
 import { Button } from '~/core-components/Button';
 import { InfoText } from '~/core-components/InfoText';
 import { ModalActions, ModalBody, useModal } from '~/context/modal';
+import { Streak } from '~/components/widgets/modules/Streak';
 
 type SingleSelectWidgetProps = {
   user: string;
@@ -90,7 +91,6 @@ export function SingleSelectWidget({
               {habit.name}
             </Link>
           </h2>
-          <div className="text-light text-b-m">{habit.value ?? '—'}</div>
         </div>
         <div className="habit-select__options">
           {habit.options.map((opt) => {
@@ -127,6 +127,7 @@ export function SingleSelectWidget({
           {error}
         </InfoText>
       ) : null}
+      {habit.streak ? <Streak streak={habit.streak} /> : null}
     </div>
   );
 }

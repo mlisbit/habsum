@@ -6,6 +6,7 @@
   "sideEffects": false,
   "exports": {
     "./common/bar-chart": "./src/common/bar-chart.ts",
+    "./common/streak": "./src/common/streak.ts",
     "./common/habit": "./src/common/habit.ts",
     "./common/misc": "./src/common/misc.ts",
     "./api-responses/habit-patch": "./src/api-responses/habit-patch.ts",

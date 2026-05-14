@@ -100,8 +100,9 @@ function blockUsedInCode(sourceWithoutComments: string, block: string): boolean 
   const esc = block.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   if (new RegExp(`${esc}(__|--)`).test(sourceWithoutComments)) return true;
   if (new RegExp(`(?<![\\w$])\\.${esc}\\b`).test(sourceWithoutComments)) return true;
+  // Bare block name (e.g. JSX string or variable). Skip path segments like `.../streak` or `./streak`.
   if (
-    new RegExp(`(?<!\\.)\\b${esc}\\b(?!\\s*[=:])`).test(sourceWithoutComments)
+    new RegExp(`(?<![/.])\\b${esc}\\b(?!\\s*[=:])`).test(sourceWithoutComments)
   )
     return true;
   return false;
@@ -112,7 +113,7 @@ function firstIndexOfBlockUsage(text: string, block: string): number {
   const patterns = [
     `${esc}(__|--)`,
     `(?<![\\w$])\\.${esc}\\b`,
-    `(?<!\\.)\\b${esc}\\b(?!\\s*[=:])`,
+    `(?<![/.])\\b${esc}\\b(?!\\s*[=:])`,
   ];
   let best = -1;
   for (const p of patterns) {

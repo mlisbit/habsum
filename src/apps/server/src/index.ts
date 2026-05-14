@@ -1,4 +1,5 @@
 import type { BarGraphData } from '@habsum/api-types/common/bar-chart';
+import type { StreakDatum, StreakGraphData } from '@habsum/api-types/common/streak';
 import type { Habit, HabitHistory } from '@habsum/api-types/common/habit';
 import type {
   HealthResponse,
@@ -194,6 +195,59 @@ function habitHistoryForConfiguredPeriod(
   };
 }
 
+/** Window length returned for `single_select.streak.data` in `GET .../habits` (inclusive end = API view date). */
+const MIN_STREAK_DAYS = 7;
+
+/** Max days to scan backward when computing `current` (handles multi-year streaks without an unbounded loop). */
+const MAX_STREAK_BACKTRACK_DAYS = 10 * 366;
+
+function dayCountsTowardStreak(value: string | null, eligible: ReadonlySet<string>): boolean {
+  return value != null && eligible.has(value);
+}
+
+/** Consecutive streak-eligible days ending on `viewDate` (may precede `MIN_STREAK_DAYS` chart window). */
+function currentSelectStreakLength(
+  user: string,
+  habitName: string,
+  viewDate: string,
+  eligible: ReadonlySet<string>,
+): number {
+  let n = 0;
+  for (
+    let d = viewDate, steps = 0;
+    steps < MAX_STREAK_BACKTRACK_DAYS;
+    steps++, d = addDaysUtc(d, -1)
+  ) {
+    const value = getSelect(user, habitName, d);
+    if (!dayCountsTowardStreak(value, eligible)) break;
+    n++;
+  }
+  return n;
+}
+
+function streakGraphForConfiguredWindow(
+  user: string,
+  habitName: string,
+  viewDate: string,
+  streakEligibleOptions: readonly string[],
+): StreakGraphData {
+  const eligible = new Set(streakEligibleOptions);
+  const start = addDaysUtc(viewDate, -(MIN_STREAK_DAYS - 1));
+  const data: Record<string, StreakDatum> = {};
+  for (let i = 0; i < MIN_STREAK_DAYS; i++) {
+    const d = addDaysUtc(start, i);
+    const value = getSelect(user, habitName, d);
+    data[d] = {
+      value,
+      include: value != null ? eligible.has(value) : null,
+    };
+  }
+  return {
+    data,
+    current: currentSelectStreakLength(user, habitName, viewDate, eligible),
+  };
+}
+
 function isSafeConfigUserId(user: string): boolean {
   if (user.length === 0 || user.length > 200) return false;
   if (/[/\\]/.test(user) || user.includes('..')) return false;
@@ -321,6 +375,11 @@ app.get(
           type: 'single_select' as const,
           options: h.options ?? [],
           value: getSelect(user, h.name, date),
+          ...(h.streak
+            ? {
+                streak: streakGraphForConfiguredWindow(user, h.name, date, h.streak.options),
+              }
+            : {}),
         } satisfies Habit;
       }
       const base = {
@@ -473,6 +532,9 @@ app.patch(
           value: null,
           type: known.type,
           options: opts,
+          ...(known.streak
+            ? { streak: streakGraphForConfiguredWindow(user, habit, date, known.streak.options) }
+            : {}),
         };
         return res.json(out);
       }
@@ -492,6 +554,9 @@ app.patch(
         value: next,
         type: known.type,
         options: opts,
+        ...(known.streak
+          ? { streak: streakGraphForConfiguredWindow(user, habit, date, known.streak.options) }
+          : {}),
       };
       return res.json(out);
     }

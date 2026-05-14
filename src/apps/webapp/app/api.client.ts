@@ -31,6 +31,7 @@ export type {
   SummationOptions,
 } from '@habsum/api-types/common/habit';
 export type { BarGraphData, BarGraphDatum } from '@habsum/api-types/common/bar-chart';
+export type { StreakDatum, StreakGraphData } from '@habsum/api-types/common/streak';
 export type { HabitsResponse } from '@habsum/api-types/api-responses/habits-get';
 export type { PatchHabitResponse } from '@habsum/api-types/api-responses/habit-patch';
 export type { HistoryGetResponse } from '@habsum/api-types/api-responses/history-get';
@@ -147,6 +148,7 @@ export async function patchHabit(
       options: res.options,
       value: res.value ?? null,
       goal: null,
+      ...(res.streak ? { streak: res.streak } : {}),
     } satisfies Habit;
   }
   return {

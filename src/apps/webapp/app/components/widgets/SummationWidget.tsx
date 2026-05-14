@@ -84,7 +84,7 @@ export function SummationWidget({
             </Link>
           </h2>
           {goal == null ? (
-            <div className="text-light text-b-m">{total == null ? '—' : total}</div>
+            <div className="text-light text-b-m">{total == null ? 'No data' : total}</div>
           ) : null}
         </div>
         <CountControl

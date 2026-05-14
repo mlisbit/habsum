@@ -28,6 +28,7 @@
 @use 'components/bar-graph';
 @use 'widgets/modules/history-display';
 @use 'widgets/modules/events';
+@use 'widgets/modules/streak';
 @use 'components/habit-select';
 @use 'components/count-control';
 @use 'components/habit-summation';

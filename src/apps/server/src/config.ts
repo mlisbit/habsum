@@ -36,6 +36,10 @@ export type HabitDef = {
   history?: {
     period: string;
   };
+  /** Subset of `options` whose selections count toward the streak (single_select only). */
+  streak?: {
+    options: string[];
+  };
 };
 
 export type UserConfig = {
@@ -51,6 +55,7 @@ type RawHabit = {
   summation_options?: unknown;
   summationOptions?: unknown;
   history?: { period?: unknown; display?: unknown };
+  streak?: unknown;
 };
 
 type RawConfig = {
@@ -157,16 +162,19 @@ function parseUserConfig(user: string, parsed: unknown): UserConfig {
       }
       const rawHabit = def as RawHabit;
       const type = rawHabit.type ?? 'summation';
+      const opts =
+        type === 'single_select' && Array.isArray(rawHabit.options)
+          ? rawHabit.options.filter((x) => typeof x === 'string')
+          : undefined;
       return {
         name,
         type,
         goal: rawHabit.goal ?? null,
-        options:
-          type === 'single_select' && Array.isArray(rawHabit.options)
-            ? rawHabit.options.filter((x) => typeof x === 'string')
-            : undefined,
+        options: opts,
         summationOptions: type === 'summation' ? parseSummationOptions(rawHabit) : undefined,
         history: normalizeHistory(rawHabit.history, name),
+        streak:
+          type === 'single_select' ? normalizeStreak(rawHabit.streak, name, opts ?? []) : undefined,
       };
     }),
   };
@@ -234,6 +242,50 @@ function normalizeHistory(
     );
   }
   return { period };
+}
+
+function normalizeStreak(
+  raw: unknown,
+  habitName: string,
+  mainOptions: readonly string[],
+): HabitDef['streak'] | undefined {
+  if (raw == null) return undefined;
+
+  if (!isRecord(raw)) {
+    throw new ConfigValidationError(`habit "${habitName}" streak must be a yaml mapping`);
+  }
+
+  const optsRaw = raw.options;
+  if (!Array.isArray(optsRaw) || optsRaw.length === 0) {
+    throw new ConfigValidationError(
+      `habit "${habitName}" streak.options must be a non-empty array`,
+    );
+  }
+
+  const allowed = new Set(mainOptions);
+  const options: string[] = [];
+  const seen = new Set<string>();
+  for (const item of optsRaw) {
+    if (typeof item !== 'string' || item.length === 0) {
+      throw new ConfigValidationError(`habit "${habitName}" streak.options must be strings`);
+    }
+    if (!allowed.has(item)) {
+      throw new ConfigValidationError(
+        `habit "${habitName}" streak.options entry "${item}" is not listed in habits options`,
+      );
+    }
+    if (seen.has(item)) continue;
+    seen.add(item);
+    options.push(item);
+  }
+
+  if (options.length === 0) {
+    throw new ConfigValidationError(
+      `habit "${habitName}" streak.options must list at least one habits option`,
+    );
+  }
+
+  return { options };
 }
 
 export function createUserFromSampleConfig(

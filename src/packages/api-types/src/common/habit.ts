@@ -1,4 +1,5 @@
 import type { BarGraphData } from './bar-chart.js';
+import type { StreakGraphData } from './streak.js';
 
 export type HabitHistory = {
   data: {
@@ -16,6 +17,8 @@ export type HabitRowSingleSelect = {
   goal: number | null;
   options: string[];
   value: string | null;
+  /** Present when YAML defines `streak.options`; `data` spans at least 7 days ending on the API `date`, plus run-length `current`. */
+  streak?: StreakGraphData;
 };
 
 /** Parsed from YAML `summation_options` for summation habits. */
