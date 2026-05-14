@@ -1,10 +1,11 @@
 // exclusive-bem-block: streak
 import type { CSSProperties } from 'react';
-import type { StreakDatum, StreakGraphData } from '@habsum/api-types/common/streak';
+import type { Day } from '@habsum/types/common/day';
+import type { StreakDatum, StreakGraphData } from '@habsum/types/common/streak';
 import { Hoverable } from '~/core-components/Hoverable';
 import { Icon } from '~/core-components/Icon';
 
-function formatStreakDayLabel(dateKey: string): string {
+function formatStreakDayLabel(dateKey: Day): string {
   const [ys, ms, ds] = dateKey.split('-');
   const y = Number(ys);
   const m = Number(ms);
@@ -33,7 +34,9 @@ type StreakProps = {
 
 /** One party-popper per day in the streak window; hover shows the logged option (or empty). */
 export function Streak({ streak }: StreakProps) {
-  const entries = Object.entries(streak.data).sort(([a], [b]) => a.localeCompare(b));
+  const entries = (Object.entries(streak.data) as [Day, StreakDatum][]).sort(([a], [b]) =>
+    a.localeCompare(b),
+  );
   if (entries.length === 0) return null;
 
   const currentPhrase = streak.current === 1 ? '1 day' : `${streak.current} days`;

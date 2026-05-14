@@ -1,5 +1,5 @@
-import type { BarGraphData } from '@habsum/api-types/common/bar-chart';
-import type { SummationEvent } from '@habsum/api-types/common/habit';
+import type { BarGraphData } from '@habsum/types/common/bar-chart';
+import type { SummationEvent } from '@habsum/types/common/habit';
 
 /** Column key / hover label for amounts logged off the habit row day (retroactive timestamps). */
 export const AFTER_HOURS_BAR_KEY = 'after hours';

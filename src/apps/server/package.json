@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@habsum/api-types": "*",
+    "@habsum/types": "*",
     "@habsum/utils": "*",
     "better-sqlite3": "^11.3.0",
     "cors": "^2.8.5",

@@ -1,17 +1,18 @@
-import type { BarGraphData } from '@habsum/api-types/common/bar-chart';
-import type { StreakDatum, StreakGraphData } from '@habsum/api-types/common/streak';
-import type { Habit, HabitHistory } from '@habsum/api-types/common/habit';
+import type { BarGraphData } from '@habsum/types/common/bar-chart';
+import { dayFromString, type Day } from '@habsum/types/common/day';
+import type { StreakDatum, StreakGraphData } from '@habsum/types/common/streak';
+import type { Habit, HabitHistory } from '@habsum/types/common/habit';
 import type {
   HealthResponse,
   ListUsersResponse,
   PurgeUserDataResponse,
   UserConfigGetResponse,
   UserConfigPutResponse,
-} from '@habsum/api-types/common/misc';
-import type { HabitsResponse } from '@habsum/api-types/api-responses/habits-get';
-import type { PatchHabitResponse } from '@habsum/api-types/api-responses/habit-patch';
-import type { HistoryGetResponse } from '@habsum/api-types/api-responses/history-get';
-import type { UsersPatchRequest } from '@habsum/api-types/api-responses/users-patch';
+} from '@habsum/types/common/misc';
+import type { HabitsResponse } from '@habsum/types/api-responses/habits-get';
+import type { PatchHabitResponse } from '@habsum/types/api-responses/habit-patch';
+import type { HistoryGetResponse } from '@habsum/types/api-responses/history-get';
+import type { UsersPatchRequest } from '@habsum/types/api-responses/users-patch';
 import express, { type Request, type Response } from 'express';
 import cors from 'cors';
 import { join, resolve } from 'node:path';
@@ -233,11 +234,11 @@ function streakGraphForConfiguredWindow(
 ): StreakGraphData {
   const eligible = new Set(streakEligibleOptions);
   const start = addDaysUtc(viewDate, -(MIN_STREAK_DAYS - 1));
-  const data: Record<string, StreakDatum> = {};
+  const data = {} as Record<Day, StreakDatum>;
   for (let i = 0; i < MIN_STREAK_DAYS; i++) {
     const d = addDaysUtc(start, i);
     const value = getSelect(user, habitName, d);
-    data[d] = {
+    data[dayFromString(d)] = {
       value,
       include: value != null ? eligible.has(value) : null,
     };

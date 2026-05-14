@@ -8,7 +8,7 @@ import {
 } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { SummationOptions } from '@habsum/api-types/common/habit';
+import type { SummationOptions } from '@habsum/types/common/habit';
 import yaml from 'js-yaml';
 
 const rawDir = process.env.HABSUM_CONFIG_DIR;

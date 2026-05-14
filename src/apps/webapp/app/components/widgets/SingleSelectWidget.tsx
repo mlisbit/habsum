@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { Link } from '@remix-run/react';
-import type { HabitRowSingleSelect } from '@habsum/api-types/common/habit';
+import type { HabitRowSingleSelect } from '@habsum/types/common/habit';
 import { habitDetailUrl } from '~/utils/habit-id';
 import { useLongPress } from '~/utils/use-long-press';
 import { Button } from '~/core-components/Button';

@@ -1,11 +1,12 @@
 {
-  "name": "@habsum/api-types",
+  "name": "@habsum/types",
   "version": "0.1.0",
   "private": true,
   "type": "module",
   "sideEffects": false,
   "exports": {
     "./common/bar-chart": "./src/common/bar-chart.ts",
+    "./common/day": "./src/common/day.ts",
     "./common/streak": "./src/common/streak.ts",
     "./common/habit": "./src/common/habit.ts",
     "./common/misc": "./src/common/misc.ts",

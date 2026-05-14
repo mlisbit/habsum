@@ -1,16 +1,16 @@
-import type { Habit } from '@habsum/api-types/common/habit';
-import type { HabitsResponse } from '@habsum/api-types/api-responses/habits-get';
-import type { PatchHabitResponse } from '@habsum/api-types/api-responses/habit-patch';
-import type { HistoryGetResponse } from '@habsum/api-types/api-responses/history-get';
-import type { UsersPatchRequest } from '@habsum/api-types/api-responses/users-patch';
+import type { Habit } from '@habsum/types/common/habit';
+import type { HabitsResponse } from '@habsum/types/api-responses/habits-get';
+import type { PatchHabitResponse } from '@habsum/types/api-responses/habit-patch';
+import type { HistoryGetResponse } from '@habsum/types/api-responses/history-get';
+import type { UsersPatchRequest } from '@habsum/types/api-responses/users-patch';
 import type {
   ListUsersResponse,
   PurgeUserDataResponse,
   ServerTimeResponse,
   UserConfigGetResponse,
   UserConfigPutResponse,
-} from '@habsum/api-types/common/misc';
-import { toDateKey } from '@habsum/utils';
+} from '@habsum/types/common/misc';
+import { toDateKeyWithTime } from '@habsum/utils';
 
 export type {
   ApiErrorBody,
@@ -20,7 +20,7 @@ export type {
   ServerTimeResponse,
   UserConfigGetResponse,
   UserConfigPutResponse,
-} from '@habsum/api-types/common/misc';
+} from '@habsum/types/common/misc';
 export type {
   Habit,
   HabitHistory,
@@ -29,13 +29,14 @@ export type {
   SummationEvent,
   SummationEventCreatedAt,
   SummationOptions,
-} from '@habsum/api-types/common/habit';
-export type { BarGraphData, BarGraphDatum } from '@habsum/api-types/common/bar-chart';
-export type { StreakDatum, StreakGraphData } from '@habsum/api-types/common/streak';
-export type { HabitsResponse } from '@habsum/api-types/api-responses/habits-get';
-export type { PatchHabitResponse } from '@habsum/api-types/api-responses/habit-patch';
-export type { HistoryGetResponse } from '@habsum/api-types/api-responses/history-get';
-export type { UsersPatchRequest } from '@habsum/api-types/api-responses/users-patch';
+} from '@habsum/types/common/habit';
+export type { BarGraphData, BarGraphDatum } from '@habsum/types/common/bar-chart';
+export type { Day } from '@habsum/types/common/day';
+export type { StreakDatum, StreakGraphData } from '@habsum/types/common/streak';
+export type { HabitsResponse } from '@habsum/types/api-responses/habits-get';
+export type { PatchHabitResponse } from '@habsum/types/api-responses/habit-patch';
+export type { HistoryGetResponse } from '@habsum/types/api-responses/history-get';
+export type { UsersPatchRequest } from '@habsum/types/api-responses/users-patch';
 
 const OVERRIDE_SERVER_URL = import.meta.env.VITE_HABSUM_SERVER_URL;
 const API_PREFIX = OVERRIDE_SERVER_URL ? '' : '/api';
@@ -51,7 +52,7 @@ function buildHabitPatchPayload(
   date: string,
 ): Record<string, unknown> {
   const d = new Date();
-  const clientCreatedAt = toDateKey(d, d.getTimezoneOffset(), true);
+  const clientCreatedAt = toDateKeyWithTime(d, d.getTimezoneOffset());
   return {
     ...body,
     date,

@@ -1,5 +1,5 @@
-import type { BarGraphData } from '@habsum/api-types/common/bar-chart';
-import type { Habit, HabitHistory } from '@habsum/api-types/common/habit';
+import type { BarGraphData } from '@habsum/types/common/bar-chart';
+import type { Habit, HabitHistory } from '@habsum/types/common/habit';
 
 /** Build a 7-day `HabitHistory` for tests from per-day totals (oldest → newest). */
 function habitHistoryWeek(values: readonly (number | null)[]): HabitHistory {

@@ -1,7 +1,7 @@
-import type { HabitsResponse } from '@habsum/api-types/api-responses/habits-get';
-import type { PatchHabitResponse } from '@habsum/api-types/api-responses/habit-patch';
-import type { ListUsersResponse } from '@habsum/api-types/common/misc';
-import { toDateKey } from '@habsum/utils';
+import type { HabitsResponse } from '@habsum/types/api-responses/habits-get';
+import type { PatchHabitResponse } from '@habsum/types/api-responses/habit-patch';
+import type { ListUsersResponse } from '@habsum/types/common/misc';
+import { toDateKeyWithTime } from '@habsum/utils';
 
 const SERVER_URL = process.env.HABSUM_SERVER_URL ?? 'http://localhost:3001';
 
@@ -13,7 +13,7 @@ function buildHabitPatchPayload(
   date: string,
 ): Record<string, unknown> {
   const d = new Date();
-  const clientCreatedAt = toDateKey(d, d.getTimezoneOffset(), true);
+  const clientCreatedAt = toDateKeyWithTime(d, d.getTimezoneOffset());
   return {
     ...body,
     date,

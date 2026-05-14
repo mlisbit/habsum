@@ -1,6 +1,6 @@
 // exclusive-bem-block: events
 import { useCallback, useMemo, useState } from 'react';
-import type { SummationEvent, SummationEventCreatedAt } from '@habsum/api-types/common/habit';
+import type { SummationEvent, SummationEventCreatedAt } from '@habsum/types/common/habit';
 import { BarGraph } from '~/components/BarGraph';
 import { Button } from '~/core-components/Button';
 import { ModalActions, ModalBody, ModalTitle, useModal } from '~/context/modal';

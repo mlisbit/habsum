@@ -4,7 +4,7 @@
   "private": true,
   "description": "Habit tracker - lightweight Express server + Remix webapp",
   "workspaces": [
-    "src/packages/api-types",
+    "src/packages/types",
     "src/packages/utils",
     "src/packages/eslint",
     "src/packages/stylelint",

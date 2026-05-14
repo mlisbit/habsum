@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from '@remix-run/react';
-import type { HabitRowSummation } from '@habsum/api-types/common/habit';
+import type { HabitRowSummation } from '@habsum/types/common/habit';
 import { habitDetailUrl } from '~/utils/habit-id';
 import { History } from '~/components/widgets/modules/History';
 import { Events } from '~/components/widgets/modules/Events';

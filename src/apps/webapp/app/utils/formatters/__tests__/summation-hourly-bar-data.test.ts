@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import type { SummationEvent } from '@habsum/api-types/common/habit';
+import type { SummationEvent } from '@habsum/types/common/habit';
 
 import {
   AFTER_HOURS_BAR_KEY,

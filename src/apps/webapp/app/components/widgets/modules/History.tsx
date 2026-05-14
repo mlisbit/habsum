@@ -1,5 +1,5 @@
 // exclusive-bem-block: history-display
-import type { HabitHistory } from '@habsum/api-types/common/habit';
+import type { HabitHistory } from '@habsum/types/common/habit';
 import { BarGraph } from '~/components/BarGraph';
 
 export function History({ history }: { history: HabitHistory | undefined }) {

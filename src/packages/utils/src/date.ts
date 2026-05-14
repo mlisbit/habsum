@@ -1,29 +1,46 @@
+import {
+  dayFromString,
+  dayWithTimeFromString,
+  type Day,
+  type DayWithTime,
+} from '@habsum/types/common/day';
+
 function pad2(n: number) {
   return String(n).padStart(2, '0');
+}
+
+/** Wall-clock fields of `date` after shifting by `tzOffsetMinutes` (see `toDateKey`). */
+function shiftedWallClock(date: Date, tzOffsetMinutes: number): Date {
+  return new Date(date.getTime() - tzOffsetMinutes * 60_000);
+}
+
+function dateKeyFromShifted(shifted: Date): string {
+  const y = shifted.getUTCFullYear();
+  const m = shifted.getUTCMonth() + 1;
+  const d = shifted.getUTCDate();
+  return `${y}-${pad2(m)}-${pad2(d)}`;
 }
 
 /**
  * Convert a Date to a YYYY-MM-DD "date key" in a specific timezone offset.
  *
- * When `includeTime` is true, appends local wall time as ` HH:MM:SS` (API / SQLite
- * `clientCreatedAt` shape). Time uses the same shifted instant as the date portion.
- *
- * tzOffsetMinutes uses the same convention as Date#getTimezoneOffset():
- *   UTC = local time + tzOffsetMinutes.
- *
- * Example: Pacific time in winter is typically 480.
+ * `tzOffsetMinutes` uses the same convention as `Date#getTimezoneOffset()`:
+ * UTC = local time + offset (e.g. 480 for US Pacific in winter).
  */
-export function toDateKey(date: Date, tzOffsetMinutes: number, includeTime = false): string {
-  const shifted = new Date(date.getTime() - tzOffsetMinutes * 60_000);
-  const y = shifted.getUTCFullYear();
-  const m = shifted.getUTCMonth() + 1;
-  const d = shifted.getUTCDate();
-  const day = `${y}-${pad2(m)}-${pad2(d)}`;
-  if (!includeTime) return day;
+export function toDateKey(date: Date, tzOffsetMinutes: number): Day {
+  return dayFromString(dateKeyFromShifted(shiftedWallClock(date, tzOffsetMinutes)));
+}
+
+/**
+ * Like {@link toDateKey}, but appends wall time as ` HH:MM:SS` (API / SQLite `clientCreatedAt` shape).
+ */
+export function toDateKeyWithTime(date: Date, tzOffsetMinutes: number): DayWithTime {
+  const shifted = shiftedWallClock(date, tzOffsetMinutes);
+  const day = dateKeyFromShifted(shifted);
   const hh = shifted.getUTCHours();
   const mi = shifted.getUTCMinutes();
   const s = shifted.getUTCSeconds();
-  return `${day} ${pad2(hh)}:${pad2(mi)}:${pad2(s)}`;
+  return dayWithTimeFromString(`${day} ${pad2(hh)}:${pad2(mi)}:${pad2(s)}`);
 }
 
 /**
