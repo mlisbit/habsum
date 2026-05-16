@@ -2,9 +2,14 @@ name: Publish images to GHCR
 
 on:
   workflow_dispatch:
-  # push:
-  #   branches: ["main"]
-  #   tags: ["v*"]
+    inputs:
+      image_tag:
+        description: Optional image tag to publish
+        type: string
+        required: false
+  push:
+    tags:
+      - 'v*'
 
 permissions:
   contents: read
@@ -53,6 +58,7 @@ jobs:
           tags: |
             type=ref,event=branch
             type=ref,event=tag
+            type=raw,value=${{ inputs.image_tag }},enable=${{ github.event_name == 'workflow_dispatch' && inputs.image_tag != '' }}
             type=sha,format=short
 
       - name: Build and push
