@@ -2,6 +2,7 @@ import { Links, Meta, Outlet, Scripts, ScrollRestoration } from '@remix-run/reac
 import type { LinksFunction, MetaFunction } from '@remix-run/node';
 
 import { ModalProvider } from '~/context/modal';
+import { ToastProvider } from '~/context/toast';
 import stylesHref from '~/styles/main.scss?url';
 
 export const links: LinksFunction = () => [
@@ -32,7 +33,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <ModalProvider>
-      <Outlet />
+      <ToastProvider>
+        <Outlet />
+      </ToastProvider>
     </ModalProvider>
   );
 }

@@ -13,7 +13,7 @@ export type InputProps = Omit<
   InputHTMLAttributes<HTMLInputElement>,
   'type' | 'value' | 'onSubmit' | 'onChange' | 'className' | 'disabled' | 'placeholder'
 > & {
-  type?: 'string' | 'number';
+  type?: 'string' | 'number' | 'password';
   value?: string;
   onChange?: (raw: string) => void;
   onSubmit?: (raw: string) => void;
@@ -33,7 +33,8 @@ export type InputProps = Omit<
  * An input component.
  * Has a little "x" that will clear the input to the right.
  * Has an inline submit button to the right if "submittable" is true.
- * if type is "number", the input will only accept digits, and will flash red on invalid input.
+ * If type is "number", the input will only accept digits, and will flash red on invalid input.
+ * If type is "password", uses a masked password field (`<input type="password">`).
  */
 export function Input({
   value = '',
@@ -95,6 +96,7 @@ export function Input({
     .join(' ');
 
   const isNumberField = fieldType === 'number';
+  const isPasswordField = fieldType === 'password';
 
   const pulseRejectFlash = () => {
     if (rejectFlashEndTimerRef.current !== undefined) {
@@ -164,11 +166,17 @@ export function Input({
         {...inputProps}
         ref={inputRef}
         id={inputId}
-        type="text"
+        type={isPasswordField ? 'password' : 'text'}
         placeholder={placeholder}
         inputMode={isNumberField ? 'numeric' : inputMode}
         pattern={isNumberField ? '[0-9]*' : pattern}
-        autoComplete={isNumberField ? 'off' : autoComplete}
+        autoComplete={
+          isNumberField
+            ? 'off'
+            : isPasswordField
+              ? (autoComplete ?? 'current-password')
+              : autoComplete
+        }
         aria-valuemin={fieldType === 'number' ? 0 : undefined}
         className={['input__input', inputClassName].filter(Boolean).join(' ')}
         value={draft}

@@ -74,7 +74,7 @@ userScopedRouter.post(
     ensureUserPins([user]);
 
     if (!isUserPinValid(user, pin)) {
-      return res.status(401).json({ error: 'invalid pin' });
+      return res.status(401).json({ error: 'invalid password' });
     }
 
     const sessionId = createUserSession(user, sessionTtlSeconds());

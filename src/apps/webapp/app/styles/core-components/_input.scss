@@ -90,6 +90,10 @@
   text-align: left;
 }
 
+.input--not-submittable {
+  padding-left: functions.spacing(2);
+}
+
 .input--filled .input__input {
   min-inline-size: 90px;
 }

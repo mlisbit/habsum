@@ -4,6 +4,7 @@ import { Footer } from '~/components/Footer';
 import { TopNav } from '~/components/TopNav';
 import { SingleSelectWidget, SummationWidget } from '~/components/widgets';
 import { InfoText } from '~/core-components/InfoText';
+import { LOGIN_TOAST_USER_AREA, redirectToLoginWithToast } from '~/context/toast';
 import { getProgress } from '~/utils/habit-helpers';
 import { toDateKey } from '@habsum/utils';
 
@@ -46,14 +47,18 @@ export default function HabitsPage() {
     getAuthMe()
       .then(({ user: sessionUser }) => {
         if (cancelled) return;
-        if (routeUser && sessionUser !== routeUser) {
-          window.location.replace('/login');
+        if (!routeUser) {
+          setUser('');
+          return;
+        }
+        if (!sessionUser || sessionUser !== routeUser) {
+          redirectToLoginWithToast(LOGIN_TOAST_USER_AREA);
           return;
         }
         setUser(routeUser);
       })
       .catch(() => {
-        if (!cancelled && routeUser) window.location.replace('/login');
+        if (!cancelled && routeUser) redirectToLoginWithToast(LOGIN_TOAST_USER_AREA);
       });
 
     const syncFromUrl = () => {

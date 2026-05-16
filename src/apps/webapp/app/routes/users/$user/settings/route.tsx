@@ -1,6 +1,7 @@
 import { Link, Outlet, useLocation, useParams } from '@remix-run/react';
 import { useEffect, useState } from 'react';
 import { getAuthMe, getUserSession, logout } from '~/api.client';
+import { LOGIN_TOAST_USER_AREA, redirectToLoginWithToast } from '~/context/toast';
 import { Button } from '~/core-components/Button';
 
 export default function UserSettingsLayout() {
@@ -16,10 +17,10 @@ export default function UserSettingsLayout() {
     getAuthMe()
       .then(({ user: sessionUser }) => {
         if (cancelled) return;
-        if (sessionUser !== user) window.location.replace('/login');
+        if (!sessionUser || sessionUser !== user) redirectToLoginWithToast(LOGIN_TOAST_USER_AREA);
       })
       .catch(() => {
-        if (!cancelled) window.location.replace('/login');
+        if (!cancelled) redirectToLoginWithToast(LOGIN_TOAST_USER_AREA);
       });
     return () => {
       cancelled = true;

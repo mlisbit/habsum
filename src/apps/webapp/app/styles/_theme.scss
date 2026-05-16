@@ -20,3 +20,10 @@ a {
     text-decoration: underline;
   }
 }
+
+hr {
+  border: 0;
+  border-block-start: 1px solid var(--border-color-faint);
+  margin: 0;
+  inline-size: 100%;
+}

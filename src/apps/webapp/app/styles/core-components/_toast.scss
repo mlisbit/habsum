@@ -1,0 +1,41 @@
+@use 'functions';
+
+.toast__viewport {
+  position: fixed;
+  left: functions.spacing(3);
+  bottom: functions.spacing(3);
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: functions.spacing(2);
+  max-width: min(calc(100vw - #{functions.spacing(3) * 2}), 22rem);
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: functions.spacing(2);
+  margin: 0;
+  padding: functions.spacing(2) functions.spacing(3);
+  background: var(--background-secondary);
+  border-radius: var(--border-radius-m);
+  box-shadow: var(--elevation-shadow);
+  border: 1px solid var(--border-color-faint);
+}
+
+.toast__message {
+  margin: 0;
+  flex: 1;
+}
+
+.toast__dismiss {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0 functions.spacing(1);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}
