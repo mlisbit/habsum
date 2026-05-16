@@ -9,12 +9,14 @@ import type {
   UserConfigGetResponse,
   UserConfigPutResponse,
 } from '@habsum/types/common/misc';
+import type { DeveloperGetResponse } from '@habsum/types/api-responses/developer-get';
 import type { HabitsResponse } from '@habsum/types/api-responses/habits-get';
 import type { PatchHabitResponse } from '@habsum/types/api-responses/habit-patch';
 import type { HistoryGetResponse } from '@habsum/types/api-responses/history-get';
 import type { UsersPatchRequest } from '@habsum/types/api-responses/users-patch';
 import express, { type Request, type Response } from 'express';
 import cors from 'cors';
+import { readFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import {
   listUsers,
@@ -61,6 +63,25 @@ type PatchBody = {
   date?: unknown;
   clientCreatedAt?: unknown;
 };
+
+const PACKAGE_VERSION = readPackageVersion();
+
+function readPackageVersion(): string {
+  const fromEnv = process.env.HABSUM_VERSION ?? process.env.npm_package_version;
+  if (fromEnv) return stripVersionPrefix(fromEnv);
+
+  try {
+    const raw = readFileSync(new URL('../package.json', import.meta.url), 'utf8');
+    const parsed = JSON.parse(raw) as { version?: unknown };
+    return typeof parsed.version === 'string' ? parsed.version : '0.0.0';
+  } catch {
+    return '0.0.0';
+  }
+}
+
+function stripVersionPrefix(value: string) {
+  return value.startsWith('v') ? value.slice(1) : value;
+}
 
 function parseHabitFilter(value: unknown): string[] {
   if (typeof value !== 'string') return [];
@@ -282,6 +303,16 @@ app.get('/health', (_req, res) => {
 
 app.get('/time', (_req, res) => {
   res.json(apiServerTimeSnapshot());
+});
+
+app.get('/developer', (_req, res) => {
+  const body: DeveloperGetResponse = {
+    time: apiServerTimeSnapshot(),
+    version: {
+      currentVersion: PACKAGE_VERSION,
+    },
+  };
+  res.json(body);
 });
 
 app.get('/users', (_req, res) => {

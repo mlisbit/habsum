@@ -1,2 +1,3 @@
+npm run --silent secrets:check
 npm run --silent stylelint-plugins:build && npm run --silent eslint-plugins:build
 npx lint-staged

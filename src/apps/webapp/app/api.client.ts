@@ -3,10 +3,10 @@ import type { HabitsResponse } from '@habsum/types/api-responses/habits-get';
 import type { PatchHabitResponse } from '@habsum/types/api-responses/habit-patch';
 import type { HistoryGetResponse } from '@habsum/types/api-responses/history-get';
 import type { UsersPatchRequest } from '@habsum/types/api-responses/users-patch';
+import type { DeveloperGetResponse } from '@habsum/types/api-responses/developer-get';
 import type {
   ListUsersResponse,
   PurgeUserDataResponse,
-  ServerTimeResponse,
   UserConfigGetResponse,
   UserConfigPutResponse,
 } from '@habsum/types/common/misc';
@@ -37,6 +37,7 @@ export type { HabitsResponse } from '@habsum/types/api-responses/habits-get';
 export type { PatchHabitResponse } from '@habsum/types/api-responses/habit-patch';
 export type { HistoryGetResponse } from '@habsum/types/api-responses/history-get';
 export type { UsersPatchRequest } from '@habsum/types/api-responses/users-patch';
+export type { DeveloperGetResponse } from '@habsum/types/api-responses/developer-get';
 
 const OVERRIDE_SERVER_URL = import.meta.env.VITE_HABSUM_SERVER_URL;
 const API_PREFIX = OVERRIDE_SERVER_URL ? '' : '/api';
@@ -86,8 +87,8 @@ export async function listUsers() {
   return request<ListUsersResponse>('/users');
 }
 
-export async function getServerTime() {
-  return request<ServerTimeResponse>('/time');
+export async function getDeveloper() {
+  return request<DeveloperGetResponse>('/developer');
 }
 
 export async function createUser(name: string) {

@@ -22,6 +22,7 @@
     "lint:js": "npm run lint:js --workspace @habsum/webapp",
     "lint:css": "stylelint \"src/**/*.{css,scss}\"",
     "lint:css:fix": "stylelint \"src/**/*.{css,scss}\" --fix",
+    "secrets:check": "node scripts/check-staged-secrets.mjs",
     "prelint:css": "npm run stylelint-plugins:build",
     "prelint:css:fix": "npm run stylelint-plugins:build",
     "stylelint-plugins:build": "npm run build --workspace @habsum/stylelint-plugins",

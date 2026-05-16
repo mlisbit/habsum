@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getServerTime, type ServerTimeResponse } from '~/api.client';
+import { getDeveloper, type DeveloperGetResponse } from '~/api.client';
 
 const clockFormat: Intl.DateTimeFormatOptions = {
   weekday: 'long',
@@ -17,21 +17,21 @@ function formatInstantInZone(iso: string, timeZone: string) {
 }
 
 export default function UserSettingsDeveloper() {
-  const [serverTime, setServerTime] = useState<ServerTimeResponse | null>(null);
-  const [serverTimeError, setServerTimeError] = useState<string | null>(null);
+  const [developerData, setDeveloperData] = useState<DeveloperGetResponse | null>(null);
+  const [developerError, setDeveloperError] = useState<string | null>(null);
   const [browserNow, setBrowserNow] = useState(() => new Date());
 
   useEffect(() => {
     let cancelled = false;
-    setServerTimeError(null);
-    getServerTime()
+    setDeveloperError(null);
+    getDeveloper()
       .then((res) => {
-        if (!cancelled) setServerTime(res);
+        if (!cancelled) setDeveloperData(res);
       })
       .catch((e) => {
         if (!cancelled) {
-          setServerTime(null);
-          setServerTimeError(e instanceof Error ? e.message : String(e));
+          setDeveloperData(null);
+          setDeveloperError(e instanceof Error ? e.message : String(e));
         }
       });
     return () => {
@@ -45,6 +45,8 @@ export default function UserSettingsDeveloper() {
   }, []);
 
   const browserZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const serverTime = developerData?.time ?? null;
+  const version = developerData?.version ?? null;
 
   return (
     <div className="developer-page">
@@ -60,8 +62,8 @@ export default function UserSettingsDeveloper() {
           <div className="developer-page__clock-row">
             <dt className="text-b-m">Server (API)</dt>
             <dd className="developer-page__clock-dd text-b-m">
-              {serverTimeError ? (
-                <span className="text-light">Could not load: {serverTimeError}</span>
+              {developerError ? (
+                <span className="text-light">Could not load: {developerError}</span>
               ) : serverTime ? (
                 <>
                   <div>{formatInstantInZone(serverTime.iso, serverTime.timezone)}</div>
@@ -80,6 +82,26 @@ export default function UserSettingsDeveloper() {
             </dd>
           </div>
         </dl>
+      </div>
+
+      <div className="card developer-page__version">
+        <h3 className="text-h-s">Version</h3>
+        <p className="text-light text-b-m">
+          Current application version reported by the habsum API process.
+        </p>
+
+        {developerError ? (
+          <p className="text-light text-b-m">Could not load: {developerError}</p>
+        ) : version ? (
+          <dl className="developer-page__version-list">
+            <div className="developer-page__version-row">
+              <dt className="text-b-m">Current</dt>
+              <dd className="developer-page__version-dd text-b-m">v{version.currentVersion}</dd>
+            </div>
+          </dl>
+        ) : (
+          <p className="text-light text-b-m">Loading…</p>
+        )}
       </div>
     </div>
   );
