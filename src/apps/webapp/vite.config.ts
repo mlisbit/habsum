@@ -23,6 +23,7 @@ export default defineConfig({
         return defineRoutes((route) => {
           route('', 'routes/_layout.tsx', () => {
             route('', 'routes/_index/route.tsx', { index: true });
+            route('login', 'routes/login/route.tsx');
             route('users', 'routes/users/_index/route.tsx', { index: true });
             route('users/:user/habits', 'routes/users/$user/habits/route.tsx');
             route('users/:user/habits/detail', 'routes/users/$user/habits/detail/route.tsx');

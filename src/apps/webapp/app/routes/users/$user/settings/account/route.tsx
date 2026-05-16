@@ -1,8 +1,7 @@
 import { useParams } from '@remix-run/react';
 import { useEffect, useState } from 'react';
-import { deleteUser, patchUser, purgeUserData } from '~/api.client';
+import { deleteUser, logout, patchUser, purgeUserData } from '~/api.client';
 import { Button } from '~/core-components/Button';
-import { setSelectedUser } from '~/cookies.client';
 import { Input } from '~/core-components/Input';
 
 export default function UserSettingsAccount() {
@@ -36,7 +35,6 @@ export default function UserSettingsAccount() {
             setStatus(null);
             try {
               const res = await patchUser(user, { name: nextName.trim() });
-              setSelectedUser(res.user);
               window.location.assign(`/users/${encodeURIComponent(res.user)}/settings/account`);
             } catch (e) {
               setStatus(e instanceof Error ? e.message : String(e));
@@ -67,7 +65,6 @@ export default function UserSettingsAccount() {
               setStatus(null);
               try {
                 const res = await patchUser(user, { name: nextName.trim() });
-                setSelectedUser(res.user);
                 window.location.assign(`/users/${encodeURIComponent(res.user)}/settings/account`);
               } catch (e) {
                 setStatus(e instanceof Error ? e.message : String(e));
@@ -124,7 +121,7 @@ export default function UserSettingsAccount() {
             setStatus(null);
             try {
               await deleteUser(user);
-              setSelectedUser('');
+              await logout().catch(() => {});
               window.location.assign('/login');
             } catch (e) {
               setStatus(e instanceof Error ? e.message : String(e));

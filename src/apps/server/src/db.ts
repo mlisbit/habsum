@@ -1,4 +1,5 @@
 import Database from 'better-sqlite3';
+import { randomBytes } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
@@ -79,6 +80,17 @@ db.exec(`
   );
 `);
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS sessions (
+    id TEXT PRIMARY KEY,
+    username TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE INDEX IF NOT EXISTS sessions_username_idx ON sessions (username);
+`);
+
 export type SummationEventRow = {
   id: number;
   date: string;
@@ -135,9 +147,11 @@ export function setUserPin(username: string, pin: string): void {
 
 export function renameUserPin(fromUsername: string, toUsername: string): void {
   renameUserPinStmt.run({ fromUsername, toUsername });
+  renameSessionsUsername(fromUsername, toUsername);
 }
 
 export function deleteUserPin(username: string): void {
+  deleteSessionsForUsername(username);
   deleteUserPinStmt.run(username);
 }
 
@@ -149,6 +163,58 @@ export function isUserPinValid(username: string, pin: string): boolean {
 export function isUserAdmin(username: string): boolean {
   const row = getUserAdminStmt.get(username);
   return row?.admin === 1;
+}
+
+type SessionRow = { username: string; expires_at: string };
+
+const insertSessionStmt = db.prepare<{ id: string; username: string; expiresAt: string }>(`
+  INSERT INTO sessions (id, username, expires_at)
+  VALUES (@id, @username, @expiresAt)
+`);
+
+const getSessionStmt = db.prepare<[string], SessionRow>(
+  'SELECT username, expires_at FROM sessions WHERE id = ?',
+);
+
+const deleteSessionStmt = db.prepare<[string], unknown>('DELETE FROM sessions WHERE id = ?');
+
+const renameSessionsUsernameStmt = db.prepare<{ fromUsername: string; toUsername: string }>(`
+  UPDATE sessions
+  SET username = @toUsername
+  WHERE username = @fromUsername
+`);
+
+const deleteSessionsForUsernameStmt = db.prepare<[string], unknown>(
+  'DELETE FROM sessions WHERE username = ?',
+);
+
+export function createUserSession(username: string, ttlSeconds: number): string {
+  const id = randomBytes(32).toString('hex');
+  const expiresAt = new Date(Date.now() + ttlSeconds * 1000).toISOString();
+  insertSessionStmt.run({ id, username, expiresAt });
+  return id;
+}
+
+export function getUsernameForSession(sessionId: string): string | null {
+  const row = getSessionStmt.get(sessionId);
+  if (!row) return null;
+  if (new Date(row.expires_at) <= new Date()) {
+    deleteSessionStmt.run(sessionId);
+    return null;
+  }
+  return row.username;
+}
+
+export function revokeUserSession(sessionId: string): void {
+  deleteSessionStmt.run(sessionId);
+}
+
+export function renameSessionsUsername(fromUsername: string, toUsername: string): void {
+  renameSessionsUsernameStmt.run({ fromUsername, toUsername });
+}
+
+export function deleteSessionsForUsername(username: string): void {
+  deleteSessionsForUsernameStmt.run(username);
 }
 
 const getDailyTotalStmt = db.prepare<[string, string, string], TotalRow>(

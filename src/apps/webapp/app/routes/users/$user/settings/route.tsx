@@ -1,8 +1,7 @@
 import { Link, Outlet, useLocation, useParams } from '@remix-run/react';
 import { useEffect, useState } from 'react';
-import { getUserSession } from '~/api.client';
+import { getAuthMe, getUserSession, logout } from '~/api.client';
 import { Button } from '~/core-components/Button';
-import { clearSelectedUser, getSelectedUser } from '~/cookies.client';
 
 export default function UserSettingsLayout() {
   const { user } = useParams();
@@ -12,9 +11,19 @@ export default function UserSettingsLayout() {
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
 
   useEffect(() => {
-    if (user && getSelectedUser() !== user) {
-      window.location.replace('/login');
-    }
+    if (!user) return;
+    let cancelled = false;
+    getAuthMe()
+      .then(({ user: sessionUser }) => {
+        if (cancelled) return;
+        if (sessionUser !== user) window.location.replace('/login');
+      })
+      .catch(() => {
+        if (!cancelled) window.location.replace('/login');
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
 
   useEffect(() => {
@@ -91,8 +100,7 @@ export default function UserSettingsLayout() {
             text="Logout"
             className="settings__logout"
             onClick={() => {
-              clearSelectedUser();
-              window.location.assign('/login');
+              void logout().then(() => window.location.assign('/login'));
             }}
           />
         </nav>

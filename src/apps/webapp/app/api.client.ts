@@ -5,9 +5,11 @@ import type { HistoryGetResponse } from '@habsum/types/api-responses/history-get
 import type { UsersPatchRequest } from '@habsum/types/api-responses/users-patch';
 import type { DeveloperGetResponse } from '@habsum/types/api-responses/developer-get';
 import type {
+  AuthMeResponse,
   CreateUserResponse,
   ListUsersResponse,
   LoginUserResponse,
+  LogoutResponse,
   PurgeUserDataResponse,
   UserConfigGetResponse,
   UserConfigPutResponse,
@@ -17,10 +19,12 @@ import { toDateKeyWithTime } from '@habsum/utils';
 
 export type {
   ApiErrorBody,
+  AuthMeResponse,
   CreateUserResponse,
   HealthResponse,
   ListUsersResponse,
   LoginUserResponse,
+  LogoutResponse,
   PurgeUserDataResponse,
   ServerTimeResponse,
   UserConfigGetResponse,
@@ -69,6 +73,7 @@ function buildHabitPatchPayload(
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${SERVER_URL}${API_PREFIX}${path}`, {
+    credentials: 'include',
     ...init,
     headers: {
       'content-type': 'application/json',
@@ -87,6 +92,14 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     throw new Error(message);
   }
   return (bodyText ? (JSON.parse(bodyText) as T) : ({} as T)) as T;
+}
+
+export async function getAuthMe() {
+  return request<AuthMeResponse>('/auth/me');
+}
+
+export async function logout() {
+  return request<LogoutResponse>('/logout', { method: 'POST', body: JSON.stringify({}) });
 }
 
 export async function listUsers() {
@@ -197,7 +210,7 @@ export async function purgeUserData(user: string) {
   const qs = '';
   const res = await fetch(
     `${SERVER_URL}${API_PREFIX}/users/${encodeURIComponent(user)}/data${qs}`,
-    { method: 'DELETE' },
+    { method: 'DELETE', credentials: 'include' },
   );
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
   return (await res.json()) as PurgeUserDataResponse;

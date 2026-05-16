@@ -8,10 +8,9 @@ import { Button } from '~/core-components/Button';
 import { InfoText } from '~/core-components/InfoText';
 import { Pill } from '~/core-components/Pill';
 import { SingleSelectWidget, SummationWidget } from '~/components/widgets';
-import { getHabitHistory, patchHabit, type Habit } from '~/api.client';
+import { getAuthMe, getHabitHistory, patchHabit, type Habit } from '~/api.client';
 import { toDateKey } from '@habsum/utils';
 import { addDays } from '~/utils/date-utils';
-import { getSelectedUser } from '~/cookies.client';
 
 type HistoryGetPayload = Awaited<ReturnType<typeof getHabitHistory>>;
 
@@ -71,9 +70,19 @@ export default function HabitDetailRoute() {
   const showJumpToToday = effectiveDate !== today;
 
   useEffect(() => {
-    if (user && getSelectedUser() !== user) {
-      window.location.replace('/login');
-    }
+    if (!user) return;
+    let cancelled = false;
+    getAuthMe()
+      .then(({ user: sessionUser }) => {
+        if (cancelled) return;
+        if (sessionUser !== user) window.location.replace('/login');
+      })
+      .catch(() => {
+        if (!cancelled) window.location.replace('/login');
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
 
   const fetchHistory = useCallback(

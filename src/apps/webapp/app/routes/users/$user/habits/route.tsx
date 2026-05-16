@@ -1,10 +1,9 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
-import { getHabits, patchHabit, type Habit } from '~/api.client';
+import { getAuthMe, getHabits, logout, patchHabit, type Habit } from '~/api.client';
 import { Footer } from '~/components/Footer';
 import { TopNav } from '~/components/TopNav';
 import { SingleSelectWidget, SummationWidget } from '~/components/widgets';
 import { InfoText } from '~/core-components/InfoText';
-import { clearSelectedUser, getSelectedUser } from '~/cookies.client';
 import { getProgress } from '~/utils/habit-helpers';
 import { toDateKey } from '@habsum/utils';
 
@@ -42,11 +41,20 @@ export default function HabitsPage() {
   useEffect(() => {
     const match = window.location.pathname.match(/^\/users\/([^/]+)\/habits\/?$/);
     const routeUser = match ? decodeURIComponent(match[1]) : '';
-    if (routeUser && getSelectedUser() !== routeUser) {
-      window.location.replace('/login');
-      return;
-    }
-    setUser(routeUser);
+
+    let cancelled = false;
+    getAuthMe()
+      .then(({ user: sessionUser }) => {
+        if (cancelled) return;
+        if (routeUser && sessionUser !== routeUser) {
+          window.location.replace('/login');
+          return;
+        }
+        setUser(routeUser);
+      })
+      .catch(() => {
+        if (!cancelled && routeUser) window.location.replace('/login');
+      });
 
     const syncFromUrl = () => {
       const q = new URLSearchParams(window.location.search);
@@ -56,7 +64,10 @@ export default function HabitsPage() {
 
     syncFromUrl();
     window.addEventListener('popstate', syncFromUrl);
-    return () => window.removeEventListener('popstate', syncFromUrl);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('popstate', syncFromUrl);
+    };
   }, []);
 
   useEffect(() => {
@@ -179,8 +190,7 @@ export default function HabitsPage() {
         firstDate={firstDate}
         onChangeDate={goToDate}
         onBack={() => {
-          clearSelectedUser();
-          window.location.assign('/login');
+          void logout().then(() => window.location.assign('/login'));
         }}
         onSettings={() =>
           window.location.assign(`/users/${encodeURIComponent(user)}/settings/account`)

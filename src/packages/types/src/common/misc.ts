@@ -19,6 +19,11 @@ export type LoginUserRequest = { pin?: string };
 
 export type LoginUserResponse = { ok: true; user: string };
 
+/** Current browser session resolved from HttpOnly cookie (no cookie → `user: null`). */
+export type AuthMeResponse = { user: string | null };
+
+export type LogoutResponse = { ok: true };
+
 export type UserSessionResponse = { user: string; admin: boolean };
 
 export type UserConfigGetResponse = { text: string };

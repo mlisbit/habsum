@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { loginUser } from '~/api.client';
+import { getAuthMe, loginUser } from '~/api.client';
 import { Button } from '~/core-components/Button';
 import { InfoText } from '~/core-components/InfoText';
 import { Input } from '~/core-components/Input';
-import { getSelectedUser, setSelectedUser } from '~/cookies.client';
+import { clearLegacyClientLoginMarkers } from '~/cookies.client';
 
 function LoginForm() {
   const [username, setUsername] = useState('');
@@ -27,7 +27,6 @@ function LoginForm() {
     setIsLoggingIn(true);
     try {
       await loginUser(user, nextPin);
-      setSelectedUser(user);
       window.location.assign(`/users/${encodeURIComponent(user)}/habits`);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'login failed');
@@ -88,7 +87,18 @@ export default function LoginRoute() {
   const [currentUser, setCurrentUser] = useState<string | null>(null);
 
   useEffect(() => {
-    setCurrentUser(getSelectedUser());
+    clearLegacyClientLoginMarkers();
+    let cancelled = false;
+    getAuthMe()
+      .then(({ user }) => {
+        if (!cancelled) setCurrentUser(user);
+      })
+      .catch(() => {
+        if (!cancelled) setCurrentUser(null);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return (
