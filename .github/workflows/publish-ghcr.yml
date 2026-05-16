@@ -7,9 +7,6 @@ on:
         description: Optional image tag to publish
         type: string
         required: false
-  push:
-    tags:
-      - 'v*'
 
 permissions:
   contents: read

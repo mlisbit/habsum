@@ -1,6 +1,7 @@
 services:
   server:
-    image: ghcr.io/mlisbit/habsum/habsum-server:main
+    image: ghcr.io/mlisbit/habsum/habsum-server:${APP_VERSION}
+    restart: unless-stopped
     environment:
       PORT: '3001'
       HABSUM_CONFIG_DIR: /data
@@ -10,8 +11,9 @@ services:
       - '3001'
 
   web:
-    image: ghcr.io/mlisbit/habsum/habsum-webapp:main
+    image: ghcr.io/mlisbit/habsum/habsum-webapp:${APP_VERSION}
+    restart: unless-stopped
     ports:
-      - '8882:3000'
+      - '127.0.0.1:8882:3000'
     depends_on:
       - server
