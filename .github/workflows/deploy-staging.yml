@@ -3,18 +3,15 @@ name: Deploy Staging
 on:
   workflow_dispatch:
     inputs:
-      bump:
-        description: Version bump
-        type: choice
+      app_version:
+        description: Image tag to deploy, for example main or v0.1.2
+        type: string
         required: true
-        default: patch
-        options:
-          - patch
-          - minor
+        default: main
 
 permissions:
-  contents: write
-  packages: write
+  contents: read
+  packages: read
 
 concurrency:
   group: deploy-staging
@@ -22,93 +19,22 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_PREFIX: ghcr.io/mlisbit/habsum
   DEPLOY_DIR: ~/docker/habsum
 
 jobs:
   deploy-staging:
-    if: github.ref_type == 'branch'
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-          ref: ${{ github.ref_name }}
 
-      - name: Setup Node
-        uses: actions/setup-node@v5
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Configure git
+      - name: Validate app version
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Bump workspace versions
-        run: |
-          new_version=$(npm version ${{ inputs.bump }} --no-git-tag-version)
-
-          npm version "$new_version" \
-            --workspaces \
-            --allow-same-version \
-            --no-git-tag-version
-
-      - name: Read release version
-        id: version
-        run: |
-          version=$(node -p "require('./package.json').version")
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-          echo "tag=v$version" >> "$GITHUB_OUTPUT"
-          echo "APP_VERSION=v$version" >> "$GITHUB_ENV"
-
-      - name: Commit version bump
-        run: |
-          git add package.json package-lock.json ':(glob)src/**/package.json'
-          git commit -m "Release v${{ steps.version.outputs.version }}"
-
-      - name: Create tag
-        run: |
-          git tag -a "${{ steps.version.outputs.tag }}" -m "Release ${{ steps.version.outputs.tag }}"
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Build and push server image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: src/apps/server/Dockerfile
-          push: true
-          tags: ${{ env.IMAGE_PREFIX }}/habsum-server:${{ steps.version.outputs.tag }}
-
-      - name: Build and push webapp image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: src/apps/webapp/Dockerfile
-          push: true
-          tags: ${{ env.IMAGE_PREFIX }}/habsum-webapp:${{ steps.version.outputs.tag }}
-
-      - name: Push release commit and tag
-        run: |
-          git push origin HEAD:${{ github.ref_name }} --follow-tags
+          if ! [[ "${{ inputs.app_version }}" == "main" || "${{ inputs.app_version }}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "app_version must be main or look like v0.1.2"
+            exit 1
+          fi
 
       - name: Connect to Tailscale
         uses: tailscale/github-action@v3
@@ -158,7 +84,7 @@ jobs:
             -i ~/.ssh/id_ed25519 \
             "$SSH_TARGET" "
               cd ${{ env.DEPLOY_DIR }} &&
-              printf 'APP_VERSION=%s\n' '${{ steps.version.outputs.tag }}' > .env &&
+              printf 'APP_VERSION=%s\n' '${{ inputs.app_version }}' > .env &&
               docker compose pull &&
               docker compose up -d --remove-orphans
             "
