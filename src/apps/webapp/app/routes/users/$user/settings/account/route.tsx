@@ -125,7 +125,7 @@ export default function UserSettingsAccount() {
             try {
               await deleteUser(user);
               setSelectedUser('');
-              window.location.assign('/users');
+              window.location.assign('/login');
             } catch (e) {
               setStatus(e instanceof Error ? e.message : String(e));
             } finally {

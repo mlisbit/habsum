@@ -37,46 +37,6 @@
 
 $back-button-slot: 2.25rem; // matches `.button.button--icon` width
 
-.top-nav__back-reveal {
-  display: flex;
-  align-items: center;
-  flex-shrink: 0;
-  width: 0;
-  max-width: $back-button-slot;
-  overflow: hidden;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateX(-10%);
-  transition:
-    width 0.22s cubic-bezier(0.33, 1, 0.68, 1),
-    opacity 0.18s ease,
-    transform 0.22s cubic-bezier(0.33, 1, 0.68, 1),
-    visibility 0s linear 0.2s;
-  pointer-events: none;
-
-  .top-nav__greeting-zone:hover &,
-  .top-nav__greeting-zone:focus-within & {
-    width: $back-button-slot;
-    opacity: 1;
-    visibility: visible;
-    transform: translateX(0);
-    transition-delay: 0s, 0s, 0s, 0s;
-    pointer-events: auto;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .top-nav__back-reveal {
-    transition: none;
-    transform: none;
-
-    .top-nav__greeting-zone:hover &,
-    .top-nav__greeting-zone:focus-within & {
-      transform: none;
-    }
-  }
-}
-
 .top-nav__back-anchor {
   display: flex;
   flex-shrink: 0;

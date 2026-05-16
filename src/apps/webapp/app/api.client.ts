@@ -5,21 +5,27 @@ import type { HistoryGetResponse } from '@habsum/types/api-responses/history-get
 import type { UsersPatchRequest } from '@habsum/types/api-responses/users-patch';
 import type { DeveloperGetResponse } from '@habsum/types/api-responses/developer-get';
 import type {
+  CreateUserResponse,
   ListUsersResponse,
+  LoginUserResponse,
   PurgeUserDataResponse,
   UserConfigGetResponse,
   UserConfigPutResponse,
+  UserSessionResponse,
 } from '@habsum/types/common/misc';
 import { toDateKeyWithTime } from '@habsum/utils';
 
 export type {
   ApiErrorBody,
+  CreateUserResponse,
   HealthResponse,
   ListUsersResponse,
+  LoginUserResponse,
   PurgeUserDataResponse,
   ServerTimeResponse,
   UserConfigGetResponse,
   UserConfigPutResponse,
+  UserSessionResponse,
 } from '@habsum/types/common/misc';
 export type {
   Habit,
@@ -91,9 +97,23 @@ export async function getDeveloper() {
   return request<DeveloperGetResponse>('/developer');
 }
 
-export async function createUser(name: string) {
+export async function createUser(name: string, pin: string) {
   const qs = `?name=${encodeURIComponent(name)}`;
-  return request<{ ok: true; user: string }>(`/users${qs}`, { method: 'POST' });
+  return request<CreateUserResponse>(`/users${qs}`, {
+    method: 'POST',
+    body: JSON.stringify({ pin }),
+  });
+}
+
+export async function loginUser(user: string, pin: string) {
+  return request<LoginUserResponse>(`/users/${encodeURIComponent(user)}/login`, {
+    method: 'POST',
+    body: JSON.stringify({ pin }),
+  });
+}
+
+export async function getUserSession(user: string) {
+  return request<UserSessionResponse>(`/users/${encodeURIComponent(user)}/session`);
 }
 
 export async function patchUser(user: string, body: UsersPatchRequest) {

@@ -1,5 +1,41 @@
 @use 'functions';
 
+.developer-page__user-tools {
+  margin-bottom: functions.spacing(3);
+}
+
+.developer-page__user-tools-status {
+  margin-top: functions.spacing(2);
+}
+
+.developer-page__users-list-wrap {
+  margin-top: functions.spacing(3);
+}
+
+.developer-page__users-list {
+  display: flex;
+  flex-direction: column;
+  gap: functions.spacing(1);
+  margin: functions.spacing(2) 0 0;
+  padding-left: functions.spacing(3);
+}
+
+.developer-page__users-list-item {
+  overflow-wrap: anywhere;
+}
+
+.developer-page__add-user-modal {
+  display: flex;
+  flex-direction: column;
+  gap: functions.spacing(2);
+  margin-block: functions.spacing(3);
+}
+
+.developer-page__add-user-input {
+  inline-size: 100%;
+  min-inline-size: 0;
+}
+
 .developer-page__clocks {
   margin-bottom: functions.spacing(3);
 }

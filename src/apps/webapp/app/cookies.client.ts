@@ -1,4 +1,4 @@
-const COOKIE_NAME = 'habsum_user';
+const COOKIE_NAME = 'habsum_login_user';
 
 export function getSelectedUser(): string | null {
   const match = document.cookie
@@ -11,9 +11,7 @@ export function getSelectedUser(): string | null {
 }
 
 export function setSelectedUser(user: string) {
-  document.cookie = `${COOKIE_NAME}=${encodeURIComponent(
-    user,
-  )}; Path=/; Max-Age=31536000; SameSite=Lax`;
+  document.cookie = `${COOKIE_NAME}=${encodeURIComponent(user)}; Path=/; SameSite=Lax`;
 }
 
 export function clearSelectedUser() {

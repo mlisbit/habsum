@@ -22,6 +22,39 @@ export const db = new Database(DB_PATH);
 db.pragma('journal_mode = WAL');
 
 db.exec(`
+  CREATE TABLE IF NOT EXISTS users (
+    username TEXT PRIMARY KEY,
+    pin TEXT NOT NULL,
+    admin INTEGER NOT NULL DEFAULT 0
+  );
+`);
+
+const userColumns = db.prepare("PRAGMA table_info('users')").all() as Array<{
+  name: string;
+  type: string;
+}>;
+if (!userColumns.some((column) => column.name === 'admin')) {
+  db.exec('ALTER TABLE users ADD COLUMN admin INTEGER NOT NULL DEFAULT 0');
+}
+if (userColumns.some((column) => column.name === 'pin' && column.type.toUpperCase() !== 'TEXT')) {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS users_next (
+      username TEXT PRIMARY KEY,
+      pin TEXT NOT NULL,
+      admin INTEGER NOT NULL DEFAULT 0
+    );
+
+    INSERT INTO users_next (username, pin, admin)
+    SELECT username, CAST(pin AS TEXT), admin
+    FROM users;
+
+    DROP TABLE users;
+    ALTER TABLE users_next RENAME TO users;
+  `);
+}
+db.exec("UPDATE users SET admin = CASE WHEN username = 'mac' THEN 1 ELSE 0 END");
+
+db.exec(`
   CREATE TABLE IF NOT EXISTS habit_summation_events (
     id INTEGER PRIMARY KEY,
     user TEXT NOT NULL,
@@ -58,6 +91,65 @@ type FirstDateRow = { date: string };
 type SeriesRow = { date: string; total: number };
 type SelectRow = { value: string };
 type SelectSeriesRow = { date: string; value: string };
+type UserPinRow = { pin: string };
+type UserAdminRow = { admin: number };
+
+const insertUserStmt = db.prepare<{ username: string; pin: string; admin: number }>(`
+  INSERT INTO users (username, pin, admin)
+  VALUES (@username, @pin, @admin)
+  ON CONFLICT(username) DO UPDATE SET
+    pin = excluded.pin,
+    admin = excluded.admin
+`);
+
+const ensureUserStmt = db.prepare<{ username: string; pin: string; admin: number }>(`
+  INSERT OR IGNORE INTO users (username, pin, admin)
+  VALUES (@username, @pin, @admin)
+`);
+
+const getUserPinStmt = db.prepare<[string], UserPinRow>('SELECT pin FROM users WHERE username = ?');
+
+const getUserAdminStmt = db.prepare<[string], UserAdminRow>(
+  'SELECT admin FROM users WHERE username = ?',
+);
+
+const renameUserPinStmt = db.prepare<{ fromUsername: string; toUsername: string }>(`
+  UPDATE users
+  SET username = @toUsername,
+      admin = CASE WHEN @toUsername = 'mac' THEN 1 ELSE 0 END
+  WHERE username = @fromUsername
+`);
+
+const deleteUserPinStmt = db.prepare<[string], unknown>('DELETE FROM users WHERE username = ?');
+
+export function ensureUserPins(usernames: string[], defaultPin = '0'): void {
+  for (const username of usernames) {
+    ensureUserStmt.run({ username, pin: defaultPin, admin: username === 'mac' ? 1 : 0 });
+  }
+  db.exec("UPDATE users SET admin = CASE WHEN username = 'mac' THEN 1 ELSE 0 END");
+}
+
+export function setUserPin(username: string, pin: string): void {
+  insertUserStmt.run({ username, pin, admin: username === 'mac' ? 1 : 0 });
+}
+
+export function renameUserPin(fromUsername: string, toUsername: string): void {
+  renameUserPinStmt.run({ fromUsername, toUsername });
+}
+
+export function deleteUserPin(username: string): void {
+  deleteUserPinStmt.run(username);
+}
+
+export function isUserPinValid(username: string, pin: string): boolean {
+  const row = getUserPinStmt.get(username);
+  return row?.pin === pin;
+}
+
+export function isUserAdmin(username: string): boolean {
+  const row = getUserAdminStmt.get(username);
+  return row?.admin === 1;
+}
 
 const getDailyTotalStmt = db.prepare<[string, string, string], TotalRow>(
   `

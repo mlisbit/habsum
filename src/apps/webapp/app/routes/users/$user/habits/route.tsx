@@ -4,7 +4,7 @@ import { Footer } from '~/components/Footer';
 import { TopNav } from '~/components/TopNav';
 import { SingleSelectWidget, SummationWidget } from '~/components/widgets';
 import { InfoText } from '~/core-components/InfoText';
-import { clearSelectedUser } from '~/cookies.client';
+import { clearSelectedUser, getSelectedUser } from '~/cookies.client';
 import { getProgress } from '~/utils/habit-helpers';
 import { toDateKey } from '@habsum/utils';
 
@@ -41,7 +41,12 @@ export default function HabitsPage() {
 
   useEffect(() => {
     const match = window.location.pathname.match(/^\/users\/([^/]+)\/habits\/?$/);
-    setUser(match ? decodeURIComponent(match[1]) : '');
+    const routeUser = match ? decodeURIComponent(match[1]) : '';
+    if (routeUser && getSelectedUser() !== routeUser) {
+      window.location.replace('/login');
+      return;
+    }
+    setUser(routeUser);
 
     const syncFromUrl = () => {
       const q = new URLSearchParams(window.location.search);
@@ -175,7 +180,7 @@ export default function HabitsPage() {
         onChangeDate={goToDate}
         onBack={() => {
           clearSelectedUser();
-          window.location.assign('/users');
+          window.location.assign('/login');
         }}
         onSettings={() =>
           window.location.assign(`/users/${encodeURIComponent(user)}/settings/account`)

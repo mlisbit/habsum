@@ -1,11 +1,43 @@
 import { Link, Outlet, useLocation, useParams } from '@remix-run/react';
+import { useEffect, useState } from 'react';
+import { getUserSession } from '~/api.client';
 import { Button } from '~/core-components/Button';
+import { clearSelectedUser, getSelectedUser } from '~/cookies.client';
 
 export default function UserSettingsLayout() {
   const { user } = useParams();
   const location = useLocation();
   const path = location.pathname;
   const base = `/users/${encodeURIComponent(user ?? '')}/settings`;
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    if (user && getSelectedUser() !== user) {
+      window.location.replace('/login');
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    setIsAdmin(null);
+    getUserSession(user)
+      .then((res) => {
+        if (!cancelled) setIsAdmin(res.admin);
+      })
+      .catch(() => {
+        if (!cancelled) setIsAdmin(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user]);
+
+  useEffect(() => {
+    if (path.endsWith('/developer') && isAdmin === false) {
+      window.location.replace(`${base}/account`);
+    }
+  }, [base, isAdmin, path]);
 
   return (
     <div className="settings">
@@ -43,14 +75,26 @@ export default function UserSettingsLayout() {
           >
             Config
           </Link>
-          <Link
-            className={`settings__link text-b-l${
-              path.endsWith('/developer') ? ' settings__link--active' : ''
-            }`}
-            to={`${base}/developer`}
-          >
-            Developer
-          </Link>
+          {isAdmin === true ? (
+            <Link
+              className={`settings__link text-b-l${
+                path.endsWith('/developer') ? ' settings__link--active' : ''
+              }`}
+              to={`${base}/developer`}
+            >
+              Developer
+            </Link>
+          ) : null}
+          <Button
+            type="secondary"
+            size="small"
+            text="Logout"
+            className="settings__logout"
+            onClick={() => {
+              clearSelectedUser();
+              window.location.assign('/login');
+            }}
+          />
         </nav>
       </aside>
       <main className="card pt-3">

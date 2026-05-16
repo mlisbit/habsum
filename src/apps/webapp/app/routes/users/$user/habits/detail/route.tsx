@@ -11,6 +11,7 @@ import { SingleSelectWidget, SummationWidget } from '~/components/widgets';
 import { getHabitHistory, patchHabit, type Habit } from '~/api.client';
 import { toDateKey } from '@habsum/utils';
 import { addDays } from '~/utils/date-utils';
+import { getSelectedUser } from '~/cookies.client';
 
 type HistoryGetPayload = Awaited<ReturnType<typeof getHabitHistory>>;
 
@@ -68,6 +69,12 @@ export default function HabitDetailRoute() {
   const today = useMemo(() => toDateKey(new Date(), tzOffsetMinutes), [tzOffsetMinutes]);
   const effectiveDate = selectedDate && selectedDate.length > 0 ? selectedDate : today;
   const showJumpToToday = effectiveDate !== today;
+
+  useEffect(() => {
+    if (user && getSelectedUser() !== user) {
+      window.location.replace('/login');
+    }
+  }, [user]);
 
   const fetchHistory = useCallback(
     async (options: { mode: 'initial' | 'refresh'; cancelled?: { current: boolean } }) => {

@@ -43,13 +43,29 @@
   min-inline-size: 0;
 }
 
+.users-index__pin-input {
+  inline-size: 100%;
+  min-inline-size: 0;
+}
+
+.users-index__hint {
+  margin-bottom: functions.spacing(2);
+}
+
 .users-index__error {
   margin-top: functions.spacing(2);
 }
 
-.users-index__user-row {
+.users-index__login-form {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: functions.spacing(3);
+  flex-direction: column;
+  align-items: stretch;
+  gap: functions.spacing(2);
+}
+
+.users-index__continue {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: functions.spacing(2);
 }

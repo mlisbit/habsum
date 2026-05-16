@@ -39,6 +39,10 @@
   background: color-mix(in srgb, var(--accent-selected) 18%, transparent);
 }
 
+.settings__logout {
+  margin-top: functions.spacing(3);
+}
+
 @media (max-width: 720px) {
   .settings {
     grid-template-columns: 1fr;

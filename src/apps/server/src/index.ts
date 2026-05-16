@@ -3,11 +3,16 @@ import { dayFromString, type Day } from '@habsum/types/common/day';
 import type { StreakDatum, StreakGraphData } from '@habsum/types/common/streak';
 import type { Habit, HabitHistory } from '@habsum/types/common/habit';
 import type {
+  CreateUserRequest,
+  CreateUserResponse,
   HealthResponse,
   ListUsersResponse,
+  LoginUserRequest,
+  LoginUserResponse,
   PurgeUserDataResponse,
   UserConfigGetResponse,
   UserConfigPutResponse,
+  UserSessionResponse,
 } from '@habsum/types/common/misc';
 import type { DeveloperGetResponse } from '@habsum/types/api-responses/developer-get';
 import type { HabitsResponse } from '@habsum/types/api-responses/habits-get';
@@ -36,6 +41,8 @@ import {
   deleteDailySelect,
   deleteSummationEvent,
   deleteSummationEventsForDay,
+  deleteUserPin,
+  ensureUserPins,
   getAllSelects,
   getAllTotals,
   getFirstDate,
@@ -44,9 +51,13 @@ import {
   getSeries,
   getSummationEvents,
   getSummationDayTotal,
+  isUserAdmin,
+  isUserPinValid,
   purgeUserData,
+  renameUserPin,
   setSelect,
   setTotal,
+  setUserPin,
 } from './db.js';
 import { mapSummationEventsToApi } from './summation-event-api.js';
 import {
@@ -276,6 +287,12 @@ function isSafeConfigUserId(user: string): boolean {
   return true;
 }
 
+function parsePin(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const pin = value.trim();
+  return pin.length > 0 ? pin : null;
+}
+
 function loadUserConfigForRequest(user: string, res: Response) {
   try {
     const config = loadUserConfig(user);
@@ -316,24 +333,71 @@ app.get('/developer', (_req, res) => {
 });
 
 app.get('/users', (_req, res) => {
-  const body: ListUsersResponse = { users: listUsers() };
+  const users = listUsers();
+  ensureUserPins(users);
+  const body: ListUsersResponse = { users };
   res.json(body);
 });
 
-app.post('/users', (req, res) => {
-  const name = typeof req.query.name === 'string' ? req.query.name : '';
-  if (!name) return res.status(400).json({ error: 'name is required' });
-  if (!isSafeConfigUserId(name)) {
+app.post(
+  '/users',
+  (req: Request<unknown, unknown, CreateUserRequest, { name?: string }>, res: Response) => {
+    const name = typeof req.query.name === 'string' ? req.query.name : '';
+    if (!name) return res.status(400).json({ error: 'name is required' });
+    if (!isSafeConfigUserId(name)) {
+      return res.status(400).json({ error: 'invalid user' });
+    }
+    const pin = parsePin(req.body?.pin ?? '0');
+    if (pin == null) return res.status(400).json({ error: 'pin is required' });
+
+    const out = createUserFromSampleConfig(name);
+    if (!out.ok) {
+      const status = out.error.includes('already exists') ? 409 : 400;
+      return res.status(status).json({ error: out.error });
+    }
+
+    setUserPin(out.user, pin);
+    const body: CreateUserResponse = { ok: true, user: out.user };
+    return res.status(201).json(body);
+  },
+);
+
+app.post(
+  '/users/:user/login',
+  (req: Request<{ user: string }, unknown, LoginUserRequest>, res: Response) => {
+    const { user } = req.params;
+    if (!isSafeConfigUserId(user)) {
+      return res.status(400).json({ error: 'invalid user' });
+    }
+
+    const pin = parsePin(req.body?.pin);
+    if (pin == null) return res.status(400).json({ error: 'pin is required' });
+
+    const config = loadUserConfigForRequest(user, res);
+    if (!config) return;
+    ensureUserPins([user]);
+
+    if (!isUserPinValid(user, pin)) {
+      return res.status(401).json({ error: 'invalid pin' });
+    }
+
+    const body: LoginUserResponse = { ok: true, user };
+    return res.json(body);
+  },
+);
+
+app.get('/users/:user/session', (req: Request<{ user: string }>, res: Response) => {
+  const { user } = req.params;
+  if (!isSafeConfigUserId(user)) {
     return res.status(400).json({ error: 'invalid user' });
   }
 
-  const out = createUserFromSampleConfig(name);
-  if (!out.ok) {
-    const status = out.error.includes('already exists') ? 409 : 400;
-    return res.status(status).json({ error: out.error });
-  }
+  const config = loadUserConfigForRequest(user, res);
+  if (!config) return;
+  ensureUserPins([user]);
 
-  return res.status(201).json({ ok: true, user: out.user });
+  const body: UserSessionResponse = { user, admin: isUserAdmin(user) };
+  return res.json(body);
 });
 
 app.patch(
@@ -363,6 +427,7 @@ app.patch(
       return res.status(status).json({ error: out.error });
     }
 
+    renameUserPin(user, out.user);
     return res.json({ ok: true, user: out.user });
   },
 );
@@ -385,6 +450,7 @@ app.delete('/users/:user', (req: Request<{ user: string }>, res: Response) => {
     return res.status(status).json({ error: out.error });
   }
 
+  deleteUserPin(out.user);
   return res.json({ ok: true, user: out.user });
 });
 

@@ -121,23 +121,6 @@ export function TopNav({
             tabIndex={0}
             aria-labelledby="top-nav-user-greeting"
           >
-            <div className="top-nav__back-reveal">
-              <Hoverable.Root>
-                <Hoverable.Anchor className="top-nav__back-anchor">
-                  <Button
-                    type="tertiary"
-                    icon="chevronLeft"
-                    text=""
-                    circle
-                    aria-label="Switch users"
-                    onClick={onBack}
-                  />
-                </Hoverable.Anchor>
-                <Hoverable.Content className="top-nav__back-tooltip" side="bottom">
-                  Switch users
-                </Hoverable.Content>
-              </Hoverable.Root>
-            </div>
             <span id="top-nav-user-greeting" className="top-nav__greeting text-h-xl">
               Hi, {username}
             </span>
