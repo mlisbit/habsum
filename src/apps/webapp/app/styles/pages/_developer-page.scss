@@ -13,15 +13,47 @@
 }
 
 .developer-page__users-list {
+  list-style: none;
+  margin: functions.spacing(2) 0 0;
+  padding: 0;
   display: flex;
   flex-direction: column;
   gap: functions.spacing(1);
-  margin: functions.spacing(2) 0 0;
-  padding-left: functions.spacing(3);
 }
 
-.developer-page__users-list-item {
+.developer-page__users-list-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: functions.spacing(2);
+  padding: functions.spacing(1) functions.spacing(2);
+  margin: 0;
+  border-radius: var(--border-radius-m);
   overflow-wrap: anywhere;
+
+  &:hover {
+    background-color: var(--background-tertiary);
+  }
+}
+
+.developer-page__users-list-name {
+  min-width: 0;
+  flex: 1;
+}
+
+.developer-page__users-list-actions {
+  display: flex;
+  align-items: center;
+  gap: functions.spacing(1);
+  flex-shrink: 0;
+}
+
+.developer-page__users-list-action {
+  flex-shrink: 0;
+}
+
+.developer-page__users-action-anchor {
+  display: flex;
 }
 
 .developer-page__add-user-modal {

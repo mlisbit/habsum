@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { getAuthMe, getUserSession, logout } from '~/api.client';
 import { LOGIN_TOAST_USER_AREA, redirectToLoginWithToast } from '~/context/toast';
 import { Button } from '~/core-components/Button';
+import { applyUiTheme } from '~/theme.client';
 
 export default function UserSettingsLayout() {
   const { user } = useParams();
@@ -15,9 +16,10 @@ export default function UserSettingsLayout() {
     if (!user) return;
     let cancelled = false;
     getAuthMe()
-      .then(({ user: sessionUser }) => {
+      .then(({ user: sessionUser, theme }) => {
         if (cancelled) return;
         if (!sessionUser || sessionUser !== user) redirectToLoginWithToast(LOGIN_TOAST_USER_AREA);
+        else applyUiTheme(theme);
       })
       .catch(() => {
         if (!cancelled) redirectToLoginWithToast(LOGIN_TOAST_USER_AREA);

@@ -2,6 +2,7 @@ import Database from 'better-sqlite3';
 import { randomBytes } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { isAllowedUiTheme } from './request-helpers.js';
 
 const rawDir = process.env.HABSUM_CONFIG_DIR;
 if (!rawDir) {
@@ -55,6 +56,17 @@ if (userColumns.some((column) => column.name === 'pin' && column.type.toUpperCas
 }
 db.exec("UPDATE users SET admin = CASE WHEN username = 'mac' THEN 1 ELSE 0 END");
 
+function usersTableHasColumn(column: string): boolean {
+  const cols = db.prepare("PRAGMA table_info('users')").all() as Array<{ name: string }>;
+  return cols.some((c) => c.name === column);
+}
+if (!usersTableHasColumn('display_name')) {
+  db.exec('ALTER TABLE users ADD COLUMN display_name TEXT');
+}
+if (!usersTableHasColumn('theme')) {
+  db.exec(`ALTER TABLE users ADD COLUMN theme TEXT NOT NULL DEFAULT 'dark'`);
+}
+
 db.exec(`
   CREATE TABLE IF NOT EXISTS habit_summation_events (
     id INTEGER PRIMARY KEY,
@@ -106,20 +118,30 @@ type SelectSeriesRow = { date: string; value: string };
 type UserPinRow = { pin: string };
 type UserAdminRow = { admin: number };
 
+type UserProfileCols = { display_name: string | null; theme: string | null };
+
 const insertUserStmt = db.prepare<{ username: string; pin: string; admin: number }>(`
-  INSERT INTO users (username, pin, admin)
-  VALUES (@username, @pin, @admin)
+  INSERT INTO users (username, pin, admin, display_name, theme)
+  VALUES (@username, @pin, @admin, NULL, 'dark')
   ON CONFLICT(username) DO UPDATE SET
     pin = excluded.pin,
     admin = excluded.admin
 `);
 
 const ensureUserStmt = db.prepare<{ username: string; pin: string; admin: number }>(`
-  INSERT OR IGNORE INTO users (username, pin, admin)
-  VALUES (@username, @pin, @admin)
+  INSERT OR IGNORE INTO users (username, pin, admin, display_name, theme)
+  VALUES (@username, @pin, @admin, NULL, 'dark')
 `);
 
 const getUserPinStmt = db.prepare<[string], UserPinRow>('SELECT pin FROM users WHERE username = ?');
+
+const getUserProfileStmt = db.prepare<[string], UserProfileCols>(
+  'SELECT display_name, theme FROM users WHERE username = ?',
+);
+
+const updateLoginPinStmt = db.prepare<{ username: string; pin: string }>(`
+  UPDATE users SET pin = @pin WHERE username = @username
+`);
 
 const getUserAdminStmt = db.prepare<[string], UserAdminRow>(
   'SELECT admin FROM users WHERE username = ?',
@@ -145,6 +167,12 @@ export function setUserPin(username: string, pin: string): void {
   insertUserStmt.run({ username, pin, admin: username === 'mac' ? 1 : 0 });
 }
 
+/** Updates stored login PIN only; preserves `admin`. Returns whether a row existed. */
+export function updateLoginPin(username: string, pin: string): boolean {
+  const result = updateLoginPinStmt.run({ username, pin });
+  return result.changes > 0;
+}
+
 export function renameUserPin(fromUsername: string, toUsername: string): void {
   renameUserPinStmt.run({ fromUsername, toUsername });
   renameSessionsUsername(fromUsername, toUsername);
@@ -163,6 +191,50 @@ export function isUserPinValid(username: string, pin: string): boolean {
 export function isUserAdmin(username: string): boolean {
   const row = getUserAdminStmt.get(username);
   return row?.admin === 1;
+}
+
+export function getUserProfile(username: string): {
+  displayName: string | null;
+  theme: string;
+} {
+  const row = getUserProfileStmt.get(username);
+  if (!row) {
+    return { displayName: null, theme: 'dark' };
+  }
+  const theme = row.theme != null && isAllowedUiTheme(row.theme) ? row.theme : 'dark';
+  return {
+    displayName: row.display_name,
+    theme,
+  };
+}
+
+export function patchUserProfile(
+  username: string,
+  patch: { displayName?: string | null; theme?: string },
+): void {
+  const sets: string[] = [];
+  const params: Record<string, unknown> = { username };
+  if ('displayName' in patch) {
+    sets.push('display_name = @displayName');
+    const v = patch.displayName;
+    params.displayName = v === null || v === undefined ? null : String(v).trim() || null;
+  }
+  if ('theme' in patch && patch.theme !== undefined) {
+    sets.push('theme = @theme');
+    params.theme = patch.theme;
+  }
+  if (sets.length === 0) return;
+  const stmt = db.prepare(`UPDATE users SET ${sets.join(', ')} WHERE username = @username`);
+  let result = stmt.run(
+    params as { username: string; displayName?: string | null; theme?: string },
+  );
+  if (result.changes === 0) {
+    ensureUserPins([username]);
+    result = stmt.run(params as { username: string; displayName?: string | null; theme?: string });
+  }
+  if (result.changes === 0) {
+    throw new Error('user row missing');
+  }
 }
 
 type SessionRow = { username: string; expires_at: string };

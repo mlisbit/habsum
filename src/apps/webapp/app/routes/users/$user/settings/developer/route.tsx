@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useParams } from '@remix-run/react';
 import {
+  adminDeleteUser,
+  adminSetUserLoginPin,
   createUser,
   getDeveloper,
   getUserSession,
@@ -8,6 +10,8 @@ import {
   type DeveloperGetResponse,
 } from '~/api.client';
 import { Button } from '~/core-components/Button';
+import { Hoverable } from '~/core-components/Hoverable';
+import type { IconName } from '~/core-components/Icon';
 import { InfoText } from '~/core-components/InfoText';
 import { Input } from '~/core-components/Input';
 import { ModalActions, ModalBody, ModalTitle, useModal } from '~/context/modal';
@@ -40,10 +44,10 @@ function AddUserModal({ onCreated, onClose }: AddUserModalProps) {
   const canCreate = username.trim() !== '' && pin.trim() !== '';
 
   const handleCreate = async (rawUsername: string, rawPin: string) => {
-    const username = rawUsername.trim();
-    const pin = rawPin.trim();
-    if (!username || isCreating) return;
-    if (!pin) {
+    const name = rawUsername.trim();
+    const nextPin = rawPin.trim();
+    if (!name || isCreating) return;
+    if (!nextPin) {
       setError('PIN is required');
       return;
     }
@@ -51,7 +55,7 @@ function AddUserModal({ onCreated, onClose }: AddUserModalProps) {
     setError(null);
     setIsCreating(true);
     try {
-      const res = await createUser(username, pin);
+      const res = await createUser(name, nextPin);
       onCreated(res.user);
       onClose();
     } catch (e) {
@@ -110,6 +114,176 @@ function AddUserModal({ onCreated, onClose }: AddUserModalProps) {
         />
       </ModalActions>
     </>
+  );
+}
+
+type ManageUserModalProps = {
+  targetUsername: string;
+  onDone: () => void;
+  onClose: () => void;
+};
+
+function ChangePasswordModal({ targetUsername, onDone, onClose }: ManageUserModalProps) {
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const canSave = password.trim() !== '' && confirm.trim() !== '';
+
+  const handleSave = async () => {
+    const p = password.trim();
+    const c = confirm.trim();
+    if (!p) {
+      setError('Enter a new password');
+      return;
+    }
+    if (p !== c) {
+      setError('Passwords do not match');
+      return;
+    }
+    setError(null);
+    setBusy(true);
+    try {
+      await adminSetUserLoginPin(targetUsername, p);
+      onDone();
+      onClose();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to update password');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <>
+      <ModalTitle>Change password</ModalTitle>
+      <ModalBody className="developer-page__add-user-modal">
+        <p className="text-light text-b-m">
+          Set a new login password for <strong className="text-bold">{targetUsername}</strong>.
+        </p>
+        <Input
+          className="developer-page__add-user-input"
+          type="password"
+          placeholder="New password"
+          disabled={busy}
+          dismissable
+          submittable={false}
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          autoComplete="new-password"
+          onChange={setPassword}
+        />
+        <Input
+          className="developer-page__add-user-input"
+          type="password"
+          placeholder="Confirm password"
+          disabled={busy}
+          dismissable
+          submittable={false}
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          autoComplete="new-password"
+          onChange={setConfirm}
+        />
+        {error ? <InfoText variant="error">{error}</InfoText> : null}
+      </ModalBody>
+      <ModalActions>
+        <Button
+          type="secondary"
+          size="small"
+          text="Cancel"
+          disabled={busy}
+          className="mr-2"
+          onClick={onClose}
+        />
+        <Button
+          type="primary"
+          size="small"
+          text={busy ? 'Saving…' : 'Save password'}
+          disabled={busy || !canSave}
+          onClick={() => void handleSave()}
+        />
+      </ModalActions>
+    </>
+  );
+}
+
+function DeleteUserModal({ targetUsername, onDone, onClose }: ManageUserModalProps) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleDelete = async () => {
+    setError(null);
+    setBusy(true);
+    try {
+      await adminDeleteUser(targetUsername);
+      onDone();
+      onClose();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to delete user');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <>
+      <ModalTitle>Delete user</ModalTitle>
+      <ModalBody className="developer-page__add-user-modal">
+        <p className="text-b-m">
+          Are you sure you want to delete <strong className="text-bold">{targetUsername}</strong>?
+        </p>
+        <p className="text-light text-b-m">
+          This removes their YAML config and all stored habit data. This cannot be undone.
+        </p>
+        {error ? <InfoText variant="error">{error}</InfoText> : null}
+      </ModalBody>
+      <ModalActions>
+        <Button
+          type="secondary"
+          size="small"
+          text="Cancel"
+          disabled={busy}
+          className="mr-2"
+          onClick={onClose}
+        />
+        <Button
+          type="primary"
+          size="small"
+          text={busy ? 'Deleting…' : 'Delete user'}
+          disabled={busy}
+          onClick={() => void handleDelete()}
+        />
+      </ModalActions>
+    </>
+  );
+}
+
+type UserRowIconActionProps = {
+  tooltip: string;
+  icon: IconName;
+  ariaLabel: string;
+  onClick: () => void;
+};
+
+function UserRowIconAction({ tooltip, icon, ariaLabel, onClick }: UserRowIconActionProps) {
+  return (
+    <Hoverable.Root>
+      <Hoverable.Anchor className="developer-page__users-action-anchor">
+        <Button
+          type="tertiary"
+          size="tiny"
+          icon={icon}
+          circle
+          aria-label={ariaLabel}
+          className="developer-page__users-list-action"
+          onClick={onClick}
+        />
+      </Hoverable.Anchor>
+      <Hoverable.Content side="top">{tooltip}</Hoverable.Content>
+    </Hoverable.Root>
   );
 }
 
@@ -202,7 +376,8 @@ export default function UserSettingsDeveloper() {
       <div className="card developer-page__user-tools">
         <h3 className="text-h-s">User tools</h3>
         <p className="text-light text-b-m">
-          Create a new user config and initial PIN. Existing users sign in from the login page.
+          Create a new user config and initial PIN. Manage existing users with the actions beside
+          each name. Existing users sign in from the login page.
         </p>
         <Button
           type="primary"
@@ -237,8 +412,49 @@ export default function UserSettingsDeveloper() {
           ) : (
             <ul className="developer-page__users-list">
               {users.map((username) => (
-                <li key={username} className="developer-page__users-list-item text-b-m">
-                  {username}
+                <li key={username} className="developer-page__users-list-row">
+                  <span className="developer-page__users-list-name text-b-m">{username}</span>
+                  <div className="developer-page__users-list-actions">
+                    <UserRowIconAction
+                      tooltip="Change password"
+                      icon="key-round"
+                      ariaLabel={`Change password for ${username}`}
+                      onClick={() => {
+                        setUserToolStatus(null);
+                        present({
+                          content: (
+                            <ChangePasswordModal
+                              targetUsername={username}
+                              onDone={() => {
+                                setUserToolStatus(`Updated password for "${username}".`);
+                              }}
+                              onClose={closeModal}
+                            />
+                          ),
+                        });
+                      }}
+                    />
+                    <UserRowIconAction
+                      tooltip="Delete user"
+                      icon="trash"
+                      ariaLabel={`Delete user ${username}`}
+                      onClick={() => {
+                        setUserToolStatus(null);
+                        present({
+                          content: (
+                            <DeleteUserModal
+                              targetUsername={username}
+                              onDone={() => {
+                                setUserToolStatus(`Deleted user "${username}".`);
+                                void loadUsers();
+                              }}
+                              onClose={closeModal}
+                            />
+                          ),
+                        });
+                      }}
+                    />
+                  </div>
                 </li>
               ))}
             </ul>

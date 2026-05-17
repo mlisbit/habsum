@@ -13,6 +13,13 @@ export function parsePin(value: unknown): string | null {
   return pin.length > 0 ? pin : null;
 }
 
+/** Stored as plain strings; extend as new themes ship. */
+export const ALLOWED_UI_THEMES = ['light', 'dark'] as const;
+
+export function isAllowedUiTheme(value: string): boolean {
+  return (ALLOWED_UI_THEMES as readonly string[]).includes(value);
+}
+
 export function loadUserConfigForResponse(user: string, res: Response) {
   try {
     const config = loadUserConfig(user);

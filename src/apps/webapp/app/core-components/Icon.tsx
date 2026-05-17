@@ -5,6 +5,7 @@ import {
   CircleCheck,
   Info,
   type LucideIcon,
+  KeyRound,
   Minus,
   UserRoundPlus,
   OctagonX,
@@ -12,6 +13,7 @@ import {
   Plus,
   Settings,
   SquarePen,
+  Trash2,
   X,
 } from 'lucide-react';
 
@@ -27,8 +29,10 @@ const ICON_COMPONENTS = {
   'circle-check': CircleCheck,
   info: Info,
   minus: Minus,
+  'key-round': KeyRound,
   'octagon-x': OctagonX,
   'square-pen': SquarePen,
+  trash: Trash2,
   'user-round-plus': UserRoundPlus,
   plus: Plus,
   party: PartyPopper,

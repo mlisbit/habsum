@@ -20,11 +20,22 @@ export type LoginUserRequest = { pin?: string };
 export type LoginUserResponse = { ok: true; user: string };
 
 /** Current browser session resolved from HttpOnly cookie (no cookie → `user: null`). */
-export type AuthMeResponse = { user: string | null };
+export type AuthMeResponse = {
+  user: string | null;
+  /** Friendly name when logged in; `null` if unset. Meaningless when `user` is null. */
+  displayName: string | null;
+  /** UI theme key (e.g. `light`, `dark`) when logged in. */
+  theme: string;
+};
 
 export type LogoutResponse = { ok: true };
 
-export type UserSessionResponse = { user: string; admin: boolean };
+export type UserSessionResponse = {
+  user: string;
+  admin: boolean;
+  displayName: string | null;
+  theme: string;
+};
 
 export type UserConfigGetResponse = { text: string };
 

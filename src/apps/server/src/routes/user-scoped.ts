@@ -15,6 +15,7 @@ import type { UsersPatchRequest } from '@habsum/types/api-responses/users-patch'
 import { dasherize } from '@habsum/utils';
 import {
   deleteUserConfigFile,
+  listUsers,
   readUserConfigFileText,
   renameUserConfigFile,
   writeUserConfigFileText,
@@ -33,8 +34,10 @@ import {
   getSelect,
   getSummationEvents,
   getSummationDayTotal,
+  getUserProfile,
   isUserAdmin,
   isUserPinValid,
+  patchUserProfile,
   purgeUserData,
   renameUserPin,
   setSelect,
@@ -50,7 +53,12 @@ import {
   streakGraphForConfiguredWindow,
 } from '../habit-presentation.js';
 import { requireMatchingRouteUser } from '../middleware/auth.js';
-import { isSafeConfigUserId, loadUserConfigForResponse, parsePin } from '../request-helpers.js';
+import {
+  isSafeConfigUserId,
+  isAllowedUiTheme,
+  loadUserConfigForResponse,
+  parsePin,
+} from '../request-helpers.js';
 import { mapSummationEventsToApi } from '../summation-event-api.js';
 import { appendSessionCookie, sessionTtlSeconds } from '../session-cookie.js';
 import { parseClientCreatedAtIso, resolveHabitApiDateQuery } from '../server-time.js';
@@ -97,7 +105,11 @@ userScopedRouter.get(
     if (!config) return;
     ensureUserPins([user]);
 
-    const body: UserSessionResponse = { user, admin: isUserAdmin(user) };
+    const body: UserSessionResponse = {
+      user,
+      admin: isUserAdmin(user),
+      ...getUserProfile(user),
+    };
     return res.json(body);
   },
 );
@@ -111,27 +123,79 @@ userScopedRouter.patch(
       return res.status(400).json({ error: 'invalid user' });
     }
 
-    const nextName = typeof req.body?.name === 'string' ? req.body.name : '';
-    if (!nextName) return res.status(400).json({ error: 'name is required' });
-    if (!isSafeConfigUserId(nextName)) {
-      return res.status(400).json({ error: 'invalid user' });
-    }
-    if (nextName === user) {
-      return res.status(400).json({ error: 'name is unchanged' });
+    const body = req.body ?? {};
+    const renameRaw = typeof body.name === 'string' ? body.name.trim() : '';
+    const wantsRename = renameRaw.length > 0;
+
+    let hasDisplayName = false;
+    let displayName: string | null | undefined;
+    if ('displayName' in body) {
+      hasDisplayName = true;
+      if (body.displayName === null) {
+        displayName = null;
+      } else if (typeof body.displayName === 'string') {
+        displayName = body.displayName.trim() || null;
+      } else {
+        return res.status(400).json({ error: 'displayName must be a string or null' });
+      }
     }
 
-    const out = renameUserConfigFile(user, nextName);
-    if (!out.ok) {
-      const status = out.error.includes('already exists')
-        ? 409
-        : out.error === 'user not found'
-          ? 404
-          : 400;
-      return res.status(status).json({ error: out.error });
+    let hasTheme = false;
+    let theme: string | undefined;
+    if ('theme' in body) {
+      hasTheme = true;
+      if (typeof body.theme !== 'string') {
+        return res.status(400).json({ error: 'theme must be a string' });
+      }
+      const t = body.theme.trim();
+      if (!isAllowedUiTheme(t)) {
+        return res.status(400).json({ error: 'invalid theme' });
+      }
+      theme = t;
     }
 
-    renameUserPin(user, out.user);
-    return res.json({ ok: true, user: out.user });
+    if (!wantsRename && !hasDisplayName && !hasTheme) {
+      return res.status(400).json({ error: 'no updates provided' });
+    }
+
+    const config = loadUserConfigForResponse(user, res);
+    if (!config) return;
+    ensureUserPins(listUsers());
+
+    if (hasDisplayName || hasTheme) {
+      try {
+        patchUserProfile(user, {
+          ...(hasDisplayName ? { displayName } : {}),
+          ...(hasTheme ? { theme } : {}),
+        });
+      } catch {
+        return res.status(500).json({ error: 'failed to update profile' });
+      }
+    }
+
+    if (wantsRename) {
+      if (!isSafeConfigUserId(renameRaw)) {
+        return res.status(400).json({ error: 'invalid user' });
+      }
+      if (renameRaw === user) {
+        return res.status(400).json({ error: 'name is unchanged' });
+      }
+
+      const out = renameUserConfigFile(user, renameRaw);
+      if (!out.ok) {
+        const status = out.error.includes('already exists')
+          ? 409
+          : out.error === 'user not found'
+            ? 404
+            : 400;
+        return res.status(status).json({ error: out.error });
+      }
+
+      renameUserPin(user, out.user);
+      return res.json({ ok: true, user: out.user });
+    }
+
+    return res.json({ ok: true, user });
   },
 );
 

@@ -1,6 +1,51 @@
 @use 'functions';
 
 // Block: account-page
+.account-page__cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: functions.spacing(2);
+  margin-bottom: functions.spacing(2);
+}
+
+.account-page__profile {
+  display: flex;
+  flex-direction: column;
+  gap: functions.spacing(2);
+  margin-top: functions.spacing(2);
+}
+
+.account-page__field {
+  display: flex;
+  flex-direction: column;
+  gap: functions.spacing(1);
+}
+
+.account-page__profile-input {
+  inline-size: 100%;
+  min-inline-size: 0;
+}
+
+.account-page__select {
+  background: var(--background-input);
+  border: 1px solid var(--border-color-faint);
+  border-radius: var(--border-radius-m);
+  padding: functions.spacing(1, 2);
+  min-width: min(320px, 100%);
+}
+
+.account-page__select:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-selected) 35%, transparent);
+}
+
+.account-page__header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
 .account-page__rename {
   display: flex;
   gap: functions.spacing(2);

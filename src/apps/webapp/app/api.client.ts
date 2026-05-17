@@ -118,6 +118,19 @@ export async function createUser(name: string, pin: string) {
   });
 }
 
+export async function adminSetUserLoginPin(name: string, pin: string) {
+  const qs = `?name=${encodeURIComponent(name)}`;
+  return request<{ ok: true; user: string }>(`/users${qs}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ pin }),
+  });
+}
+
+export async function adminDeleteUser(name: string) {
+  const qs = `?name=${encodeURIComponent(name)}`;
+  return request<{ ok: true; user: string }>(`/users${qs}`, { method: 'DELETE' });
+}
+
 export async function loginUser(user: string, pin: string) {
   return request<LoginUserResponse>(`/users/${encodeURIComponent(user)}/login`, {
     method: 'POST',

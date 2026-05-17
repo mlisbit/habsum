@@ -35,6 +35,8 @@ function formatTimeUntilEndOfDay(dateKey: string, tzOffsetMinutes: number): stri
 
 export type TopNavProps = {
   username: string;
+  /** Shown in “Hi, …” when set and non-empty; otherwise `username` is used. */
+  displayName?: string | null;
   /** Day being viewed (YYYY-MM-DD); drives end-of-day countdown. */
   effectiveDate: string;
   tzOffsetMinutes: number;
@@ -48,6 +50,7 @@ export type TopNavProps = {
 
 export function TopNav({
   username,
+  displayName = null,
   effectiveDate,
   tzOffsetMinutes,
   firstDate,
@@ -60,6 +63,9 @@ export function TopNav({
   const today = useMemo(() => toDateKey(new Date(), tzOffsetMinutes), [tzOffsetMinutes]);
   const nextDisabled = effectiveDate >= today;
   const showBeforeDataNotice = firstDate != null && effectiveDate < firstDate;
+
+  const greetingName =
+    displayName != null && displayName.trim() !== '' ? displayName.trim() : username;
 
   const showJumpToToday =
     Math.abs(diffDays(effectiveDate, today, tzOffsetMinutes)) > 1 || showBeforeDataNotice;
@@ -122,7 +128,7 @@ export function TopNav({
             aria-labelledby="top-nav-user-greeting"
           >
             <span id="top-nav-user-greeting" className="top-nav__greeting text-h-xl">
-              Hi, {username}
+              Hi, {greetingName}
             </span>
           </div>
           <Hoverable.Root>

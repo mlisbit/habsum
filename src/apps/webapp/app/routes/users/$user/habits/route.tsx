@@ -5,6 +5,7 @@ import { TopNav } from '~/components/TopNav';
 import { SingleSelectWidget, SummationWidget } from '~/components/widgets';
 import { InfoText } from '~/core-components/InfoText';
 import { LOGIN_TOAST_USER_AREA, redirectToLoginWithToast } from '~/context/toast';
+import { applyUiTheme } from '~/theme.client';
 import { getProgress } from '~/utils/habit-helpers';
 import { toDateKey } from '@habsum/utils';
 
@@ -35,6 +36,7 @@ export default function HabitsPage() {
   const [firstDate, setFirstDate] = useState<string | null>(null);
   const [state, setState] = useState<HabitsState | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [displayName, setDisplayName] = useState<string | null>(null);
   const tzOffsetMinutes = useMemo(() => new Date().getTimezoneOffset(), []);
   const today = useMemo(() => toDateKey(new Date(), tzOffsetMinutes), [tzOffsetMinutes]);
   const effectiveDate = urlDate ?? today;
@@ -45,16 +47,19 @@ export default function HabitsPage() {
 
     let cancelled = false;
     getAuthMe()
-      .then(({ user: sessionUser }) => {
+      .then(({ user: sessionUser, theme, displayName: familiar }) => {
         if (cancelled) return;
         if (!routeUser) {
           setUser('');
+          setDisplayName(null);
           return;
         }
         if (!sessionUser || sessionUser !== routeUser) {
           redirectToLoginWithToast(LOGIN_TOAST_USER_AREA);
           return;
         }
+        applyUiTheme(theme);
+        setDisplayName(familiar);
         setUser(routeUser);
       })
       .catch(() => {
@@ -190,6 +195,7 @@ export default function HabitsPage() {
     <div className="habits-page">
       <TopNav
         username={user}
+        displayName={displayName}
         effectiveDate={effectiveDate}
         tzOffsetMinutes={tzOffsetMinutes}
         firstDate={firstDate}

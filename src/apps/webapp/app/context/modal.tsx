@@ -8,6 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { Button } from '~/core-components/Button';
 
 type ActiveModal = {
   generation: number;
@@ -44,6 +45,42 @@ export function ModalBody({ children, className }: { children: ReactNode; classN
 
 export function ModalActions({ children }: { children: ReactNode }) {
   return <div className="modal__actions">{children}</div>;
+}
+
+export type AlertModalProps = {
+  title: string;
+  message: ReactNode;
+  /** Default: Cancel */
+  cancelLabel?: string;
+  /** Default: Continue without saving */
+  continueLabel?: string;
+  /** Dismisses the alert without leaving the page (e.g. close modal, reset navigation blocker). */
+  onCancel: () => void;
+  /** Confirms destructive or navigation action (primary CTA). */
+  onContinueWithoutSaving: () => void;
+};
+
+/** Two-action confirmation layout for `present({ content: <AlertModal … /> })`. */
+export function AlertModal({
+  title,
+  message,
+  cancelLabel = 'Cancel',
+  continueLabel = 'Continue without saving',
+  onCancel,
+  onContinueWithoutSaving,
+}: AlertModalProps) {
+  return (
+    <>
+      <ModalTitle>{title}</ModalTitle>
+      <ModalBody>
+        <p className="text-b-m text-light">{message}</p>
+      </ModalBody>
+      <ModalActions>
+        <Button type="secondary" text={cancelLabel} onClick={onCancel} />
+        <Button type="primary" text={continueLabel} onClick={onContinueWithoutSaving} />
+      </ModalActions>
+    </>
+  );
 }
 
 export function ModalProvider({ children }: { children: ReactNode }) {

@@ -10,6 +10,7 @@ import { Pill } from '~/core-components/Pill';
 import { SingleSelectWidget, SummationWidget } from '~/components/widgets';
 import { getAuthMe, getHabitHistory, patchHabit, type Habit } from '~/api.client';
 import { LOGIN_TOAST_USER_AREA, redirectToLoginWithToast } from '~/context/toast';
+import { applyUiTheme } from '~/theme.client';
 import { toDateKey } from '@habsum/utils';
 import { addDays } from '~/utils/date-utils';
 
@@ -74,9 +75,10 @@ export default function HabitDetailRoute() {
     if (!user) return;
     let cancelled = false;
     getAuthMe()
-      .then(({ user: sessionUser }) => {
+      .then(({ user: sessionUser, theme }) => {
         if (cancelled) return;
         if (!sessionUser || sessionUser !== user) redirectToLoginWithToast(LOGIN_TOAST_USER_AREA);
+        else applyUiTheme(theme);
       })
       .catch(() => {
         if (!cancelled) redirectToLoginWithToast(LOGIN_TOAST_USER_AREA);

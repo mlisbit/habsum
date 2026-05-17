@@ -4,6 +4,7 @@ import { Button } from '~/core-components/Button';
 import { InfoText } from '~/core-components/InfoText';
 import { Input } from '~/core-components/Input';
 import { clearLegacyClientLoginMarkers } from '~/cookies.client';
+import { applyUiTheme } from '~/theme.client';
 
 function LoginForm({
   anotherAccountHint,
@@ -108,8 +109,11 @@ export default function LoginRoute() {
     clearLegacyClientLoginMarkers();
     let cancelled = false;
     getAuthMe()
-      .then(({ user }) => {
-        if (!cancelled) setCurrentUser(user);
+      .then(({ user, theme }) => {
+        if (!cancelled) {
+          setCurrentUser(user);
+          applyUiTheme(user ? theme : 'dark');
+        }
       })
       .catch(() => {
         if (!cancelled) setCurrentUser(null);
