@@ -16,7 +16,7 @@ export default function UserSettingsLayout() {
     if (!user) return;
     let cancelled = false;
     getAuthMe()
-      .then(({ user: sessionUser, theme }) => {
+      .then(({ username: sessionUser, theme }) => {
         if (cancelled) return;
         if (!sessionUser || sessionUser !== user) redirectToLoginWithToast(LOGIN_TOAST_USER_AREA);
         else applyUiTheme(theme);
@@ -67,7 +67,7 @@ export default function UserSettingsLayout() {
             }
           />
 
-          <h1 className="text-h-l">{user}'s settings</h1>
+          <h1 className="text-h-l">Settings</h1>
         </div>
 
         <nav className="settings__nav">

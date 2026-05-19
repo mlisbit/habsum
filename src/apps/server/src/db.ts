@@ -69,6 +69,12 @@ if (!usersTableHasColumn('theme')) {
 if (!usersTableHasColumn('email')) {
   db.exec('ALTER TABLE users ADD COLUMN email TEXT');
 }
+if (!usersTableHasColumn('created_at')) {
+  db.exec('ALTER TABLE users ADD COLUMN created_at TEXT');
+}
+if (!usersTableHasColumn('beta_tester')) {
+  db.exec('ALTER TABLE users ADD COLUMN beta_tester INTEGER NOT NULL DEFAULT 1');
+}
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS habit_summation_events (
@@ -120,26 +126,45 @@ type SelectRow = { value: string };
 type SelectSeriesRow = { date: string; value: string };
 type UserPinRow = { pin: string };
 type UserAdminRow = { admin: number };
+type UserBetaTesterRow = { beta_tester: number };
 
-type UserProfileCols = { display_name: string | null; theme: string | null; email: string | null };
+type UserProfileCols = {
+  display_name: string | null;
+  theme: string | null;
+  email: string | null;
+  created_at: string;
+};
 
-const insertUserStmt = db.prepare<{ username: string; pin: string; admin: number }>(`
-  INSERT INTO users (username, pin, admin, display_name, theme, email)
-  VALUES (@username, @pin, @admin, NULL, 'dark', NULL)
+const insertUserStmt = db.prepare<{
+  username: string;
+  pin: string;
+  admin: number;
+  createdAt: string;
+}>(`
+  INSERT INTO users (username, pin, admin, display_name, theme, email, created_at)
+  VALUES (@username, @pin, @admin, NULL, 'dark', NULL, @createdAt)
   ON CONFLICT(username) DO UPDATE SET
     pin = excluded.pin,
-    admin = excluded.admin
+    admin = excluded.admin,
+    created_at = coalesce(nullif(trim(created_at), ''), excluded.created_at)
 `);
 
-const ensureUserStmt = db.prepare<{ username: string; pin: string; admin: number }>(`
-  INSERT OR IGNORE INTO users (username, pin, admin, display_name, theme, email)
-  VALUES (@username, @pin, @admin, NULL, 'dark', NULL)
+const ensureUserStmt = db.prepare<{
+  username: string;
+  pin: string;
+  admin: number;
+  createdAt: string;
+}>(`
+  INSERT OR IGNORE INTO users (username, pin, admin, display_name, theme, email, created_at)
+  VALUES (@username, @pin, @admin, NULL, 'dark', NULL, @createdAt)
 `);
 
 const getUserPinStmt = db.prepare<[string], UserPinRow>('SELECT pin FROM users WHERE username = ?');
 
 const getUserProfileStmt = db.prepare<[string], UserProfileCols>(
-  'SELECT display_name, theme, email FROM users WHERE username = ?',
+  `SELECT display_name, theme, email,
+     coalesce(nullif(trim(created_at), ''), datetime('now')) AS created_at
+   FROM users WHERE username = ?`,
 );
 
 const updateLoginPinStmt = db.prepare<{ username: string; pin: string }>(`
@@ -148,6 +173,10 @@ const updateLoginPinStmt = db.prepare<{ username: string; pin: string }>(`
 
 const getUserAdminStmt = db.prepare<[string], UserAdminRow>(
   'SELECT admin FROM users WHERE username = ?',
+);
+
+const getUserBetaTesterStmt = db.prepare<[string], UserBetaTesterRow>(
+  'SELECT beta_tester FROM users WHERE username = ?',
 );
 
 const renameUserPinStmt = db.prepare<{ fromUsername: string; toUsername: string }>(`
@@ -160,14 +189,25 @@ const renameUserPinStmt = db.prepare<{ fromUsername: string; toUsername: string 
 const deleteUserPinStmt = db.prepare<[string], unknown>('DELETE FROM users WHERE username = ?');
 
 export function ensureUserPins(usernames: string[], defaultPin = '0'): void {
+  const createdAt = new Date().toISOString();
   for (const username of usernames) {
-    ensureUserStmt.run({ username, pin: defaultPin, admin: username === 'mac' ? 1 : 0 });
+    ensureUserStmt.run({
+      username,
+      pin: defaultPin,
+      admin: username === 'mac' ? 1 : 0,
+      createdAt,
+    });
   }
   db.exec("UPDATE users SET admin = CASE WHEN username = 'mac' THEN 1 ELSE 0 END");
 }
 
 export function setUserPin(username: string, pin: string): void {
-  insertUserStmt.run({ username, pin, admin: username === 'mac' ? 1 : 0 });
+  insertUserStmt.run({
+    username,
+    pin,
+    admin: username === 'mac' ? 1 : 0,
+    createdAt: new Date().toISOString(),
+  });
 }
 
 /** Updates stored login PIN only; preserves `admin`. Returns whether a row existed. */
@@ -196,20 +236,34 @@ export function isUserAdmin(username: string): boolean {
   return row?.admin === 1;
 }
 
+/** Whether the user row grants the `BETA_TESTER` product entitlement (`users.beta_tester`). */
+export function isUserBetaTester(username: string): boolean {
+  const row = getUserBetaTesterStmt.get(username);
+  return row?.beta_tester === 1;
+}
+
 export function getUserProfile(username: string): {
   displayName: string | null;
   theme: string;
   email: string | null;
+  /** Non-empty stored or synthetic ISO string (row missing until first sync). */
+  createdAt: string;
 } {
   const row = getUserProfileStmt.get(username);
   if (!row) {
-    return { displayName: null, theme: 'dark', email: null };
+    return {
+      displayName: null,
+      theme: 'dark',
+      email: null,
+      createdAt: new Date().toISOString(),
+    };
   }
   const theme = row.theme != null && isAllowedUiTheme(row.theme) ? row.theme : 'dark';
   return {
     displayName: row.display_name,
     theme,
     email: row.email,
+    createdAt: row.created_at,
   };
 }
 

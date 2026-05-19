@@ -2,6 +2,7 @@ import { Router, type Request, type Response } from 'express';
 import type { CreateUserResponse, ListUsersResponse } from '@habsum/types/common/misc';
 import { createUserFromSampleConfig, deleteUserConfigFile, listUsers } from '../config.js';
 import { deleteUserPin, ensureUserPins, purgeUserData, setUserPin, updateLoginPin } from '../db.js';
+import { isForbiddenUsername } from '../forbidden-usernames.js';
 import { requireAdmin } from '../middleware/auth.js';
 import { isSafeConfigUserId, parsePin } from '../request-helpers.js';
 
@@ -19,6 +20,9 @@ usersAdminRouter.post('/users', requireAdmin, (req: Request, res: Response) => {
   if (!name) return res.status(400).json({ error: 'name is required' });
   if (!isSafeConfigUserId(name)) {
     return res.status(400).json({ error: 'invalid user' });
+  }
+  if (isForbiddenUsername(name)) {
+    return res.status(400).json({ error: 'invalid username' });
   }
   const pin = parsePin(req.body?.pin ?? '0');
   if (pin == null) return res.status(400).json({ error: 'pin is required' });

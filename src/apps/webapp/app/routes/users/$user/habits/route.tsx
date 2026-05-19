@@ -47,7 +47,7 @@ export default function HabitsPage() {
 
     let cancelled = false;
     getAuthMe()
-      .then(({ user: sessionUser, theme, displayName: familiar }) => {
+      .then(({ username: sessionUser, theme, displayName: familiar }) => {
         if (cancelled) return;
         if (!routeUser) {
           setUser('');

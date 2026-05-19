@@ -1,13 +1,14 @@
+import type { MeGetResponse } from './me-get.js';
+
 /**
  * PATCH /users/:user
- * - `name`: new login username / YAML id (rename).
- * - `displayName`: optional profile label stored in DB (`null` clears).
- * - `email`: optional contact email stored in DB (`null` clears); validated server-side.
- * - `theme`: UI theme key (`light`, `dark`, …).
+ *
+ * Partial of the authenticated {@link MeGetResponse} profile. `createdAt` and `entitlements` are
+ * read-only and cannot be patched.
+ *
+ * - `username`: new login username / YAML id when renaming (optional; omit when not changing id).
+ * - `displayName`, `email`, `theme`: same semantics as in `MeGetResponse` (logged-in).
  */
-export type UsersPatchRequest = {
-  name?: string;
-  displayName?: string | null;
-  email?: string | null;
-  theme?: string;
-};
+export type UsersPatchRequest = Partial<
+  Omit<Extract<MeGetResponse, { username: string }>, 'createdAt' | 'entitlements'>
+>;

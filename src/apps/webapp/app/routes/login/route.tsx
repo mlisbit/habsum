@@ -109,10 +109,10 @@ export default function LoginRoute() {
     clearLegacyClientLoginMarkers();
     let cancelled = false;
     getAuthMe()
-      .then(({ user, theme }) => {
+      .then(({ username, theme }) => {
         if (!cancelled) {
-          setCurrentUser(user);
-          applyUiTheme(user ? theme : 'dark');
+          setCurrentUser(username);
+          applyUiTheme(username ? theme : 'dark');
         }
       })
       .catch(() => {

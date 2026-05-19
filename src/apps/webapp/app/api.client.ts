@@ -1,4 +1,6 @@
 import type { Habit } from '@habsum/types/common/habit';
+import type { DeveloperGetResponse } from '@habsum/types/api-responses/developer-get';
+import type { MeGetResponse } from '@habsum/types/api-responses/me-get';
 import type { HabitsResponse } from '@habsum/types/api-responses/habits-get';
 import type { PatchHabitResponse } from '@habsum/types/api-responses/habit-patch';
 import type { HistoryGetResponse } from '@habsum/types/api-responses/history-get';
@@ -7,9 +9,7 @@ import type {
   UserPasswordChangeRequest,
   UserPasswordChangeResponse,
 } from '@habsum/types/api-responses/user-password-change';
-import type { DeveloperGetResponse } from '@habsum/types/api-responses/developer-get';
 import type {
-  AuthMeResponse,
   CreateUserResponse,
   ListUsersResponse,
   LoginUserResponse,
@@ -23,7 +23,6 @@ import { toDateKeyWithTime } from '@habsum/utils';
 
 export type {
   ApiErrorBody,
-  AuthMeResponse,
   CreateUserResponse,
   HealthResponse,
   ListUsersResponse,
@@ -56,6 +55,11 @@ export type {
   UserPasswordChangeResponse,
 } from '@habsum/types/api-responses/user-password-change';
 export type { DeveloperGetResponse } from '@habsum/types/api-responses/developer-get';
+export type {
+  MeGetResponse,
+  MeGetLoggedIn,
+  MeGetLoggedOut,
+} from '@habsum/types/api-responses/me-get';
 
 const OVERRIDE_SERVER_URL = import.meta.env.VITE_HABSUM_SERVER_URL;
 const API_PREFIX = OVERRIDE_SERVER_URL ? '' : '/api';
@@ -103,7 +107,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export async function getAuthMe() {
-  return request<AuthMeResponse>('/auth/me');
+  return request<MeGetResponse>('/auth/me');
 }
 
 export async function logout() {
@@ -151,7 +155,7 @@ export async function getUserSession(user: string) {
 }
 
 export async function patchUser(user: string, body: UsersPatchRequest) {
-  return request<{ ok: true; user: string }>(`/users/${encodeURIComponent(user)}`, {
+  return request<{ ok: true; username: string }>(`/users/${encodeURIComponent(user)}`, {
     method: 'PATCH',
     body: JSON.stringify(body),
   });
@@ -165,7 +169,7 @@ export async function changeUserPassword(user: string, body: UserPasswordChangeR
 }
 
 export async function deleteUser(user: string) {
-  return request<{ ok: true; user: string }>(`/users/${encodeURIComponent(user)}`, {
+  return request<{ ok: true; username: string }>(`/users/${encodeURIComponent(user)}`, {
     method: 'DELETE',
   });
 }

@@ -75,7 +75,7 @@ export default function HabitDetailRoute() {
     if (!user) return;
     let cancelled = false;
     getAuthMe()
-      .then(({ user: sessionUser, theme }) => {
+      .then(({ username: sessionUser, theme }) => {
         if (cancelled) return;
         if (!sessionUser || sessionUser !== user) redirectToLoginWithToast(LOGIN_TOAST_USER_AREA);
         else applyUiTheme(theme);

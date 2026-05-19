@@ -14,6 +14,7 @@ import type { HistoryGetResponse } from '@habsum/types/api-responses/history-get
 import type { UserPasswordChangeRequest } from '@habsum/types/api-responses/user-password-change';
 import type { UsersPatchRequest } from '@habsum/types/api-responses/users-patch';
 import { dasherize } from '@habsum/utils';
+import { isForbiddenUsername } from '../forbidden-usernames.js';
 import {
   deleteUserConfigFile,
   listUsers,
@@ -63,8 +64,10 @@ import {
   loadUserConfigForResponse,
   parsePin,
 } from '../request-helpers.js';
-import { mapSummationEventsToApi } from '../summation-event-api.js';
+import { accountCreatedAtToApi } from '@habsum/types/common/day';
+import { entitlementsForUser } from '../entitlements.js';
 import { appendSessionCookie, sessionTtlSeconds } from '../session-cookie.js';
+import { mapSummationEventsToApi } from '../summation-event-api.js';
 import { parseClientCreatedAtIso, resolveHabitApiDateQuery } from '../server-time.js';
 
 export const userScopedRouter = Router({ mergeParams: true });
@@ -109,10 +112,13 @@ userScopedRouter.get(
     if (!config) return;
     ensureUserPins([user]);
 
+    const profile = getUserProfile(user);
     const body: UserSessionResponse = {
-      user,
+      username: user,
       admin: isUserAdmin(user),
-      ...getUserProfile(user),
+      ...profile,
+      createdAt: accountCreatedAtToApi(profile.createdAt),
+      entitlements: entitlementsForUser(user),
     };
     return res.json(body);
   },
@@ -168,7 +174,7 @@ userScopedRouter.patch(
     }
 
     const body = req.body ?? {};
-    const renameRaw = typeof body.name === 'string' ? body.name.trim() : '';
+    const renameRaw = typeof body.username === 'string' ? body.username.trim() : '';
     const wantsRename = renameRaw.length > 0;
 
     let hasDisplayName = false;
@@ -242,8 +248,11 @@ userScopedRouter.patch(
       if (!isSafeConfigUserId(renameRaw)) {
         return res.status(400).json({ error: 'invalid user' });
       }
+      if (isForbiddenUsername(renameRaw)) {
+        return res.status(400).json({ error: 'invalid username' });
+      }
       if (renameRaw === user) {
-        return res.status(400).json({ error: 'name is unchanged' });
+        return res.status(400).json({ error: 'username is unchanged' });
       }
 
       const out = renameUserConfigFile(user, renameRaw);
@@ -257,10 +266,10 @@ userScopedRouter.patch(
       }
 
       renameUserPin(user, out.user);
-      return res.json({ ok: true, user: out.user });
+      return res.json({ ok: true, username: out.user });
     }
 
-    return res.json({ ok: true, user });
+    return res.json({ ok: true, username: user });
   },
 );
 
@@ -286,7 +295,7 @@ userScopedRouter.delete(
     }
 
     deleteUserPin(out.user);
-    return res.json({ ok: true, user: out.user });
+    return res.json({ ok: true, username: out.user });
   },
 );
 

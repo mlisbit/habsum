@@ -1,6 +1,9 @@
 // exclusive-bem-block: account-page
 import { useBlocker, useParams } from '@remix-run/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { DayWithTime } from '@habsum/types/common/day';
+import { dateFromDayWithTimeUtc } from '@habsum/types/common/day';
+import type { ProductEntitlement } from '@habsum/types/common/entitlement';
 import {
   changeUserPassword,
   deleteUser,
@@ -15,6 +18,12 @@ import { InfoText } from '~/core-components/InfoText';
 import { Input } from '~/core-components/Input';
 import { AlertModal, useModal } from '~/context/modal';
 import { useToast } from '~/context/toast';
+import {
+  accountServerErrorToFieldMap,
+  type AccountErrorMap,
+  type AccountFieldKey,
+  validateAccountSave,
+} from '~/utils/validators/account';
 import { applyUiTheme, UI_THEME_OPTIONS } from '~/theme.client';
 
 type ThemeOption = (typeof UI_THEME_OPTIONS)[number];
@@ -24,7 +33,15 @@ type AccountSnapshot = {
   displayName: string;
   email: string;
   theme: ThemeOption;
+  createdAt: DayWithTime;
+  entitlements: ProductEntitlement[];
 };
+
+function formatAccountCreatedAt(value: DayWithTime): string {
+  const d = dateFromDayWithTimeUtc(value);
+  if (Number.isNaN(d.getTime())) return String(value);
+  return new Intl.DateTimeFormat(undefined, { dateStyle: 'long', timeStyle: 'short' }).format(d);
+}
 
 function normDisplay(s: string): string {
   return s.trim();
@@ -34,10 +51,21 @@ function normEmail(s: string): string {
   return s.trim().toLowerCase();
 }
 
-function isPlausibleEmailLocal(value: string): boolean {
-  const t = normEmail(value);
-  if (t === '') return false;
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t);
+function SaveFieldErrors({
+  id,
+  messages,
+  className,
+}: {
+  id: string;
+  messages: string[] | undefined;
+  className: string;
+}) {
+  if (!messages?.length) return null;
+  return (
+    <InfoText variant="error" className={className} id={id} aria-live="polite">
+      {messages.join(' ')}
+    </InfoText>
+  );
 }
 
 export default function UserSettingsAccount() {
@@ -52,6 +80,7 @@ export default function UserSettingsAccount() {
   const [pwdCurrent, setPwdCurrent] = useState('');
   const [pwdNew, setPwdNew] = useState('');
   const [pwdConfirm, setPwdConfirm] = useState('');
+  const [saveFieldErrors, setSaveFieldErrors] = useState<AccountErrorMap>({});
   const { showToast } = useToast();
 
   const savedRef = useRef(saved);
@@ -65,13 +94,21 @@ export default function UserSettingsAccount() {
     const display = res.displayName ?? '';
     const email = res.email ?? '';
     const theme: ThemeOption = res.theme === 'light' ? 'light' : 'dark';
-    const snap: AccountSnapshot = { username: routeUser, displayName: display, email, theme };
+    const snap: AccountSnapshot = {
+      username: routeUser,
+      displayName: display,
+      email,
+      theme,
+      createdAt: res.createdAt,
+      entitlements: res.entitlements ?? [],
+    };
     setSaved(snap);
     setDraftUsername(routeUser);
     setDraftDisplay(display);
     setDraftEmail(email);
     setDraftTheme(theme);
     applyUiTheme(theme);
+    setSaveFieldErrors({});
   }, [routeUser]);
 
   useEffect(() => {
@@ -134,6 +171,32 @@ export default function UserSettingsAccount() {
     [],
   );
 
+  const clearSaveFieldError = useCallback((key: AccountFieldKey) => {
+    setSaveFieldErrors((prev) => {
+      if (prev[key] == null) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  }, []);
+
+  const clearAllPasswordSaveErrors = useCallback(() => {
+    setSaveFieldErrors((prev) => {
+      if (
+        prev.currentPassword == null &&
+        prev.newPassword == null &&
+        prev.confirmPassword == null
+      ) {
+        return prev;
+      }
+      const next = { ...prev };
+      delete next.currentPassword;
+      delete next.newPassword;
+      delete next.confirmPassword;
+      return next;
+    });
+  }, []);
+
   const revertDrafts = useCallback(() => {
     if (!saved) return;
     setDraftUsername(saved.username);
@@ -144,6 +207,7 @@ export default function UserSettingsAccount() {
     setPwdCurrent('');
     setPwdNew('');
     setPwdConfirm('');
+    setSaveFieldErrors({});
   }, [saved]);
 
   const revertDraftsRef = useRef(revertDrafts);
@@ -176,21 +240,12 @@ export default function UserSettingsAccount() {
   const handleSave = async () => {
     if (!routeUser || !saved) return;
     const nextUsername = normDisplay(draftUsername);
-    if (!nextUsername) {
-      showToast({ type: 'error', message: 'Username cannot be empty.' });
-      return;
-    }
-
     const nextDisplay = normDisplay(draftDisplay);
     const nextEmail = normEmail(draftEmail);
-    if (nextEmail !== '' && !isPlausibleEmailLocal(nextEmail)) {
-      showToast({ type: 'error', message: 'Enter a valid email or leave the field empty.' });
-      return;
-    }
 
     const patch: UsersPatchRequest = {};
     if (nextUsername !== saved.username) {
-      patch.name = nextUsername;
+      patch.username = nextUsername;
     }
     const savedDisplayNorm = normDisplay(saved.displayName);
     if (nextDisplay !== savedDisplayNorm) {
@@ -203,24 +258,25 @@ export default function UserSettingsAccount() {
       patch.theme = draftTheme;
     }
 
+    const validationErrors = validateAccountSave({
+      username: nextUsername,
+      displayName: nextDisplay === '' ? null : nextDisplay,
+      email: nextEmail === '' ? null : nextEmail,
+      theme: draftTheme,
+      currentPassword: pwdCurrent,
+      newPassword: pwdNew,
+      confirmPassword: pwdConfirm,
+    });
+    const validationMessages = Object.values(validationErrors).flat();
+    if (validationMessages.length > 0) {
+      setSaveFieldErrors(validationErrors);
+      showToast({ type: 'error', message: validationMessages[0] });
+      return;
+    }
+    setSaveFieldErrors({});
+
     const passwordDirty =
       pwdCurrent.trim() !== '' || pwdNew.trim() !== '' || pwdConfirm.trim() !== '';
-    if (passwordDirty) {
-      const cur = pwdCurrent.trim();
-      const next = pwdNew.trim();
-      const again = pwdConfirm.trim();
-      if (!cur || !next || !again) {
-        showToast({
-          type: 'error',
-          message: 'Fill in all password fields to change your password, or clear those fields.',
-        });
-        return;
-      }
-      if (next !== again) {
-        showToast({ type: 'error', message: 'New password and confirmation do not match.' });
-        return;
-      }
-    }
 
     if (Object.keys(patch).length === 0 && !passwordDirty) return;
 
@@ -232,22 +288,24 @@ export default function UserSettingsAccount() {
 
       if (Object.keys(patch).length > 0) {
         const res = await patchUser(routeUser, patch);
-        userForPassword = res.user;
-        if (res.user !== routeUser) {
+        userForPassword = res.username;
+        if (res.username !== routeUser) {
           if (passwordDirty) {
-            await changeUserPassword(res.user, { currentPin: curPin, newPin });
+            await changeUserPassword(res.username, { currentPin: curPin, newPin });
           }
-          window.location.assign(`/users/${encodeURIComponent(res.user)}/settings/account`);
+          window.location.assign(`/users/${encodeURIComponent(res.username)}/settings/account`);
           return;
         }
         const nextSnap: AccountSnapshot = {
-          username: res.user,
+          username: res.username,
           displayName: nextDisplay,
           email: nextEmail,
           theme: draftTheme,
+          createdAt: saved.createdAt,
+          entitlements: saved.entitlements,
         };
         setSaved(nextSnap);
-        setDraftUsername(res.user);
+        setDraftUsername(res.username);
         setDraftDisplay(nextDisplay);
         setDraftEmail(nextEmail);
         setDraftTheme(draftTheme);
@@ -262,11 +320,12 @@ export default function UserSettingsAccount() {
       }
 
       showToast({ type: 'success', message: 'Saved.' });
+      setSaveFieldErrors({});
     } catch (e) {
-      showToast({
-        type: 'error',
-        message: e instanceof Error ? e.message : String(e),
-      });
+      const msg = e instanceof Error ? e.message : String(e);
+      const mapped = accountServerErrorToFieldMap(msg);
+      setSaveFieldErrors(mapped);
+      showToast({ type: 'error', message: msg });
     } finally {
       setSaveBusy(false);
     }
@@ -302,6 +361,26 @@ export default function UserSettingsAccount() {
             <p className="text-light text-b-m">Loading…</p>
           ) : (
             <>
+              <div className="card account-page__meta">
+                <h3 className="account-page__meta-heading text-h-s" id="account-meta">
+                  Account
+                </h3>
+                <div className="account-page__meta-rows">
+                  <div className="account-page__meta-row">
+                    <div className="account-page__meta-label text-b-m text-light">Created</div>
+                    <div className="account-page__meta-value text-b-m">
+                      {formatAccountCreatedAt(saved.createdAt)}
+                    </div>
+                  </div>
+                  <div className="account-page__meta-row">
+                    <div className="account-page__meta-label text-b-m text-light">Entitlements</div>
+                    <div className="account-page__meta-value text-b-m">
+                      {saved.entitlements.length > 0 ? saved.entitlements.join(', ') : '—'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <div className="account-page__basic">
                 <h3 className="account-page__basic-heading text-h-s" id="account-basic-info">
                   Basic account information
@@ -316,7 +395,10 @@ export default function UserSettingsAccount() {
                       size="small"
                       className="account-page__profile-input"
                       value={draftUsername}
-                      onChange={setDraftUsername}
+                      onChange={(v) => {
+                        setDraftUsername(v);
+                        clearSaveFieldError('username');
+                      }}
                       placeholder="username"
                       dismissable
                       submittable={false}
@@ -324,6 +406,16 @@ export default function UserSettingsAccount() {
                       autoCorrect="off"
                       spellCheck={false}
                       disabled={saveBusy}
+                      aria-describedby={
+                        saveFieldErrors.username?.length
+                          ? 'account-field-error-username'
+                          : undefined
+                      }
+                    />
+                    <SaveFieldErrors
+                      id="account-field-error-username"
+                      messages={saveFieldErrors.username}
+                      className="account-page__field-error"
                     />
                   </div>
                 </div>
@@ -337,7 +429,10 @@ export default function UserSettingsAccount() {
                       size="small"
                       className="account-page__profile-input"
                       value={draftDisplay}
-                      onChange={setDraftDisplay}
+                      onChange={(v) => {
+                        setDraftDisplay(v);
+                        clearSaveFieldError('displayName');
+                      }}
                       placeholder="Optional"
                       dismissable
                       submittable={false}
@@ -345,6 +440,11 @@ export default function UserSettingsAccount() {
                       autoCorrect="off"
                       spellCheck={false}
                       disabled={saveBusy}
+                    />
+                    <SaveFieldErrors
+                      id="account-field-error-displayName"
+                      messages={saveFieldErrors.displayName}
+                      className="account-page__field-error"
                     />
                   </div>
                 </div>
@@ -358,7 +458,10 @@ export default function UserSettingsAccount() {
                       size="small"
                       className="account-page__profile-input"
                       value={draftEmail}
-                      onChange={setDraftEmail}
+                      onChange={(v) => {
+                        setDraftEmail(v);
+                        clearSaveFieldError('email');
+                      }}
                       placeholder="Optional"
                       dismissable
                       submittable={false}
@@ -368,6 +471,14 @@ export default function UserSettingsAccount() {
                       autoComplete="email"
                       inputMode="email"
                       disabled={saveBusy}
+                      aria-describedby={
+                        saveFieldErrors.email?.length ? 'account-field-error-email' : undefined
+                      }
+                    />
+                    <SaveFieldErrors
+                      id="account-field-error-email"
+                      messages={saveFieldErrors.email}
+                      className="account-page__field-error"
                     />
                   </div>
                 </div>
@@ -381,10 +492,14 @@ export default function UserSettingsAccount() {
                       className="account-page__select text-b-m"
                       value={draftTheme}
                       disabled={saveBusy}
+                      aria-describedby={
+                        saveFieldErrors.theme?.length ? 'account-field-error-theme' : undefined
+                      }
                       onChange={(e) => {
                         const t = e.target.value === 'light' ? 'light' : 'dark';
                         setDraftTheme(t);
                         applyUiTheme(t);
+                        clearSaveFieldError('theme');
                       }}
                     >
                       {UI_THEME_OPTIONS.map((opt) => (
@@ -393,6 +508,11 @@ export default function UserSettingsAccount() {
                         </option>
                       ))}
                     </select>
+                    <SaveFieldErrors
+                      id="account-field-error-theme"
+                      messages={saveFieldErrors.theme}
+                      className="account-page__field-error"
+                    />
                   </div>
                 </div>
               </div>
@@ -420,7 +540,10 @@ export default function UserSettingsAccount() {
                       className="account-page__profile-input"
                       type="password"
                       value={pwdCurrent}
-                      onChange={setPwdCurrent}
+                      onChange={(v) => {
+                        setPwdCurrent(v);
+                        clearAllPasswordSaveErrors();
+                      }}
                       placeholder="Required"
                       dismissable
                       submittable={false}
@@ -429,6 +552,16 @@ export default function UserSettingsAccount() {
                       spellCheck={false}
                       autoComplete="current-password"
                       disabled={saveBusy}
+                      aria-describedby={
+                        saveFieldErrors.currentPassword?.length
+                          ? 'account-field-error-currentPassword'
+                          : undefined
+                      }
+                    />
+                    <SaveFieldErrors
+                      id="account-field-error-currentPassword"
+                      messages={saveFieldErrors.currentPassword}
+                      className="account-page__field-error"
                     />
                   </div>
                 </div>
@@ -443,7 +576,10 @@ export default function UserSettingsAccount() {
                       className="account-page__profile-input"
                       type="password"
                       value={pwdNew}
-                      onChange={setPwdNew}
+                      onChange={(v) => {
+                        setPwdNew(v);
+                        clearAllPasswordSaveErrors();
+                      }}
                       placeholder="Required"
                       dismissable
                       submittable={false}
@@ -453,7 +589,14 @@ export default function UserSettingsAccount() {
                       autoComplete="new-password"
                       disabled={saveBusy}
                       aria-describedby={
-                        newPasswordMatchFeedback ? 'account-password-match-hint' : undefined
+                        [
+                          newPasswordMatchFeedback ? 'account-password-match-hint' : '',
+                          saveFieldErrors.newPassword?.length
+                            ? 'account-field-error-newPassword'
+                            : '',
+                        ]
+                          .filter(Boolean)
+                          .join(' ') || undefined
                       }
                     />
                     {newPasswordMatchFeedback === 'success' ? (
@@ -475,6 +618,11 @@ export default function UserSettingsAccount() {
                         Passwords do not match.
                       </InfoText>
                     ) : null}
+                    <SaveFieldErrors
+                      id="account-field-error-newPassword"
+                      messages={saveFieldErrors.newPassword}
+                      className="account-page__field-error"
+                    />
                   </div>
                 </div>
                 <div className="account-page__field">
@@ -491,7 +639,10 @@ export default function UserSettingsAccount() {
                       className="account-page__profile-input"
                       type="password"
                       value={pwdConfirm}
-                      onChange={setPwdConfirm}
+                      onChange={(v) => {
+                        setPwdConfirm(v);
+                        clearAllPasswordSaveErrors();
+                      }}
                       placeholder="Required"
                       dismissable
                       submittable={false}
@@ -500,6 +651,16 @@ export default function UserSettingsAccount() {
                       spellCheck={false}
                       autoComplete="new-password"
                       disabled={saveBusy}
+                      aria-describedby={
+                        saveFieldErrors.confirmPassword?.length
+                          ? 'account-field-error-confirmPassword'
+                          : undefined
+                      }
+                    />
+                    <SaveFieldErrors
+                      id="account-field-error-confirmPassword"
+                      messages={saveFieldErrors.confirmPassword}
+                      className="account-page__field-error"
                     />
                   </div>
                 </div>
