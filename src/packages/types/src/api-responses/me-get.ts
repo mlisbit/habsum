@@ -30,6 +30,8 @@ export type MeGetLoggedIn = {
    * when the account may access developer tools.
    */
   entitlements: ProductEntitlement[];
+  /** First 8 characters of the session id (e.g. `OUC_a1b2` for operate-under sessions). */
+  sessionTokenPrefix: string;
 };
 
 /**

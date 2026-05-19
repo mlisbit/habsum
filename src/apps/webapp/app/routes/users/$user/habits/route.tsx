@@ -5,6 +5,7 @@ import { TopNav } from '~/components/TopNav';
 import { SingleSelectWidget, SummationWidget } from '~/components/widgets';
 import { InfoText } from '~/core-components/InfoText';
 import { LOGIN_TOAST_USER_AREA, redirectToLoginWithToast } from '~/context/toast';
+import { awaitOucPopupBootstrap, getOucSessionToken } from '~/ouc.client';
 import { applyUiTheme } from '~/theme.client';
 import { getProgress } from '~/utils/habit-helpers';
 import { toDateKey } from '@habsum/utils';
@@ -46,25 +47,34 @@ export default function HabitsPage() {
     const routeUser = match ? decodeURIComponent(match[1]) : '';
 
     let cancelled = false;
-    getAuthMe()
-      .then(({ username: sessionUser, theme, displayName: familiar }) => {
-        if (cancelled) return;
-        if (!routeUser) {
-          setUser('');
-          setDisplayName(null);
-          return;
-        }
-        if (!sessionUser || sessionUser !== routeUser) {
-          redirectToLoginWithToast(LOGIN_TOAST_USER_AREA);
-          return;
-        }
-        applyUiTheme(theme);
-        setDisplayName(familiar);
-        setUser(routeUser);
-      })
-      .catch(() => {
-        if (!cancelled && routeUser) redirectToLoginWithToast(LOGIN_TOAST_USER_AREA);
-      });
+    void (async () => {
+      const bootstrapped = await awaitOucPopupBootstrap();
+      if (cancelled) return;
+      if (window.opener && !bootstrapped && !getOucSessionToken()) {
+        setError('Operate-under session failed to start.');
+        return;
+      }
+
+      getAuthMe()
+        .then(({ username: sessionUser, theme, displayName: familiar }) => {
+          if (cancelled) return;
+          if (!routeUser) {
+            setUser('');
+            setDisplayName(null);
+            return;
+          }
+          if (!sessionUser || sessionUser !== routeUser) {
+            redirectToLoginWithToast(LOGIN_TOAST_USER_AREA);
+            return;
+          }
+          applyUiTheme(theme);
+          setDisplayName(familiar);
+          setUser(routeUser);
+        })
+        .catch(() => {
+          if (!cancelled && routeUser) redirectToLoginWithToast(LOGIN_TOAST_USER_AREA);
+        });
+    })();
 
     const syncFromUrl = () => {
       const q = new URLSearchParams(window.location.search);

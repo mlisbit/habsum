@@ -1,0 +1,39 @@
+@use 'functions';
+
+.ouc-indicator {
+  position: fixed;
+  top: 50%;
+  right: 0;
+  z-index: 1050;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: functions.spacing(1);
+  padding: functions.spacing(1) functions.spacing(1) functions.spacing(1) functions.spacing(2);
+  background: var(--background-warning);
+  border: 1px solid var(--border-color-faint);
+  border-right: none;
+  border-radius: var(--border-radius-m) 0 0 var(--border-radius-m);
+  box-shadow: var(--elevation-shadow);
+}
+
+.ouc-indicator__label {
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  min-width: 0;
+}
+
+.ouc-indicator__username {
+  font-weight: 400;
+  letter-spacing: normal;
+  overflow-wrap: anywhere;
+}
+
+.ouc-indicator__dismiss {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0 functions.spacing(1);
+  border: none;
+  background: transparent;
+  cursor: pointer;
+}

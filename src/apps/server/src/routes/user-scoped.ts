@@ -64,7 +64,7 @@ import {
   type PatchBody,
   streakGraphForConfiguredWindow,
 } from '../habit-presentation.js';
-import { requireMatchingRouteUser } from '../middleware/auth.js';
+import { authenticatedSessionId, requireMatchingRouteUser } from '../middleware/auth.js';
 import {
   isAllowedUiTheme,
   isPlausibleEmail,
@@ -76,7 +76,6 @@ import { accountCreatedAtToApi } from '@habsum/types/common/day';
 import { entitlementsForUser } from '../entitlements.js';
 import {
   appendSessionCookie,
-  getSessionCookieValue,
   sessionTtlSeconds,
 } from '../session-cookie.js';
 import { mapSummationEventsToApi } from '../summation-event-api.js';
@@ -121,7 +120,7 @@ userScopedRouter.get(
       return res.status(400).json({ error: 'invalid user' });
     }
 
-    const currentSessionId = getSessionCookieValue(req.headers.cookie);
+    const currentSessionId = authenticatedSessionId(req) ?? undefined;
     const now = Date.now();
     const sessions = listSessionsForUsername(user).map((row) => ({
       token: row.id.slice(0, 8),
@@ -148,7 +147,7 @@ userScopedRouter.delete(
       return res.status(400).json({ error: 'invalid user' });
     }
 
-    const currentSessionId = getSessionCookieValue(req.headers.cookie);
+    const currentSessionId = authenticatedSessionId(req);
     if (currentSessionId == null) {
       return res.status(400).json({ error: 'no active session' });
     }
@@ -169,7 +168,7 @@ userScopedRouter.delete(
       return res.status(400).json({ error: 'invalid user' });
     }
 
-    const currentSessionId = getSessionCookieValue(req.headers.cookie);
+    const currentSessionId = authenticatedSessionId(req) ?? undefined;
     const result = revokeUserSessionByTokenPrefix(user, token, currentSessionId);
     if (!result.ok) {
       const status =

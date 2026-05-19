@@ -1,12 +1,20 @@
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
-import { getSessionCookieValue } from '../session-cookie.js';
 import { getUsernameForSession, isUserAdmin } from '../db.js';
+import {
+  getOucSessionHeader,
+  resolveActiveSessionId,
+} from '../session-request.js';
 
-/** Username from session cookie + DB, or null. */
+/** Username from operate-under header or session cookie + DB, or null. */
 export function authenticatedUsername(req: Request): string | null {
-  const sid = getSessionCookieValue(req.headers.cookie);
+  const sid = resolveActiveSessionId(req);
   if (!sid) return null;
   return getUsernameForSession(sid);
+}
+
+/** Session id for the current request (header or cookie). */
+export function authenticatedSessionId(req: Request): string | null {
+  return resolveActiveSessionId(req);
 }
 
 /** 401 unless logged in; sets `res.locals.sessionUser`. */
@@ -22,6 +30,10 @@ export const requireAuthenticated: RequestHandler = (req, res, next) => {
 
 /** 401 / 403 unless logged-in admin; sets `res.locals.sessionUser`. */
 export const requireAdmin: RequestHandler = (req, res, next) => {
+  if (getOucSessionHeader(req)) {
+    res.status(403).json({ error: 'forbidden' });
+    return;
+  }
   const u = authenticatedUsername(req);
   if (!u) {
     res.status(401).json({ error: 'not authenticated' });

@@ -1,10 +1,19 @@
 import { Router, type Request, type Response } from 'express';
 import type { CreateUserResponse, ListUsersResponse } from '@habsum/types/common/misc';
+import type { CreateOucSessionResponse } from '@habsum/types/api-responses/ouc-post';
 import { createUserFromSampleConfig, deleteUserConfigFile, listUsers } from '../config.js';
-import { deleteUserPin, ensureUserPins, purgeUserData, setUserPin, updateLoginPin } from '../db.js';
+import {
+  createOucUserSession,
+  deleteUserPin,
+  ensureUserPins,
+  purgeUserData,
+  setUserPin,
+  updateLoginPin,
+} from '../db.js';
 import { isForbiddenUsername } from '../forbidden-usernames.js';
 import { requireAdmin } from '../middleware/auth.js';
 import { isSafeConfigUserId, parsePin } from '../request-helpers.js';
+import { sessionTtlSeconds } from '../session-cookie.js';
 
 export const usersAdminRouter = Router();
 
@@ -13,6 +22,24 @@ usersAdminRouter.get('/users', requireAdmin, (_req: Request, res: Response) => {
   ensureUserPins(users);
   const body: ListUsersResponse = { users };
   res.json(body);
+});
+
+usersAdminRouter.post('/users/ouc', requireAdmin, (req: Request, res: Response) => {
+  const name = typeof req.query.name === 'string' ? req.query.name : '';
+  if (!name) return res.status(400).json({ error: 'name is required' });
+  if (!isSafeConfigUserId(name)) {
+    return res.status(400).json({ error: 'invalid user' });
+  }
+
+  const existing = listUsers();
+  if (!existing.includes(name)) {
+    return res.status(404).json({ error: 'user not found' });
+  }
+
+  ensureUserPins(existing);
+  const token = createOucUserSession(name, sessionTtlSeconds());
+  const body: CreateOucSessionResponse = { ok: true, user: name, token };
+  return res.status(201).json(body);
 });
 
 usersAdminRouter.post('/users', requireAdmin, (req: Request, res: Response) => {

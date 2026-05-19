@@ -345,6 +345,21 @@ const listSessionsForUsernameStmt = db.prepare<[string], SessionListRow>(`
 `);
 
 const SESSION_TOKEN_PREFIX_LEN = 8;
+export const OUC_SESSION_ID_PREFIX = 'OUC_';
+
+export function isOucSessionId(sessionId: string): boolean {
+  return sessionId.startsWith(OUC_SESSION_ID_PREFIX);
+}
+
+function normalizeSessionTokenPrefix(tokenPrefix: string): string | null {
+  if (/^OUC_[0-9a-f]{4}$/i.test(tokenPrefix)) {
+    return `${OUC_SESSION_ID_PREFIX}${tokenPrefix.slice(4).toLowerCase()}`;
+  }
+  if (new RegExp(`^[0-9a-f]{${SESSION_TOKEN_PREFIX_LEN}}$`, 'i').test(tokenPrefix)) {
+    return tokenPrefix.toLowerCase();
+  }
+  return null;
+}
 
 const findSessionIdsByTokenPrefixStmt = db.prepare<[string, string], { id: string }>(`
   SELECT id
@@ -364,7 +379,7 @@ export type RevokeSessionByPrefixError =
   | 'cannot revoke active session';
 
 export function isValidSessionTokenPrefix(token: string): boolean {
-  return new RegExp(`^[0-9a-f]{${SESSION_TOKEN_PREFIX_LEN}}$`, 'i').test(token);
+  return normalizeSessionTokenPrefix(token) != null;
 }
 
 export function revokeUserSessionByTokenPrefix(
@@ -372,11 +387,11 @@ export function revokeUserSessionByTokenPrefix(
   tokenPrefix: string,
   currentSessionId: string | undefined,
 ): { ok: true } | { ok: false; error: RevokeSessionByPrefixError } {
-  if (!isValidSessionTokenPrefix(tokenPrefix)) {
+  const normalized = normalizeSessionTokenPrefix(tokenPrefix);
+  if (normalized == null) {
     return { ok: false, error: 'invalid token' };
   }
 
-  const normalized = tokenPrefix.toLowerCase();
   const rows = findSessionIdsByTokenPrefixStmt.all(username, normalized);
   if (rows.length === 0) {
     return { ok: false, error: 'session not found' };
@@ -401,6 +416,13 @@ export function revokeOtherUserSessions(username: string, exceptSessionId: strin
 
 export function createUserSession(username: string, ttlSeconds: number): string {
   const id = randomBytes(32).toString('hex');
+  const expiresAt = new Date(Date.now() + ttlSeconds * 1000).toISOString();
+  insertSessionStmt.run({ id, username, expiresAt });
+  return id;
+}
+
+export function createOucUserSession(username: string, ttlSeconds: number): string {
+  const id = OUC_SESSION_ID_PREFIX + randomBytes(29).toString('hex');
   const expiresAt = new Date(Date.now() + ttlSeconds * 1000).toISOString();
   insertSessionStmt.run({ id, username, expiresAt });
   return id;

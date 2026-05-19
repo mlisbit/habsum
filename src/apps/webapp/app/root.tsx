@@ -1,6 +1,8 @@
 import { Links, Meta, Outlet, Scripts, ScrollRestoration } from '@remix-run/react';
 import type { LinksFunction, MetaFunction } from '@remix-run/node';
 
+import { OucIndicator } from '~/components/OucIndicator';
+import { OucPopupBootstrap } from '~/components/OucPopupBootstrap';
 import { ModalProvider } from '~/context/modal';
 import { ToastProvider } from '~/context/toast';
 import stylesHref from '~/styles/main.scss?url';
@@ -34,7 +36,9 @@ export default function App() {
   return (
     <ModalProvider>
       <ToastProvider>
+        <OucPopupBootstrap />
         <Outlet />
+        <OucIndicator />
       </ToastProvider>
     </ModalProvider>
   );

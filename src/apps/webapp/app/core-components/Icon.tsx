@@ -14,6 +14,7 @@ import {
   Settings,
   SquarePen,
   Trash2,
+  UserLock,
   X,
 } from 'lucide-react';
 
@@ -33,6 +34,7 @@ const ICON_COMPONENTS = {
   'octagon-x': OctagonX,
   'square-pen': SquarePen,
   trash: Trash2,
+  'user-lock': UserLock,
   'user-round-plus': UserRoundPlus,
   plus: Plus,
   party: PartyPopper,

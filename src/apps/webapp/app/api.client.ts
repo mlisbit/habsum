@@ -24,7 +24,12 @@ import type {
   UserConfigPutResponse,
   UserSessionResponse,
 } from '@habsum/types/common/misc';
+import type {
+  CreateOucSessionResponse,
+  OucLoginResponse,
+} from '@habsum/types/api-responses/ouc-post';
 import { toDateKeyWithTime } from '@habsum/utils';
+import { oucSessionRequestHeaders, clearOucSessionToken } from '~/ouc.client';
 
 export type {
   ApiErrorBody,
@@ -98,6 +103,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
     headers: {
       'content-type': 'application/json',
+      ...oucSessionRequestHeaders(),
       ...(init?.headers ?? {}),
     },
   });
@@ -123,8 +129,27 @@ export async function logout() {
   return request<LogoutResponse>('/logout', { method: 'POST', body: JSON.stringify({}) });
 }
 
+export async function logoutOuc() {
+  await request<LogoutResponse>('/auth/ouc/logout', { method: 'POST', body: JSON.stringify({}) });
+  clearOucSessionToken();
+}
+
 export async function listUsers() {
   return request<ListUsersResponse>('/users');
+}
+
+export async function createOucSession(name: string) {
+  return request<CreateOucSessionResponse>(`/users/ouc?name=${encodeURIComponent(name)}`, {
+    method: 'POST',
+    body: JSON.stringify({}),
+  });
+}
+
+export async function loginWithOucToken(token: string) {
+  return request<OucLoginResponse>('/auth/ouc', {
+    method: 'POST',
+    body: JSON.stringify({ token }),
+  });
 }
 
 export async function getDeveloper() {
@@ -269,7 +294,11 @@ export async function purgeUserData(user: string) {
   const qs = '';
   const res = await fetch(
     `${SERVER_URL}${API_PREFIX}/users/${encodeURIComponent(user)}/data${qs}`,
-    { method: 'DELETE', credentials: 'include' },
+    {
+      method: 'DELETE',
+      credentials: 'include',
+      headers: oucSessionRequestHeaders(),
+    },
   );
   if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
   return (await res.json()) as PurgeUserDataResponse;

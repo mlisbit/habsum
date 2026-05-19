@@ -3,12 +3,14 @@ import { useParams } from '@remix-run/react';
 import {
   adminDeleteUser,
   adminSetUserLoginPin,
+  createOucSession,
   createUser,
   getDeveloper,
   getUserSession,
   listUsers,
   type DeveloperGetResponse,
 } from '~/api.client';
+import { openOucWindow } from '~/ouc.client';
 import { SettingsHeader } from '~/components/SettingsHeader';
 import { Button } from '~/core-components/Button';
 import { Hoverable } from '~/core-components/Hoverable';
@@ -417,6 +419,31 @@ export default function UserSettingsDeveloper() {
                 <li key={username} className="developer-page__users-list-row">
                   <span className="developer-page__users-list-name text-b-m">{username}</span>
                   <div className="developer-page__users-list-actions">
+                    <UserRowIconAction
+                      tooltip="ouc"
+                      icon="user-lock"
+                      ariaLabel={`Open operate-under session for ${username}`}
+                      onClick={() => {
+                        setUserToolStatus(null);
+                        void (async () => {
+                          try {
+                            const res = await createOucSession(username);
+                            const opened = openOucWindow(res.user, res.token);
+                            setUserToolStatus(
+                              opened
+                                ? `Opened "${username}" in a new operate-under window.`
+                                : `Could not open operate-under window for "${username}". Allow pop-ups and try again.`,
+                            );
+                          } catch (e) {
+                            setUserToolStatus(
+                              e instanceof Error
+                                ? e.message
+                                : 'Failed to create operate-under session.',
+                            );
+                          }
+                        })();
+                      }}
+                    />
                     <UserRowIconAction
                       tooltip="Change password"
                       icon="key-round"

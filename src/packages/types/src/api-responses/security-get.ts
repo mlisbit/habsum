@@ -2,7 +2,7 @@ import type { DayWithTime } from '../common/day.js';
 
 /** One logged-in session (cookie token value is never exposed). */
 export type SecurityGetSession = {
-  /** Short random id derived from the session (first 8 hex chars of the stored token). */
+  /** Short random id derived from the session (first 8 chars; `OUC_` prefix for operate-under). */
   token: string;
   createdAt: DayWithTime;
   expiresAt: DayWithTime;
