@@ -43,6 +43,10 @@
   margin-top: functions.spacing(3);
 }
 
+.settings__main {
+  min-width: 0;
+}
+
 @media (max-width: 720px) {
   .settings {
     grid-template-columns: 1fr;

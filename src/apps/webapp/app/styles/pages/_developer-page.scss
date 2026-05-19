@@ -8,7 +8,7 @@
 }
 
 .developer-page__user-tools-status {
-  margin-top: functions.spacing(2);
+  margin-block-end: functions.spacing(2);
 }
 
 .developer-page__users-list {
@@ -64,10 +64,6 @@
 .developer-page__add-user-input {
   inline-size: 100%;
   min-inline-size: 0;
-}
-
-.developer-page__clocks {
-  margin-bottom: functions.spacing(3);
 }
 
 .developer-page__clock-list {

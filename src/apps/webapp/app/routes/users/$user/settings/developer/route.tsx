@@ -375,146 +375,140 @@ export default function UserSettingsDeveloper() {
 
   return (
     <div className="developer-page">
-      <SettingsHeader title="Developer" />
-
-      <div className="card-padding">
-        <div className="card mb-3 card--no-padding">
-          <SettingsHeader
-            isEmbedded
-            title="Users"
-            actions={
-              <Button
-                type="secondary"
-                size="medium"
-                text="Add user"
-                onClick={() => {
-                  setUserToolStatus(null);
-                  present({
-                    content: (
-                      <AddUserModal
-                        onCreated={(username) => {
-                          setUserToolStatus(`Created user "${username}".`);
-                          void loadUsers();
-                        }}
-                        onClose={closeModal}
-                      />
-                    ),
-                  });
-                }}
-              />
-            }
-          />
+      <div className="card card--no-padding developer-page__users">
+        <SettingsHeader
+          title="Users"
+          actions={
+            <Button
+              type="secondary"
+              text="Add user"
+              onClick={() => {
+                setUserToolStatus(null);
+                present({
+                  content: (
+                    <AddUserModal
+                      onCreated={(username) => {
+                        setUserToolStatus(`Created user "${username}".`);
+                        void loadUsers();
+                      }}
+                      onClose={closeModal}
+                    />
+                  ),
+                });
+              }}
+            />
+          }
+        />
+        <div className="card-padding">
           {userToolStatus ? (
             <p className="text-light text-b-m developer-page__user-tools-status">
               {userToolStatus}
             </p>
           ) : null}
-          <div className="card-padding">
-            {usersError ? (
-              <p className="text-light text-b-m">Could not load users: {usersError}</p>
-            ) : users == null ? (
-              <p className="text-light text-b-m">Loading users...</p>
-            ) : users.length === 0 ? (
-              <p className="text-light text-b-m">No users found.</p>
-            ) : (
-              <ul className="developer-page__users-list">
-                {users.map((username) => (
-                  <li key={username} className="developer-page__users-list-row">
-                    <span className="developer-page__users-list-name text-b-m">{username}</span>
-                    <div className="developer-page__users-list-actions">
-                      <UserRowIconAction
-                        tooltip="Change password"
-                        icon="key-round"
-                        ariaLabel={`Change password for ${username}`}
-                        onClick={() => {
-                          setUserToolStatus(null);
-                          present({
-                            content: (
-                              <ChangePasswordModal
-                                targetUsername={username}
-                                onDone={() => {
-                                  setUserToolStatus(`Updated password for "${username}".`);
-                                }}
-                                onClose={closeModal}
-                              />
-                            ),
-                          });
-                        }}
-                      />
-                      <UserRowIconAction
-                        tooltip="Delete user"
-                        icon="trash"
-                        ariaLabel={`Delete user ${username}`}
-                        onClick={() => {
-                          setUserToolStatus(null);
-                          present({
-                            content: (
-                              <DeleteUserModal
-                                targetUsername={username}
-                                onDone={() => {
-                                  setUserToolStatus(`Deleted user "${username}".`);
-                                  void loadUsers();
-                                }}
-                                onClose={closeModal}
-                              />
-                            ),
-                          });
-                        }}
-                      />
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+          {usersError ? (
+            <p className="text-light text-b-m">Could not load users: {usersError}</p>
+          ) : users == null ? (
+            <p className="text-light text-b-m">Loading users...</p>
+          ) : users.length === 0 ? (
+            <p className="text-light text-b-m">No users found.</p>
+          ) : (
+            <ul className="developer-page__users-list">
+              {users.map((username) => (
+                <li key={username} className="developer-page__users-list-row">
+                  <span className="developer-page__users-list-name text-b-m">{username}</span>
+                  <div className="developer-page__users-list-actions">
+                    <UserRowIconAction
+                      tooltip="Change password"
+                      icon="key-round"
+                      ariaLabel={`Change password for ${username}`}
+                      onClick={() => {
+                        setUserToolStatus(null);
+                        present({
+                          content: (
+                            <ChangePasswordModal
+                              targetUsername={username}
+                              onDone={() => {
+                                setUserToolStatus(`Updated password for "${username}".`);
+                              }}
+                              onClose={closeModal}
+                            />
+                          ),
+                        });
+                      }}
+                    />
+                    <UserRowIconAction
+                      tooltip="Delete user"
+                      icon="trash"
+                      ariaLabel={`Delete user ${username}`}
+                      onClick={() => {
+                        setUserToolStatus(null);
+                        present({
+                          content: (
+                            <DeleteUserModal
+                              targetUsername={username}
+                              onDone={() => {
+                                setUserToolStatus(`Deleted user "${username}".`);
+                                void loadUsers();
+                              }}
+                              onClose={closeModal}
+                            />
+                          ),
+                        });
+                      }}
+                    />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
+      </div>
 
-        <div className="card developer-page__clocks card--no-padding">
-          <SettingsHeader isEmbedded title="Time" />
-          <div className="card-padding">
-            <dl className="developer-page__clock-list">
-              <div className="developer-page__clock-row">
-                <dt className="text-b-m">Server (API)</dt>
-                <dd className="developer-page__clock-dd text-b-m">
-                  {developerError ? (
-                    <span className="text-light">Could not load: {developerError}</span>
-                  ) : serverTime ? (
-                    <>
-                      <div>{formatInstantInZone(serverTime.iso, serverTime.timezone)}</div>
-                      <div className="text-light text-b-s">Time zone: {serverTime.timezone}</div>
-                    </>
-                  ) : (
-                    <span className="text-light">Loading…</span>
-                  )}
-                </dd>
-              </div>
-              <div className="developer-page__clock-row">
-                <dt className="text-b-m">This device</dt>
-                <dd className="developer-page__clock-dd text-b-m">
-                  <div>{browserNow.toLocaleString(undefined, clockFormat)}</div>
-                  <div className="text-light text-b-s">Time zone: {browserZone}</div>
-                </dd>
+      <div className="card card--no-padding developer-page__clocks">
+        <SettingsHeader title="Time" titleAs="h3" />
+        <div className="card-padding">
+          <dl className="developer-page__clock-list">
+            <div className="developer-page__clock-row">
+              <dt className="text-b-m">Server (API)</dt>
+              <dd className="developer-page__clock-dd text-b-m">
+                {developerError ? (
+                  <span className="text-light">Could not load: {developerError}</span>
+                ) : serverTime ? (
+                  <>
+                    <div>{formatInstantInZone(serverTime.iso, serverTime.timezone)}</div>
+                    <div className="text-light text-b-s">Time zone: {serverTime.timezone}</div>
+                  </>
+                ) : (
+                  <span className="text-light">Loading…</span>
+                )}
+              </dd>
+            </div>
+            <div className="developer-page__clock-row">
+              <dt className="text-b-m">This device</dt>
+              <dd className="developer-page__clock-dd text-b-m">
+                <div>{browserNow.toLocaleString(undefined, clockFormat)}</div>
+                <div className="text-light text-b-s">Time zone: {browserZone}</div>
+              </dd>
+            </div>
+          </dl>
+        </div>
+      </div>
+
+      <div className="card card--no-padding developer-page__version">
+        <SettingsHeader title="Version" titleAs="h3" />
+        <div className="card-padding">
+          {developerError ? (
+            <p className="text-light text-b-m">Could not load: {developerError}</p>
+          ) : version ? (
+            <dl className="developer-page__version-list">
+              <div className="developer-page__version-row">
+                <dt className="text-b-m">Current</dt>
+                <dd className="developer-page__version-dd text-b-m">v{version.currentVersion}</dd>
               </div>
             </dl>
-          </div>
-        </div>
-
-        <div className="card developer-page__version card--no-padding">
-          <SettingsHeader isEmbedded title="Version" />
-          <div className="card-padding">
-            {developerError ? (
-              <p className="text-light text-b-m">Could not load: {developerError}</p>
-            ) : version ? (
-              <dl className="developer-page__version-list">
-                <div className="developer-page__version-row">
-                  <dt className="text-b-m">Current</dt>
-                  <dd className="developer-page__version-dd text-b-m">v{version.currentVersion}</dd>
-                </div>
-              </dl>
-            ) : (
-              <p className="text-light text-b-m">Loading…</p>
-            )}
-          </div>
+          ) : (
+            <p className="text-light text-b-m">Loading…</p>
+          )}
         </div>
       </div>
     </div>

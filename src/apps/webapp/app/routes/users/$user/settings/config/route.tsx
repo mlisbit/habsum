@@ -6,5 +6,9 @@ export default function UserSettingsConfig() {
   if (!user) {
     return <p className="warn text-b-s">Missing user</p>;
   }
-  return <ConfigYamlEditor user={decodeURIComponent(user)} />;
+  return (
+    <div className="card card--no-padding">
+      <ConfigYamlEditor user={decodeURIComponent(user)} />
+    </div>
+  );
 }

@@ -9,6 +9,11 @@ import type {
   UserPasswordChangeRequest,
   UserPasswordChangeResponse,
 } from '@habsum/types/api-responses/user-password-change';
+import type { SecurityGetResponse } from '@habsum/types/api-responses/security-get';
+import type {
+  SecuritySessionDeleteResponse,
+  SecuritySessionsDeleteOthersResponse,
+} from '@habsum/types/api-responses/security-delete';
 import type {
   CreateUserResponse,
   ListUsersResponse,
@@ -49,6 +54,10 @@ export type { StreakDatum, StreakGraphData } from '@habsum/types/common/streak';
 export type { HabitsResponse } from '@habsum/types/api-responses/habits-get';
 export type { PatchHabitResponse } from '@habsum/types/api-responses/habit-patch';
 export type { HistoryGetResponse } from '@habsum/types/api-responses/history-get';
+export type {
+  SecurityGetResponse,
+  SecurityGetSession,
+} from '@habsum/types/api-responses/security-get';
 export type { UsersPatchRequest } from '@habsum/types/api-responses/users-patch';
 export type {
   UserPasswordChangeRequest,
@@ -152,6 +161,24 @@ export async function loginUser(user: string, pin: string) {
 
 export async function getUserSession(user: string) {
   return request<UserSessionResponse>(`/users/${encodeURIComponent(user)}/session`);
+}
+
+export async function getUserSecurity(user: string) {
+  return request<SecurityGetResponse>(`/users/${encodeURIComponent(user)}/security`);
+}
+
+export async function revokeUserSecuritySession(user: string, token: string) {
+  return request<SecuritySessionDeleteResponse>(
+    `/users/${encodeURIComponent(user)}/security/sessions/${encodeURIComponent(token)}`,
+    { method: 'DELETE' },
+  );
+}
+
+export async function revokeOtherUserSecuritySessions(user: string) {
+  return request<SecuritySessionsDeleteOthersResponse>(
+    `/users/${encodeURIComponent(user)}/security/sessions`,
+    { method: 'DELETE' },
+  );
 }
 
 export async function patchUser(user: string, body: UsersPatchRequest) {

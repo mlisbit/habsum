@@ -81,6 +81,14 @@ export default function UserSettingsLayout() {
           </Link>
           <Link
             className={`settings__link text-b-l${
+              path.endsWith('/security') ? ' settings__link--active' : ''
+            }`}
+            to={`${base}/security`}
+          >
+            Security
+          </Link>
+          <Link
+            className={`settings__link text-b-l${
               path.endsWith('/config') ? ' settings__link--active' : ''
             }`}
             to={`${base}/config`}
@@ -108,7 +116,7 @@ export default function UserSettingsLayout() {
           />
         </nav>
       </aside>
-      <main className="card card--no-padding">
+      <main className="settings__main">
         <Outlet />
       </main>
     </div>

@@ -5,7 +5,6 @@ import type { DayWithTime } from '@habsum/types/common/day';
 import { dateFromDayWithTimeUtc } from '@habsum/types/common/day';
 import type { ProductEntitlement } from '@habsum/types/common/entitlement';
 import {
-  changeUserPassword,
   deleteUser,
   getUserSession,
   logout,
@@ -77,9 +76,6 @@ export default function UserSettingsAccount() {
   const [draftTheme, setDraftTheme] = useState<ThemeOption>('dark');
   const [saveBusy, setSaveBusy] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
-  const [pwdCurrent, setPwdCurrent] = useState('');
-  const [pwdNew, setPwdNew] = useState('');
-  const [pwdConfirm, setPwdConfirm] = useState('');
   const [saveFieldErrors, setSaveFieldErrors] = useState<AccountErrorMap>({});
   const { showToast } = useToast();
 
@@ -126,26 +122,13 @@ export default function UserSettingsAccount() {
 
   const hasDirty = useMemo(() => {
     if (!saved) return false;
-    const onlyCurrentPasswordFilled =
-      pwdCurrent.trim() !== '' && pwdNew.trim() === '' && pwdConfirm.trim() === '';
-    const passwordDirty =
-      !onlyCurrentPasswordFilled &&
-      (pwdCurrent.trim() !== '' || pwdNew.trim() !== '' || pwdConfirm.trim() !== '');
     return (
       normDisplay(draftUsername) !== normDisplay(saved.username) ||
       normDisplay(draftDisplay) !== normDisplay(saved.displayName) ||
       normEmail(draftEmail) !== normEmail(saved.email) ||
-      draftTheme !== saved.theme ||
-      passwordDirty
+      draftTheme !== saved.theme
     );
-  }, [saved, draftUsername, draftDisplay, draftEmail, draftTheme, pwdCurrent, pwdNew, pwdConfirm]);
-
-  const newPasswordMatchFeedback = useMemo((): 'success' | 'error' | null => {
-    const next = pwdNew.trim();
-    const again = pwdConfirm.trim();
-    if (next === '' || again === '') return null;
-    return next === again ? 'success' : 'error';
-  }, [pwdNew, pwdConfirm]);
+  }, [saved, draftUsername, draftDisplay, draftEmail, draftTheme]);
 
   const { present, closeModal } = useModal();
   const blocker = useBlocker(hasDirty);
@@ -180,23 +163,6 @@ export default function UserSettingsAccount() {
     });
   }, []);
 
-  const clearAllPasswordSaveErrors = useCallback(() => {
-    setSaveFieldErrors((prev) => {
-      if (
-        prev.currentPassword == null &&
-        prev.newPassword == null &&
-        prev.confirmPassword == null
-      ) {
-        return prev;
-      }
-      const next = { ...prev };
-      delete next.currentPassword;
-      delete next.newPassword;
-      delete next.confirmPassword;
-      return next;
-    });
-  }, []);
-
   const revertDrafts = useCallback(() => {
     if (!saved) return;
     setDraftUsername(saved.username);
@@ -204,9 +170,6 @@ export default function UserSettingsAccount() {
     setDraftEmail(saved.email);
     setDraftTheme(saved.theme);
     applyUiTheme(saved.theme);
-    setPwdCurrent('');
-    setPwdNew('');
-    setPwdConfirm('');
     setSaveFieldErrors({});
   }, [saved]);
 
@@ -263,9 +226,6 @@ export default function UserSettingsAccount() {
       displayName: nextDisplay === '' ? null : nextDisplay,
       email: nextEmail === '' ? null : nextEmail,
       theme: draftTheme,
-      currentPassword: pwdCurrent,
-      newPassword: pwdNew,
-      confirmPassword: pwdConfirm,
     });
     const validationMessages = Object.values(validationErrors).flat();
     if (validationMessages.length > 0) {
@@ -275,49 +235,29 @@ export default function UserSettingsAccount() {
     }
     setSaveFieldErrors({});
 
-    const passwordDirty =
-      pwdCurrent.trim() !== '' || pwdNew.trim() !== '' || pwdConfirm.trim() !== '';
-
-    if (Object.keys(patch).length === 0 && !passwordDirty) return;
+    if (Object.keys(patch).length === 0) return;
 
     setSaveBusy(true);
-    const curPin = pwdCurrent.trim();
-    const newPin = pwdNew.trim();
     try {
-      let userForPassword = routeUser;
-
-      if (Object.keys(patch).length > 0) {
-        const res = await patchUser(routeUser, patch);
-        userForPassword = res.username;
-        if (res.username !== routeUser) {
-          if (passwordDirty) {
-            await changeUserPassword(res.username, { currentPin: curPin, newPin });
-          }
-          window.location.assign(`/users/${encodeURIComponent(res.username)}/settings/account`);
-          return;
-        }
-        const nextSnap: AccountSnapshot = {
-          username: res.username,
-          displayName: nextDisplay,
-          email: nextEmail,
-          theme: draftTheme,
-          createdAt: saved.createdAt,
-          entitlements: saved.entitlements,
-        };
-        setSaved(nextSnap);
-        setDraftUsername(res.username);
-        setDraftDisplay(nextDisplay);
-        setDraftEmail(nextEmail);
-        setDraftTheme(draftTheme);
-        applyUiTheme(draftTheme);
+      const res = await patchUser(routeUser, patch);
+      if (res.username !== routeUser) {
+        window.location.assign(`/users/${encodeURIComponent(res.username)}/settings/account`);
+        return;
       }
-
-      if (passwordDirty) {
-        await changeUserPassword(userForPassword, { currentPin: curPin, newPin });
-        setPwdCurrent('');
-        setPwdNew('');
-        setPwdConfirm('');
-      }
+      const nextSnap: AccountSnapshot = {
+        username: res.username,
+        displayName: nextDisplay,
+        email: nextEmail,
+        theme: draftTheme,
+        createdAt: saved.createdAt,
+        entitlements: saved.entitlements,
+      };
+      setSaved(nextSnap);
+      setDraftUsername(res.username);
+      setDraftDisplay(nextDisplay);
+      setDraftEmail(nextEmail);
+      setDraftTheme(draftTheme);
+      applyUiTheme(draftTheme);
 
       showToast({ type: 'success', message: 'Saved.' });
       setSaveFieldErrors({});
@@ -335,340 +275,188 @@ export default function UserSettingsAccount() {
 
   return (
     <div className="account-page">
-      <SettingsHeader
-        title="Account"
-        actions={
-          <>
-            <Button
-              type="primary"
-              text={saveBusy ? 'Saving…' : 'Save'}
-              disabled={!loaded || !hasDirty || saveBusy || !normDisplay(draftUsername)}
-              onClick={() => void handleSave()}
-            />
-            <Button
-              type="secondary"
-              text="Cancel"
-              disabled={!loaded || !hasDirty || saveBusy}
-              onClick={revertDrafts}
-            />
-          </>
-        }
-      />
+      {loaded ? (
+        <div className="card account-page__meta">
+          <h3 className="account-page__meta-heading text-h-s" id="account-meta">
+            Account
+          </h3>
+          <div className="account-page__meta-rows">
+            <div className="account-page__meta-row">
+              <div className="account-page__meta-label text-b-m text-light">Created</div>
+              <div className="account-page__meta-value text-b-m">
+                {formatAccountCreatedAt(saved.createdAt)}
+              </div>
+            </div>
+            <div className="account-page__meta-row">
+              <div className="account-page__meta-label text-b-m text-light">Entitlements</div>
+              <div className="account-page__meta-value text-b-m">
+                {saved.entitlements.length > 0 ? saved.entitlements.join(', ') : '—'}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
-      <div className="card-padding">
-        <div className="account-page__profile">
+      <div className="card card--no-padding">
+        <SettingsHeader
+          title="Edit account"
+          actions={
+            <>
+              <Button
+                type="primary"
+                text={saveBusy ? 'Saving…' : 'Save'}
+                disabled={!loaded || !hasDirty || saveBusy || !normDisplay(draftUsername)}
+                onClick={() => void handleSave()}
+              />
+              <Button
+                type="secondary"
+                text="Cancel"
+                disabled={!loaded || !hasDirty || saveBusy}
+                onClick={revertDrafts}
+              />
+            </>
+          }
+        />
+
+        <div className="card-padding">
           {!loaded ? (
             <p className="text-light text-b-m">Loading…</p>
           ) : (
-            <>
-              <div className="card account-page__meta">
-                <h3 className="account-page__meta-heading text-h-s" id="account-meta">
-                  Account
-                </h3>
-                <div className="account-page__meta-rows">
-                  <div className="account-page__meta-row">
-                    <div className="account-page__meta-label text-b-m text-light">Created</div>
-                    <div className="account-page__meta-value text-b-m">
-                      {formatAccountCreatedAt(saved.createdAt)}
-                    </div>
-                  </div>
-                  <div className="account-page__meta-row">
-                    <div className="account-page__meta-label text-b-m text-light">Entitlements</div>
-                    <div className="account-page__meta-value text-b-m">
-                      {saved.entitlements.length > 0 ? saved.entitlements.join(', ') : '—'}
-                    </div>
-                  </div>
+            <div className="account-page__basic">
+              <div className="account-page__field">
+                <label htmlFor="account-username" className="account-page__label text-b-m">
+                  Username
+                </label>
+                <div className="account-page__control">
+                  <Input
+                    id="account-username"
+                    size="small"
+                    className="account-page__profile-input"
+                    value={draftUsername}
+                    onChange={(v) => {
+                      setDraftUsername(v);
+                      clearSaveFieldError('username');
+                    }}
+                    placeholder="username"
+                    dismissable
+                    submittable={false}
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    disabled={saveBusy}
+                    aria-describedby={
+                      saveFieldErrors.username?.length ? 'account-field-error-username' : undefined
+                    }
+                  />
+                  <SaveFieldErrors
+                    id="account-field-error-username"
+                    messages={saveFieldErrors.username}
+                    className="account-page__field-error"
+                  />
                 </div>
               </div>
-
-              <div className="account-page__basic">
-                <h3 className="account-page__basic-heading text-h-s" id="account-basic-info">
-                  Basic account information
-                </h3>
-                <div className="account-page__field">
-                  <label htmlFor="account-username" className="account-page__label text-b-m">
-                    Username
-                  </label>
-                  <div className="account-page__control">
-                    <Input
-                      id="account-username"
-                      size="small"
-                      className="account-page__profile-input"
-                      value={draftUsername}
-                      onChange={(v) => {
-                        setDraftUsername(v);
-                        clearSaveFieldError('username');
-                      }}
-                      placeholder="username"
-                      dismissable
-                      submittable={false}
-                      autoCapitalize="none"
-                      autoCorrect="off"
-                      spellCheck={false}
-                      disabled={saveBusy}
-                      aria-describedby={
-                        saveFieldErrors.username?.length
-                          ? 'account-field-error-username'
-                          : undefined
-                      }
-                    />
-                    <SaveFieldErrors
-                      id="account-field-error-username"
-                      messages={saveFieldErrors.username}
-                      className="account-page__field-error"
-                    />
-                  </div>
-                </div>
-                <div className="account-page__field">
-                  <label htmlFor="account-display-name" className="account-page__label text-b-m">
-                    Display name
-                  </label>
-                  <div className="account-page__control">
-                    <Input
-                      id="account-display-name"
-                      size="small"
-                      className="account-page__profile-input"
-                      value={draftDisplay}
-                      onChange={(v) => {
-                        setDraftDisplay(v);
-                        clearSaveFieldError('displayName');
-                      }}
-                      placeholder="Optional"
-                      dismissable
-                      submittable={false}
-                      autoCapitalize="words"
-                      autoCorrect="off"
-                      spellCheck={false}
-                      disabled={saveBusy}
-                    />
-                    <SaveFieldErrors
-                      id="account-field-error-displayName"
-                      messages={saveFieldErrors.displayName}
-                      className="account-page__field-error"
-                    />
-                  </div>
-                </div>
-                <div className="account-page__field">
-                  <label htmlFor="account-email" className="account-page__label text-b-m">
-                    Email
-                  </label>
-                  <div className="account-page__control">
-                    <Input
-                      id="account-email"
-                      size="small"
-                      className="account-page__profile-input"
-                      value={draftEmail}
-                      onChange={(v) => {
-                        setDraftEmail(v);
-                        clearSaveFieldError('email');
-                      }}
-                      placeholder="Optional"
-                      dismissable
-                      submittable={false}
-                      autoCapitalize="none"
-                      autoCorrect="off"
-                      spellCheck={false}
-                      autoComplete="email"
-                      inputMode="email"
-                      disabled={saveBusy}
-                      aria-describedby={
-                        saveFieldErrors.email?.length ? 'account-field-error-email' : undefined
-                      }
-                    />
-                    <SaveFieldErrors
-                      id="account-field-error-email"
-                      messages={saveFieldErrors.email}
-                      className="account-page__field-error"
-                    />
-                  </div>
-                </div>
-                <div className="account-page__field">
-                  <label htmlFor="account-theme" className="account-page__label text-b-m">
-                    Theme
-                  </label>
-                  <div className="account-page__control">
-                    <select
-                      id="account-theme"
-                      className="account-page__select text-b-m"
-                      value={draftTheme}
-                      disabled={saveBusy}
-                      aria-describedby={
-                        saveFieldErrors.theme?.length ? 'account-field-error-theme' : undefined
-                      }
-                      onChange={(e) => {
-                        const t = e.target.value === 'light' ? 'light' : 'dark';
-                        setDraftTheme(t);
-                        applyUiTheme(t);
-                        clearSaveFieldError('theme');
-                      }}
-                    >
-                      {UI_THEME_OPTIONS.map((opt) => (
-                        <option key={opt} value={opt}>
-                          {opt === 'dark' ? 'Dark' : 'Light'}
-                        </option>
-                      ))}
-                    </select>
-                    <SaveFieldErrors
-                      id="account-field-error-theme"
-                      messages={saveFieldErrors.theme}
-                      className="account-page__field-error"
-                    />
-                  </div>
+              <div className="account-page__field">
+                <label htmlFor="account-display-name" className="account-page__label text-b-m">
+                  Display name
+                </label>
+                <div className="account-page__control">
+                  <Input
+                    id="account-display-name"
+                    size="small"
+                    className="account-page__profile-input"
+                    value={draftDisplay}
+                    onChange={(v) => {
+                      setDraftDisplay(v);
+                      clearSaveFieldError('displayName');
+                    }}
+                    placeholder="Optional"
+                    dismissable
+                    submittable={false}
+                    autoCapitalize="words"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    disabled={saveBusy}
+                  />
+                  <SaveFieldErrors
+                    id="account-field-error-displayName"
+                    messages={saveFieldErrors.displayName}
+                    className="account-page__field-error"
+                  />
                 </div>
               </div>
-
-              <hr className="account-page__divider" />
-
-              <div className="account-page__password">
-                <h3
-                  className="account-page__password-heading text-h-s"
-                  id="account-change-password"
-                >
-                  Change password
-                </h3>
-                <div className="account-page__field">
-                  <label
-                    htmlFor="account-current-password"
-                    className="account-page__label text-b-m"
+              <div className="account-page__field">
+                <label htmlFor="account-email" className="account-page__label text-b-m">
+                  Email
+                </label>
+                <div className="account-page__control">
+                  <Input
+                    id="account-email"
+                    size="small"
+                    className="account-page__profile-input"
+                    value={draftEmail}
+                    onChange={(v) => {
+                      setDraftEmail(v);
+                      clearSaveFieldError('email');
+                    }}
+                    placeholder="Optional"
+                    dismissable
+                    submittable={false}
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck={false}
+                    autoComplete="email"
+                    inputMode="email"
+                    disabled={saveBusy}
+                    aria-describedby={
+                      saveFieldErrors.email?.length ? 'account-field-error-email' : undefined
+                    }
+                  />
+                  <SaveFieldErrors
+                    id="account-field-error-email"
+                    messages={saveFieldErrors.email}
+                    className="account-page__field-error"
+                  />
+                </div>
+              </div>
+              <div className="account-page__field">
+                <label htmlFor="account-theme" className="account-page__label text-b-m">
+                  Theme
+                </label>
+                <div className="account-page__control">
+                  <select
+                    id="account-theme"
+                    className="account-page__select text-b-m"
+                    value={draftTheme}
+                    disabled={saveBusy}
+                    aria-describedby={
+                      saveFieldErrors.theme?.length ? 'account-field-error-theme' : undefined
+                    }
+                    onChange={(e) => {
+                      const t = e.target.value === 'light' ? 'light' : 'dark';
+                      setDraftTheme(t);
+                      applyUiTheme(t);
+                      clearSaveFieldError('theme');
+                    }}
                   >
-                    Current password
-                  </label>
-                  <div className="account-page__control">
-                    <Input
-                      id="account-current-password"
-                      size="small"
-                      className="account-page__profile-input"
-                      type="password"
-                      value={pwdCurrent}
-                      onChange={(v) => {
-                        setPwdCurrent(v);
-                        clearAllPasswordSaveErrors();
-                      }}
-                      placeholder="Required"
-                      dismissable
-                      submittable={false}
-                      autoCapitalize="none"
-                      autoCorrect="off"
-                      spellCheck={false}
-                      autoComplete="current-password"
-                      disabled={saveBusy}
-                      aria-describedby={
-                        saveFieldErrors.currentPassword?.length
-                          ? 'account-field-error-currentPassword'
-                          : undefined
-                      }
-                    />
-                    <SaveFieldErrors
-                      id="account-field-error-currentPassword"
-                      messages={saveFieldErrors.currentPassword}
-                      className="account-page__field-error"
-                    />
-                  </div>
-                </div>
-                <div className="account-page__field">
-                  <label htmlFor="account-new-password" className="account-page__label text-b-m">
-                    New password
-                  </label>
-                  <div className="account-page__control">
-                    <Input
-                      id="account-new-password"
-                      size="small"
-                      className="account-page__profile-input"
-                      type="password"
-                      value={pwdNew}
-                      onChange={(v) => {
-                        setPwdNew(v);
-                        clearAllPasswordSaveErrors();
-                      }}
-                      placeholder="Required"
-                      dismissable
-                      submittable={false}
-                      autoCapitalize="none"
-                      autoCorrect="off"
-                      spellCheck={false}
-                      autoComplete="new-password"
-                      disabled={saveBusy}
-                      aria-describedby={
-                        [
-                          newPasswordMatchFeedback ? 'account-password-match-hint' : '',
-                          saveFieldErrors.newPassword?.length
-                            ? 'account-field-error-newPassword'
-                            : '',
-                        ]
-                          .filter(Boolean)
-                          .join(' ') || undefined
-                      }
-                    />
-                    {newPasswordMatchFeedback === 'success' ? (
-                      <InfoText
-                        variant="success"
-                        className="account-page__password-match-info"
-                        id="account-password-match-hint"
-                        aria-live="polite"
-                      >
-                        Passwords match.
-                      </InfoText>
-                    ) : newPasswordMatchFeedback === 'error' ? (
-                      <InfoText
-                        variant="error"
-                        className="account-page__password-match-info"
-                        id="account-password-match-hint"
-                        aria-live="polite"
-                      >
-                        Passwords do not match.
-                      </InfoText>
-                    ) : null}
-                    <SaveFieldErrors
-                      id="account-field-error-newPassword"
-                      messages={saveFieldErrors.newPassword}
-                      className="account-page__field-error"
-                    />
-                  </div>
-                </div>
-                <div className="account-page__field">
-                  <label
-                    htmlFor="account-confirm-password"
-                    className="account-page__label text-b-m"
-                  >
-                    Confirm new password
-                  </label>
-                  <div className="account-page__control">
-                    <Input
-                      id="account-confirm-password"
-                      size="small"
-                      className="account-page__profile-input"
-                      type="password"
-                      value={pwdConfirm}
-                      onChange={(v) => {
-                        setPwdConfirm(v);
-                        clearAllPasswordSaveErrors();
-                      }}
-                      placeholder="Required"
-                      dismissable
-                      submittable={false}
-                      autoCapitalize="none"
-                      autoCorrect="off"
-                      spellCheck={false}
-                      autoComplete="new-password"
-                      disabled={saveBusy}
-                      aria-describedby={
-                        saveFieldErrors.confirmPassword?.length
-                          ? 'account-field-error-confirmPassword'
-                          : undefined
-                      }
-                    />
-                    <SaveFieldErrors
-                      id="account-field-error-confirmPassword"
-                      messages={saveFieldErrors.confirmPassword}
-                      className="account-page__field-error"
-                    />
-                  </div>
+                    {UI_THEME_OPTIONS.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt === 'dark' ? 'Dark' : 'Light'}
+                      </option>
+                    ))}
+                  </select>
+                  <SaveFieldErrors
+                    id="account-field-error-theme"
+                    messages={saveFieldErrors.theme}
+                    className="account-page__field-error"
+                  />
                 </div>
               </div>
-            </>
+            </div>
           )}
         </div>
+      </div>
 
+      {loaded ? (
         <div className="card account-page__danger">
           <div>
             <h3 className="account-page__danger-title text-h-s">Danger zone</h3>
@@ -707,7 +495,7 @@ export default function UserSettingsAccount() {
             }}
           />
         </div>
-      </div>
+      ) : null}
     </div>
   );
 }

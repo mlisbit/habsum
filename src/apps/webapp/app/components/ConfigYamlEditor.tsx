@@ -6,7 +6,7 @@ import { oneDark } from '@codemirror/theme-one-dark';
 import { getUserConfig, putUserConfig } from '~/api.client';
 import { SettingsHeader } from '~/components/SettingsHeader';
 import { Button } from '~/core-components/Button';
-import { InfoText } from '~/core-components/InfoText';
+import { useToast } from '~/context/toast';
 
 const HABIT_TYPE_COMPLETIONS: Completion[] = [
   {
@@ -61,6 +61,7 @@ export function ConfigYamlEditor({ user }: ConfigYamlEditorProps) {
   const [saveError, setSaveError] = useState<string | null>(null);
   const prefersDark = usePrefersDark();
   const dirty = text !== initial;
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (!user) return;
@@ -83,12 +84,15 @@ export function ConfigYamlEditor({ user }: ConfigYamlEditorProps) {
     try {
       await putUserConfig(user, text);
       setInitial(text);
+      showToast({ type: 'success', message: 'Saved.' });
     } catch (e) {
-      setSaveError(e instanceof Error ? e.message : String(e));
+      const msg = e instanceof Error ? e.message : String(e);
+      setSaveError(msg);
+      showToast({ type: 'error', message: msg });
     } finally {
       setSaving(false);
     }
-  }, [user, dirty, text]);
+  }, [user, dirty, text, showToast]);
 
   if (loading) {
     return (
@@ -104,10 +108,7 @@ export function ConfigYamlEditor({ user }: ConfigYamlEditorProps) {
   if (loadError) {
     return (
       <div className="config-page">
-        <SettingsHeader title="Config" />
-        <div className="card-padding">
-          <InfoText variant="error">{loadError}</InfoText>
-        </div>
+        <SettingsHeader title="Config" error={loadError} />
       </div>
     );
   }
@@ -116,6 +117,7 @@ export function ConfigYamlEditor({ user }: ConfigYamlEditorProps) {
     <div className="config-page">
       <SettingsHeader
         title="Config"
+        error={saveError}
         actions={
           <Button
             type="primary"
@@ -125,18 +127,13 @@ export function ConfigYamlEditor({ user }: ConfigYamlEditorProps) {
           />
         }
       />
-      <div className="card-padding config-page__meta">
-        {dirty ? <p className="text-light text-b-m config-page__dirty">Unsaved changes</p> : null}
-        {saveError ? (
-          <InfoText variant="error" className="config-page__error">
-            {saveError}
-          </InfoText>
-        ) : null}
-      </div>
       <div className="config-page__editor">
         <CodeMirror
           value={text}
-          onChange={setText}
+          onChange={(v) => {
+            setText(v);
+            if (saveError != null) setSaveError(null);
+          }}
           extensions={[yaml(), autocompletion({ override: [habitTypeCompletion] })]}
           height="100%"
           minHeight="min(60vh, 640px)"

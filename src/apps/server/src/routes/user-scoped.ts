@@ -12,6 +12,11 @@ import type { HabitsResponse } from '@habsum/types/api-responses/habits-get';
 import type { PatchHabitResponse } from '@habsum/types/api-responses/habit-patch';
 import type { HistoryGetResponse } from '@habsum/types/api-responses/history-get';
 import type { UserPasswordChangeRequest } from '@habsum/types/api-responses/user-password-change';
+import type { SecurityGetResponse } from '@habsum/types/api-responses/security-get';
+import type {
+  SecuritySessionDeleteResponse,
+  SecuritySessionsDeleteOthersResponse,
+} from '@habsum/types/api-responses/security-delete';
 import type { UsersPatchRequest } from '@habsum/types/api-responses/users-patch';
 import { dasherize } from '@habsum/utils';
 import { isForbiddenUsername } from '../forbidden-usernames.js';
@@ -26,6 +31,9 @@ import {
 import {
   addToTotal,
   createUserSession,
+  listSessionsForUsername,
+  revokeOtherUserSessions,
+  revokeUserSessionByTokenPrefix,
   deleteDailySelect,
   deleteSummationEvent,
   deleteSummationEventsForDay,
@@ -66,7 +74,11 @@ import {
 } from '../request-helpers.js';
 import { accountCreatedAtToApi } from '@habsum/types/common/day';
 import { entitlementsForUser } from '../entitlements.js';
-import { appendSessionCookie, sessionTtlSeconds } from '../session-cookie.js';
+import {
+  appendSessionCookie,
+  getSessionCookieValue,
+  sessionTtlSeconds,
+} from '../session-cookie.js';
 import { mapSummationEventsToApi } from '../summation-event-api.js';
 import { parseClientCreatedAtIso, resolveHabitApiDateQuery } from '../server-time.js';
 
@@ -95,6 +107,83 @@ userScopedRouter.post(
     const sessionId = createUserSession(user, sessionTtlSeconds());
     appendSessionCookie(res, sessionId);
     const body: LoginUserResponse = { ok: true, user };
+    return res.json(body);
+  },
+);
+
+/** GET /users/:user/security */
+userScopedRouter.get(
+  '/security',
+  requireMatchingRouteUser,
+  (req: Request<{ user: string }>, res: Response) => {
+    const { user } = req.params;
+    if (!isSafeConfigUserId(user)) {
+      return res.status(400).json({ error: 'invalid user' });
+    }
+
+    const currentSessionId = getSessionCookieValue(req.headers.cookie);
+    const now = Date.now();
+    const sessions = listSessionsForUsername(user).map((row) => ({
+      token: row.id.slice(0, 8),
+      createdAt: accountCreatedAtToApi(row.created_at),
+      expiresAt: accountCreatedAtToApi(row.expires_at),
+      isActive:
+        currentSessionId != null &&
+        currentSessionId === row.id &&
+        new Date(row.expires_at).getTime() > now,
+    }));
+
+    const body: SecurityGetResponse = { sessions };
+    return res.json(body);
+  },
+);
+
+/** DELETE /users/:user/security/sessions — revoke every session except the current cookie. */
+userScopedRouter.delete(
+  '/security/sessions',
+  requireMatchingRouteUser,
+  (req: Request<{ user: string }>, res: Response) => {
+    const { user } = req.params;
+    if (!isSafeConfigUserId(user)) {
+      return res.status(400).json({ error: 'invalid user' });
+    }
+
+    const currentSessionId = getSessionCookieValue(req.headers.cookie);
+    if (currentSessionId == null) {
+      return res.status(400).json({ error: 'no active session' });
+    }
+
+    const revoked = revokeOtherUserSessions(user, currentSessionId);
+    const body: SecuritySessionsDeleteOthersResponse = { ok: true, revoked };
+    return res.json(body);
+  },
+);
+
+/** DELETE /users/:user/security/sessions/:token — revoke one session by its public token prefix. */
+userScopedRouter.delete(
+  '/security/sessions/:token',
+  requireMatchingRouteUser,
+  (req: Request<{ user: string; token: string }>, res: Response) => {
+    const { user, token } = req.params;
+    if (!isSafeConfigUserId(user)) {
+      return res.status(400).json({ error: 'invalid user' });
+    }
+
+    const currentSessionId = getSessionCookieValue(req.headers.cookie);
+    const result = revokeUserSessionByTokenPrefix(user, token, currentSessionId);
+    if (!result.ok) {
+      const status =
+        result.error === 'invalid token'
+          ? 400
+          : result.error === 'session not found'
+            ? 404
+            : result.error === 'ambiguous session token'
+              ? 409
+              : 403;
+      return res.status(status).json({ error: result.error });
+    }
+
+    const body: SecuritySessionDeleteResponse = { ok: true };
     return res.json(body);
   },
 );

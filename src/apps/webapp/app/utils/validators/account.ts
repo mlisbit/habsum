@@ -1,19 +1,11 @@
 import type { UsersPatchRequest } from '@habsum/types/api-responses/users-patch';
 
-export type AccountFieldKey =
-  | keyof UsersPatchRequest
-  | 'currentPassword'
-  | 'newPassword'
-  | 'confirmPassword';
+export type AccountFieldKey = keyof UsersPatchRequest;
 
 /** Same shape as `validateAccountSave` results — field keys to one or more messages. */
 export type AccountErrorMap = Partial<Record<AccountFieldKey, string[]>>;
 
-type AccountSavePayload = UsersPatchRequest & {
-  currentPassword: string;
-  newPassword: string;
-  confirmPassword: string;
-};
+type AccountSavePayload = UsersPatchRequest;
 
 function addError(errors: AccountErrorMap, key: AccountFieldKey, message: string): void {
   const list = errors[key];
@@ -28,8 +20,8 @@ function isPlausibleEmail(value: string): boolean {
 }
 
 /**
- * Client-side validation for account Save. Pass the full draft as `UsersPatchRequest` fields plus
- * password strings. Returns a map of field keys to message arrays, or an empty object when valid.
+ * Client-side validation for account Save. Returns a map of field keys to message arrays, or an
+ * empty object when valid.
  * Reserved/forbidden usernames are enforced only by the API, not here.
  */
 export function validateAccountSave(input: AccountSavePayload): AccountErrorMap {
@@ -48,29 +40,11 @@ export function validateAccountSave(input: AccountSavePayload): AccountErrorMap 
     addError(errors, 'theme', 'Choose a valid theme.');
   }
 
-  const cur = input.currentPassword.trim();
-  const next = input.newPassword.trim();
-  const again = input.confirmPassword.trim();
-  const passwordDirty = cur !== '' || next !== '' || again !== '';
-
-  if (passwordDirty) {
-    if (!cur || !next || !again) {
-      addError(
-        errors,
-        'currentPassword',
-        'Fill in all password fields to change your password, or clear those fields.',
-      );
-    } else if (next !== again) {
-      addError(errors, 'newPassword', 'New password and confirmation do not match.');
-      addError(errors, 'confirmPassword', 'New password and confirmation do not match.');
-    }
-  }
-
   return errors;
 }
 
 /**
- * Maps API `error` strings (from `PATCH /users/:user`, `POST .../password`, etc.) to account fields.
+ * Maps API `error` strings (from `PATCH /users/:user`, etc.) to account fields.
  * Unknown messages yield an empty map (caller should show a generic toast).
  */
 export function accountServerErrorToFieldMap(serverMessage: string): AccountErrorMap {
@@ -115,19 +89,6 @@ export function accountServerErrorToFieldMap(serverMessage: string): AccountErro
 
   if (m === 'email must be a string or null') {
     addError(out, 'email', m);
-    return out;
-  }
-
-  if (m === 'current password is required' || m === 'current password is incorrect') {
-    addError(out, 'currentPassword', m);
-    return out;
-  }
-
-  if (
-    m === 'new password is required' ||
-    m === 'new password must be different from the current one'
-  ) {
-    addError(out, 'newPassword', m);
     return out;
   }
 

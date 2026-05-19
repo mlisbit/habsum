@@ -314,6 +314,7 @@ export function patchUserProfile(
 }
 
 type SessionRow = { username: string; expires_at: string };
+type SessionListRow = { id: string; created_at: string; expires_at: string };
 
 const insertSessionStmt = db.prepare<{ id: string; username: string; expiresAt: string }>(`
   INSERT INTO sessions (id, username, expires_at)
@@ -335,6 +336,68 @@ const renameSessionsUsernameStmt = db.prepare<{ fromUsername: string; toUsername
 const deleteSessionsForUsernameStmt = db.prepare<[string], unknown>(
   'DELETE FROM sessions WHERE username = ?',
 );
+
+const listSessionsForUsernameStmt = db.prepare<[string], SessionListRow>(`
+  SELECT id, created_at, expires_at
+  FROM sessions
+  WHERE username = ?
+  ORDER BY datetime(created_at) DESC
+`);
+
+const SESSION_TOKEN_PREFIX_LEN = 8;
+
+const findSessionIdsByTokenPrefixStmt = db.prepare<[string, string], { id: string }>(`
+  SELECT id
+  FROM sessions
+  WHERE username = ? AND substr(id, 1, ${SESSION_TOKEN_PREFIX_LEN}) = ?
+`);
+
+const revokeOtherSessionsStmt = db.prepare<{ username: string; exceptId: string }>(`
+  DELETE FROM sessions
+  WHERE username = @username AND id != @exceptId
+`);
+
+export type RevokeSessionByPrefixError =
+  | 'invalid token'
+  | 'session not found'
+  | 'ambiguous session token'
+  | 'cannot revoke active session';
+
+export function isValidSessionTokenPrefix(token: string): boolean {
+  return new RegExp(`^[0-9a-f]{${SESSION_TOKEN_PREFIX_LEN}}$`, 'i').test(token);
+}
+
+export function revokeUserSessionByTokenPrefix(
+  username: string,
+  tokenPrefix: string,
+  currentSessionId: string | undefined,
+): { ok: true } | { ok: false; error: RevokeSessionByPrefixError } {
+  if (!isValidSessionTokenPrefix(tokenPrefix)) {
+    return { ok: false, error: 'invalid token' };
+  }
+
+  const normalized = tokenPrefix.toLowerCase();
+  const rows = findSessionIdsByTokenPrefixStmt.all(username, normalized);
+  if (rows.length === 0) {
+    return { ok: false, error: 'session not found' };
+  }
+  if (rows.length > 1) {
+    return { ok: false, error: 'ambiguous session token' };
+  }
+
+  const sessionId = rows[0].id;
+  if (currentSessionId != null && sessionId === currentSessionId) {
+    return { ok: false, error: 'cannot revoke active session' };
+  }
+
+  deleteSessionStmt.run(sessionId);
+  return { ok: true };
+}
+
+export function revokeOtherUserSessions(username: string, exceptSessionId: string): number {
+  const result = revokeOtherSessionsStmt.run({ username, exceptId: exceptSessionId });
+  return result.changes;
+}
 
 export function createUserSession(username: string, ttlSeconds: number): string {
   const id = randomBytes(32).toString('hex');
@@ -363,6 +426,10 @@ export function renameSessionsUsername(fromUsername: string, toUsername: string)
 
 export function deleteSessionsForUsername(username: string): void {
   deleteSessionsForUsernameStmt.run(username);
+}
+
+export function listSessionsForUsername(username: string): SessionListRow[] {
+  return listSessionsForUsernameStmt.all(username);
 }
 
 const getDailyTotalStmt = db.prepare<[string, string, string], TotalRow>(

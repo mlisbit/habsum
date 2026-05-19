@@ -4,29 +4,12 @@
 .config-page {
   display: flex;
   flex-direction: column;
-  gap: functions.spacing(3);
   min-width: 0;
-}
-
-.config-page__meta {
-  display: flex;
-  flex-direction: column;
-  gap: functions.spacing(2);
-}
-
-.config-page__dirty {
-  margin: 0;
-}
-
-.config-page__error {
-  margin: 0;
 }
 
 .config-page__editor {
   min-width: 0;
   min-height: min(60vh, 640px);
-  border: 1px solid var(--border-color-faint);
-  border-radius: var(--border-radius-m);
   overflow: hidden;
   background: var(--background-secondary);
 }

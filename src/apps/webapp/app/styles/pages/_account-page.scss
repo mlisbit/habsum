@@ -1,11 +1,10 @@
 @use 'functions';
 
 // Block: account-page
-.account-page__profile {
+.account-page {
   display: flex;
   flex-direction: column;
   gap: functions.spacing(3);
-  margin-top: functions.spacing(2);
 }
 
 .account-page__meta {
@@ -94,27 +93,6 @@
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-selected) 35%, transparent);
 }
 
-.account-page__divider {
-  border: none;
-  border-block-start: 1px solid var(--border-color-faint);
-  margin-block: functions.spacing(3);
-  margin-inline: 0;
-}
-
-.account-page__password {
-  display: flex;
-  flex-direction: column;
-  gap: functions.spacing(2);
-}
-
-.account-page__password-heading {
-  margin-block: 0 functions.spacing(1);
-}
-
-.account-page__password-match-info {
-  margin-block-start: functions.spacing(1);
-}
-
 .account-page__field-error {
   margin-block-start: functions.spacing(1);
 }
@@ -141,7 +119,6 @@
 }
 
 .account-page__danger {
-  margin-top: functions.spacing(3);
   background: var(--background-warning);
   display: flex;
   justify-content: space-between;
