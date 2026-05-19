@@ -7,6 +7,7 @@ import { listUsers } from '../config.js';
 import {
   ensureUserPins,
   getUserProfile,
+  isUserForcePasswordReset,
   isOucSessionId,
   revokeUserSession,
   getUsernameForSession,
@@ -37,9 +38,10 @@ authRouter.get('/auth/me', (req: Request, res: Response) => {
     username: user,
     displayName: profile.displayName,
     theme: profile.theme,
-    email: profile.email,
+    email: profile.email ?? '',
     createdAt: accountCreatedAtToApi(profile.createdAt),
     entitlements: entitlementsForUser(user),
+    forcePasswordReset: isUserForcePasswordReset(user),
     sessionTokenPrefix: sid!.slice(0, 8),
   };
   return res.json(body);

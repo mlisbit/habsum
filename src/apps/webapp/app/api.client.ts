@@ -9,12 +9,17 @@ import type {
   UserPasswordChangeRequest,
   UserPasswordChangeResponse,
 } from '@habsum/types/api-responses/user-password-change';
+import type {
+  UserNewPasswordRequest,
+  UserNewPasswordResponse,
+} from '@habsum/types/api-responses/user-new-password';
 import type { SecurityGetResponse } from '@habsum/types/api-responses/security-get';
 import type {
   SecuritySessionDeleteResponse,
   SecuritySessionsDeleteOthersResponse,
 } from '@habsum/types/api-responses/security-delete';
 import type {
+  AdminResetUserPasswordResponse,
   CreateUserResponse,
   ListUsersResponse,
   LoginUserResponse,
@@ -33,6 +38,7 @@ import { oucSessionRequestHeaders, clearOucSessionToken } from '~/ouc.client';
 
 export type {
   ApiErrorBody,
+  AdminResetUserPasswordResponse,
   CreateUserResponse,
   HealthResponse,
   ListUsersResponse,
@@ -156,19 +162,18 @@ export async function getDeveloper() {
   return request<DeveloperGetResponse>('/developer');
 }
 
-export async function createUser(name: string, pin: string) {
-  const qs = `?name=${encodeURIComponent(name)}`;
-  return request<CreateUserResponse>(`/users${qs}`, {
+export async function createUser(email: string) {
+  return request<CreateUserResponse>('/users', {
     method: 'POST',
-    body: JSON.stringify({ pin }),
+    body: JSON.stringify({ email }),
   });
 }
 
-export async function adminSetUserLoginPin(name: string, pin: string) {
+export async function adminResetUserPassword(name: string) {
   const qs = `?name=${encodeURIComponent(name)}`;
-  return request<{ ok: true; user: string }>(`/users${qs}`, {
+  return request<AdminResetUserPasswordResponse>(`/users${qs}`, {
     method: 'PATCH',
-    body: JSON.stringify({ pin }),
+    body: JSON.stringify({}),
   });
 }
 
@@ -215,6 +220,13 @@ export async function patchUser(user: string, body: UsersPatchRequest) {
 
 export async function changeUserPassword(user: string, body: UserPasswordChangeRequest) {
   return request<UserPasswordChangeResponse>(`/users/${encodeURIComponent(user)}/password`, {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+export async function setUserNewPassword(user: string, body: UserNewPasswordRequest) {
+  return request<UserNewPasswordResponse>(`/users/${encodeURIComponent(user)}/new-password`, {
     method: 'POST',
     body: JSON.stringify(body),
   });

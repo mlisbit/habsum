@@ -12,6 +12,7 @@ import type { HabitsResponse } from '@habsum/types/api-responses/habits-get';
 import type { PatchHabitResponse } from '@habsum/types/api-responses/habit-patch';
 import type { HistoryGetResponse } from '@habsum/types/api-responses/history-get';
 import type { UserPasswordChangeRequest } from '@habsum/types/api-responses/user-password-change';
+import type { UserNewPasswordRequest } from '@habsum/types/api-responses/user-new-password';
 import type { SecurityGetResponse } from '@habsum/types/api-responses/security-get';
 import type {
   SecuritySessionDeleteResponse,
@@ -38,7 +39,11 @@ import {
   deleteSummationEvent,
   deleteSummationEventsForDay,
   deleteUserPin,
+  clearUserForcePasswordReset,
+  completeForcedPasswordReset,
   ensureUserPins,
+  isEmailUsedByOtherUser,
+  resolveUsernameByLoginId,
   getFirstDate,
   getHabitFirstDate,
   getSelect,
@@ -46,6 +51,7 @@ import {
   getSummationDayTotal,
   getUserProfile,
   isUserAdmin,
+  isUserForcePasswordReset,
   isUserPinValid,
   patchUserProfile,
   purgeUserData,
@@ -64,20 +70,22 @@ import {
   type PatchBody,
   streakGraphForConfiguredWindow,
 } from '../habit-presentation.js';
-import { authenticatedSessionId, requireMatchingRouteUser } from '../middleware/auth.js';
+import {
+  authenticatedSessionId,
+  rejectIfForcePasswordReset,
+  requireMatchingRouteUser,
+} from '../middleware/auth.js';
 import {
   isAllowedUiTheme,
   isPlausibleEmail,
   isSafeConfigUserId,
+  isSafeLoginId,
   loadUserConfigForResponse,
   parsePin,
 } from '../request-helpers.js';
 import { accountCreatedAtToApi } from '@habsum/types/common/day';
 import { entitlementsForUser } from '../entitlements.js';
-import {
-  appendSessionCookie,
-  sessionTtlSeconds,
-} from '../session-cookie.js';
+import { appendSessionCookie, sessionTtlSeconds } from '../session-cookie.js';
 import { mapSummationEventsToApi } from '../summation-event-api.js';
 import { parseClientCreatedAtIso, resolveHabitApiDateQuery } from '../server-time.js';
 
@@ -87,13 +95,18 @@ export const userScopedRouter = Router({ mergeParams: true });
 userScopedRouter.post(
   '/login',
   (req: Request<{ user: string }, unknown, LoginUserRequest>, res: Response) => {
-    const { user } = req.params;
-    if (!isSafeConfigUserId(user)) {
-      return res.status(400).json({ error: 'invalid user' });
+    const loginId = req.params.user;
+    if (!isSafeLoginId(loginId)) {
+      return res.status(400).json({ error: 'invalid login' });
     }
 
     const pin = parsePin(req.body?.pin);
     if (pin == null) return res.status(400).json({ error: 'pin is required' });
+
+    const user = resolveUsernameByLoginId(loginId);
+    if (!user) {
+      return res.status(401).json({ error: 'invalid password' });
+    }
 
     const config = loadUserConfigForResponse(user, res);
     if (!config) return;
@@ -105,10 +118,16 @@ userScopedRouter.post(
 
     const sessionId = createUserSession(user, sessionTtlSeconds());
     appendSessionCookie(res, sessionId);
-    const body: LoginUserResponse = { ok: true, user };
+    const body: LoginUserResponse = {
+      ok: true,
+      user,
+      forcePasswordReset: isUserForcePasswordReset(user),
+    };
     return res.json(body);
   },
 );
+
+userScopedRouter.use(rejectIfForcePasswordReset);
 
 /** GET /users/:user/security */
 userScopedRouter.get(
@@ -204,7 +223,9 @@ userScopedRouter.get(
     const body: UserSessionResponse = {
       username: user,
       admin: isUserAdmin(user),
-      ...profile,
+      displayName: profile.displayName,
+      theme: profile.theme,
+      email: profile.email ?? '',
       createdAt: accountCreatedAtToApi(profile.createdAt),
       entitlements: entitlementsForUser(user),
     };
@@ -252,6 +273,43 @@ userScopedRouter.post(
   },
 );
 
+/** POST /users/:user/new-password — required reset flow when `force_password_reset` is set. */
+userScopedRouter.post(
+  '/new-password',
+  requireMatchingRouteUser,
+  (req: Request<{ user: string }, unknown, UserNewPasswordRequest>, res: Response) => {
+    const { user } = req.params;
+    if (!isSafeConfigUserId(user)) {
+      return res.status(400).json({ error: 'invalid user' });
+    }
+
+    const config = loadUserConfigForResponse(user, res);
+    if (!config) return;
+    ensureUserPins(listUsers());
+
+    if (!isUserForcePasswordReset(user)) {
+      return res.status(403).json({ error: 'password reset is not required' });
+    }
+
+    const newPin = parsePin(req.body?.newPin);
+    if (newPin == null) {
+      return res.status(400).json({ error: 'new password is required' });
+    }
+
+    if (isUserPinValid(user, newPin)) {
+      return res.status(400).json({ error: 'new password must be different from the current one' });
+    }
+
+    let updated = completeForcedPasswordReset(user, newPin);
+    if (!updated) {
+      setUserPin(user, newPin);
+      clearUserForcePasswordReset(user);
+    }
+
+    return res.json({ ok: true });
+  },
+);
+
 userScopedRouter.patch(
   '/',
   requireMatchingRouteUser,
@@ -293,23 +351,26 @@ userScopedRouter.patch(
     }
 
     let hasEmail = false;
-    let email: string | null | undefined;
+    let email: string | undefined;
     if ('email' in body) {
       hasEmail = true;
       if (body.email === null) {
-        email = null;
-      } else if (typeof body.email === 'string') {
-        const t = body.email.trim().toLowerCase();
-        if (t === '') {
-          email = null;
-        } else if (!isPlausibleEmail(t)) {
-          return res.status(400).json({ error: 'invalid email' });
-        } else {
-          email = t;
-        }
-      } else {
-        return res.status(400).json({ error: 'email must be a string or null' });
+        return res.status(400).json({ error: 'email is required' });
       }
+      if (typeof body.email !== 'string') {
+        return res.status(400).json({ error: 'email must be a string' });
+      }
+      const t = body.email.trim().toLowerCase();
+      if (t === '') {
+        return res.status(400).json({ error: 'email is required' });
+      }
+      if (!isPlausibleEmail(t)) {
+        return res.status(400).json({ error: 'invalid email' });
+      }
+      if (isEmailUsedByOtherUser(t, user)) {
+        return res.status(409).json({ error: 'email already in use' });
+      }
+      email = t;
     }
 
     if (!wantsRename && !hasDisplayName && !hasTheme && !hasEmail) {
@@ -327,7 +388,11 @@ userScopedRouter.patch(
           ...(hasTheme ? { theme } : {}),
           ...(hasEmail ? { email } : {}),
         });
-      } catch {
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : '';
+        if (msg === 'invalid email') {
+          return res.status(400).json({ error: 'invalid email' });
+        }
         return res.status(500).json({ error: 'failed to update profile' });
       }
     }

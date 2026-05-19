@@ -17,8 +17,8 @@ export type MeGetLoggedIn = {
   username: string;
   /** Friendly name when set; `null` if unset. */
   displayName: string | null;
-  /** Contact email when set; `null` if unset. */
-  email: string | null;
+  /** Login email (unique); also accepted on the login form instead of username. */
+  email: string;
   /** UI theme key (e.g. `light`, `dark`). */
   theme: string;
   /**
@@ -30,6 +30,11 @@ export type MeGetLoggedIn = {
    * when the account may access developer tools.
    */
   entitlements: ProductEntitlement[];
+  /**
+   * When true, the client must send the user to `/users/:user/new-password` before other app
+   * routes (set after admin or email recovery issues a temporary password).
+   */
+  forcePasswordReset: boolean;
   /** First 8 characters of the session id (e.g. `OUC_a1b2` for operate-under sessions). */
   sessionTokenPrefix: string;
 };

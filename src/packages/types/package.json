@@ -20,6 +20,7 @@
     "./api-responses/security-delete": "./src/api-responses/security-delete.ts",
     "./api-responses/users-patch": "./src/api-responses/users-patch.ts",
     "./api-responses/user-password-change": "./src/api-responses/user-password-change.ts",
+    "./api-responses/user-new-password": "./src/api-responses/user-new-password.ts",
     "./api-responses/ouc-post": "./src/api-responses/ouc-post.ts"
   }
 }

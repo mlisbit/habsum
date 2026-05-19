@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useParams } from '@remix-run/react';
 import {
   adminDeleteUser,
-  adminSetUserLoginPin,
+  adminResetUserPassword,
   createOucSession,
   createUser,
   getDeveloper,
@@ -34,33 +34,107 @@ function formatInstantInZone(iso: string, timeZone: string) {
   return new Date(iso).toLocaleString(undefined, { ...clockFormat, timeZone });
 }
 
+function isPlausibleEmail(value: string): boolean {
+  const t = value.trim().toLowerCase();
+  if (t === '') return false;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t);
+}
+
+type CreatedUserCredentials = {
+  user: string;
+  password: string;
+  email: string;
+};
+
 type AddUserModalProps = {
-  onCreated: (username: string) => void;
+  onCreated: (credentials: CreatedUserCredentials) => void;
   onClose: () => void;
 };
 
+type UserCredentialsModalProps = {
+  title: string;
+  description: string;
+  user: string;
+  password: string;
+  email?: string;
+  onClose: () => void;
+};
+
+function UserCredentialsModal({
+  title,
+  description,
+  user,
+  password,
+  email,
+  onClose,
+}: UserCredentialsModalProps) {
+  return (
+    <>
+      <ModalTitle>{title}</ModalTitle>
+      <ModalBody className="developer-page__add-user-modal">
+        <p className="text-light text-b-m">{description}</p>
+        <dl className="developer-page__credentials">
+          {email ? (
+            <div className="developer-page__credentials-row">
+              <dt className="developer-page__credentials-term text-b-m text-light">Email</dt>
+              <dd className="developer-page__credentials-value text-b-m text-bold">{email}</dd>
+            </div>
+          ) : null}
+          <div className="developer-page__credentials-row">
+            <dt className="developer-page__credentials-term text-b-m text-light">Username</dt>
+            <dd className="developer-page__credentials-value text-b-m text-bold">{user}</dd>
+          </div>
+          <div className="developer-page__credentials-row">
+            <dt className="developer-page__credentials-term text-b-m text-light">
+              Temporary password
+            </dt>
+            <dd className="developer-page__credentials-value text-b-m text-bold developer-page__credentials-password">
+              {password}
+            </dd>
+          </div>
+        </dl>
+      </ModalBody>
+      <ModalActions>
+        <Button type="primary" size="small" text="Done" onClick={onClose} />
+      </ModalActions>
+    </>
+  );
+}
+
+function UserCreatedCredentialsModal({
+  user,
+  password,
+  email,
+  onClose,
+}: CreatedUserCredentials & { onClose: () => void }) {
+  return (
+    <UserCredentialsModal
+      title="Account created"
+      description="Share these login details with the user. They will be asked to choose a new password on first sign-in."
+      user={user}
+      password={password}
+      email={email}
+      onClose={onClose}
+    />
+  );
+}
+
 function AddUserModal({ onCreated, onClose }: AddUserModalProps) {
-  const [username, setUsername] = useState('');
-  const [pin, setPin] = useState('');
+  const [email, setEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
-  const canCreate = username.trim() !== '' && pin.trim() !== '';
+  const trimmedEmail = email.trim();
+  const canCreate = isPlausibleEmail(trimmedEmail);
 
-  const handleCreate = async (rawUsername: string, rawPin: string) => {
-    const name = rawUsername.trim();
-    const nextPin = rawPin.trim();
-    if (!name || isCreating) return;
-    if (!nextPin) {
-      setError('PIN is required');
-      return;
-    }
+  const handleCreate = async () => {
+    const nextEmail = trimmedEmail.toLowerCase();
+    if (!isPlausibleEmail(nextEmail) || isCreating) return;
 
     setError(null);
     setIsCreating(true);
     try {
-      const res = await createUser(name, nextPin);
-      onCreated(res.user);
-      onClose();
+      const res = await createUser(nextEmail);
+      onCreated({ user: res.user, password: res.password, email: nextEmail });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'failed to create user');
     } finally {
@@ -73,31 +147,21 @@ function AddUserModal({ onCreated, onClose }: AddUserModalProps) {
       <ModalTitle>Add user</ModalTitle>
       <ModalBody className="developer-page__add-user-modal">
         <p className="text-light text-b-m">
-          Create a YAML config for the new user and set their login PIN.
+          Enter an email address. A username and temporary password will be generated automatically.
         </p>
         <Input
           size="small"
           className="developer-page__add-user-input"
-          placeholder="Username"
+          placeholder="Email"
           disabled={isCreating}
           dismissable
           submittable={false}
           autoCapitalize="none"
           autoCorrect="off"
           spellCheck={false}
-          onChange={setUsername}
-        />
-        <Input
-          size="small"
-          className="developer-page__add-user-input"
-          placeholder="PIN"
-          disabled={isCreating}
-          dismissable
-          submittable={false}
-          autoCapitalize="none"
-          autoCorrect="off"
-          spellCheck={false}
-          onChange={setPin}
+          autoComplete="email"
+          inputMode="email"
+          onChange={setEmail}
         />
         {error ? <InfoText variant="error">{error}</InfoText> : null}
       </ModalBody>
@@ -113,9 +177,9 @@ function AddUserModal({ onCreated, onClose }: AddUserModalProps) {
         <Button
           type="primary"
           size="small"
-          text={isCreating ? 'Creating...' : 'Create'}
+          text={isCreating ? 'Creating…' : 'Create'}
           disabled={isCreating || !canCreate}
-          onClick={() => void handleCreate(username, pin)}
+          onClick={() => void handleCreate()}
         />
       </ModalActions>
     </>
@@ -128,92 +192,62 @@ type ManageUserModalProps = {
   onClose: () => void;
 };
 
-function ChangePasswordModal({ targetUsername, onDone, onClose }: ManageUserModalProps) {
-  const [password, setPassword] = useState('');
-  const [confirm, setConfirm] = useState('');
+function ResetPasswordModal({ targetUsername, onDone, onClose }: ManageUserModalProps) {
+  const [credentials, setCredentials] = useState<{ user: string; password: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const canSave = password.trim() !== '' && confirm.trim() !== '';
 
-  const handleSave = async () => {
-    const p = password.trim();
-    const c = confirm.trim();
-    if (!p) {
-      setError('Enter a new password');
-      return;
-    }
-    if (p !== c) {
-      setError('Passwords do not match');
-      return;
-    }
-    setError(null);
-    setBusy(true);
-    try {
-      await adminSetUserLoginPin(targetUsername, p);
-      onDone();
-      onClose();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to update password');
-    } finally {
-      setBusy(false);
-    }
-  };
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const res = await adminResetUserPassword(targetUsername);
+        if (cancelled) return;
+        setCredentials({ user: res.user, password: res.password });
+        onDone();
+      } catch (e) {
+        if (!cancelled) {
+          setError(e instanceof Error ? e.message : 'Failed to reset password');
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [targetUsername]);
+
+  if (error) {
+    return (
+      <>
+        <ModalTitle>Change password</ModalTitle>
+        <ModalBody className="developer-page__add-user-modal">
+          <InfoText variant="error">{error}</InfoText>
+        </ModalBody>
+        <ModalActions>
+          <Button type="primary" size="small" text="Close" onClick={onClose} />
+        </ModalActions>
+      </>
+    );
+  }
+
+  if (!credentials) {
+    return (
+      <>
+        <ModalTitle>Change password</ModalTitle>
+        <ModalBody className="developer-page__add-user-modal">
+          <p className="text-light text-b-m">Generating a new password for {targetUsername}…</p>
+        </ModalBody>
+      </>
+    );
+  }
 
   return (
-    <>
-      <ModalTitle>Change password</ModalTitle>
-      <ModalBody className="developer-page__add-user-modal">
-        <p className="text-light text-b-m">
-          Set a new login password for <strong className="text-bold">{targetUsername}</strong>.
-        </p>
-        <Input
-          size="small"
-          className="developer-page__add-user-input"
-          type="password"
-          placeholder="New password"
-          disabled={busy}
-          dismissable
-          submittable={false}
-          autoCapitalize="none"
-          autoCorrect="off"
-          spellCheck={false}
-          autoComplete="new-password"
-          onChange={setPassword}
-        />
-        <Input
-          size="small"
-          className="developer-page__add-user-input"
-          type="password"
-          placeholder="Confirm password"
-          disabled={busy}
-          dismissable
-          submittable={false}
-          autoCapitalize="none"
-          autoCorrect="off"
-          spellCheck={false}
-          autoComplete="new-password"
-          onChange={setConfirm}
-        />
-        {error ? <InfoText variant="error">{error}</InfoText> : null}
-      </ModalBody>
-      <ModalActions>
-        <Button
-          type="secondary"
-          size="small"
-          text="Cancel"
-          disabled={busy}
-          className="mr-2"
-          onClick={onClose}
-        />
-        <Button
-          type="primary"
-          size="small"
-          text={busy ? 'Saving…' : 'Save password'}
-          disabled={busy || !canSave}
-          onClick={() => void handleSave()}
-        />
-      </ModalActions>
-    </>
+    <UserCredentialsModal
+      title="New password"
+      description={`A new temporary password was generated for ${targetUsername}. Share it securely; they must choose a new password on next sign-in.`}
+      user={credentials.user}
+      password={credentials.password}
+      onClose={onClose}
+    />
   );
 }
 
@@ -389,9 +423,15 @@ export default function UserSettingsDeveloper() {
                 present({
                   content: (
                     <AddUserModal
-                      onCreated={(username) => {
-                        setUserToolStatus(`Created user "${username}".`);
+                      onCreated={(credentials) => {
+                        closeModal();
+                        setUserToolStatus(`Created user "${credentials.user}".`);
                         void loadUsers();
+                        present({
+                          content: (
+                            <UserCreatedCredentialsModal {...credentials} onClose={closeModal} />
+                          ),
+                        });
                       }}
                       onClose={closeModal}
                     />
@@ -415,77 +455,84 @@ export default function UserSettingsDeveloper() {
             <p className="text-light text-b-m">No users found.</p>
           ) : (
             <ul className="developer-page__users-list">
-              {users.map((username) => (
-                <li key={username} className="developer-page__users-list-row">
-                  <span className="developer-page__users-list-name text-b-m">{username}</span>
-                  <div className="developer-page__users-list-actions">
-                    <UserRowIconAction
-                      tooltip="ouc"
-                      icon="user-lock"
-                      ariaLabel={`Open operate-under session for ${username}`}
-                      onClick={() => {
-                        setUserToolStatus(null);
-                        void (async () => {
-                          try {
-                            const res = await createOucSession(username);
-                            const opened = openOucWindow(res.user, res.token);
-                            setUserToolStatus(
-                              opened
-                                ? `Opened "${username}" in a new operate-under window.`
-                                : `Could not open operate-under window for "${username}". Allow pop-ups and try again.`,
-                            );
-                          } catch (e) {
-                            setUserToolStatus(
-                              e instanceof Error
-                                ? e.message
-                                : 'Failed to create operate-under session.',
-                            );
-                          }
-                        })();
-                      }}
-                    />
-                    <UserRowIconAction
-                      tooltip="Change password"
-                      icon="key-round"
-                      ariaLabel={`Change password for ${username}`}
-                      onClick={() => {
-                        setUserToolStatus(null);
-                        present({
-                          content: (
-                            <ChangePasswordModal
-                              targetUsername={username}
-                              onDone={() => {
-                                setUserToolStatus(`Updated password for "${username}".`);
-                              }}
-                              onClose={closeModal}
-                            />
-                          ),
-                        });
-                      }}
-                    />
-                    <UserRowIconAction
-                      tooltip="Delete user"
-                      icon="trash"
-                      ariaLabel={`Delete user ${username}`}
-                      onClick={() => {
-                        setUserToolStatus(null);
-                        present({
-                          content: (
-                            <DeleteUserModal
-                              targetUsername={username}
-                              onDone={() => {
-                                setUserToolStatus(`Deleted user "${username}".`);
-                                void loadUsers();
-                              }}
-                              onClose={closeModal}
-                            />
-                          ),
-                        });
-                      }}
-                    />
-                  </div>
-                </li>
-              ))}
+              {users.map((username) => {
+                const isCurrentUser = username === user;
+                return (
+                  <li key={username} className="developer-page__users-list-row">
+                    <span className="developer-page__users-list-name text-b-m">{username}</span>
+                    {!isCurrentUser ? (
+                      <div className="developer-page__users-list-actions">
+                        <UserRowIconAction
+                          tooltip="ouc"
+                          icon="user-lock"
+                          ariaLabel={`Open operate-under session for ${username}`}
+                          onClick={() => {
+                            setUserToolStatus(null);
+                            void (async () => {
+                              try {
+                                const res = await createOucSession(username);
+                                const opened = openOucWindow(res.user, res.token);
+                                setUserToolStatus(
+                                  opened
+                                    ? `Opened "${username}" in a new operate-under window.`
+                                    : `Could not open operate-under window for "${username}". Allow pop-ups and try again.`,
+                                );
+                              } catch (e) {
+                                setUserToolStatus(
+                                  e instanceof Error
+                                    ? e.message
+                                    : 'Failed to create operate-under session.',
+                                );
+                              }
+                            })();
+                          }}
+                        />
+                        <UserRowIconAction
+                          tooltip="Change password"
+                          icon="key-round"
+                          ariaLabel={`Change password for ${username}`}
+                          onClick={() => {
+                            setUserToolStatus(null);
+                            present({
+                              content: (
+                                <ResetPasswordModal
+                                  targetUsername={username}
+                                  onDone={() => {
+                                    setUserToolStatus(
+                                      `Generated a new password for "${username}".`,
+                                    );
+                                  }}
+                                  onClose={closeModal}
+                                />
+                              ),
+                            });
+                          }}
+                        />
+                        <UserRowIconAction
+                          tooltip="Delete user"
+                          icon="trash"
+                          ariaLabel={`Delete user ${username}`}
+                          onClick={() => {
+                            setUserToolStatus(null);
+                            present({
+                              content: (
+                                <DeleteUserModal
+                                  targetUsername={username}
+                                  onDone={() => {
+                                    setUserToolStatus(`Deleted user "${username}".`);
+                                    void loadUsers();
+                                  }}
+                                  onClose={closeModal}
+                                />
+                              ),
+                            });
+                          }}
+                        />
+                      </div>
+                    ) : null}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </div>

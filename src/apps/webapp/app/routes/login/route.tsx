@@ -5,6 +5,7 @@ import { InfoText } from '~/core-components/InfoText';
 import { Input } from '~/core-components/Input';
 import { clearLegacyClientLoginMarkers } from '~/cookies.client';
 import { applyUiTheme } from '~/theme.client';
+import { isMeLoggedIn, userDefaultAppPath } from '~/utils/user-session-guard';
 
 function LoginForm({
   anotherAccountHint,
@@ -13,16 +14,16 @@ function LoginForm({
   anotherAccountHint: boolean;
   formDisabled?: boolean;
 }) {
-  const [username, setUsername] = useState('');
+  const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   const handleLogin = async () => {
-    const user = username.trim();
+    const id = loginId.trim();
     const nextPassword = password.trim();
-    if (!user) {
-      setError('Enter your username');
+    if (!id) {
+      setError('Enter your username or email');
       return;
     }
     if (!nextPassword) {
@@ -33,8 +34,8 @@ function LoginForm({
     setError(null);
     setIsLoggingIn(true);
     try {
-      await loginUser(user, nextPassword);
-      window.location.assign(`/users/${encodeURIComponent(user)}/habits`);
+      const res = await loginUser(id, nextPassword);
+      window.location.assign(userDefaultAppPath(res.user, res.forcePasswordReset));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'login failed');
     } finally {
@@ -59,7 +60,7 @@ function LoginForm({
       >
         <Input
           className="users-index__username-input"
-          placeholder="Username"
+          placeholder="Username or email"
           disabled={isLoggingIn || formDisabled}
           dismissable
           submittable={false}
@@ -67,7 +68,7 @@ function LoginForm({
           autoCorrect="off"
           spellCheck={false}
           autoComplete="username"
-          onChange={setUsername}
+          onChange={setLoginId}
         />
         <Input
           type="password"
@@ -93,7 +94,7 @@ function LoginForm({
           type="primary"
           size="medium"
           text={isLoggingIn ? 'Logging in...' : 'Log in'}
-          disabled={isLoggingIn || formDisabled || username.trim() === '' || password.trim() === ''}
+          disabled={isLoggingIn || formDisabled || loginId.trim() === '' || password.trim() === ''}
           onClick={() => void handleLogin()}
         />
       </form>
@@ -109,10 +110,10 @@ export default function LoginRoute() {
     clearLegacyClientLoginMarkers();
     let cancelled = false;
     getAuthMe()
-      .then(({ username, theme }) => {
+      .then((me) => {
         if (!cancelled) {
-          setCurrentUser(username);
-          applyUiTheme(username ? theme : 'dark');
+          setCurrentUser(me.username);
+          applyUiTheme(me.username ? me.theme : 'dark');
         }
       })
       .catch(() => {
@@ -150,9 +151,15 @@ export default function LoginRoute() {
               type="primary"
               text={`Continue as ${currentUser}`}
               disabled={signOutBusy}
-              onClick={() =>
-                window.location.assign(`/users/${encodeURIComponent(currentUser)}/habits`)
-              }
+              onClick={() => {
+                void getAuthMe().then((me) => {
+                  if (isMeLoggedIn(me) && me.username === currentUser) {
+                    window.location.assign(userDefaultAppPath(currentUser, me.forcePasswordReset));
+                  } else {
+                    window.location.assign(`/users/${encodeURIComponent(currentUser)}/habits`);
+                  }
+                });
+              }}
             />
             <Button
               type="secondary"

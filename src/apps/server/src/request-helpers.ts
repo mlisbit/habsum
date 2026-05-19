@@ -7,6 +7,11 @@ export function isSafeConfigUserId(user: string): boolean {
   return true;
 }
 
+/** Login route param: YAML username or email address (no path segments). */
+export function isSafeLoginId(loginId: string): boolean {
+  return isSafeConfigUserId(loginId);
+}
+
 export function parsePin(value: unknown): string | null {
   if (typeof value !== 'string') return null;
   const pin = value.trim();

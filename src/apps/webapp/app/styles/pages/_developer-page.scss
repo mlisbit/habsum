@@ -66,6 +66,34 @@
   min-inline-size: 0;
 }
 
+.developer-page__credentials {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: functions.spacing(2);
+}
+
+.developer-page__credentials-row {
+  display: grid;
+  grid-template-columns: minmax(0, 140px) 1fr;
+  gap: functions.spacing(1) functions.spacing(2);
+  align-items: baseline;
+  margin: 0;
+}
+
+.developer-page__credentials-term {
+  margin: 0;
+}
+
+.developer-page__credentials-value {
+  margin: 0;
+}
+
+.developer-page__credentials-password {
+  font-family: ui-monospace, monospace;
+  overflow-wrap: anywhere;
+}
+
 .developer-page__clock-list {
   margin: functions.spacing(2) 0 0;
 }

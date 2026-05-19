@@ -215,7 +215,7 @@ export default function UserSettingsAccount() {
       patch.displayName = nextDisplay === '' ? null : nextDisplay;
     }
     if (nextEmail !== normEmail(saved.email)) {
-      patch.email = nextEmail === '' ? null : nextEmail;
+      patch.email = nextEmail;
     }
     if (draftTheme !== saved.theme) {
       patch.theme = draftTheme;
@@ -224,7 +224,7 @@ export default function UserSettingsAccount() {
     const validationErrors = validateAccountSave({
       username: nextUsername,
       displayName: nextDisplay === '' ? null : nextDisplay,
-      email: nextEmail === '' ? null : nextEmail,
+      email: nextEmail,
       theme: draftTheme,
     });
     const validationMessages = Object.values(validationErrors).flat();
@@ -398,7 +398,7 @@ export default function UserSettingsAccount() {
                       setDraftEmail(v);
                       clearSaveFieldError('email');
                     }}
-                    placeholder="Optional"
+                    placeholder="Required"
                     dismissable
                     submittable={false}
                     autoCapitalize="none"

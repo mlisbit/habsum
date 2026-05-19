@@ -14,13 +14,17 @@ export type ServerTimeResponse = {
 
 export type ListUsersResponse = { users: string[] };
 
-export type CreateUserRequest = { pin?: string };
+/** POST /users — admin creates an account from email (server assigns username + password). */
+export type CreateUserRequest = { email: string };
 
-export type CreateUserResponse = { ok: true; user: string };
+export type CreateUserResponse = { ok: true; user: string; password: string };
+
+/** PATCH /users?name=… — admin generates a new temporary login password. */
+export type AdminResetUserPasswordResponse = { ok: true; user: string; password: string };
 
 export type LoginUserRequest = { pin?: string };
 
-export type LoginUserResponse = { ok: true; user: string };
+export type LoginUserResponse = { ok: true; user: string; forcePasswordReset: boolean };
 
 export type LogoutResponse = { ok: true };
 
@@ -29,7 +33,7 @@ export type UserSessionResponse = {
   username: string;
   admin: boolean;
   displayName: string | null;
-  email: string | null;
+  email: string;
   theme: string;
   /** Account creation time as UTC day + time. */
   createdAt: DayWithTime;

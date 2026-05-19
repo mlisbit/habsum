@@ -5,6 +5,7 @@ import { TopNav } from '~/components/TopNav';
 import { SingleSelectWidget, SummationWidget } from '~/components/widgets';
 import { InfoText } from '~/core-components/InfoText';
 import { LOGIN_TOAST_USER_AREA, redirectToLoginWithToast } from '~/context/toast';
+import { ensureUserSessionForRoute } from '~/utils/user-session-guard';
 import { awaitOucPopupBootstrap, getOucSessionToken } from '~/ouc.client';
 import { applyUiTheme } from '~/theme.client';
 import { getProgress } from '~/utils/habit-helpers';
@@ -56,19 +57,16 @@ export default function HabitsPage() {
       }
 
       getAuthMe()
-        .then(({ username: sessionUser, theme, displayName: familiar }) => {
+        .then((me) => {
           if (cancelled) return;
           if (!routeUser) {
             setUser('');
             setDisplayName(null);
             return;
           }
-          if (!sessionUser || sessionUser !== routeUser) {
-            redirectToLoginWithToast(LOGIN_TOAST_USER_AREA);
-            return;
-          }
-          applyUiTheme(theme);
-          setDisplayName(familiar);
+          if (!ensureUserSessionForRoute(routeUser, me)) return;
+          applyUiTheme(me.theme);
+          setDisplayName(me.displayName);
           setUser(routeUser);
         })
         .catch(() => {

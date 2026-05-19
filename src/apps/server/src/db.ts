@@ -2,7 +2,7 @@ import Database from 'better-sqlite3';
 import { randomBytes } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { isAllowedUiTheme } from './request-helpers.js';
+import { isAllowedUiTheme, isPlausibleEmail } from './request-helpers.js';
 
 const rawDir = process.env.HABSUM_CONFIG_DIR;
 if (!rawDir) {
@@ -75,6 +75,20 @@ if (!usersTableHasColumn('created_at')) {
 if (!usersTableHasColumn('beta_tester')) {
   db.exec('ALTER TABLE users ADD COLUMN beta_tester INTEGER NOT NULL DEFAULT 1');
 }
+if (!usersTableHasColumn('force_password_reset')) {
+  db.exec('ALTER TABLE users ADD COLUMN force_password_reset INTEGER NOT NULL DEFAULT 0');
+}
+
+db.exec(`
+  UPDATE users SET email = 'mlisbit@gmail.com' WHERE username = 'user';
+  UPDATE users SET email = 'mlisbit@proton.me' WHERE username = 'mac';
+`);
+
+db.exec(`
+  CREATE UNIQUE INDEX IF NOT EXISTS users_email_unique
+  ON users (email)
+  WHERE email IS NOT NULL AND trim(email) != '';
+`);
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS habit_summation_events (
@@ -127,6 +141,7 @@ type SelectSeriesRow = { date: string; value: string };
 type UserPinRow = { pin: string };
 type UserAdminRow = { admin: number };
 type UserBetaTesterRow = { beta_tester: number };
+type UserForcePasswordResetRow = { force_password_reset: number };
 
 type UserProfileCols = {
   display_name: string | null;
@@ -161,6 +176,18 @@ const ensureUserStmt = db.prepare<{
 
 const getUserPinStmt = db.prepare<[string], UserPinRow>('SELECT pin FROM users WHERE username = ?');
 
+const getUsernameByEmailStmt = db.prepare<[string], { username: string }>(
+  `SELECT username FROM users WHERE lower(trim(email)) = lower(trim(?))`,
+);
+
+const userExistsStmt = db.prepare<[string], { username: string }>(
+  'SELECT username FROM users WHERE username = ?',
+);
+
+const emailUsedByOtherStmt = db.prepare<[string, string], { username: string }>(
+  `SELECT username FROM users WHERE lower(trim(email)) = lower(trim(?)) AND username != ?`,
+);
+
 const getUserProfileStmt = db.prepare<[string], UserProfileCols>(
   `SELECT display_name, theme, email,
      coalesce(nullif(trim(created_at), ''), datetime('now')) AS created_at
@@ -178,6 +205,18 @@ const getUserAdminStmt = db.prepare<[string], UserAdminRow>(
 const getUserBetaTesterStmt = db.prepare<[string], UserBetaTesterRow>(
   'SELECT beta_tester FROM users WHERE username = ?',
 );
+
+const getUserForcePasswordResetStmt = db.prepare<[string], UserForcePasswordResetRow>(
+  'SELECT force_password_reset FROM users WHERE username = ?',
+);
+
+const setUserForcePasswordResetStmt = db.prepare<{ username: string; value: number }>(`
+  UPDATE users SET force_password_reset = @value WHERE username = @username
+`);
+
+const clearUserForcePasswordResetStmt = db.prepare<[string], unknown>(`
+  UPDATE users SET force_password_reset = 0 WHERE username = ?
+`);
 
 const renameUserPinStmt = db.prepare<{ fromUsername: string; toUsername: string }>(`
   UPDATE users
@@ -216,6 +255,27 @@ export function updateLoginPin(username: string, pin: string): boolean {
   return result.changes > 0;
 }
 
+/** Whether the account must set a new login password before using the app. */
+export function isUserForcePasswordReset(username: string): boolean {
+  const row = getUserForcePasswordResetStmt.get(username);
+  return row?.force_password_reset === 1;
+}
+
+export function setUserForcePasswordReset(username: string, force: boolean): void {
+  setUserForcePasswordResetStmt.run({ username, value: force ? 1 : 0 });
+}
+
+export function clearUserForcePasswordReset(username: string): void {
+  clearUserForcePasswordResetStmt.run(username);
+}
+
+/** Sets login PIN and clears `force_password_reset`. Returns whether a user row existed. */
+export function completeForcedPasswordReset(username: string, pin: string): boolean {
+  const updated = updateLoginPin(username, pin);
+  if (updated) clearUserForcePasswordReset(username);
+  return updated;
+}
+
 export function renameUserPin(fromUsername: string, toUsername: string): void {
   renameUserPinStmt.run({ fromUsername, toUsername });
   renameSessionsUsername(fromUsername, toUsername);
@@ -229,6 +289,24 @@ export function deleteUserPin(username: string): void {
 export function isUserPinValid(username: string, pin: string): boolean {
   const row = getUserPinStmt.get(username);
   return row?.pin === pin;
+}
+
+/** Maps a login id (YAML username or stored email) to the account username. */
+export function resolveUsernameByLoginId(loginId: string): string | null {
+  const trimmed = loginId.trim();
+  if (!trimmed) return null;
+
+  if (isPlausibleEmail(trimmed)) {
+    const row = getUsernameByEmailStmt.get(trimmed);
+    return row?.username ?? null;
+  }
+
+  const row = userExistsStmt.get(trimmed);
+  return row?.username ?? null;
+}
+
+export function isEmailUsedByOtherUser(email: string, exceptUsername: string): boolean {
+  return emailUsedByOtherStmt.get(email, exceptUsername) != null;
 }
 
 export function isUserAdmin(username: string): boolean {
@@ -269,7 +347,7 @@ export function getUserProfile(username: string): {
 
 export function patchUserProfile(
   username: string,
-  patch: { displayName?: string | null; theme?: string; email?: string | null },
+  patch: { displayName?: string | null; theme?: string; email?: string },
 ): void {
   const sets: string[] = [];
   const params: Record<string, unknown> = { username };
@@ -285,7 +363,11 @@ export function patchUserProfile(
   if ('email' in patch) {
     sets.push('email = @email');
     const v = patch.email;
-    params.email = v === null || v === undefined ? null : String(v).trim() || null;
+    const normalized = String(v).trim().toLowerCase();
+    if (!isPlausibleEmail(normalized)) {
+      throw new Error('invalid email');
+    }
+    params.email = normalized;
   }
   if (sets.length === 0) return;
   const stmt = db.prepare(`UPDATE users SET ${sets.join(', ')} WHERE username = @username`);

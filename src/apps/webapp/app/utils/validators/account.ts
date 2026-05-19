@@ -32,8 +32,10 @@ export function validateAccountSave(input: AccountSavePayload): AccountErrorMap 
   }
 
   const emailVal = input.email;
-  if (emailVal != null && String(emailVal).trim() !== '' && !isPlausibleEmail(String(emailVal))) {
-    addError(errors, 'email', 'Enter a valid email or leave the field empty.');
+  if (emailVal == null || String(emailVal).trim() === '') {
+    addError(errors, 'email', 'Email is required.');
+  } else if (!isPlausibleEmail(String(emailVal))) {
+    addError(errors, 'email', 'Enter a valid email address.');
   }
 
   if (input.theme != null && input.theme !== 'light' && input.theme !== 'dark') {
@@ -72,6 +74,16 @@ export function accountServerErrorToFieldMap(serverMessage: string): AccountErro
     return out;
   }
 
+  if (m === 'email is required') {
+    addError(out, 'email', m);
+    return out;
+  }
+
+  if (m === 'email already in use') {
+    addError(out, 'email', m);
+    return out;
+  }
+
   if (m === 'invalid theme') {
     addError(out, 'theme', m);
     return out;
@@ -87,7 +99,7 @@ export function accountServerErrorToFieldMap(serverMessage: string): AccountErro
     return out;
   }
 
-  if (m === 'email must be a string or null') {
+  if (m === 'email must be a string') {
     addError(out, 'email', m);
     return out;
   }
