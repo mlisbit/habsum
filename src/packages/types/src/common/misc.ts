@@ -24,6 +24,8 @@ export type AuthMeResponse = {
   user: string | null;
   /** Friendly name when logged in; `null` if unset. Meaningless when `user` is null. */
   displayName: string | null;
+  /** Contact email when set; `null` if unset. Meaningless when `user` is null. */
+  email: string | null;
   /** UI theme key (e.g. `light`, `dark`) when logged in. */
   theme: string;
 };
@@ -34,6 +36,7 @@ export type UserSessionResponse = {
   user: string;
   admin: boolean;
   displayName: string | null;
+  email: string | null;
   theme: string;
 };
 

@@ -41,7 +41,6 @@
   padding-block: functions.spacing(1);
   padding-inline: functions.spacing(1);
   min-height: 100%;
-  flex-shrink: 0;
   inline-size: max-content;
   min-inline-size: max-content;
 
@@ -49,6 +48,12 @@
     outline: none;
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--text-color) 25%, transparent);
   }
+}
+
+.input--small {
+  gap: functions.spacing(1);
+  padding-block: 2px;
+  padding-inline: functions.spacing(1);
 }
 
 .input__input {
@@ -84,6 +89,10 @@
   &:disabled {
     opacity: 0.55;
   }
+}
+
+.input--small .input__input {
+  min-height: 26px;
 }
 
 .input--not-submittable .input__input {

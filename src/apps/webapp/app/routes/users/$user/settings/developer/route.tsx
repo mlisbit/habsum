@@ -9,6 +9,7 @@ import {
   listUsers,
   type DeveloperGetResponse,
 } from '~/api.client';
+import { SettingsHeader } from '~/components/SettingsHeader';
 import { Button } from '~/core-components/Button';
 import { Hoverable } from '~/core-components/Hoverable';
 import type { IconName } from '~/core-components/Icon';
@@ -73,6 +74,7 @@ function AddUserModal({ onCreated, onClose }: AddUserModalProps) {
           Create a YAML config for the new user and set their login PIN.
         </p>
         <Input
+          size="small"
           className="developer-page__add-user-input"
           placeholder="Username"
           disabled={isCreating}
@@ -84,6 +86,7 @@ function AddUserModal({ onCreated, onClose }: AddUserModalProps) {
           onChange={setUsername}
         />
         <Input
+          size="small"
           className="developer-page__add-user-input"
           placeholder="PIN"
           disabled={isCreating}
@@ -162,6 +165,7 @@ function ChangePasswordModal({ targetUsername, onDone, onClose }: ManageUserModa
           Set a new login password for <strong className="text-bold">{targetUsername}</strong>.
         </p>
         <Input
+          size="small"
           className="developer-page__add-user-input"
           type="password"
           placeholder="New password"
@@ -175,6 +179,7 @@ function ChangePasswordModal({ targetUsername, onDone, onClose }: ManageUserModa
           onChange={setPassword}
         />
         <Input
+          size="small"
           className="developer-page__add-user-input"
           type="password"
           placeholder="Confirm password"
@@ -370,147 +375,147 @@ export default function UserSettingsDeveloper() {
 
   return (
     <div className="developer-page">
-      <h2 className="text-h-l">Developer</h2>
-      <p className="text-light text-b-m">API clocks and debugging context.</p>
+      <SettingsHeader title="Developer" />
 
-      <div className="card developer-page__user-tools">
-        <h3 className="text-h-s">User tools</h3>
-        <p className="text-light text-b-m">
-          Create a new user config and initial PIN. Manage existing users with the actions beside
-          each name. Existing users sign in from the login page.
-        </p>
-        <Button
-          type="primary"
-          size="small"
-          text="Add user"
-          onClick={() => {
-            setUserToolStatus(null);
-            present({
-              content: (
-                <AddUserModal
-                  onCreated={(username) => {
-                    setUserToolStatus(`Created user "${username}".`);
-                    void loadUsers();
-                  }}
-                  onClose={closeModal}
-                />
-              ),
-            });
-          }}
-        />
-        {userToolStatus ? (
-          <p className="text-light text-b-m developer-page__user-tools-status">{userToolStatus}</p>
-        ) : null}
-        <div className="developer-page__users-list-wrap">
-          <h4 className="text-h-s">Users</h4>
-          {usersError ? (
-            <p className="text-light text-b-m">Could not load users: {usersError}</p>
-          ) : users == null ? (
-            <p className="text-light text-b-m">Loading users...</p>
-          ) : users.length === 0 ? (
-            <p className="text-light text-b-m">No users found.</p>
-          ) : (
-            <ul className="developer-page__users-list">
-              {users.map((username) => (
-                <li key={username} className="developer-page__users-list-row">
-                  <span className="developer-page__users-list-name text-b-m">{username}</span>
-                  <div className="developer-page__users-list-actions">
-                    <UserRowIconAction
-                      tooltip="Change password"
-                      icon="key-round"
-                      ariaLabel={`Change password for ${username}`}
-                      onClick={() => {
-                        setUserToolStatus(null);
-                        present({
-                          content: (
-                            <ChangePasswordModal
-                              targetUsername={username}
-                              onDone={() => {
-                                setUserToolStatus(`Updated password for "${username}".`);
-                              }}
-                              onClose={closeModal}
-                            />
-                          ),
-                        });
-                      }}
-                    />
-                    <UserRowIconAction
-                      tooltip="Delete user"
-                      icon="trash"
-                      ariaLabel={`Delete user ${username}`}
-                      onClick={() => {
-                        setUserToolStatus(null);
-                        present({
-                          content: (
-                            <DeleteUserModal
-                              targetUsername={username}
-                              onDone={() => {
-                                setUserToolStatus(`Deleted user "${username}".`);
-                                void loadUsers();
-                              }}
-                              onClose={closeModal}
-                            />
-                          ),
-                        });
-                      }}
-                    />
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
+      <div className="card-padding">
+        <div className="card mb-3 card--no-padding">
+          <SettingsHeader
+            isEmbedded
+            title="Users"
+            actions={
+              <Button
+                type="secondary"
+                size="medium"
+                text="Add user"
+                onClick={() => {
+                  setUserToolStatus(null);
+                  present({
+                    content: (
+                      <AddUserModal
+                        onCreated={(username) => {
+                          setUserToolStatus(`Created user "${username}".`);
+                          void loadUsers();
+                        }}
+                        onClose={closeModal}
+                      />
+                    ),
+                  });
+                }}
+              />
+            }
+          />
+          {userToolStatus ? (
+            <p className="text-light text-b-m developer-page__user-tools-status">
+              {userToolStatus}
+            </p>
+          ) : null}
+          <div className="card-padding">
+            {usersError ? (
+              <p className="text-light text-b-m">Could not load users: {usersError}</p>
+            ) : users == null ? (
+              <p className="text-light text-b-m">Loading users...</p>
+            ) : users.length === 0 ? (
+              <p className="text-light text-b-m">No users found.</p>
+            ) : (
+              <ul className="developer-page__users-list">
+                {users.map((username) => (
+                  <li key={username} className="developer-page__users-list-row">
+                    <span className="developer-page__users-list-name text-b-m">{username}</span>
+                    <div className="developer-page__users-list-actions">
+                      <UserRowIconAction
+                        tooltip="Change password"
+                        icon="key-round"
+                        ariaLabel={`Change password for ${username}`}
+                        onClick={() => {
+                          setUserToolStatus(null);
+                          present({
+                            content: (
+                              <ChangePasswordModal
+                                targetUsername={username}
+                                onDone={() => {
+                                  setUserToolStatus(`Updated password for "${username}".`);
+                                }}
+                                onClose={closeModal}
+                              />
+                            ),
+                          });
+                        }}
+                      />
+                      <UserRowIconAction
+                        tooltip="Delete user"
+                        icon="trash"
+                        ariaLabel={`Delete user ${username}`}
+                        onClick={() => {
+                          setUserToolStatus(null);
+                          present({
+                            content: (
+                              <DeleteUserModal
+                                targetUsername={username}
+                                onDone={() => {
+                                  setUserToolStatus(`Deleted user "${username}".`);
+                                  void loadUsers();
+                                }}
+                                onClose={closeModal}
+                              />
+                            ),
+                          });
+                        }}
+                      />
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
-      </div>
 
-      <div className="card developer-page__clocks">
-        <h3 className="text-h-s">Time</h3>
-        <p className="text-light text-b-m">
-          Server clock is read from the habsum API process; your browser clock updates every second.
-        </p>
-        <dl className="developer-page__clock-list">
-          <div className="developer-page__clock-row">
-            <dt className="text-b-m">Server (API)</dt>
-            <dd className="developer-page__clock-dd text-b-m">
-              {developerError ? (
-                <span className="text-light">Could not load: {developerError}</span>
-              ) : serverTime ? (
-                <>
-                  <div>{formatInstantInZone(serverTime.iso, serverTime.timezone)}</div>
-                  <div className="text-light text-b-s">Time zone: {serverTime.timezone}</div>
-                </>
-              ) : (
-                <span className="text-light">Loading…</span>
-              )}
-            </dd>
+        <div className="card developer-page__clocks card--no-padding">
+          <SettingsHeader isEmbedded title="Time" />
+          <div className="card-padding">
+            <dl className="developer-page__clock-list">
+              <div className="developer-page__clock-row">
+                <dt className="text-b-m">Server (API)</dt>
+                <dd className="developer-page__clock-dd text-b-m">
+                  {developerError ? (
+                    <span className="text-light">Could not load: {developerError}</span>
+                  ) : serverTime ? (
+                    <>
+                      <div>{formatInstantInZone(serverTime.iso, serverTime.timezone)}</div>
+                      <div className="text-light text-b-s">Time zone: {serverTime.timezone}</div>
+                    </>
+                  ) : (
+                    <span className="text-light">Loading…</span>
+                  )}
+                </dd>
+              </div>
+              <div className="developer-page__clock-row">
+                <dt className="text-b-m">This device</dt>
+                <dd className="developer-page__clock-dd text-b-m">
+                  <div>{browserNow.toLocaleString(undefined, clockFormat)}</div>
+                  <div className="text-light text-b-s">Time zone: {browserZone}</div>
+                </dd>
+              </div>
+            </dl>
           </div>
-          <div className="developer-page__clock-row">
-            <dt className="text-b-m">This device</dt>
-            <dd className="developer-page__clock-dd text-b-m">
-              <div>{browserNow.toLocaleString(undefined, clockFormat)}</div>
-              <div className="text-light text-b-s">Time zone: {browserZone}</div>
-            </dd>
+        </div>
+
+        <div className="card developer-page__version card--no-padding">
+          <SettingsHeader isEmbedded title="Version" />
+          <div className="card-padding">
+            {developerError ? (
+              <p className="text-light text-b-m">Could not load: {developerError}</p>
+            ) : version ? (
+              <dl className="developer-page__version-list">
+                <div className="developer-page__version-row">
+                  <dt className="text-b-m">Current</dt>
+                  <dd className="developer-page__version-dd text-b-m">v{version.currentVersion}</dd>
+                </div>
+              </dl>
+            ) : (
+              <p className="text-light text-b-m">Loading…</p>
+            )}
           </div>
-        </dl>
-      </div>
-
-      <div className="card developer-page__version">
-        <h3 className="text-h-s">Version</h3>
-        <p className="text-light text-b-m">
-          Current application version reported by the habsum API process.
-        </p>
-
-        {developerError ? (
-          <p className="text-light text-b-m">Could not load: {developerError}</p>
-        ) : version ? (
-          <dl className="developer-page__version-list">
-            <div className="developer-page__version-row">
-              <dt className="text-b-m">Current</dt>
-              <dd className="developer-page__version-dd text-b-m">v{version.currentVersion}</dd>
-            </div>
-          </dl>
-        ) : (
-          <p className="text-light text-b-m">Loading…</p>
-        )}
+        </div>
       </div>
     </div>
   );

@@ -4,6 +4,7 @@ import { autocompletion, type Completion, type CompletionContext } from '@codemi
 import { yaml } from '@codemirror/lang-yaml';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { getUserConfig, putUserConfig } from '~/api.client';
+import { SettingsHeader } from '~/components/SettingsHeader';
 import { Button } from '~/core-components/Button';
 import { InfoText } from '~/core-components/InfoText';
 
@@ -91,30 +92,41 @@ export function ConfigYamlEditor({ user }: ConfigYamlEditorProps) {
 
   if (loading) {
     return (
-      <p className="text-light text-b-m" aria-busy>
-        Loading config…
-      </p>
+      <div className="config-page">
+        <SettingsHeader title="Config" />
+        <p className="text-light text-b-m card-padding" aria-busy>
+          Loading config…
+        </p>
+      </div>
     );
   }
 
   if (loadError) {
-    return <InfoText variant="error">{loadError}</InfoText>;
+    return (
+      <div className="config-page">
+        <SettingsHeader title="Config" />
+        <div className="card-padding">
+          <InfoText variant="error">{loadError}</InfoText>
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="config-page">
-      <div className="config-page__header">
-        <h2 className="config-page__title text-h-m">Config</h2>
-        <p className="text-light text-b-m config-page__lead">
-          Edit the YAML for this user on the server. Save writes the file; invalid YAML is rejected.
-        </p>
+      <SettingsHeader
+        title="Config"
+        actions={
+          <Button
+            type="primary"
+            text={saving ? 'Saving…' : 'Save'}
+            disabled={!dirty || saving}
+            onClick={onSave}
+          />
+        }
+      />
+      <div className="card-padding config-page__meta">
         {dirty ? <p className="text-light text-b-m config-page__dirty">Unsaved changes</p> : null}
-        <Button
-          type="primary"
-          text={saving ? 'Saving…' : 'Save'}
-          disabled={!dirty || saving}
-          onClick={onSave}
-        />
         {saveError ? (
           <InfoText variant="error" className="config-page__error">
             {saveError}

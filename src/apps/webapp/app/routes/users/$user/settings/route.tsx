@@ -108,7 +108,7 @@ export default function UserSettingsLayout() {
           />
         </nav>
       </aside>
-      <main className="card pt-3">
+      <main className="card card--no-padding">
         <Outlet />
       </main>
     </div>

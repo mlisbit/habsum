@@ -1,20 +1,18 @@
 @use 'functions';
 
-.developer-page__user-tools {
-  margin-bottom: functions.spacing(3);
+.developer-page {
+  display: flex;
+  flex-direction: column;
+  gap: functions.spacing(3);
+  min-width: 0;
 }
 
 .developer-page__user-tools-status {
   margin-top: functions.spacing(2);
 }
 
-.developer-page__users-list-wrap {
-  margin-top: functions.spacing(3);
-}
-
 .developer-page__users-list {
   list-style: none;
-  margin: functions.spacing(2) 0 0;
   padding: 0;
   display: flex;
   flex-direction: column;

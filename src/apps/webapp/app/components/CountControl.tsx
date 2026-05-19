@@ -72,6 +72,8 @@ type SummationAdjustModalProps = {
   closeModal: () => void;
   onClearTotal: () => Promise<void>;
   onManualAdd: (delta: number) => Promise<void>;
+  /** Shown in fixed-step mode so users see configured −/+ tap magnitudes. */
+  tapSteps?: { sub: number; add: number };
 };
 
 /** Long-press: enter a manual delta (+ or −); does not change configured tap steps */
@@ -81,6 +83,7 @@ function SummationAdjustModalContent({
   closeModal,
   onClearTotal,
   onManualAdd,
+  tapSteps,
 }: SummationAdjustModalProps) {
   return (
     <>
@@ -88,6 +91,11 @@ function SummationAdjustModalContent({
         <p id="modal-title" className="text-b-m">
           Adjust
         </p>
+        {tapSteps ? (
+          <p className="text-b-s">
+            Taps: −{tapSteps.sub} +{tapSteps.add}
+          </p>
+        ) : null}
 
         <Input
           type="number"
@@ -95,6 +103,9 @@ function SummationAdjustModalContent({
           placeholder="e.g. 12 or −3"
           disabled={pending}
           submittable
+          allowNegative
+          aria-label={`Manual change for ${habitName}`}
+          applyAriaLabel={`Apply manual change for ${habitName}`}
           onSubmit={(raw) => {
             const delta = parseManualAdjustDelta(raw);
             if (delta == null) return;
@@ -174,6 +185,10 @@ export function CountControl({
   }, []);
 
   const openAdjustModal = useCallback(() => {
+    const tapSteps =
+      simpleStepsMode && summationSteps
+        ? { sub: summationSteps.sub, add: summationSteps.add }
+        : undefined;
     present({
       content: (
         <SummationAdjustModalContent
@@ -182,6 +197,7 @@ export function CountControl({
           closeModal={closeModal}
           onClearTotal={onClearTotal}
           onManualAdd={onAddDelta}
+          tapSteps={tapSteps}
         />
       ),
     });

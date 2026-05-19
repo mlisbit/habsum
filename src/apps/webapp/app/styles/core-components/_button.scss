@@ -7,6 +7,7 @@
   border: none;
   border-radius: var(--border-radius-m);
   padding: functions.spacing(2, 3);
+  white-space: nowrap;
   cursor: pointer;
   transition:
     transform 0.05s ease,

@@ -10,7 +10,7 @@ export const authRouter = Router();
 authRouter.get('/auth/me', (req: Request, res: Response) => {
   const user = authenticatedUsername(req);
   if (!user) {
-    const body: AuthMeResponse = { user: null, displayName: null, theme: 'dark' };
+    const body: AuthMeResponse = { user: null, displayName: null, theme: 'dark', email: null };
     return res.json(body);
   }
   ensureUserPins(listUsers());
@@ -19,6 +19,7 @@ authRouter.get('/auth/me', (req: Request, res: Response) => {
     user,
     displayName: profile.displayName,
     theme: profile.theme,
+    email: profile.email,
   };
   return res.json(body);
 });

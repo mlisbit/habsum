@@ -1,7 +1,13 @@
+@use 'functions';
+
 .flex {
   display: flex;
 }
 
 .align-items-center {
   align-items: center;
+}
+
+.card-padding {
+  padding: functions.spacing(2, 3);
 }

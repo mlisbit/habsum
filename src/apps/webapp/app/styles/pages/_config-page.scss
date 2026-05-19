@@ -8,24 +8,18 @@
   min-width: 0;
 }
 
-.config-page__header {
-  flex: 0 0 auto;
-}
-
-.config-page__title {
-  margin: 0 0 functions.spacing(1);
-}
-
-.config-page__lead {
-  margin: 0 0 functions.spacing(2);
+.config-page__meta {
+  display: flex;
+  flex-direction: column;
+  gap: functions.spacing(2);
 }
 
 .config-page__dirty {
-  margin: 0 0 functions.spacing(1);
+  margin: 0;
 }
 
 .config-page__error {
-  margin-top: functions.spacing(2);
+  margin: 0;
 }
 
 .config-page__editor {

@@ -1,0 +1,46 @@
+@use 'functions';
+
+// Block: settings-header
+.settings-header {
+  border-bottom: 1px solid var(--border-color-faint);
+}
+
+.settings-header--sticky {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  min-height: 57px;
+  background-color: var(--background-secondary);
+}
+
+.settings-header__row {
+  display: flex;
+  flex-flow: row nowrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: functions.spacing(2);
+}
+
+.settings-header__text {
+  display: flex;
+  flex-direction: column;
+  gap: functions.spacing(1);
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.settings-header__title {
+  margin: 0;
+  min-width: 0;
+}
+
+.settings-header__subtitle {
+  margin: 0;
+}
+
+.settings-header__actions {
+  display: flex;
+  flex-flow: row wrap;
+  align-items: center;
+  gap: functions.spacing(2);
+}

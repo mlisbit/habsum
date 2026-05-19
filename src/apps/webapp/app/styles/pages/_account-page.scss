@@ -1,25 +1,40 @@
 @use 'functions';
 
 // Block: account-page
-.account-page__cta-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: functions.spacing(2);
-  margin-bottom: functions.spacing(2);
-}
-
 .account-page__profile {
   display: flex;
   flex-direction: column;
-  gap: functions.spacing(2);
+  gap: functions.spacing(3);
   margin-top: functions.spacing(2);
+}
+
+.account-page__basic {
+  display: flex;
+  flex-direction: column;
+  gap: functions.spacing(2);
+}
+
+.account-page__basic-heading {
+  margin-block: 0;
 }
 
 .account-page__field {
   display: flex;
-  flex-direction: column;
-  gap: functions.spacing(1);
+  flex-flow: row nowrap;
+  align-items: center;
+  gap: functions.spacing(2);
+  min-width: 0;
+}
+
+.account-page__label {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.account-page__control {
+  flex: 0 0 50%;
+  max-width: 50%;
+  min-width: 0;
 }
 
 .account-page__profile-input {
@@ -32,7 +47,9 @@
   border: 1px solid var(--border-color-faint);
   border-radius: var(--border-radius-m);
   padding: functions.spacing(1, 2);
-  min-width: min(320px, 100%);
+  inline-size: 100%;
+  max-inline-size: 100%;
+  min-width: 0;
 }
 
 .account-page__select:focus-visible {
@@ -40,10 +57,25 @@
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-selected) 35%, transparent);
 }
 
-.account-page__header {
+.account-page__divider {
+  border: none;
+  border-block-start: 1px solid var(--border-color-faint);
+  margin-block: functions.spacing(3);
+  margin-inline: 0;
+}
+
+.account-page__password {
   display: flex;
-  flex-direction: row;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: functions.spacing(2);
+}
+
+.account-page__password-heading {
+  margin-block: 0 functions.spacing(1);
+}
+
+.account-page__password-match-info {
+  margin-block-start: functions.spacing(1);
 }
 
 .account-page__rename {
@@ -69,12 +101,13 @@
 
 .account-page__danger {
   margin-top: functions.spacing(3);
+  background: var(--background-warning);
+  display: flex;
+  justify-content: space-between;
+  gap: functions.spacing(2);
+  align-items: center;
 }
 
 .account-page__danger-title {
   margin-top: 0;
-}
-
-.account-page__status {
-  margin-top: functions.spacing(2);
 }

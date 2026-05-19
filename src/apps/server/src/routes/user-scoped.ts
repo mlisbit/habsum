@@ -11,6 +11,7 @@ import type {
 import type { HabitsResponse } from '@habsum/types/api-responses/habits-get';
 import type { PatchHabitResponse } from '@habsum/types/api-responses/habit-patch';
 import type { HistoryGetResponse } from '@habsum/types/api-responses/history-get';
+import type { UserPasswordChangeRequest } from '@habsum/types/api-responses/user-password-change';
 import type { UsersPatchRequest } from '@habsum/types/api-responses/users-patch';
 import { dasherize } from '@habsum/utils';
 import {
@@ -42,6 +43,8 @@ import {
   renameUserPin,
   setSelect,
   setTotal,
+  setUserPin,
+  updateLoginPin,
 } from '../db.js';
 import {
   emptyHabitForHistory,
@@ -54,8 +57,9 @@ import {
 } from '../habit-presentation.js';
 import { requireMatchingRouteUser } from '../middleware/auth.js';
 import {
-  isSafeConfigUserId,
   isAllowedUiTheme,
+  isPlausibleEmail,
+  isSafeConfigUserId,
   loadUserConfigForResponse,
   parsePin,
 } from '../request-helpers.js';
@@ -114,6 +118,46 @@ userScopedRouter.get(
   },
 );
 
+/** POST /users/:user/password */
+userScopedRouter.post(
+  '/password',
+  requireMatchingRouteUser,
+  (req: Request<{ user: string }, unknown, UserPasswordChangeRequest>, res: Response) => {
+    const { user } = req.params;
+    if (!isSafeConfigUserId(user)) {
+      return res.status(400).json({ error: 'invalid user' });
+    }
+
+    const body = req.body ?? {};
+    const currentPin = parsePin(body.currentPin);
+    const newPin = parsePin(body.newPin);
+    if (currentPin == null) {
+      return res.status(400).json({ error: 'current password is required' });
+    }
+    if (newPin == null) {
+      return res.status(400).json({ error: 'new password is required' });
+    }
+    if (currentPin === newPin) {
+      return res.status(400).json({ error: 'new password must be different from the current one' });
+    }
+
+    const config = loadUserConfigForResponse(user, res);
+    if (!config) return;
+    ensureUserPins(listUsers());
+
+    if (!isUserPinValid(user, currentPin)) {
+      return res.status(401).json({ error: 'current password is incorrect' });
+    }
+
+    const updated = updateLoginPin(user, newPin);
+    if (!updated) {
+      setUserPin(user, newPin);
+    }
+
+    return res.json({ ok: true });
+  },
+);
+
 userScopedRouter.patch(
   '/',
   requireMatchingRouteUser,
@@ -154,7 +198,27 @@ userScopedRouter.patch(
       theme = t;
     }
 
-    if (!wantsRename && !hasDisplayName && !hasTheme) {
+    let hasEmail = false;
+    let email: string | null | undefined;
+    if ('email' in body) {
+      hasEmail = true;
+      if (body.email === null) {
+        email = null;
+      } else if (typeof body.email === 'string') {
+        const t = body.email.trim().toLowerCase();
+        if (t === '') {
+          email = null;
+        } else if (!isPlausibleEmail(t)) {
+          return res.status(400).json({ error: 'invalid email' });
+        } else {
+          email = t;
+        }
+      } else {
+        return res.status(400).json({ error: 'email must be a string or null' });
+      }
+    }
+
+    if (!wantsRename && !hasDisplayName && !hasTheme && !hasEmail) {
       return res.status(400).json({ error: 'no updates provided' });
     }
 
@@ -162,11 +226,12 @@ userScopedRouter.patch(
     if (!config) return;
     ensureUserPins(listUsers());
 
-    if (hasDisplayName || hasTheme) {
+    if (hasDisplayName || hasTheme || hasEmail) {
       try {
         patchUserProfile(user, {
           ...(hasDisplayName ? { displayName } : {}),
           ...(hasTheme ? { theme } : {}),
+          ...(hasEmail ? { email } : {}),
         });
       } catch {
         return res.status(500).json({ error: 'failed to update profile' });

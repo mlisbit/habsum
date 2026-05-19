@@ -66,6 +66,9 @@ if (!usersTableHasColumn('display_name')) {
 if (!usersTableHasColumn('theme')) {
   db.exec(`ALTER TABLE users ADD COLUMN theme TEXT NOT NULL DEFAULT 'dark'`);
 }
+if (!usersTableHasColumn('email')) {
+  db.exec('ALTER TABLE users ADD COLUMN email TEXT');
+}
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS habit_summation_events (
@@ -118,25 +121,25 @@ type SelectSeriesRow = { date: string; value: string };
 type UserPinRow = { pin: string };
 type UserAdminRow = { admin: number };
 
-type UserProfileCols = { display_name: string | null; theme: string | null };
+type UserProfileCols = { display_name: string | null; theme: string | null; email: string | null };
 
 const insertUserStmt = db.prepare<{ username: string; pin: string; admin: number }>(`
-  INSERT INTO users (username, pin, admin, display_name, theme)
-  VALUES (@username, @pin, @admin, NULL, 'dark')
+  INSERT INTO users (username, pin, admin, display_name, theme, email)
+  VALUES (@username, @pin, @admin, NULL, 'dark', NULL)
   ON CONFLICT(username) DO UPDATE SET
     pin = excluded.pin,
     admin = excluded.admin
 `);
 
 const ensureUserStmt = db.prepare<{ username: string; pin: string; admin: number }>(`
-  INSERT OR IGNORE INTO users (username, pin, admin, display_name, theme)
-  VALUES (@username, @pin, @admin, NULL, 'dark')
+  INSERT OR IGNORE INTO users (username, pin, admin, display_name, theme, email)
+  VALUES (@username, @pin, @admin, NULL, 'dark', NULL)
 `);
 
 const getUserPinStmt = db.prepare<[string], UserPinRow>('SELECT pin FROM users WHERE username = ?');
 
 const getUserProfileStmt = db.prepare<[string], UserProfileCols>(
-  'SELECT display_name, theme FROM users WHERE username = ?',
+  'SELECT display_name, theme, email FROM users WHERE username = ?',
 );
 
 const updateLoginPinStmt = db.prepare<{ username: string; pin: string }>(`
@@ -196,21 +199,23 @@ export function isUserAdmin(username: string): boolean {
 export function getUserProfile(username: string): {
   displayName: string | null;
   theme: string;
+  email: string | null;
 } {
   const row = getUserProfileStmt.get(username);
   if (!row) {
-    return { displayName: null, theme: 'dark' };
+    return { displayName: null, theme: 'dark', email: null };
   }
   const theme = row.theme != null && isAllowedUiTheme(row.theme) ? row.theme : 'dark';
   return {
     displayName: row.display_name,
     theme,
+    email: row.email,
   };
 }
 
 export function patchUserProfile(
   username: string,
-  patch: { displayName?: string | null; theme?: string },
+  patch: { displayName?: string | null; theme?: string; email?: string | null },
 ): void {
   const sets: string[] = [];
   const params: Record<string, unknown> = { username };
@@ -223,14 +228,31 @@ export function patchUserProfile(
     sets.push('theme = @theme');
     params.theme = patch.theme;
   }
+  if ('email' in patch) {
+    sets.push('email = @email');
+    const v = patch.email;
+    params.email = v === null || v === undefined ? null : String(v).trim() || null;
+  }
   if (sets.length === 0) return;
   const stmt = db.prepare(`UPDATE users SET ${sets.join(', ')} WHERE username = @username`);
   let result = stmt.run(
-    params as { username: string; displayName?: string | null; theme?: string },
+    params as {
+      username: string;
+      displayName?: string | null;
+      theme?: string;
+      email?: string | null;
+    },
   );
   if (result.changes === 0) {
     ensureUserPins([username]);
-    result = stmt.run(params as { username: string; displayName?: string | null; theme?: string });
+    result = stmt.run(
+      params as {
+        username: string;
+        displayName?: string | null;
+        theme?: string;
+        email?: string | null;
+      },
+    );
   }
   if (result.changes === 0) {
     throw new Error('user row missing');

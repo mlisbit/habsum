@@ -35,3 +35,10 @@ export function loadUserConfigForResponse(user: string, res: Response) {
     throw e;
   }
 }
+
+/** Basic sanity check for stored contact email (not full RFC 5322). */
+export function isPlausibleEmail(value: string): boolean {
+  const t = value.trim().toLowerCase();
+  if (t === '') return false;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t);
+}
