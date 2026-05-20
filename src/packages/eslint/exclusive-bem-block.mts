@@ -96,27 +96,27 @@ function stripTsComments(source: string): string {
   return s;
 }
 
-function blockUsedInCode(sourceWithoutComments: string, block: string): boolean {
+function blockUsagePatterns(block: string): string[] {
   const esc = block.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  if (new RegExp(`${esc}(__|--)`).test(sourceWithoutComments)) return true;
-  if (new RegExp(`(?<![\\w$])\\.${esc}\\b`).test(sourceWithoutComments)) return true;
-  // Bare block name (e.g. JSX string or variable). Skip path segments like `.../streak` or `./streak`.
-  if (
-    new RegExp(`(?<![/.])\\b${esc}\\b(?!\\s*[=:])`).test(sourceWithoutComments)
-  )
-    return true;
-  return false;
+  const quoteClass = '["\'`]';
+  const notQuoteClass = '[^"\'`]';
+  return [
+    `${esc}(__|--)`,
+    `(?<![\\w$])\\.${esc}\\b`,
+    // Bare block as a class token (not prose like `'streak options must…'`).
+    `(?:['"])${esc}(?:['"])`,
+    `(?:className|class)\\s*=\\s*${quoteClass}${notQuoteClass}\\b${esc}\\b`,
+    `(?:className|class)\\s*=\\s*\\{[^}]*${quoteClass}${notQuoteClass}\\b${esc}\\b`,
+  ];
+}
+
+function blockUsedInCode(sourceWithoutComments: string, block: string): boolean {
+  return blockUsagePatterns(block).some((p) => new RegExp(p).test(sourceWithoutComments));
 }
 
 function firstIndexOfBlockUsage(text: string, block: string): number {
-  const esc = block.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const patterns = [
-    `${esc}(__|--)`,
-    `(?<![\\w$])\\.${esc}\\b`,
-    `(?<![/.])\\b${esc}\\b(?!\\s*[=:])`,
-  ];
   let best = -1;
-  for (const p of patterns) {
+  for (const p of blockUsagePatterns(block)) {
     const m = new RegExp(p).exec(text);
     if (m?.index !== undefined && m.index >= 0) {
       best = best === -1 ? m.index : Math.min(best, m.index);
