@@ -3,9 +3,16 @@
 // Block: users-index (layout: .container, .card)
 .users-index {
   display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.users-index__main {
+  display: flex;
+  flex: 1;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
 }
 
 .users-index__card {

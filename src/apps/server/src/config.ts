@@ -5,6 +5,7 @@ import {
   existsSync,
   renameSync,
   unlinkSync,
+  mkdirSync,
 } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -71,6 +72,11 @@ export class ConfigValidationError extends Error {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value != null && typeof value === 'object' && !Array.isArray(value);
+}
+
+/** Creates `<HABSUM_CONFIG_DIR>/users/` when missing (safe to call repeatedly). */
+export function ensureConfigLayout(): void {
+  mkdirSync(USERS_DIR, { recursive: true });
 }
 
 export function listUsers(): string[] {
@@ -251,13 +257,7 @@ function normalizeStreak(
 export function createUserFromSampleConfig(
   user: string,
 ): { ok: true; user: string } | { ok: false; error: string } {
-  if (!existsSync(USERS_DIR)) {
-    return {
-      ok: false,
-      error:
-        `missing users directory: ${USERS_DIR}\n` + 'Expected <HABSUM_CONFIG_DIR>/users/ to exist',
-    };
-  }
+  ensureConfigLayout();
 
   const existing = getUserConfigFilePath(user);
   if (existing) {

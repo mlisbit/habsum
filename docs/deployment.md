@@ -162,6 +162,25 @@ curl https://habsum-web.fly.dev
 curl https://habsum-web.fly.dev/api/health
 ```
 
+## Bootstrap the first admin (new install)
+
+Run once after deploying to a fresh volume. The script exits without changes if an admin already exists.
+
+Locally:
+
+```bash
+HABSUM_CONFIG_DIR="$(pwd)/config" npm run init-admin
+```
+
+On Fly (interactive SSH):
+
+```bash
+fly ssh console --app habsum-api
+cd /app/src/apps/server && HABSUM_CONFIG_DIR=/data npm run init-admin
+```
+
+This creates `<HABSUM_CONFIG_DIR>/users/`, seeds the admin's YAML from the sample config, and prints a generated login password.
+
 ---
 
 # Future Improvements

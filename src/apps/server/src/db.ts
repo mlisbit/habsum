@@ -54,8 +54,6 @@ if (userColumns.some((column) => column.name === 'pin' && column.type.toUpperCas
     ALTER TABLE users_next RENAME TO users;
   `);
 }
-db.exec("UPDATE users SET admin = CASE WHEN username = 'mac' THEN 1 ELSE 0 END");
-
 function usersTableHasColumn(column: string): boolean {
   const cols = db.prepare("PRAGMA table_info('users')").all() as Array<{ name: string }>;
   return cols.some((c) => c.name === column);
@@ -220,8 +218,7 @@ const clearUserForcePasswordResetStmt = db.prepare<[string], unknown>(`
 
 const renameUserPinStmt = db.prepare<{ fromUsername: string; toUsername: string }>(`
   UPDATE users
-  SET username = @toUsername,
-      admin = CASE WHEN @toUsername = 'mac' THEN 1 ELSE 0 END
+  SET username = @toUsername
   WHERE username = @fromUsername
 `);
 
@@ -233,18 +230,39 @@ export function ensureUserPins(usernames: string[], defaultPin = '0'): void {
     ensureUserStmt.run({
       username,
       pin: defaultPin,
-      admin: username === 'mac' ? 1 : 0,
+      admin: 0,
       createdAt,
     });
   }
-  db.exec("UPDATE users SET admin = CASE WHEN username = 'mac' THEN 1 ELSE 0 END");
 }
 
 export function setUserPin(username: string, pin: string): void {
+  const existing = getUserAdminStmt.get(username);
   insertUserStmt.run({
     username,
     pin,
-    admin: username === 'mac' ? 1 : 0,
+    admin: existing?.admin ?? 0,
+    createdAt: new Date().toISOString(),
+  });
+}
+
+export function countAdmins(): number {
+  const row = db.prepare('SELECT COUNT(*) AS n FROM users WHERE admin = 1').get() as { n: number };
+  return row.n;
+}
+
+const createInitialAdminUserStmt = db.prepare<{ username: string; pin: string; createdAt: string }>(
+  `
+  INSERT INTO users (username, pin, admin, display_name, theme, email, created_at)
+  VALUES (@username, @pin, 1, NULL, 'dark', NULL, @createdAt)
+`,
+);
+
+/** Creates the first admin account (call only when {@link countAdmins} is zero). */
+export function createInitialAdminUser(username: string, pin: string): void {
+  createInitialAdminUserStmt.run({
+    username,
+    pin,
     createdAt: new Date().toISOString(),
   });
 }

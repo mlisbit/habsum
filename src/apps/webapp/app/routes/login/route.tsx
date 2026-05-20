@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getAuthMe, loginUser, logout } from '~/api.client';
+import { Footer } from '~/components/Footer';
 import { Button } from '~/core-components/Button';
 import { InfoText } from '~/core-components/InfoText';
 import { Input } from '~/core-components/Input';
@@ -136,42 +137,48 @@ export default function LoginRoute() {
 
   return (
     <div className="users-index">
-      <div className="card users-index__card">
-        <div className="users-index__header">
-          {currentUser ? (
-            <h1 className="text-h-l">You're already signed in.</h1>
-          ) : (
-            <h1 className="text-h-l">Log in</h1>
-          )}
-        </div>
-
-        {currentUser ? (
-          <div className="users-index__continue">
-            <Button
-              type="primary"
-              text={`Continue as ${currentUser}`}
-              disabled={signOutBusy}
-              onClick={() => {
-                void getAuthMe().then((me) => {
-                  if (isMeLoggedIn(me) && me.username === currentUser) {
-                    window.location.assign(userDefaultAppPath(currentUser, me.forcePasswordReset));
-                  } else {
-                    window.location.assign(`/users/${encodeURIComponent(currentUser)}/habits`);
-                  }
-                });
-              }}
-            />
-            <Button
-              type="secondary"
-              text={signOutBusy ? 'Signing out…' : 'Sign out'}
-              disabled={signOutBusy}
-              onClick={() => void handleSignOut()}
-            />
+      <div className="users-index__main">
+        <div className="card users-index__card">
+          <div className="users-index__header">
+            {currentUser ? (
+              <h1 className="text-h-l">You're already signed in.</h1>
+            ) : (
+              <h1 className="text-h-l">Log in</h1>
+            )}
           </div>
-        ) : null}
 
-        <LoginForm anotherAccountHint={currentUser != null} formDisabled={signOutBusy} />
+          {currentUser ? (
+            <div className="users-index__continue">
+              <Button
+                type="primary"
+                text={`Continue as ${currentUser}`}
+                disabled={signOutBusy}
+                onClick={() => {
+                  void getAuthMe().then((me) => {
+                    if (isMeLoggedIn(me) && me.username === currentUser) {
+                      window.location.assign(
+                        userDefaultAppPath(currentUser, me.forcePasswordReset),
+                      );
+                    } else {
+                      window.location.assign(`/users/${encodeURIComponent(currentUser)}/habits`);
+                    }
+                  });
+                }}
+              />
+              <Button
+                type="secondary"
+                text={signOutBusy ? 'Signing out…' : 'Sign out'}
+                disabled={signOutBusy}
+                onClick={() => void handleSignOut()}
+              />
+            </div>
+          ) : null}
+
+          <LoginForm anotherAccountHint={currentUser != null} formDisabled={signOutBusy} />
+        </div>
       </div>
+
+      <Footer />
     </div>
   );
 }

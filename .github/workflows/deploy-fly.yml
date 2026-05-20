@@ -1,0 +1,85 @@
+name: Deploy Fly.io
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Release tag to deploy (leave empty for latest v*.*.* tag)
+        type: string
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-fly
+  cancel-in-progress: false
+
+env:
+  FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+
+jobs:
+  resolve-version:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.resolve.outputs.tag }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Resolve release tag
+        id: resolve
+        run: |
+          tag="${{ inputs.version }}"
+
+          if [[ -n "$tag" ]]; then
+            if ! [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "version must look like v0.1.2"
+              exit 1
+            fi
+            if ! git rev-parse "$tag^{commit}" >/dev/null 2>&1; then
+              echo "Tag not found: $tag"
+              exit 1
+            fi
+          else
+            tag=$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n1)
+            if [[ -z "$tag" ]]; then
+              echo "No release tags found. Run the Release workflow first."
+              exit 1
+            fi
+          fi
+
+          echo "Deploying tag: $tag"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+  deploy-api:
+    needs: resolve-version
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.resolve-version.outputs.tag }}
+
+      - name: Setup flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy API (${{ needs.resolve-version.outputs.tag }})
+        run: flyctl deploy --config fly.api.toml --ha=false --remote-only
+
+  deploy-web:
+    needs: [resolve-version, deploy-api]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout release tag
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.resolve-version.outputs.tag }}
+
+      - name: Setup flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy web (${{ needs.resolve-version.outputs.tag }})
+        run: flyctl deploy --config fly.web.toml --ha=false --remote-only
