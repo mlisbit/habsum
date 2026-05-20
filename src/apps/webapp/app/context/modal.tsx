@@ -10,14 +10,19 @@ import {
 } from 'react';
 import { Button } from '~/core-components/Button';
 
+export type ModalSize = 'medium' | 'large';
+
 type ActiveModal = {
   generation: number;
   content: ReactNode;
+  size: ModalSize;
   onRequestClose?: () => void;
 };
 
 export type PresentModalOptions = {
   content: ReactNode;
+  /** Dialog width preset. Default: `medium`. */
+  size?: ModalSize;
   onRequestClose?: () => void;
 };
 
@@ -31,9 +36,17 @@ type ModalContextValue = {
 const ModalContext = createContext<ModalContextValue | null>(null);
 
 /** Shell slots for modal content. Compose inside `present({ content: <>…</> })`. */
-export function ModalTitle({ children, id = 'modal-title' }: { children: ReactNode; id?: string }) {
+export function ModalTitle({
+  children,
+  id = 'modal-title',
+  className,
+}: {
+  children: ReactNode;
+  id?: string;
+  className?: string;
+}) {
   return (
-    <h2 id={id} className="text-h-l">
+    <h2 id={id} className={['text-h-l', className].filter(Boolean).join(' ')}>
       {children}
     </h2>
   );
@@ -102,6 +115,7 @@ export function ModalProvider({ children }: { children: ReactNode }) {
     const next: ActiveModal = {
       generation,
       content: options.content,
+      size: options.size ?? 'medium',
       onRequestClose: options.onRequestClose,
     };
     activeRef.current = next;
@@ -135,7 +149,9 @@ export function ModalProvider({ children }: { children: ReactNode }) {
       {active ? (
         <div className="modal__backdrop" role="presentation" onClick={closeModal}>
           <div
-            className="modal__dialog card"
+            className={['modal__dialog', 'card', active.size === 'large' && 'modal__dialog--large']
+              .filter(Boolean)
+              .join(' ')}
             role="dialog"
             aria-modal="true"
             aria-labelledby="modal-title"

@@ -1,0 +1,23 @@
+// Block: config-yaml-editor
+.config-yaml-editor {
+  min-width: 0;
+  min-height: min(60vh, 640px);
+  overflow: hidden;
+  background: var(--background-secondary);
+}
+
+.config-yaml-editor .cm-editor,
+.config-yaml-editor .cm-editor .cm-scroller {
+  min-height: min(60vh, 640px);
+}
+
+@media (max-width: 800px) {
+  .config-yaml-editor {
+    min-height: 50vh;
+  }
+
+  .config-yaml-editor .cm-editor,
+  .config-yaml-editor .cm-editor .cm-scroller {
+    min-height: 50vh;
+  }
+}

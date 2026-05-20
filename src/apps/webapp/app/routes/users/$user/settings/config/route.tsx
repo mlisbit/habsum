@@ -1,5 +1,5 @@
-import { useParams } from "@remix-run/react";
-import { ConfigYamlEditor } from "~/components/ConfigYamlEditor";
+import { useParams } from '@remix-run/react';
+import { ConfigSettings } from '~/components/config-components/ConfigSettings';
 
 export default function UserSettingsConfig() {
   const { user } = useParams();
@@ -8,7 +8,7 @@ export default function UserSettingsConfig() {
   }
   return (
     <div className="card card--no-padding">
-      <ConfigYamlEditor user={decodeURIComponent(user)} />
+      <ConfigSettings user={decodeURIComponent(user)} />
     </div>
   );
 }

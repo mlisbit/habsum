@@ -17,6 +17,10 @@
   box-shadow: var(--elevation-shadow);
 }
 
+.modal__dialog--large {
+  width: min(100%, 36rem);
+}
+
 .modal__actions {
   margin-top: functions.spacing(3);
   display: flex;

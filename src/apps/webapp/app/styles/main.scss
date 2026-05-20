@@ -20,6 +20,7 @@
 @use 'core-components/hover-layer';
 @use 'core-components/loader';
 @use 'core-components/pill';
+@use 'core-components/collapsible-card';
 
 // components
 @use 'components/day-nav';
@@ -37,6 +38,12 @@
 @use 'components/ouc-indicator';
 @use 'components/footer';
 @use 'components/settings-header';
+@use 'components/config-card';
+@use 'components/config-habit-field-label';
+@use 'components/config-habit-option-pills';
+@use 'components/config-habit-modal';
+@use 'components/config-gui-editor';
+@use 'components/config-yaml-editor';
 
 // pages
 @use 'pages/settings';

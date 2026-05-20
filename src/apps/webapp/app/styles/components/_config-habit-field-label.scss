@@ -1,0 +1,24 @@
+@use 'functions';
+
+// Block: config-habit-field-label
+.config-habit-field-label {
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: center;
+  gap: functions.spacing(1);
+  min-width: 0;
+}
+
+.config-habit-field-label__text {
+  margin: 0;
+}
+
+.config-habit-field-label__info-anchor {
+  display: inline-flex;
+  align-items: center;
+  cursor: help;
+}
+
+.config-habit-field-label__info-tip {
+  max-width: 16rem;
+}

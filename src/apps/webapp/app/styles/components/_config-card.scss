@@ -1,0 +1,82 @@
+@use 'functions';
+
+// Block: config-card
+.config-card {
+  display: flex;
+  align-items: flex-start;
+  gap: functions.spacing(2);
+  min-width: 0;
+  padding: functions.spacing(2, 3);
+  background: var(--background-primary);
+  border: 1px solid var(--border-color-faint);
+  border-radius: var(--border-radius-m);
+  list-style: none;
+  transition:
+    border-color 0.12s ease,
+    box-shadow 0.12s ease,
+    opacity 0.12s ease;
+}
+
+.config-card[data-reorder-dragging] {
+  opacity: 0.5;
+}
+
+.config-card--drag-preview {
+  opacity: 0.75;
+  background: var(--background-primary);
+  border: 1px solid var(--border-color-faint);
+  border-radius: var(--border-radius-m);
+  box-shadow: var(--elevation-shadow);
+}
+
+.config-card__handle {
+  flex: 0 0 auto;
+  padding: functions.spacing(1);
+  border-radius: var(--border-radius-s);
+  align-self: center;
+  cursor: grab;
+  touch-action: none;
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+.config-card__handle-icon {
+  display: block;
+  opacity: 0.85;
+}
+
+.config-card__body {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.config-card__title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: functions.spacing(2);
+  min-width: 0;
+}
+
+.config-card__title {
+  flex: 1 1 auto;
+  margin: 0;
+  min-width: 0;
+}
+
+.config-card__edit {
+  flex: 0 0 auto;
+  cursor: pointer;
+}
+
+.config-card__type {
+  margin: functions.spacing(1) 0 0;
+}
+
+.config-card__details {
+  margin: functions.spacing(1) 0 0;
+  padding: 0;
+  list-style: none;
+}

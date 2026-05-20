@@ -1,0 +1,29 @@
+@use 'functions';
+
+// Block: config-gui-editor
+.config-gui-editor__empty {
+  margin: 0;
+}
+
+.config-gui-editor__list {
+  display: flex;
+  flex-direction: column;
+  gap: functions.spacing(2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-x: clip;
+}
+
+.config-gui-editor__insert-marker {
+  flex: 0 0 auto;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  pointer-events: none;
+  border: 0;
+  border-top: 2px solid var(--accent-selected);
+  border-radius: var(--border-radius-full);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--accent-selected) 45%, transparent);
+}

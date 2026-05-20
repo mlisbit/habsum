@@ -44,3 +44,40 @@
     filter: brightness(1.05);
   }
 }
+
+.pill--dismissable {
+  display: inline-flex;
+  flex-flow: row nowrap;
+  align-items: center;
+  gap: functions.spacing(1);
+  padding-block: functions.spacing(1);
+  padding-inline: functions.spacing(2, 1, 2, 2);
+  cursor: default;
+}
+
+.pill__label {
+  min-width: 0;
+}
+
+.pill__dismiss {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  opacity: 0.7;
+  border-radius: var(--border-radius-s);
+
+  &:hover {
+    opacity: 1;
+    background: color-mix(in srgb, var(--text-color) 12%, transparent);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-selected) 35%, transparent);
+  }
+}
