@@ -17,8 +17,7 @@ server {
 
     rewrite ^/api/?(.*)$ /$1 break;
 
-    set $api_upstream "${API_UPSTREAM}";
-    proxy_pass $api_upstream;
+    proxy_pass ${API_UPSTREAM};
   }
 
   # SPA routing: serve index.html for unknown paths.

@@ -22,6 +22,11 @@ export const LOGIN_TOAST_USER_AREA: ShowToastOptions = {
   message: 'Sign in to access this account.',
 };
 
+export const SERVER_CONNECTION_ERROR_TOAST: ShowToastOptions = {
+  type: 'error',
+  message: 'Error connecting to server',
+};
+
 const PENDING_LOGIN_TOAST_KEY = 'habsum:pendingLoginToast';
 
 type ToastContextValue = {

@@ -5,8 +5,7 @@ primary_region = "sjc"
   dockerfile = "src/apps/webapp/Dockerfile"
 
 [env]
-  API_BASE_URL = "https://habsum-api.fly.dev"
-  API_UPSTREAM = "http://habsum-api.flycast:3001"
+  API_UPSTREAM = "https://habsum-api.fly.dev"
 
 [http_service]
   internal_port = 3000

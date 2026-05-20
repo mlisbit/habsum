@@ -86,6 +86,22 @@ const API_PREFIX = OVERRIDE_SERVER_URL ? '' : '/api';
 const SERVER_URL = OVERRIDE_SERVER_URL ?? '';
 const habitHistoryRequests = new Map<string, Promise<HistoryGetResponse>>();
 
+export class ApiRequestError extends Error {
+  readonly status: number;
+
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = 'ApiRequestError';
+    this.status = status;
+  }
+}
+
+/** True for HTTP 5xx responses and network-level fetch failures. */
+export function isServerConnectionFailure(error: unknown): boolean {
+  if (error instanceof ApiRequestError) return error.status >= 500;
+  return error instanceof TypeError;
+}
+
 function buildHabitPatchPayload(
   body:
     | { habit: string; total: number }
@@ -122,7 +138,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     } catch {
       if (bodyText) message = bodyText;
     }
-    throw new Error(message);
+    throw new ApiRequestError(res.status, message);
   }
   return (bodyText ? (JSON.parse(bodyText) as T) : ({} as T)) as T;
 }
