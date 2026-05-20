@@ -1,20 +1,15 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import type { AnimationEvent } from 'react';
 import type { SummationOptions } from '@habsum/types/common/habit';
 import { Button } from '~/core-components/Button';
 import { Input } from '~/core-components/Input';
-import { ModalActions, ModalBody, useModal } from '~/context/modal';
+import { ModalBody, useModal } from '~/context/modal';
+import {
+  defaultManualIncrementPlaceholder,
+  formatIncrementLabel,
+  hasSummationOptions,
+} from '~/utils/summationOptions';
 import { useLongPress } from '~/utils/use-long-press';
-
-/** Parses amount text the same way + / − taps do (blank / invalid → fallback). */
-function parseAmountToNumber(raw: string, fallback: number): number {
-  const trimmed = raw.trim();
-  if (trimmed === '') return fallback;
-  const parsed = Number(trimmed);
-  if (!Number.isFinite(parsed)) return fallback;
-  const n = Math.max(0, Math.trunc(parsed));
-  return n > 0 ? n : fallback;
-}
 
 /** Parses manual adjust field — blank / invalid / zero → null; otherwise truncated integer (+ or −). */
 function parseManualAdjustDelta(raw: string): number | null {
@@ -26,36 +21,20 @@ function parseManualAdjustDelta(raw: string): number | null {
   return n !== 0 ? n : null;
 }
 
-function validSummationPair(s: SummationOptions | undefined): s is SummationOptions {
-  return s != null && s.add >= 1 && s.sub >= 1 && Number.isFinite(s.add) && Number.isFinite(s.sub);
-}
-
-function getCountControlModes(summationSteps: SummationOptions | undefined): {
-  simpleStepsMode: boolean;
-  inputBetweenStepsMode: boolean;
-} {
-  const summationOk = validSummationPair(summationSteps);
-  if (!summationOk || summationSteps == null) {
-    return { simpleStepsMode: false, inputBetweenStepsMode: false };
-  }
-  return {
-    simpleStepsMode: !summationSteps.inputBetween,
-    inputBetweenStepsMode: summationSteps.inputBetween === true,
-  };
-}
-
-function hideSummationStepLabels(sub: number, add: number): boolean {
-  return sub === add;
-}
-
-function amountStrDiffersBaseline(amountStr: string, baseline: string): boolean {
-  return amountStr.trim() !== baseline.trim();
+/** Parses amount text for free-form mode (blank / invalid → fallback). */
+function parseAmountToNumber(raw: string, fallback: number): number {
+  const trimmed = raw.trim();
+  if (trimmed === '') return fallback;
+  const parsed = Number(trimmed);
+  if (!Number.isFinite(parsed)) return fallback;
+  const n = Math.max(0, Math.trunc(parsed));
+  return n > 0 ? n : fallback;
 }
 
 export type CountControlProps = {
   /** Default step shown after each action and used when the field is blank, invalid, or zero (free-form mode only). */
   interval: number;
-  /** Fixed +/− steps from habit config; omit for numeric input between +/- . */
+  /** Manual entry + quick-add increments from habit config. */
   summationSteps?: SummationOptions;
   /** Current logged total for the day; `null` means no stored row. */
   displayTotal: number | null;
@@ -72,18 +51,16 @@ type SummationAdjustModalProps = {
   closeModal: () => void;
   onClearTotal: () => Promise<void>;
   onManualAdd: (delta: number) => Promise<void>;
-  /** Shown in fixed-step mode so users see configured −/+ tap magnitudes. */
-  tapSteps?: { sub: number; add: number };
+  increments?: number[];
 };
 
-/** Long-press: enter a manual delta (+ or −); does not change configured tap steps */
 function SummationAdjustModalContent({
   habitName,
   pending,
   closeModal,
   onClearTotal,
   onManualAdd,
-  tapSteps,
+  increments,
 }: SummationAdjustModalProps) {
   return (
     <>
@@ -91,10 +68,8 @@ function SummationAdjustModalContent({
         <p id="modal-title" className="text-b-m">
           Adjust
         </p>
-        {tapSteps ? (
-          <p className="text-b-s">
-            Taps: −{tapSteps.sub} +{tapSteps.add}
-          </p>
+        {increments != null && increments.length > 0 ? (
+          <p className="text-b-s">Quick add: {increments.map(formatIncrementLabel).join(' ')}</p>
         ) : null}
 
         <Input
@@ -157,38 +132,16 @@ export function CountControl({
   onAddDelta,
   onClearTotal,
 }: CountControlProps) {
-  const { simpleStepsMode, inputBetweenStepsMode } = getCountControlModes(summationSteps);
+  const manualMode = hasSummationOptions(summationSteps);
+  const increments = manualMode ? summationSteps.increments : [];
 
-  const [amountStr, setAmountStr] = useState(() =>
-    summationSteps?.inputBetween ? String(summationSteps.add) : String(interval),
-  );
+  const [amountStr, setAmountStr] = useState('');
   const [minusHovered, setMinusHovered] = useState(false);
   const [pulseKind, setPulseKind] = useState<'plus' | 'minus' | null>(null);
   const [amountEditorOpen, setAmountEditorOpen] = useState(false);
   const { present, closeModal } = useModal();
 
-  useEffect(() => {
-    if (simpleStepsMode || inputBetweenStepsMode) return;
-    setAmountStr(String(interval));
-    setAmountEditorOpen(false);
-  }, [interval, simpleStepsMode, inputBetweenStepsMode]);
-
-  useEffect(() => {
-    if (!inputBetweenStepsMode || !summationSteps) return;
-    setAmountStr(String(summationSteps.add));
-    setAmountEditorOpen(false);
-  }, [inputBetweenStepsMode, summationSteps?.add]);
-
-  const openAmountEditor = useCallback(() => {
-    setAmountStr('');
-    setAmountEditorOpen(true);
-  }, []);
-
   const openAdjustModal = useCallback(() => {
-    const tapSteps =
-      simpleStepsMode && summationSteps
-        ? { sub: summationSteps.sub, add: summationSteps.add }
-        : undefined;
     present({
       content: (
         <SummationAdjustModalContent
@@ -197,74 +150,47 @@ export function CountControl({
           closeModal={closeModal}
           onClearTotal={onClearTotal}
           onManualAdd={onAddDelta}
-          tapSteps={tapSteps}
+          increments={manualMode ? increments : undefined}
         />
       ),
     });
-  }, [
-    present,
-    closeModal,
-    onClearTotal,
-    onAddDelta,
-    simpleStepsMode,
-    summationSteps,
-    habitName,
-    pending,
-  ]);
+  }, [present, closeModal, onClearTotal, onAddDelta, manualMode, increments, habitName, pending]);
 
+  const inputLongPress = useLongPress(openAdjustModal);
   const minusLongPress = useLongPress(openAdjustModal);
-  const plusLongPress = useLongPress(openAdjustModal);
-
-  const resetInputToInterval = () => {
-    setAmountStr(String(interval));
-  };
-
-  const closeAmountEditor = () => {
-    if (inputBetweenStepsMode && summationSteps) {
-      setAmountStr(String(summationSteps.add));
-    } else {
-      resetInputToInterval();
-    }
-    setAmountEditorOpen(false);
-  };
-
-  const readAmountMagnitude = (fallback: number): number =>
-    parseAmountToNumber(amountStr, fallback);
 
   const applyDelta = async (delta: number, opts?: { pulse?: 'plus' | 'minus' }) => {
     const { pulse } = opts ?? {};
     if (pulse) setPulseKind(pulse);
     await onAddDelta(delta);
-    if (simpleStepsMode) return;
-    if (inputBetweenStepsMode && summationSteps) {
-      setAmountStr(String(summationSteps.add));
+    if (manualMode) {
+      setAmountStr('');
+      setAmountEditorOpen(false);
       return;
     }
-    resetInputToInterval();
-  };
-
-  const submitParsedAmount = async (rawOverride?: string) => {
-    if (simpleStepsMode) return;
-    const raw = rawOverride ?? amountStr;
-    const trimmed = raw.trim();
-    if (trimmed === '') return;
-    const parsed = Number(trimmed);
-    if (!Number.isFinite(parsed)) return;
-    const delta = Math.max(0, Math.trunc(parsed));
-    await applyDelta(delta);
+    setAmountStr('');
     setAmountEditorOpen(false);
   };
 
+  const closeAmountEditor = () => {
+    setAmountStr('');
+    setAmountEditorOpen(false);
+  };
+
+  const openAmountEditor = () => {
+    setAmountStr('');
+    setAmountEditorOpen(true);
+  };
+
+  const submitCustomAmount = async (raw: string) => {
+    const delta = parseManualAdjustDelta(raw);
+    if (delta == null) return;
+    await applyDelta(delta, { pulse: delta < 0 ? 'minus' : 'plus' });
+    closeAmountEditor();
+  };
+
   const effectiveTotal = displayTotal ?? 0;
-  const showMinus = effectiveTotal > 0;
-
-  useEffect(() => {
-    if (!showMinus) setMinusHovered(false);
-  }, [showMinus]);
-
-  const amountInputClassName = ['text-b-m', minusHovered && showMinus ? 'text-error' : '']
-    .filter(Boolean)
-    .join(' ');
+  const showMinus = !manualMode && effectiveTotal > 0;
 
   const pulseClasses = [
     pulseKind === 'plus' ? 'count-control__pulse-plus' : '',
@@ -278,141 +204,80 @@ export function CountControl({
     setPulseKind(null);
   };
 
-  if (simpleStepsMode && summationSteps) {
-    const { add: addStep, sub: subStep } = summationSteps;
-    const hideStepNumbers = hideSummationStepLabels(subStep, addStep);
+  if (manualMode) {
+    const placeholder = defaultManualIncrementPlaceholder(summationSteps);
     return (
       <div className="count-control">
         <div
-          className={['count-control__steps', pulseClasses].filter(Boolean).join(' ')}
+          className={['count-control__manual-row', pulseClasses].filter(Boolean).join(' ')}
           onAnimationEnd={onPulseEnd}
         >
-          {showMinus ? (
-            <span className="habit-summation__step-minus-wrap">
-              <Button
-                type="secondary"
-                size="small"
-                {...(hideStepNumbers
-                  ? { icon: 'minus' as const, circle: true, text: '' }
-                  : { text: `−${subStep}` })}
-                className={minusHovered && showMinus ? 'text-error' : undefined}
-                {...minusLongPress.pointerProps}
-                onMouseEnter={() => setMinusHovered(true)}
-                onMouseLeave={() => setMinusHovered(false)}
-                onClick={minusLongPress.wrapOnClick(
-                  () => void applyDelta(-subStep, { pulse: 'minus' }),
-                )}
-                disabled={pending}
-                aria-label={`Subtract ${subStep} from ${habitName}`}
-              />
-            </span>
-          ) : null}
-          <Button
-            type="secondary"
-            size="small"
-            {...(hideStepNumbers
-              ? { icon: 'plus' as const, circle: true, text: '' }
-              : { text: `+${addStep}` })}
-            {...plusLongPress.pointerProps}
-            onClick={plusLongPress.wrapOnClick(() => void applyDelta(addStep, { pulse: 'plus' }))}
-            disabled={pending}
-            aria-label={`Add ${addStep} to ${habitName}`}
-          />
-        </div>
-      </div>
-    );
-  }
-
-  if (inputBetweenStepsMode && summationSteps) {
-    const { add: addStep, sub: subStep } = summationSteps;
-    const hideStepNumbers = hideSummationStepLabels(subStep, addStep);
-    const baselineAmountStr = String(addStep);
-    const amountDirty = amountStrDiffersBaseline(amountStr, baselineAmountStr);
-    const plusMag = readAmountMagnitude(addStep);
-    const plusUsesDefaultStepLabel = plusMag === addStep;
-
-    return (
-      <div className="count-control">
-        <div
-          className={['count-control__steps', pulseClasses].filter(Boolean).join(' ')}
-          onAnimationEnd={onPulseEnd}
-        >
-          {showMinus && !amountEditorOpen && !amountDirty ? (
-            <span className="habit-summation__step-minus-wrap">
-              <Button
-                type="secondary"
-                size="small"
-                {...(hideStepNumbers
-                  ? { icon: 'minus' as const, circle: true, text: '' }
-                  : { text: `−${subStep}` })}
-                className={minusHovered && showMinus ? 'text-error' : undefined}
-                {...minusLongPress.pointerProps}
-                onMouseEnter={() => setMinusHovered(true)}
-                onMouseLeave={() => setMinusHovered(false)}
-                onClick={minusLongPress.wrapOnClick(
-                  () => void applyDelta(-subStep, { pulse: 'minus' }),
-                )}
-                disabled={pending}
-                aria-label={`Subtract ${subStep} from ${habitName}`}
-              />
-            </span>
-          ) : null}
-          <div className="count-control__amount-slot">
+          <div className="count-control__manual-entry">
             {amountEditorOpen ? (
               <Input
+                className="count-control__manual-input"
+                size="small"
                 type="number"
-                value={amountStr}
+                allowNegative
+                submittable
                 dismissable
                 alwaysDismissable
-                submittable
-                onSubmit={(raw) => void submitParsedAmount(raw)}
+                value={amountStr}
+                onChange={setAmountStr}
+                onSubmit={(raw) => void submitCustomAmount(raw)}
                 onReject={closeAmountEditor}
+                placeholder={placeholder || 'Amount'}
                 disabled={pending}
-                inputClassName={amountInputClassName}
                 applyAriaLabel={`Apply amount for ${habitName}`}
                 revertAriaLabel={`Discard amount edit for ${habitName}`}
+                aria-label={`Amount for ${habitName}`}
               />
             ) : (
               <Button
                 type="tertiary"
                 size="small"
-                text={amountStr}
+                text="+"
                 disabled={pending}
                 className="count-control__amount-trigger text-b-m"
-                aria-expanded={false}
-                aria-label={`Edit amount to add for ${habitName}`}
-                onClick={openAmountEditor}
+                {...inputLongPress.pointerProps}
+                onClick={inputLongPress.wrapOnClick(openAmountEditor)}
+                aria-label={`Enter custom amount for ${habitName}`}
               />
             )}
           </div>
-          {!amountDirty && !amountEditorOpen ? (
-            <Button
-              type="secondary"
-              size="small"
-              icon="plus"
-              circle
-              text=""
-              {...plusLongPress.pointerProps}
-              onClick={plusLongPress.wrapOnClick(() => void applyDelta(plusMag, { pulse: 'plus' }))}
-              disabled={pending}
-              aria-label={
-                plusUsesDefaultStepLabel
-                  ? `Add ${addStep} to ${habitName}`
-                  : `Add ${plusMag} to ${habitName}`
-              }
-            />
-          ) : null}
+          <div className="count-control__increments" role="group" aria-label="Quick add amounts">
+            {increments.map((delta, index) => (
+              <Button
+                key={`${delta}-${index}`}
+                type="secondary"
+                size="small"
+                text={formatIncrementLabel(delta)}
+                disabled={pending}
+                className={delta < 0 ? 'text-error' : undefined}
+                onClick={() => void applyDelta(delta, { pulse: delta < 0 ? 'minus' : 'plus' })}
+                aria-label={
+                  delta < 0
+                    ? `Subtract ${Math.abs(delta)} from ${habitName}`
+                    : `Add ${delta} to ${habitName}`
+                }
+              />
+            ))}
+          </div>
         </div>
       </div>
     );
   }
 
-  const baselineAmountStrFree = String(interval);
-  const amountDirtyFree = amountStrDiffersBaseline(amountStr, baselineAmountStrFree);
+  const readAmountMagnitude = (fallback: number): number =>
+    parseAmountToNumber(amountStr, fallback);
+
+  const amountInputClassName = ['text-b-m', minusHovered && showMinus ? 'text-error' : '']
+    .filter(Boolean)
+    .join(' ');
 
   return (
     <div className="count-control">
-      {showMinus && !amountEditorOpen && !amountDirtyFree ? (
+      {showMinus && !amountEditorOpen ? (
         <Button
           type="secondary"
           size="small"
@@ -435,45 +300,37 @@ export function CountControl({
       >
         {amountEditorOpen ? (
           <Input
+            className="count-control__manual-input"
+            size="small"
             type="number"
+            allowNegative
             value={amountStr}
             dismissable
+            alwaysDismissable
             submittable
-            onSubmit={(raw) => void submitParsedAmount(raw)}
+            onChange={setAmountStr}
+            onSubmit={(raw) => void submitCustomAmount(raw)}
             onReject={closeAmountEditor}
             disabled={pending}
+            placeholder={String(interval)}
             inputClassName={amountInputClassName}
             applyAriaLabel={`Apply amount for ${habitName}`}
             revertAriaLabel={`Discard amount edit for ${habitName}`}
+            aria-label={`Amount for ${habitName}`}
           />
         ) : (
           <Button
             type="tertiary"
             size="small"
-            text={amountStr}
+            text="+"
             disabled={pending}
             className="count-control__amount-trigger text-b-m"
-            aria-expanded={false}
-            aria-label={`Edit amount to add for ${habitName}`}
-            onClick={openAmountEditor}
+            {...inputLongPress.pointerProps}
+            onClick={inputLongPress.wrapOnClick(openAmountEditor)}
+            aria-label={`Enter custom amount for ${habitName}`}
           />
         )}
       </div>
-      {!amountDirtyFree && !amountEditorOpen ? (
-        <Button
-          type="secondary"
-          size="small"
-          icon="plus"
-          circle
-          text=""
-          {...plusLongPress.pointerProps}
-          onClick={plusLongPress.wrapOnClick(
-            () => void applyDelta(readAmountMagnitude(interval), { pulse: 'plus' }),
-          )}
-          disabled={pending}
-          aria-label={`Add amount to ${habitName}`}
-        />
-      ) : null}
     </div>
   );
 }

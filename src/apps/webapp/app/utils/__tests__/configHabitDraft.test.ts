@@ -3,7 +3,10 @@ import yaml from 'js-yaml';
 
 import {
   applyHabitDraftToConfigYaml,
+  formatHistoryPeriod,
   parseHabitDraftFromText,
+  parseHistoryPeriod,
+  sortQuickAddItems,
   type ConfigHabitDraft,
 } from '../configHabitDraft';
 
@@ -11,7 +14,7 @@ const SAMPLE = `habits:
   push ups:
     type: summation
     goal: 100
-    summation_options: [2, 5]
+    summation_options: [1, 10]
   soda:
     type: single_select
     options: [none, light]
@@ -21,6 +24,70 @@ const SAMPLE = `habits:
       period: 2w
 `;
 
+describe('sortQuickAddItems', () => {
+  it('sorts numerically ascending', () => {
+    expect(sortQuickAddItems(['10', '5', '-1'])).toEqual(['-1', '5', '10']);
+    expect(sortQuickAddItems(['3', '1'])).toEqual(['1', '3']);
+  });
+});
+
+describe('parseHistoryPeriod', () => {
+  it('parses weeks and days', () => {
+    expect(parseHistoryPeriod('2w')).toEqual({ amount: '2', unit: 'w' });
+    expect(parseHistoryPeriod('14d')).toEqual({ amount: '14', unit: 'd' });
+  });
+
+  it('defaults invalid values to 1 week', () => {
+    expect(parseHistoryPeriod('')).toEqual({ amount: '1', unit: 'w' });
+    expect(parseHistoryPeriod('bad')).toEqual({ amount: '1', unit: 'w' });
+  });
+});
+
+describe('formatHistoryPeriod', () => {
+  it('serializes amount and unit', () => {
+    expect(formatHistoryPeriod('4', 'w')).toBe('4w');
+    expect(formatHistoryPeriod('10', 'd')).toBe('10d');
+  });
+});
+
+describe('summation_options parsing', () => {
+  it('strips legacy input marker from yaml arrays', () => {
+    const yamlText = `habits:
+  test:
+    type: summation
+    summation_options: [1, input, 10]
+`;
+    const draft = parseHabitDraftFromText(yamlText, 'test');
+    expect(draft.quickAddItems).toEqual(['1', '10']);
+    const out = applyHabitDraftToConfigYaml(yamlText, draft, 'test');
+    const habits = (yaml.load(out) as { habits: Record<string, unknown> }).habits;
+    expect(habits.test).toMatchObject({ summation_options: [1, 10] });
+  });
+
+  it('sorts quick-add items when loading from yaml', () => {
+    const yamlText = `habits:
+  test:
+    type: summation
+    summation_options: [10, -1, 5]
+`;
+    const draft = parseHabitDraftFromText(yamlText, 'test');
+    expect(draft.quickAddItems).toEqual(['-1', '5', '10']);
+  });
+
+  it('parses numeric arrays including negatives', () => {
+    const yamlText = `habits:
+  test:
+    type: summation
+    summation_options: [-1, 5, 10]
+`;
+    const draft = parseHabitDraftFromText(yamlText, 'test');
+    expect(draft.quickAddItems).toEqual(['-1', '5', '10']); // sorted on load
+    const out = applyHabitDraftToConfigYaml(yamlText, draft, 'test');
+    const habits = (yaml.load(out) as { habits: Record<string, unknown> }).habits;
+    expect(habits.test).toMatchObject({ summation_options: [-1, 5, 10] });
+  });
+});
+
 describe('parseHabitDraftFromText', () => {
   it('parses summation fields', () => {
     const draft = parseHabitDraftFromText(SAMPLE, 'push ups');
@@ -28,9 +95,7 @@ describe('parseHabitDraftFromText', () => {
       name: 'push ups',
       type: 'summation',
       goal: '100',
-      summationMode: 'fixed',
-      summationSub: '2',
-      summationAdd: '5',
+      quickAddItems: ['1', '10'],
       historyEnabled: false,
     });
   });
@@ -42,8 +107,7 @@ describe('parseHabitDraftFromText', () => {
       optionsText: 'none\nlight',
       streakEnabled: true,
       streakOptionsText: 'none',
-      historyEnabled: true,
-      historyPeriod: '2w',
+      historyEnabled: false,
     });
   });
 });
@@ -51,7 +115,11 @@ describe('parseHabitDraftFromText', () => {
 describe('applyHabitDraftToConfigYaml', () => {
   it('updates summation goal and steps', () => {
     const base = parseHabitDraftFromText(SAMPLE, 'push ups');
-    const draft: ConfigHabitDraft = { ...base, goal: '50', summationSub: '3', summationAdd: '7' };
+    const draft: ConfigHabitDraft = {
+      ...base,
+      goal: '50',
+      quickAddItems: ['3', '7'],
+    };
     const out = applyHabitDraftToConfigYaml(SAMPLE, draft, 'push ups');
     const habits = (yaml.load(out) as { habits: Record<string, unknown> }).habits;
     expect(habits['push ups']).toEqual({
@@ -74,7 +142,24 @@ describe('applyHabitDraftToConfigYaml', () => {
     expect(habits.soda).toEqual({
       type: 'single_select',
       options: ['a', 'b', 'c'],
-      history: { period: '2w' },
+    });
+  });
+
+  it('writes history period from amount and unit', () => {
+    const base = parseHabitDraftFromText(SAMPLE, 'push ups');
+    const draft: ConfigHabitDraft = {
+      ...base,
+      historyEnabled: true,
+      historyPeriodAmount: '3',
+      historyPeriodUnit: 'w',
+    };
+    const out = applyHabitDraftToConfigYaml(SAMPLE, draft, 'push ups');
+    const habits = (yaml.load(out) as { habits: Record<string, unknown> }).habits;
+    expect(habits['push ups']).toEqual({
+      type: 'summation',
+      goal: 100,
+      summation_options: [1, 10],
+      history: { period: '3w' },
     });
   });
 

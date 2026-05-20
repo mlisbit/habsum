@@ -2,6 +2,7 @@ habits:
   push ups:
     type: summation
     goal: 100
+    summation_options: [1, 10]
     history:
       period: 1w
 

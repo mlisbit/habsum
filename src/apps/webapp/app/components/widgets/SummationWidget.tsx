@@ -69,7 +69,9 @@ export function SummationWidget({
       className={[
         'card',
         'habit-summation',
-        habit.summationOptions ? 'habit-summation--step-sub-on-card-hover' : '',
+        habit.summationOptions?.increments.some((n) => n < 0)
+          ? 'habit-summation--step-sub-on-card-hover'
+          : '',
         surfaceClassName,
         isComplete ? 'habit-widget--complete' : '',
       ]

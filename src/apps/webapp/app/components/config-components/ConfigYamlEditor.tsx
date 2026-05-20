@@ -10,7 +10,7 @@ const HABIT_TYPE_COMPLETIONS: Completion[] = [
     label: 'summation',
     type: 'constant',
     detail: 'numeric habit',
-    info: 'Tracks a numeric total. Optional summation_options can configure fixed subtract/add steps.',
+    info: 'Tracks a numeric total. Optional summation_options lists quick-add amounts beside the manual entry field.',
   },
   {
     label: 'single_select',

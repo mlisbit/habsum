@@ -1,21 +1,48 @@
 import yaml from 'js-yaml';
 import { dumpConfigYaml, parseConfigHabitCards } from './configYaml';
 
-export type SummationStepsMode = 'none' | 'fixed' | 'fixed-input';
+export type HistoryPeriodUnit = 'd' | 'w';
 
 export type ConfigHabitDraft = {
   name: string;
   type: 'summation' | 'single_select';
   goal: string;
-  summationMode: SummationStepsMode;
-  summationSub: string;
-  summationAdd: string;
+  /** Ordered numeric amounts for YAML `summation_options`. */
+  quickAddItems: string[];
   optionsText: string;
   streakEnabled: boolean;
   streakOptionsText: string;
   historyEnabled: boolean;
-  historyPeriod: string;
+  historyPeriodAmount: string;
+  historyPeriodUnit: HistoryPeriodUnit;
 };
+
+const DEFAULT_HISTORY_PERIOD_AMOUNT = '1';
+const DEFAULT_HISTORY_PERIOD_UNIT: HistoryPeriodUnit = 'w';
+
+const LEGACY_SUMMATION_INPUT_TOKEN = 'input';
+
+export function parseHistoryPeriod(period: string): {
+  amount: string;
+  unit: HistoryPeriodUnit;
+} {
+  const m = period.trim().match(/^(\d+)([dw])$/);
+  if (m?.[1] && (m[2] === 'd' || m[2] === 'w')) {
+    return { amount: m[1], unit: m[2] };
+  }
+  return { amount: DEFAULT_HISTORY_PERIOD_AMOUNT, unit: DEFAULT_HISTORY_PERIOD_UNIT };
+}
+
+export function formatHistoryPeriod(amount: string, unit: HistoryPeriodUnit): string {
+  const n = parseOptionalPositiveInt(amount);
+  if (n == null) {
+    throw new Error('history length must be a positive integer');
+  }
+  if (unit !== 'd' && unit !== 'w') {
+    throw new Error('history unit must be days or weeks');
+  }
+  return `${n}${unit}`;
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value != null && typeof value === 'object' && !Array.isArray(value);
@@ -55,47 +82,57 @@ function parseOptionalPositiveInt(raw: string): number | null {
   return n;
 }
 
-function parseSummationFromDef(
+function intString(value: unknown): string | null {
+  const n = Math.trunc(Number(value));
+  if (!Number.isFinite(n)) return null;
+  return String(n);
+}
+
+/** Sort quick-add amounts ascending (negatives first). */
+export function sortQuickAddItems(items: string[]): string[] {
+  return [...items].sort((a, b) => Math.trunc(Number(a)) - Math.trunc(Number(b)));
+}
+
+function parseSummationQuickAddEntry(entry: unknown): string | null {
+  if (typeof entry === 'string' && entry.trim().toLowerCase() === LEGACY_SUMMATION_INPUT_TOKEN) {
+    return null;
+  }
+  return intString(entry);
+}
+
+function parseQuickAddFromDef(
   def: Record<string, unknown>,
-): Pick<ConfigHabitDraft, 'summationMode' | 'summationSub' | 'summationAdd'> {
+): Pick<ConfigHabitDraft, 'quickAddItems'> {
   const raw = def.summation_options ?? def.summationOptions;
   if (raw == null) {
-    return { summationMode: 'none', summationSub: '1', summationAdd: '1' };
+    return { quickAddItems: [] };
   }
 
   if (Array.isArray(raw)) {
-    if (raw.length === 2) {
-      return {
-        summationMode: 'fixed',
-        summationSub: String(Math.trunc(Number(raw[0])) || 1),
-        summationAdd: String(Math.trunc(Number(raw[1])) || 1),
-      };
-    }
-    if (raw.length === 3) {
-      return {
-        summationMode: 'fixed-input',
-        summationSub: String(Math.trunc(Number(raw[0])) || 1),
-        summationAdd: String(Math.trunc(Number(raw[2])) || 1),
-      };
-    }
+    const items = raw
+      .map((entry) => parseSummationQuickAddEntry(entry))
+      .filter((entry): entry is string => entry != null);
+    return { quickAddItems: sortQuickAddItems(items) };
   }
 
   if (isRecord(raw)) {
-    const sub = Math.trunc(Number(raw.sub));
-    const add = Math.trunc(Number(raw.add));
-    const inputBetween =
-      raw.inputBetween === true ||
-      raw.input_between === true ||
-      raw.inputBetween === 'true' ||
-      raw.input_between === 'true';
-    return {
-      summationMode: inputBetween ? 'fixed-input' : 'fixed',
-      summationSub: String(Number.isFinite(sub) && sub >= 1 ? sub : 1),
-      summationAdd: String(Number.isFinite(add) && add >= 1 ? add : 1),
-    };
+    const sub = intString(raw.sub);
+    const add = intString(raw.add);
+    if (sub == null || add == null) return { quickAddItems: [] };
+    return { quickAddItems: sortQuickAddItems([sub, add]) };
   }
 
-  return { summationMode: 'none', summationSub: '1', summationAdd: '1' };
+  return { quickAddItems: [] };
+}
+
+export function summationQuickAddItemsToYaml(items: string[]): number[] {
+  return items.map((item) => {
+    const n = Math.trunc(Number(item));
+    if (!Number.isFinite(n)) {
+      throw new Error(`invalid quick add value: ${item}`);
+    }
+    return n;
+  });
 }
 
 export function parseHabitDraftFromDef(name: string, def: unknown): ConfigHabitDraft {
@@ -125,20 +162,25 @@ export function parseHabitDraftFromDef(name: string, def: unknown): ConfigHabitD
   }
 
   const history = def.history;
-  const historyEnabled = isRecord(history);
-  const historyPeriod =
-    historyEnabled && typeof history.period === 'string' ? history.period : '1w';
+  const historyBlockEnabled = type === 'summation' && isRecord(history);
+  const historyPeriodRaw =
+    historyBlockEnabled && typeof history.period === 'string'
+      ? history.period
+      : `${DEFAULT_HISTORY_PERIOD_AMOUNT}${DEFAULT_HISTORY_PERIOD_UNIT}`;
+  const { amount: historyPeriodAmount, unit: historyPeriodUnit } =
+    parseHistoryPeriod(historyPeriodRaw);
 
   return {
     name,
     type,
     goal,
-    ...parseSummationFromDef(def),
+    ...parseQuickAddFromDef(def),
     optionsText: options.join('\n'),
     streakEnabled,
     streakOptionsText,
-    historyEnabled,
-    historyPeriod,
+    historyEnabled: historyBlockEnabled,
+    historyPeriodAmount,
+    historyPeriodUnit,
   };
 }
 
@@ -166,20 +208,11 @@ function draftToRawHabit(draft: ConfigHabitDraft): Record<string, unknown> {
     const goal = parseOptionalPositiveInt(draft.goal);
     if (goal != null) def.goal = goal;
 
-    if (draft.summationMode === 'fixed') {
-      const sub = parseOptionalPositiveInt(draft.summationSub);
-      const add = parseOptionalPositiveInt(draft.summationAdd);
-      if (sub == null || add == null) {
-        throw new Error('subtract and add steps must be positive integers');
+    if (draft.quickAddItems.length > 0) {
+      if (draft.quickAddItems.length < 2) {
+        throw new Error('quick add options need at least two entries');
       }
-      def.summation_options = [sub, add];
-    } else if (draft.summationMode === 'fixed-input') {
-      const sub = parseOptionalPositiveInt(draft.summationSub);
-      const add = parseOptionalPositiveInt(draft.summationAdd);
-      if (sub == null || add == null) {
-        throw new Error('subtract and add steps must be positive integers');
-      }
-      def.summation_options = [sub, 'input', add];
+      def.summation_options = summationQuickAddItemsToYaml(draft.quickAddItems);
     }
   } else {
     const options = parseLines(draft.optionsText);
@@ -198,12 +231,10 @@ function draftToRawHabit(draft: ConfigHabitDraft): Record<string, unknown> {
     }
   }
 
-  if (draft.historyEnabled) {
-    const period = draft.historyPeriod.trim();
-    if (!period) {
-      throw new Error('history period is required when history is enabled');
-    }
-    def.history = { period };
+  if (draft.type === 'summation' && draft.historyEnabled) {
+    def.history = {
+      period: formatHistoryPeriod(draft.historyPeriodAmount, draft.historyPeriodUnit),
+    };
   }
 
   return def;

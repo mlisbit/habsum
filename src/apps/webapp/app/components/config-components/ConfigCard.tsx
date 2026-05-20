@@ -3,22 +3,19 @@ import type { MouseEvent, PointerEvent } from 'react';
 import { Button } from '~/core-components/Button';
 import { Icon } from '~/core-components/Icon';
 import type { ConfigHabitCard } from '~/utils/configYaml';
-import { habitDetailLines, habitTypeLabel } from './configHabitDisplay';
+import { habitDetailLines } from './configHabitDisplay';
 
 function ConfigCardDetails({ habit }: { habit: ConfigHabitCard }) {
   const details = habitDetailLines(habit);
 
   return (
-    <>
-      <p className="config-card__type text-light text-b-s">{habitTypeLabel(habit.type)}</p>
-      {details.length > 0 ? (
-        <ul className="config-card__details text-light text-b-s">
-          {details.map((line) => (
-            <li key={line}>{line}</li>
-          ))}
-        </ul>
-      ) : null}
-    </>
+    <ul className="config-card__details text-light text-b-s">
+      {details.map((line) => (
+        <li key={line} className="config-card__detail">
+          {line}
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -82,25 +79,23 @@ export function ConfigCard({
         <Icon name="grip-horizontal" size="small" className="config-card__handle-icon" />
       </span>
       <div className="config-card__body">
-        <div className="config-card__title-row">
-          <h3 className="config-card__title text-h-xs">{name}</h3>
-          <Button
-            type="tertiary"
-            size="small"
-            icon="square-pen"
-            circle
-            className="config-card__edit"
-            aria-label={`View details for ${name}`}
-            onMouseDown={stopEditButtonPointer}
-            onPointerDown={stopEditButtonPointer}
-            onClick={(event) => {
-              event.stopPropagation();
-              onEdit?.();
-            }}
-          />
-        </div>
+        <h3 className="config-card__title text-h-xs">{name}</h3>
         <ConfigCardDetails habit={habit} />
       </div>
+      <Button
+        type="tertiary"
+        size="small"
+        icon="square-pen"
+        circle
+        className="config-card__edit"
+        aria-label={`View details for ${name}`}
+        onMouseDown={stopEditButtonPointer}
+        onPointerDown={stopEditButtonPointer}
+        onClick={(event) => {
+          event.stopPropagation();
+          onEdit?.();
+        }}
+      />
     </li>
   );
 }

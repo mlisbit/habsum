@@ -36,6 +36,37 @@
   min-inline-size: max-content;
 }
 
+.count-control__manual-row {
+  display: inline-flex;
+  gap: functions.spacing(2);
+  align-items: center;
+  transform-origin: center center;
+  flex-shrink: 0;
+  min-inline-size: max-content;
+}
+
+.count-control__manual-entry {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.count-control__manual-input {
+  flex: 0 0 auto;
+  min-inline-size: 60px;
+
+  .input__input {
+    min-inline-size: 2.5rem;
+  }
+}
+
+.count-control__increments {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: functions.spacing(1);
+  align-items: center;
+}
+
 .count-control__pulse-plus {
   animation: count-control-nudge-plus 0.38s cubic-bezier(0.34, 1.35, 0.64, 1);
 }

@@ -21,13 +21,14 @@ export type HabitRowSingleSelect = {
   streak?: StreakGraphData;
 };
 
-/** Parsed from YAML `summation_options` for summation habits. */
-export type SummationOptions = {
-  add: number;
-  sub: number;
-  /** True when config is `[sub, input, add]` — − uses `sub`, middle field sets + amount (defaults to `add`). */
-  inputBetween?: boolean;
-};
+import type { SummationOptionInput, SummationOptions } from './summation-options.js';
+
+export type { SummationOptionInput, SummationOptions };
+export {
+  SUMMATION_OPTION_INPUT,
+  parseSummationOptionsFromRaw,
+  yamlSummationEntriesToIncrements,
+} from './summation-options.js';
 
 /** Parsed from DB `created_at`: calendar day (`YYYY-MM-DD`) and time portion (e.g. `HH:MM:SS`). */
 export type SummationEventCreatedAt = {
@@ -50,7 +51,7 @@ export type HabitRowSummation = {
   total: number | null;
   /** Individual events for detail views. Omitted from list views. */
   events?: SummationEvent[];
-  /** Fixed +/− amounts from config (`summation_options`); omit for free-form count control. */
+  /** Manual amount entry plus quick-add increments from config (`summation_options`). */
   summationOptions?: SummationOptions;
   history?: HabitHistory;
 };
