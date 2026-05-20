@@ -10,7 +10,7 @@ RUN npm --workspace src/apps/webapp run build
 
 FROM nginx:1.27-alpine
 
-COPY src/apps/webapp/nginx.conf /etc/nginx/conf.d/default.conf
+COPY src/apps/webapp/nginx.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=build /app/src/apps/webapp/build/client /usr/share/nginx/html
 
 EXPOSE 3000

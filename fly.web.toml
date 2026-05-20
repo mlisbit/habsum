@@ -1,0 +1,21 @@
+app = "habsum-web"
+primary_region = "sjc"
+
+[build]
+  dockerfile = "src/apps/webapp/Dockerfile"
+
+[env]
+  API_BASE_URL = "https://habsum-api.fly.dev"
+  API_UPSTREAM = "http://habsum-api.flycast:3001"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1

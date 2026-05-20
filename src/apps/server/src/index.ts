@@ -5,7 +5,9 @@ import { createApp } from './app.js';
 const app = createApp();
 
 const PORT = Number(process.env.PORT ?? 3001);
-const server = app.listen(PORT, () => {
+const HOST = process.env.HOST ?? '0.0.0.0';
+
+const server = app.listen(PORT, HOST, () => {
   const rawDir = process.env.HABSUM_CONFIG_DIR;
   const dataDir = rawDir ? resolve(rawDir) : '(missing)';
   const dbPath = rawDir ? join(dataDir, 'habsum.db') : '(missing)';
@@ -13,7 +15,7 @@ const server = app.listen(PORT, () => {
   console.log(`[habsum] HABSUM_CONFIG_DIR=${dataDir}`);
   console.log(`[habsum] DB=${dbPath}`);
   console.log(`[habsum] users=${usersDir}`);
-  console.log(`[habsum] server listening on http://localhost:${PORT}`);
+  console.log(`[habsum] server listening on http://${HOST}:${PORT}`);
 });
 
 let isShuttingDown = false;

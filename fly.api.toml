@@ -1,0 +1,25 @@
+app = "habsum-api"
+primary_region = "sjc"
+
+[build]
+  dockerfile = "src/apps/server/Dockerfile"
+
+[env]
+  PORT = "3001"
+  HABSUM_CONFIG_DIR = "/data"
+
+[mounts]
+  source = "habsum_data"
+  destination = "/data"
+
+[http_service]
+  internal_port = 3001
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+
+[[vm]]
+  memory = "512mb"
+  cpu_kind = "shared"
+  cpus = 1

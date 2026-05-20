@@ -2,6 +2,8 @@ server {
   listen 3000;
   server_name _;
 
+  resolver [fdaa::3] valid=30s ipv6=on;
+
   root /usr/share/nginx/html;
   index index.html;
 
@@ -14,7 +16,9 @@ server {
     proxy_set_header X-Forwarded-Proto $scheme;
 
     rewrite ^/api/?(.*)$ /$1 break;
-    proxy_pass http://server:3001;
+
+    set $api_upstream "${API_UPSTREAM}";
+    proxy_pass $api_upstream;
   }
 
   # SPA routing: serve index.html for unknown paths.
