@@ -9,7 +9,9 @@
     "build": "tsc -p tsconfig.json",
     "start": "HABSUM_CONFIG_DIR=\"${INIT_CWD:-$PWD}/config\" node dist/index.js",
     "init-admin": "node --import tsx src/scripts/init-admin.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@habsum/types": "*",
@@ -26,7 +28,9 @@
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^22.7.4",
     "tsx": "^4.19.1",
-    "typescript": "^5.6.2"
+    "typescript": "^5.6.2",
+    "vitest": "^3.0.9",
+    "supertest": "^7.1.0"
   },
   "engines": {
     "node": ">=20.0.0"
