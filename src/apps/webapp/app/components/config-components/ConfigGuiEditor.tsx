@@ -2,12 +2,20 @@
 import {
   Fragment,
   useCallback,
+  useEffect,
   useRef,
   useState,
   type PointerEvent as ReactPointerEvent,
 } from 'react';
+import { useLocation, useNavigate } from '@remix-run/react';
 import { useModal } from '~/context/modal';
 import type { ConfigHabitCard } from '~/utils/configYaml';
+import {
+  configEditHabitQueryValue,
+  findHabitNameByConfigEditId,
+  readConfigEditHabitId,
+  withConfigEditHabitId,
+} from '~/utils/habit-id';
 import { ConfigCard, createConfigCardDragPreview } from './ConfigCard';
 import { ConfigCardModal } from './ConfigCardModal';
 
@@ -73,7 +81,25 @@ export function ConfigGuiEditor({
   const listRef = useRef<HTMLUListElement>(null);
   const dragPreviewRef = useRef<HTMLElement | null>(null);
   const sessionRef = useRef<ReorderSession | null>(null);
+  const openedModalForHabitIdRef = useRef<string | null>(null);
+  const location = useLocation();
+  const navigate = useNavigate();
   const { present, closeModal } = useModal();
+
+  const editingHabitId = readConfigEditHabitId(location.search);
+
+  const setEditingHabitId = useCallback(
+    (habitId: string | null) => {
+      navigate(
+        {
+          pathname: location.pathname,
+          search: withConfigEditHabitId(location.search, habitId),
+        },
+        { replace: true },
+      );
+    },
+    [location.pathname, location.search, navigate],
+  );
 
   const habitByName = new Map(habits.map((h) => [h.name, h]));
 
@@ -91,8 +117,16 @@ export function ConfigGuiEditor({
     document.body.style.removeProperty('cursor');
   }, []);
 
-  const openHabitModal = useCallback(
+  const closeHabitModal = useCallback(() => {
+    openedModalForHabitIdRef.current = null;
+    setEditingHabitId(null);
+    closeModal();
+  }, [closeModal, setEditingHabitId]);
+
+  const presentModalForHabit = useCallback(
     (habit: ConfigHabitCard) => {
+      const habitId = configEditHabitQueryValue(habit.name);
+      openedModalForHabitIdRef.current = habitId;
       present({
         size: 'large',
         content: (
@@ -101,16 +135,38 @@ export function ConfigGuiEditor({
             habitName={habit.name}
             onDone={(next) => {
               onConfigTextChange(next);
-              closeModal();
+              closeHabitModal();
             }}
-            onCancel={closeModal}
+            onCancel={closeHabitModal}
           />
         ),
-        onRequestClose: closeModal,
+        onRequestClose: closeHabitModal,
       });
     },
-    [closeModal, configText, onConfigTextChange, present],
+    [closeHabitModal, configText, onConfigTextChange, present],
   );
+
+  const openHabitModal = useCallback(
+    (habit: ConfigHabitCard) => {
+      presentModalForHabit(habit);
+      setEditingHabitId(configEditHabitQueryValue(habit.name));
+    },
+    [presentModalForHabit, setEditingHabitId],
+  );
+
+  useEffect(() => {
+    if (!editingHabitId) {
+      openedModalForHabitIdRef.current = null;
+      return;
+    }
+    if (openedModalForHabitIdRef.current === editingHabitId) return;
+
+    const habitName = findHabitNameByConfigEditId(habits, editingHabitId);
+    const habit = habitName ? habits.find((h) => h.name === habitName) : undefined;
+    if (!habit) return;
+
+    presentModalForHabit(habit);
+  }, [editingHabitId, habits, presentModalForHabit]);
 
   const onReorderPointerDown = useCallback(
     (name: string, event: ReactPointerEvent<HTMLSpanElement>) => {

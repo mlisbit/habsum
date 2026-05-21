@@ -1,12 +1,13 @@
-import { useState } from 'react';
-import { Link } from '@remix-run/react';
+import { useCallback, useState } from 'react';
 import type { HabitRowSummation } from '@habsum/types/common/habit';
-import { habitDetailUrl } from '~/utils/habit-id';
+import { CountControl } from '~/components/CountControl';
+import { HabitWidgetHeading } from '~/components/widgets/HabitWidgetHeading';
 import { History } from '~/components/widgets/modules/History';
 import { Events } from '~/components/widgets/modules/Events';
+import { HabitWidgetMenuModal } from '~/components/widgets/modules/HabitWidgetMenuModal';
 import { InfoText } from '~/core-components/InfoText';
 import { ProgressBar } from '~/core-components/ProgressBar';
-import { CountControl } from '~/components/CountControl';
+import { useModal } from '~/context/modal';
 
 type SummationWidgetProps = {
   user: string;
@@ -45,14 +46,9 @@ export function SummationWidget({
   const isComplete = summationIsComplete(habit);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const { present, closeModal } = useModal();
 
-  const to = habitDetailUrl(
-    user,
-    habit.name,
-    typeof window !== 'undefined' ? window.location.search : '',
-  );
-
-  const runOp = async (fn: () => Promise<void>) => {
+  const runOp = useCallback(async (fn: () => Promise<void>) => {
     setPending(true);
     setError(null);
     try {
@@ -62,7 +58,24 @@ export function SummationWidget({
     } finally {
       setPending(false);
     }
-  };
+  }, []);
+
+  const openAdjustModal = useCallback(() => {
+    present({
+      content: (
+        <HabitWidgetMenuModal
+          user={user}
+          habitName={habit.name}
+          pending={pending}
+          closeModal={closeModal}
+          onReset={async () => {
+            await runOp(() => onClearTotal());
+            closeModal();
+          }}
+        />
+      ),
+    });
+  }, [present, closeModal, pending, onClearTotal, runOp, user, habit.name]);
 
   return (
     <div
@@ -78,26 +91,27 @@ export function SummationWidget({
         .filter(Boolean)
         .join(' ')}
     >
-      <div className="habit-summation__row">
-        <div>
-          <h2 className="text-h-l">
-            <Link className="habit-widget__title text-h-l" to={to}>
-              {habit.name}
-            </Link>
-          </h2>
-          {goal == null ? (
-            <div className="text-light text-b-m">{total == null ? 'No data' : total}</div>
-          ) : null}
-        </div>
-        <CountControl
-          interval={interval}
-          summationSteps={habit.summationOptions}
-          displayTotal={total}
+      <div className="habit-summation__header">
+        <HabitWidgetHeading
+          user={user}
           habitName={habit.name}
           pending={pending}
-          onAddDelta={(delta) => runOp(() => onAddAmount(delta))}
-          onClearTotal={() => runOp(() => onClearTotal())}
+          menuAriaLabel={`More options for ${habit.name}`}
+          onMenuClick={openAdjustModal}
+          actions={
+            <CountControl
+              interval={interval}
+              summationSteps={habit.summationOptions}
+              displayTotal={total}
+              habitName={habit.name}
+              pending={pending}
+              onAddDelta={(delta) => runOp(() => onAddAmount(delta))}
+            />
+          }
         />
+        {goal == null ? (
+          <div className="text-light text-b-m">{total == null ? 'No data' : total}</div>
+        ) : null}
       </div>
       {error ? (
         <InfoText variant="error" className="habit-summation__error">

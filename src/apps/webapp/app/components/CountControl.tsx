@@ -3,13 +3,11 @@ import type { AnimationEvent } from 'react';
 import type { SummationOptions } from '@habsum/types/common/habit';
 import { Button } from '~/core-components/Button';
 import { Input } from '~/core-components/Input';
-import { ModalBody, useModal } from '~/context/modal';
 import {
   defaultManualIncrementPlaceholder,
   formatIncrementLabel,
   hasSummationOptions,
 } from '~/utils/summationOptions';
-import { useLongPress } from '~/utils/use-long-press';
 
 /** Parses manual adjust field — blank / invalid / zero → null; otherwise truncated integer (+ or −). */
 function parseManualAdjustDelta(raw: string): number | null {
@@ -41,87 +39,7 @@ export type CountControlProps = {
   habitName: string;
   pending: boolean;
   onAddDelta: (delta: number) => Promise<void>;
-  /** Clears the stored total for today (`null`), not zero. */
-  onClearTotal: () => Promise<void>;
 };
-
-type SummationAdjustModalProps = {
-  habitName: string;
-  pending: boolean;
-  closeModal: () => void;
-  onClearTotal: () => Promise<void>;
-  onManualAdd: (delta: number) => Promise<void>;
-  increments?: number[];
-};
-
-function SummationAdjustModalContent({
-  habitName,
-  pending,
-  closeModal,
-  onClearTotal,
-  onManualAdd,
-  increments,
-}: SummationAdjustModalProps) {
-  return (
-    <>
-      <ModalBody className="count-control__modal">
-        <p id="modal-title" className="text-b-m">
-          Adjust
-        </p>
-        {increments != null && increments.length > 0 ? (
-          <p className="text-b-s">Quick add: {increments.map(formatIncrementLabel).join(' ')}</p>
-        ) : null}
-
-        <Input
-          type="number"
-          value=""
-          placeholder="e.g. 12 or −3"
-          disabled={pending}
-          submittable
-          allowNegative
-          aria-label={`Manual change for ${habitName}`}
-          applyAriaLabel={`Apply manual change for ${habitName}`}
-          onSubmit={(raw) => {
-            const delta = parseManualAdjustDelta(raw);
-            if (delta == null) return;
-            void (async () => {
-              try {
-                await onManualAdd(delta);
-                closeModal();
-              } catch {
-                /* Parent surfaces error via SummationWidget */
-              }
-            })();
-          }}
-          className="count-control__modal-input"
-        />
-        <Button
-          type="secondary"
-          size="small"
-          text="Reset"
-          disabled={pending}
-          onClick={() => {
-            void (async () => {
-              try {
-                await onClearTotal();
-                closeModal();
-              } catch {
-                /* Parent surfaces error via SummationWidget */
-              }
-            })();
-          }}
-        />
-        <Button
-          type="secondary"
-          size="small"
-          text="Cancel"
-          onClick={closeModal}
-          disabled={pending}
-        />
-      </ModalBody>
-    </>
-  );
-}
 
 export function CountControl({
   interval,
@@ -130,7 +48,6 @@ export function CountControl({
   habitName,
   pending,
   onAddDelta,
-  onClearTotal,
 }: CountControlProps) {
   const manualMode = hasSummationOptions(summationSteps);
   const increments = manualMode ? summationSteps.increments : [];
@@ -139,25 +56,6 @@ export function CountControl({
   const [minusHovered, setMinusHovered] = useState(false);
   const [pulseKind, setPulseKind] = useState<'plus' | 'minus' | null>(null);
   const [amountEditorOpen, setAmountEditorOpen] = useState(false);
-  const { present, closeModal } = useModal();
-
-  const openAdjustModal = useCallback(() => {
-    present({
-      content: (
-        <SummationAdjustModalContent
-          habitName={habitName}
-          pending={pending}
-          closeModal={closeModal}
-          onClearTotal={onClearTotal}
-          onManualAdd={onAddDelta}
-          increments={manualMode ? increments : undefined}
-        />
-      ),
-    });
-  }, [present, closeModal, onClearTotal, onAddDelta, manualMode, increments, habitName, pending]);
-
-  const inputLongPress = useLongPress(openAdjustModal);
-  const minusLongPress = useLongPress(openAdjustModal);
 
   const applyDelta = async (delta: number, opts?: { pulse?: 'plus' | 'minus' }) => {
     const { pulse } = opts ?? {};
@@ -239,8 +137,7 @@ export function CountControl({
                 text="+"
                 disabled={pending}
                 className="count-control__amount-trigger text-b-m"
-                {...inputLongPress.pointerProps}
-                onClick={inputLongPress.wrapOnClick(openAmountEditor)}
+                onClick={openAmountEditor}
                 aria-label={`Enter custom amount for ${habitName}`}
               />
             )}
@@ -284,12 +181,9 @@ export function CountControl({
           icon="minus"
           circle
           text=""
-          {...minusLongPress.pointerProps}
           onMouseEnter={() => setMinusHovered(true)}
           onMouseLeave={() => setMinusHovered(false)}
-          onClick={minusLongPress.wrapOnClick(
-            () => void applyDelta(-readAmountMagnitude(interval), { pulse: 'minus' }),
-          )}
+          onClick={() => void applyDelta(-readAmountMagnitude(interval), { pulse: 'minus' })}
           disabled={pending}
           aria-label={`Subtract amount from ${habitName}`}
         />
@@ -325,8 +219,7 @@ export function CountControl({
             text="+"
             disabled={pending}
             className="count-control__amount-trigger text-b-m"
-            {...inputLongPress.pointerProps}
-            onClick={inputLongPress.wrapOnClick(openAmountEditor)}
+            onClick={openAmountEditor}
             aria-label={`Enter custom amount for ${habitName}`}
           />
         )}

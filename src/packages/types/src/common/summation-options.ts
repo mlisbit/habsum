@@ -45,14 +45,14 @@ export function parseSummationOptionsFromRaw(raw: unknown): SummationOptions | u
 
   if (Array.isArray(raw)) {
     const increments = yamlSummationEntriesToIncrements(raw);
-    if (increments.length < 2) return undefined;
+    if (increments.length < 1) return undefined;
     return { manualInput: true, increments };
   }
 
   if (!isRecord(raw)) return undefined;
 
   const incrementsFromField = parseIncrementsArray(raw.increments);
-  if (incrementsFromField != null && incrementsFromField.length >= 2) {
+  if (incrementsFromField != null && incrementsFromField.length >= 1) {
     return { manualInput: true, increments: incrementsFromField };
   }
 

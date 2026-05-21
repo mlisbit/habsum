@@ -1,11 +1,10 @@
 import { useCallback, useState } from 'react';
-import { Link } from '@remix-run/react';
 import type { HabitRowSingleSelect } from '@habsum/types/common/habit';
-import { habitDetailUrl } from '~/utils/habit-id';
-import { useLongPress } from '~/utils/use-long-press';
+import { HabitWidgetHeading } from '~/components/widgets/HabitWidgetHeading';
+import { HabitWidgetMenuModal } from '~/components/widgets/modules/HabitWidgetMenuModal';
 import { Button } from '~/core-components/Button';
 import { InfoText } from '~/core-components/InfoText';
-import { ModalActions, ModalBody, useModal } from '~/context/modal';
+import { useModal } from '~/context/modal';
 import { Streak } from '~/components/widgets/modules/Streak';
 
 type SingleSelectWidgetProps = {
@@ -50,28 +49,16 @@ export function SingleSelectWidget({
 
     present({
       content: (
-        <>
-          <ModalBody>
-            <p id="modal-title" className="text-b-m">
-              Reset?
-            </p>
-          </ModalBody>
-          <ModalActions>
-            <Button type="secondary" size="small" text="Cancel" onClick={closeModal} />
-            <Button type="secondary" size="small" text="Reset" onClick={() => void runClear()} />
-          </ModalActions>
-        </>
+        <HabitWidgetMenuModal
+          user={user}
+          habitName={habit.name}
+          pending={pending}
+          closeModal={closeModal}
+          onReset={runClear}
+        />
       ),
     });
-  }, [present, closeModal, onClearSelection]);
-
-  const longPress = useLongPress(openResetModal);
-
-  const to = habitDetailUrl(
-    user,
-    habit.name,
-    typeof window !== 'undefined' ? window.location.search : '',
-  );
+  }, [present, closeModal, onClearSelection, pending, user, habit.name]);
 
   return (
     <div
@@ -85,13 +72,13 @@ export function SingleSelectWidget({
         .join(' ')}
     >
       <div className="habit-select__row">
-        <div>
-          <h2 className="text-h-l">
-            <Link className="habit-widget__title text-h-l" to={to}>
-              {habit.name}
-            </Link>
-          </h2>
-        </div>
+        <HabitWidgetHeading
+          user={user}
+          habitName={habit.name}
+          pending={pending}
+          menuAriaLabel={`More options for ${habit.name}`}
+          onMenuClick={openResetModal}
+        />
         <div className="habit-select__options">
           {habit.options.map((opt) => {
             const selected = habit.value === opt;
@@ -105,18 +92,19 @@ export function SingleSelectWidget({
                 className={
                   dim ? 'habit-select__option habit-select__option--dim' : 'habit-select__option'
                 }
-                {...longPress.pointerProps}
-                onClick={longPress.wrapOnClick(async () => {
-                  setPending(true);
-                  setError(null);
-                  try {
-                    await onSelectOption(opt);
-                  } catch (e) {
-                    setError(e instanceof Error ? e.message : String(e));
-                  } finally {
-                    setPending(false);
-                  }
-                })}
+                onClick={() => {
+                  void (async () => {
+                    setPending(true);
+                    setError(null);
+                    try {
+                      await onSelectOption(opt);
+                    } catch (e) {
+                      setError(e instanceof Error ? e.message : String(e));
+                    } finally {
+                      setPending(false);
+                    }
+                  })();
+                }}
               />
             );
           })}

@@ -1,5 +1,5 @@
 import type { ReactElement } from 'react';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ModalProvider } from '~/context/modal';
@@ -22,8 +22,6 @@ function renderWithModal(ui: ReactElement) {
 }
 
 describe('CountControl', () => {
-  const onClearTotal = vi.fn(async () => {});
-
   it('free-form: shows + trigger; spinbutton after click', async () => {
     const user = userEvent.setup();
     renderWithModal(
@@ -33,7 +31,6 @@ describe('CountControl', () => {
         habitName={habitName}
         pending={false}
         onAddDelta={vi.fn(async () => {})}
-        onClearTotal={onClearTotal}
       />,
     );
     const trigger = screen.getByRole('button', { name: /Enter custom amount for/ });
@@ -55,7 +52,6 @@ describe('CountControl', () => {
         habitName={habitName}
         pending={false}
         onAddDelta={vi.fn(async () => {})}
-        onClearTotal={onClearTotal}
       />,
     );
     expect(screen.getByRole('button', { name: /Subtract amount from/ })).toBeTruthy();
@@ -71,7 +67,6 @@ describe('CountControl', () => {
         habitName={habitName}
         pending={false}
         onAddDelta={onAddDelta}
-        onClearTotal={onClearTotal}
       />,
     );
     await user.click(screen.getByRole('button', { name: /Enter custom amount for/ }));
@@ -90,7 +85,6 @@ describe('CountControl', () => {
         habitName={habitName}
         pending={false}
         onAddDelta={vi.fn(async () => {})}
-        onClearTotal={onClearTotal}
       />,
     );
     expect(screen.getByRole('button', { name: /Enter custom amount for/ })).toBeTruthy();
@@ -111,7 +105,6 @@ describe('CountControl', () => {
         habitName={habitName}
         pending={false}
         onAddDelta={onAddDelta}
-        onClearTotal={onClearTotal}
       />,
     );
     await user.click(screen.getByRole('button', { name: /Add 5 to/ }));
@@ -131,7 +124,6 @@ describe('CountControl', () => {
         habitName={habitName}
         pending={false}
         onAddDelta={onAddDelta}
-        onClearTotal={onClearTotal}
       />,
     );
     await user.click(screen.getByRole('button', { name: /Enter custom amount for/ }));
@@ -139,30 +131,5 @@ describe('CountControl', () => {
     await user.type(input, '12');
     await user.click(screen.getByRole('button', { name: /Apply amount for/ }));
     expect(onAddDelta).toHaveBeenCalledWith(12);
-  });
-
-  it('manual increments: long-press opens adjust modal with quick-add hint', async () => {
-    vi.useFakeTimers();
-    renderWithModal(
-      <CountControl
-        interval={1}
-        summationSteps={manualSteps}
-        displayTotal={null}
-        habitName={habitName}
-        pending={false}
-        onAddDelta={vi.fn(async () => {})}
-        onClearTotal={onClearTotal}
-      />,
-    );
-    const plus = screen.getByRole('button', { name: /Enter custom amount for/ });
-    fireEvent.pointerDown(plus, { button: 0 });
-    await vi.advanceTimersByTimeAsync(520);
-    fireEvent.pointerUp(plus);
-
-    expect(screen.getByText('Adjust')).toBeTruthy();
-    const tapsLine = screen.getByText(/Quick add:/);
-    expect(tapsLine.textContent).toContain('-1');
-    expect(tapsLine.textContent).toContain('+5');
-    expect(tapsLine.textContent).toContain('+10');
   });
 });

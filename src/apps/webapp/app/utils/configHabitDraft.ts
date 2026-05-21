@@ -209,9 +209,6 @@ function draftToRawHabit(draft: ConfigHabitDraft): Record<string, unknown> {
     if (goal != null) def.goal = goal;
 
     if (draft.quickAddItems.length > 0) {
-      if (draft.quickAddItems.length < 2) {
-        throw new Error('quick add options need at least two entries');
-      }
       def.summation_options = summationQuickAddItemsToYaml(draft.quickAddItems);
     }
   } else {

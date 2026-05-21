@@ -4,6 +4,10 @@ import { formatIncrementLabel } from '../summationOptions';
 
 describe('parseSummationOptionsFromRaw', () => {
   it('maps yaml arrays to manualInput + increments without sign conversion', () => {
+    expect(parseSummationOptionsFromRaw([10])).toEqual({
+      manualInput: true,
+      increments: [10],
+    });
     expect(parseSummationOptionsFromRaw([1, 10])).toEqual({
       manualInput: true,
       increments: [1, 10],

@@ -86,6 +86,19 @@ describe('summation_options parsing', () => {
     const habits = (yaml.load(out) as { habits: Record<string, unknown> }).habits;
     expect(habits.test).toMatchObject({ summation_options: [-1, 5, 10] });
   });
+
+  it('allows a single quick-add entry', () => {
+    const yamlText = `habits:
+  test:
+    type: summation
+    summation_options: [10]
+`;
+    const draft = parseHabitDraftFromText(yamlText, 'test');
+    expect(draft.quickAddItems).toEqual(['10']);
+    const out = applyHabitDraftToConfigYaml(yamlText, draft, 'test');
+    const habits = (yaml.load(out) as { habits: Record<string, unknown> }).habits;
+    expect(habits.test).toMatchObject({ summation_options: [10] });
+  });
 });
 
 describe('parseHabitDraftFromText', () => {
