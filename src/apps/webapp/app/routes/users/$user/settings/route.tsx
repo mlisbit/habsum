@@ -4,6 +4,7 @@ import { getAuthMe, getUserSession, logout } from '~/api.client';
 import { LOGIN_TOAST_USER_AREA, redirectToLoginWithToast } from '~/context/toast';
 import { ensureUserSessionForRoute } from '~/utils/user-session-guard';
 import { Button } from '~/core-components/Button';
+import { Footer } from '~/components/Footer';
 import { applyUiTheme } from '~/theme.client';
 
 export default function UserSettingsLayout() {
@@ -116,6 +117,7 @@ export default function UserSettingsLayout() {
               void logout().then(() => window.location.assign('/login'));
             }}
           />
+          <Footer />
         </nav>
       </aside>
       <main className="settings__main">

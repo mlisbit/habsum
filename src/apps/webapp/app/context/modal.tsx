@@ -36,19 +36,43 @@ type ModalContextValue = {
 const ModalContext = createContext<ModalContextValue | null>(null);
 
 /** Shell slots for modal content. Compose inside `present({ content: <>…</> })`. */
-export function ModalTitle({
+export function ModalHeader({
   children,
   id = 'modal-title',
   className,
+  titleClassName,
+  dismissDisabled = false,
+  dismissLabel = 'Close',
 }: {
   children: ReactNode;
   id?: string;
   className?: string;
+  titleClassName?: string;
+  dismissDisabled?: boolean;
+  dismissLabel?: string;
 }) {
+  const { closeModal } = useModal();
+
   return (
-    <h2 id={id} className={['text-h-l', className].filter(Boolean).join(' ')}>
-      {children}
-    </h2>
+    <div className={['modal__header', className].filter(Boolean).join(' ')}>
+      <h2
+        id={id}
+        className={['modal__header-title', 'text-h-l', titleClassName].filter(Boolean).join(' ')}
+      >
+        {children}
+      </h2>
+      <Button
+        type="tertiary"
+        size="small"
+        icon="close"
+        circle
+        text=""
+        className="modal__header-dismiss"
+        aria-label={dismissLabel}
+        onClick={closeModal}
+        disabled={dismissDisabled}
+      />
+    </div>
   );
 }
 
@@ -84,7 +108,7 @@ export function AlertModal({
 }: AlertModalProps) {
   return (
     <>
-      <ModalTitle>{title}</ModalTitle>
+      <ModalHeader>{title}</ModalHeader>
       <ModalBody>
         <p className="text-b-m text-light">{message}</p>
       </ModalBody>

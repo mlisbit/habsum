@@ -1,6 +1,6 @@
 // exclusive-bem-block: config-habit-modal
 import { useMemo, useState, type ReactNode } from 'react';
-import { ModalActions, ModalBody, ModalTitle } from '~/context/modal';
+import { ModalActions, ModalBody, ModalHeader } from '~/context/modal';
 import { Button } from '~/core-components/Button';
 import { InfoText } from '~/core-components/InfoText';
 import { CollapsibleCard } from '~/core-components/CollapsibleCard';
@@ -129,9 +129,7 @@ export function ConfigCardModal({ configText, habitName, onDone, onCancel }: Con
 
   return (
     <>
-      <ModalTitle className="config-habit-modal__title">
-        Editing habit: {editingHabitName}
-      </ModalTitle>
+      <ModalHeader>Editing habit: {editingHabitName}</ModalHeader>
       <ModalBody className="config-habit-modal">
         <ConfigHabitModalField label="Name" info={FIELD_HELP.name} htmlFor="habit-name">
           <Input

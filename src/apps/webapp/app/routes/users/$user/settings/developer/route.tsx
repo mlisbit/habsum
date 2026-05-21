@@ -17,7 +17,7 @@ import { Hoverable } from '~/core-components/Hoverable';
 import type { IconName } from '~/core-components/Icon';
 import { InfoText } from '~/core-components/InfoText';
 import { Input } from '~/core-components/Input';
-import { ModalActions, ModalBody, ModalTitle, useModal } from '~/context/modal';
+import { ModalActions, ModalBody, ModalHeader, useModal } from '~/context/modal';
 
 const clockFormat: Intl.DateTimeFormatOptions = {
   weekday: 'long',
@@ -70,7 +70,7 @@ function UserCredentialsModal({
 }: UserCredentialsModalProps) {
   return (
     <>
-      <ModalTitle>{title}</ModalTitle>
+      <ModalHeader>{title}</ModalHeader>
       <ModalBody className="developer-page__add-user-modal">
         <p className="text-light text-b-m">{description}</p>
         <dl className="developer-page__credentials">
@@ -144,7 +144,7 @@ function AddUserModal({ onCreated, onClose }: AddUserModalProps) {
 
   return (
     <>
-      <ModalTitle>Add user</ModalTitle>
+      <ModalHeader>Add user</ModalHeader>
       <ModalBody className="developer-page__add-user-modal">
         <p className="text-light text-b-m">
           Enter an email address. A username and temporary password will be generated automatically.
@@ -218,7 +218,7 @@ function ResetPasswordModal({ targetUsername, onDone, onClose }: ManageUserModal
   if (error) {
     return (
       <>
-        <ModalTitle>Change password</ModalTitle>
+        <ModalHeader>Change password</ModalHeader>
         <ModalBody className="developer-page__add-user-modal">
           <InfoText variant="error">{error}</InfoText>
         </ModalBody>
@@ -232,7 +232,7 @@ function ResetPasswordModal({ targetUsername, onDone, onClose }: ManageUserModal
   if (!credentials) {
     return (
       <>
-        <ModalTitle>Change password</ModalTitle>
+        <ModalHeader>Change password</ModalHeader>
         <ModalBody className="developer-page__add-user-modal">
           <p className="text-light text-b-m">Generating a new password for {targetUsername}…</p>
         </ModalBody>
@@ -271,7 +271,7 @@ function DeleteUserModal({ targetUsername, onDone, onClose }: ManageUserModalPro
 
   return (
     <>
-      <ModalTitle>Delete user</ModalTitle>
+      <ModalHeader>Delete user</ModalHeader>
       <ModalBody className="developer-page__add-user-modal">
         <p className="text-b-m">
           Are you sure you want to delete <strong className="text-bold">{targetUsername}</strong>?

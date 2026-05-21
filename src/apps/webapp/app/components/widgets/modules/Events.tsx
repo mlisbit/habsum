@@ -3,7 +3,7 @@ import { useCallback, useMemo, useState } from 'react';
 import type { SummationEvent, SummationEventCreatedAt } from '@habsum/types/common/habit';
 import { BarGraph } from '~/components/BarGraph';
 import { Button } from '~/core-components/Button';
-import { ModalActions, ModalBody, ModalTitle, useModal } from '~/context/modal';
+import { ModalBody, ModalHeader, useModal } from '~/context/modal';
 import { summationHourlyBarGraphData } from '~/utils/formatters/summation-hourly-bar-data';
 
 type EventsProps = {
@@ -55,12 +55,10 @@ function formatEventDay(dateKey: string) {
 function EventsModalContent({
   habitName,
   events,
-  closeModal,
   onDeleteEvent,
 }: {
   habitName: string;
   events: SummationEvent[];
-  closeModal: () => void;
   onDeleteEvent: (eventId: number) => Promise<void>;
 }) {
   const [rows, setRows] = useState(events);
@@ -78,7 +76,7 @@ function EventsModalContent({
 
   return (
     <>
-      <ModalTitle>Events — {habitName}</ModalTitle>
+      <ModalHeader>Events — {habitName}</ModalHeader>
       <ModalBody className="events__modal-body">
         {rows.length > 0 ? (
           <ul className="events__list">
@@ -107,9 +105,6 @@ function EventsModalContent({
           <p className="text-light text-b-m">No summation events recorded for this day.</p>
         )}
       </ModalBody>
-      <ModalActions>
-        <Button type="secondary" size="small" text="Close" onClick={closeModal} />
-      </ModalActions>
     </>
   );
 }
@@ -136,7 +131,6 @@ export function Events({
         <EventsModalContent
           habitName={habitName}
           events={events}
-          closeModal={closeModal}
           onDeleteEvent={onDeleteSummationEvent}
         />
       ),

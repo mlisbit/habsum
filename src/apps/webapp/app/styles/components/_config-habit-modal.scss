@@ -1,10 +1,5 @@
 @use 'functions';
 
-// Block: config-habit-modal
-.config-habit-modal__title {
-  margin: 0 0 functions.spacing(2);
-}
-
 .config-habit-modal {
   display: flex;
   flex-direction: column;

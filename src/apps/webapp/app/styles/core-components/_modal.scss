@@ -21,6 +21,34 @@
   width: min(100%, 36rem);
 }
 
+.modal__header {
+  display: flex;
+  align-items: center;
+  gap: functions.spacing(1);
+  margin-bottom: functions.spacing(3);
+}
+
+.modal__header-title {
+  margin: 0;
+  min-width: 0;
+  flex: 1;
+}
+
+.modal__header-title--sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  border: 0;
+}
+
+.modal__header-dismiss {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
 .modal__actions {
   margin-top: functions.spacing(3);
   display: flex;

@@ -1,6 +1,12 @@
 @use 'functions';
 
-// app/routes/users/$user/habits/detail/route.tsx
+.habit-history {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
 .habit-history__header {
   display: flex;
   align-items: flex-start;
@@ -27,7 +33,7 @@
   min-width: min(320px, 100%);
 }
 
-.habit-history {
+.habit-history__main {
   display: grid;
   grid-template-columns: 1fr;
   gap: functions.spacing(3);
@@ -35,7 +41,7 @@
 }
 
 @media (min-width: 860px) {
-  .habit-history {
+  .habit-history__main {
     grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
   }
 }

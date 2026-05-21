@@ -4,6 +4,7 @@ import { Calendar, type CalendarDataRender } from '~/components/Calendar';
 import { CellDataDisplay } from '~/components/CellDataDisplay';
 import { CellHoverDisplay } from '~/components/CellHoverDisplay';
 import { DayNav } from '~/components/DayNav';
+import { Footer } from '~/components/Footer';
 import { Button } from '~/core-components/Button';
 import { InfoText } from '~/core-components/InfoText';
 import { Pill } from '~/core-components/Pill';
@@ -201,7 +202,7 @@ export default function HabitDetailRoute() {
   }, [historyRes, today, tzOffsetMinutes]);
 
   return (
-    <div>
+    <div className="habit-history">
       <div className="habit-history__header">
         <div className="habit-history__header-left">
           <Button
@@ -246,7 +247,7 @@ export default function HabitDetailRoute() {
         />
       </div>
 
-      <div className="habit-history">
+      <div className="habit-history__main">
         <div className="habit-history__calendar">
           <div className="card">
             <Calendar
@@ -335,6 +336,8 @@ export default function HabitDetailRoute() {
             : null}
         </div>
       </div>
+
+      <Footer />
     </div>
   );
 }
