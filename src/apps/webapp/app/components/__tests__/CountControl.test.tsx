@@ -76,6 +76,25 @@ describe('CountControl', () => {
     expect(onAddDelta).toHaveBeenCalledWith(3);
   });
 
+  it('free-form: typed zero submits delta of 0', async () => {
+    const user = userEvent.setup();
+    const onAddDelta = vi.fn(async () => {});
+    renderWithModal(
+      <CountControl
+        interval={3}
+        displayTotal={null}
+        habitName={habitName}
+        pending={false}
+        onAddDelta={onAddDelta}
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: /Enter custom amount for/ }));
+    const input = screen.getByRole('spinbutton', { name: /Amount for/ });
+    await user.type(input, '0');
+    await user.click(screen.getByRole('button', { name: /Apply amount for/ }));
+    expect(onAddDelta).toHaveBeenCalledWith(0);
+  });
+
   it('manual increments: shows + trigger and quick-add buttons', () => {
     renderWithModal(
       <CountControl

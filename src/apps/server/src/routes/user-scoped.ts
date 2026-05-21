@@ -64,6 +64,7 @@ import {
 import {
   emptyHabitForHistory,
   habitHistoryForConfiguredPeriod,
+  habitHistoryIfConfigured,
   habitRowsForHistory,
   minDate,
   parseHabitFilter,
@@ -667,6 +668,8 @@ userScopedRouter.patch(
     }
 
     const mode = typeof action === 'string' ? action : 'add';
+    const firstDate = getFirstDate(user);
+    const historyFields = habitHistoryIfConfigured(user, known, date, firstDate);
 
     if (mode === 'delete_event') {
       const rawId = body.eventId;
@@ -687,6 +690,7 @@ userScopedRouter.patch(
         events: mapSummationEventsToApi(events),
         type: known.type,
         goal: known.goal,
+        ...historyFields,
       };
       return res.json(out);
     }
@@ -701,6 +705,7 @@ userScopedRouter.patch(
         events: [],
         type: known.type,
         goal: known.goal,
+        ...historyFields,
       };
       return res.json(out);
     }
@@ -739,6 +744,7 @@ userScopedRouter.patch(
       events: mapSummationEventsToApi(events),
       type: known.type,
       goal: known.goal,
+      ...historyFields,
     };
     return res.json(out);
   },

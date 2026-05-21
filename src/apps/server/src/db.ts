@@ -664,9 +664,8 @@ export function setTotal(
 ): number {
   const next = Math.max(0, Math.trunc(total));
   deleteSummationEventsForDayStmt.run({ user, habit, date });
-  if (next > 0) {
-    insertSummationEventStmt.get({ user, habit, date, amount: next, createdAt: createdAtSql });
-  }
+  // Explicit zero is stored as a zero-amount event so it is distinct from "no data" (null).
+  insertSummationEventStmt.get({ user, habit, date, amount: next, createdAt: createdAtSql });
   return next;
 }
 
@@ -681,7 +680,18 @@ export function addToTotal(
   const base = current ?? 0;
   const requested = Math.trunc(delta);
   const amount = requested < 0 ? Math.max(requested, -base) : requested;
-  if (amount === 0) return { total: current, event: null };
+  if (amount === 0) {
+    if (current != null) return { total: current, event: null };
+    const event = insertSummationEventStmt.get({
+      user,
+      habit,
+      date,
+      amount: 0,
+      createdAt: createdAtSql,
+    });
+    if (!event) throw new Error('failed to record summation event');
+    return { total: 0, event };
+  }
 
   const event = insertSummationEventStmt.get({
     user,

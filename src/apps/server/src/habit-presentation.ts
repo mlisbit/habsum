@@ -151,6 +151,25 @@ export function habitHistoryForConfiguredPeriod(
   };
 }
 
+/** Optional history snapshot for summation PATCH responses (matches GET habits). */
+export function habitHistoryIfConfigured(
+  user: string,
+  habitDef: HabitDef,
+  viewDate: string,
+  firstDate: string | null,
+): { history: HabitHistory } | Record<string, never> {
+  if (!habitDef.history) return {};
+  return {
+    history: habitHistoryForConfiguredPeriod(
+      user,
+      habitDef.name,
+      viewDate,
+      firstDate,
+      habitDef.history.period,
+    ),
+  };
+}
+
 /** Window length returned for `single_select.streak.data` in `GET .../habits` (inclusive end = API view date). */
 const MIN_STREAK_DAYS = 7;
 

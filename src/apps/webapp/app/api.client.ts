@@ -304,6 +304,7 @@ export async function patchHabit(
     type: res.type,
     goal: res.goal,
     ...(res.events ? { events: res.events } : {}),
+    ...(res.history ? { history: res.history } : {}),
   } satisfies Habit;
 }
 

@@ -9,14 +9,13 @@ import {
   hasSummationOptions,
 } from '~/utils/summationOptions';
 
-/** Parses manual adjust field — blank / invalid / zero → null; otherwise truncated integer (+ or −). */
+/** Parses manual adjust field — blank / invalid → null; otherwise truncated integer (+ or −; 0 is valid). */
 function parseManualAdjustDelta(raw: string): number | null {
   const trimmed = raw.trim();
   if (trimmed === '') return null;
   const parsed = Number(trimmed);
   if (!Number.isFinite(parsed)) return null;
-  const n = Math.trunc(parsed);
-  return n !== 0 ? n : null;
+  return Math.trunc(parsed);
 }
 
 /** Parses amount text for free-form mode (blank / invalid → fallback). */
