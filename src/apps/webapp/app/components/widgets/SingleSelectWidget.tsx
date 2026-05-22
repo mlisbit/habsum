@@ -2,8 +2,8 @@ import { useCallback, useState } from 'react';
 import type { HabitRowSingleSelect } from '@habsum/types/common/habit';
 import { HabitWidgetHeading } from '~/components/widgets/HabitWidgetHeading';
 import { HabitWidgetMenuModal } from '~/components/widgets/modules/HabitWidgetMenuModal';
-import { Button } from '~/core-components/Button';
 import { InfoText } from '~/core-components/InfoText';
+import { TogglePill } from '~/core-components/Pill';
 import { useModal } from '~/context/modal';
 import { Streak } from '~/components/widgets/modules/Streak';
 
@@ -84,20 +84,23 @@ export function SingleSelectWidget({
             const selected = habit.value === opt;
             const dim = habit.value != null && !selected;
             return (
-              <Button
+              <TogglePill
                 key={opt}
-                type={selected ? 'primary' : 'secondary'}
-                text={opt}
+                selected={selected}
                 disabled={pending}
                 className={
                   dim ? 'habit-select__option habit-select__option--dim' : 'habit-select__option'
                 }
-                onClick={() => {
+                onToggle={(nextSelected) => {
                   void (async () => {
                     setPending(true);
                     setError(null);
                     try {
-                      await onSelectOption(opt);
+                      if (nextSelected) {
+                        await onSelectOption(opt);
+                      } else {
+                        await onClearSelection();
+                      }
                     } catch (e) {
                       setError(e instanceof Error ? e.message : String(e));
                     } finally {
@@ -105,7 +108,9 @@ export function SingleSelectWidget({
                     }
                   })();
                 }}
-              />
+              >
+                {opt}
+              </TogglePill>
             );
           })}
         </div>
