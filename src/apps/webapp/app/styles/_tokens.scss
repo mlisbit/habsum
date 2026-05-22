@@ -81,4 +81,10 @@ html[data-theme='light'] {
   --border-radius-s: 4px;
   --border-radius-m: 10px;
   --border-radius-full: 999px;
+  --font-size-s: 12px;
+  --font-size-m: 14px;
+  --font-size-l: 16px;
+
+  // small buttons look off when using the 5px scale
+  --cta-padding-small: 6px 13px;
 }

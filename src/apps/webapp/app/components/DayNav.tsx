@@ -36,7 +36,7 @@ export function DayNav({
           <div className="day-nav__controls">
             <Button
               type="tertiary"
-              size="small"
+              size="medium"
               icon="chevronLeft"
               text=""
               circle
@@ -46,7 +46,7 @@ export function DayNav({
             />
             <Button
               type="tertiary"
-              size="small"
+              size="medium"
               icon="chevronRight"
               text=""
               circle

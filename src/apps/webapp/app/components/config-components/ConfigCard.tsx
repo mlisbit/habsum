@@ -76,7 +76,7 @@ export function ConfigCard({
         aria-hidden
         onPointerDown={onReorderPointerDown}
       >
-        <Icon name="grip-horizontal" size="small" className="config-card__handle-icon" />
+        <Icon name="grip-horizontal" size="medium" className="config-card__handle-icon" />
       </span>
       <div className="config-card__body">
         <h3 className="config-card__title text-h-xs">{name}</h3>
@@ -84,7 +84,7 @@ export function ConfigCard({
       </div>
       <Button
         type="tertiary"
-        size="small"
+        size="medium"
         icon="square-pen"
         circle
         className="config-card__edit"

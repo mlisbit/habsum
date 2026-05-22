@@ -7,7 +7,7 @@ import { DayNav } from '~/components/DayNav';
 import { Footer } from '~/components/Footer';
 import { Button } from '~/core-components/Button';
 import { InfoText } from '~/core-components/InfoText';
-import { Pill } from '~/core-components/Pill';
+import { TogglePill } from '~/core-components/Pill';
 import { SingleSelectWidget, SummationWidget } from '~/components/widgets';
 import { getAuthMe, getHabitHistory, patchHabit, type Habit } from '~/api.client';
 import { LOGIN_TOAST_USER_AREA, redirectToLoginWithToast } from '~/context/toast';
@@ -223,14 +223,13 @@ export default function HabitDetailRoute() {
           {historyRes ? (
             <div className="habit-history__filter-pills">
               {Object.entries(historyRes.habits).map(([habitId, habitName]) => (
-                <Pill
+                <TogglePill
                   key={habitId}
                   selected={habitIds.includes(habitId)}
-                  className="text-b-m"
                   onToggle={(nextSelected) => setHabitFilterInUrl(habitId, nextSelected)}
                 >
                   {habitName}
-                </Pill>
+                </TogglePill>
               ))}
             </div>
           ) : (

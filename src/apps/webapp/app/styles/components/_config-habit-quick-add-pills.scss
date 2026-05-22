@@ -10,11 +10,7 @@
 }
 
 .config-habit-quick-add-pills__add {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: functions.spacing(1, 2);
-  min-inline-size: 2.5rem;
+  flex-shrink: 0;
 }
 
 .config-habit-quick-add-pills__add-input {

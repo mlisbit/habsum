@@ -90,7 +90,7 @@ function EventsModalContent({
                   </span>
                   <Button
                     type="tertiary"
-                    size="small"
+                    size="medium"
                     icon="close"
                     circle
                     aria-label="Remove this event"
@@ -155,7 +155,7 @@ export function Events({
           <span>{events.length}</span>
           <Button
             type="tertiary"
-            size="small"
+            size="medium"
             icon="square-pen"
             circle
             aria-label={`Open events for ${habitName}`}

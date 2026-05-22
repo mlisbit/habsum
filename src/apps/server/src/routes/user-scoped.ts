@@ -88,7 +88,11 @@ import { accountCreatedAtToApi } from '@habsum/types/common/day';
 import { entitlementsForUser } from '../entitlements.js';
 import { appendSessionCookie, sessionTtlSeconds } from '../session-cookie.js';
 import { mapSummationEventsToApi } from '../summation-event-api.js';
-import { parseClientCreatedAtIso, resolveHabitApiDateQuery } from '../server-time.js';
+import {
+  parseClientCreatedAtIso,
+  parseTzOffsetMinutes,
+  resolveHabitApiDateQuery,
+} from '../server-time.js';
 
 export const userScopedRouter = Router({ mergeParams: true });
 
@@ -529,7 +533,10 @@ userScopedRouter.get(
 userScopedRouter.get(
   '/habits',
   requireMatchingRouteUser,
-  (req: Request<{ user: string }, unknown, unknown, { date?: string }>, res: Response) => {
+  (
+    req: Request<{ user: string }, unknown, unknown, { date?: string; tzOffsetMinutes?: string }>,
+    res: Response,
+  ) => {
     const { user } = req.params;
 
     const config = loadUserConfigForResponse(user, res);
@@ -538,6 +545,7 @@ userScopedRouter.get(
     const firstDate = getFirstDate(user);
     const at = new Date();
     const date = resolveHabitApiDateQuery(req.query.date, at);
+    const tzOffsetMinutes = parseTzOffsetMinutes(req.query.tzOffsetMinutes);
 
     const habits = config.habits.map((h) => {
       if (h.type === 'single_select') {
@@ -549,7 +557,14 @@ userScopedRouter.get(
           value: getSelect(user, h.name, date),
           ...(h.streak
             ? {
-                streak: streakGraphForConfiguredWindow(user, h.name, date, h.streak.options),
+                streak: streakGraphForConfiguredWindow(
+                  user,
+                  h.name,
+                  date,
+                  h.streak.options,
+                  at,
+                  tzOffsetMinutes,
+                ),
               }
             : {}),
         } satisfies Habit;
@@ -627,6 +642,8 @@ userScopedRouter.patch(
     }
 
     if (known.type === 'single_select') {
+      const at = new Date();
+      const tzOffsetMinutes = parseTzOffsetMinutes(body.tzOffsetMinutes);
       const mode = typeof action === 'string' ? action : undefined;
       if (mode === 'clear') {
         deleteDailySelect(user, habit, date);
@@ -639,7 +656,16 @@ userScopedRouter.patch(
           type: known.type,
           options: opts,
           ...(known.streak
-            ? { streak: streakGraphForConfiguredWindow(user, habit, date, known.streak.options) }
+            ? {
+                streak: streakGraphForConfiguredWindow(
+                  user,
+                  habit,
+                  date,
+                  known.streak.options,
+                  at,
+                  tzOffsetMinutes,
+                ),
+              }
             : {}),
         };
         return res.json(out);
@@ -661,7 +687,16 @@ userScopedRouter.patch(
         type: known.type,
         options: opts,
         ...(known.streak
-          ? { streak: streakGraphForConfiguredWindow(user, habit, date, known.streak.options) }
+          ? {
+              streak: streakGraphForConfiguredWindow(
+                user,
+                habit,
+                date,
+                known.streak.options,
+                at,
+                tzOffsetMinutes,
+              ),
+            }
           : {}),
       };
       return res.json(out);

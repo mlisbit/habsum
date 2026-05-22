@@ -1,6 +1,6 @@
 // exclusive-bem-block: config-habit-quick-add-pills
 import { useState } from 'react';
-import { Icon } from '~/core-components/Icon';
+import { Button } from '~/core-components/Button';
 import { Input } from '~/core-components/Input';
 import { DismissablePill } from '~/core-components/Pill';
 import { sortQuickAddItems } from '~/utils/configHabitDraft';
@@ -71,14 +71,15 @@ export function ConfigHabitQuickAddPills({ values, onChange }: ConfigHabitQuickA
           revertAriaLabel="Cancel"
         />
       ) : (
-        <button
-          type="button"
-          className="pill config-habit-quick-add-pills__add text-b-m"
+        <Button
+          type="tertiary"
+          size="medium"
+          icon="plus"
+          circle
+          className="config-habit-quick-add-pills__add"
           aria-label="Add quick add value"
           onClick={() => setAdding(true)}
-        >
-          <Icon name="plus" size="small" />
-        </button>
+        />
       )}
     </div>
   );

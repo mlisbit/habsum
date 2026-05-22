@@ -33,7 +33,7 @@ export function InfoText({ variant, children, className, ...rest }: InfoTextProp
 
   return (
     <p className={classes} {...rest}>
-      <Icon className="info-text__icon" name={ICON_BY_VARIANT[variant]} size="small" />
+      <Icon className="info-text__icon" name={ICON_BY_VARIANT[variant]} size="medium" />
       <span>{children}</span>
     </p>
   );

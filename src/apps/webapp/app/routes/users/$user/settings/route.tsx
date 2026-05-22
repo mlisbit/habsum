@@ -110,7 +110,7 @@ export default function UserSettingsLayout() {
           ) : null}
           <Button
             type="secondary"
-            size="small"
+            size="medium"
             text="Logout"
             className="settings__logout"
             onClick={() => {

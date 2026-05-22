@@ -1,8 +1,8 @@
 // exclusive-bem-block: config-habit-option-pills
 import { useState } from 'react';
-import { Icon } from '~/core-components/Icon';
+import { Button } from '~/core-components/Button';
 import { Input } from '~/core-components/Input';
-import { DismissablePill, Pill } from '~/core-components/Pill';
+import { DismissablePill, TogglePill } from '~/core-components/Pill';
 
 type ConfigHabitOptionsPillsProps = {
   options: string[];
@@ -41,8 +41,9 @@ export function ConfigHabitOptionsPills({ options, onChange }: ConfigHabitOption
       {options.map((label) => (
         <DismissablePill
           key={label}
+          size="small"
           role="listitem"
-          className="text-b-m"
+          className="text-b-s"
           dismissAriaLabel={`Remove ${label}`}
           onDismiss={() => removeOption(label)}
         >
@@ -64,14 +65,13 @@ export function ConfigHabitOptionsPills({ options, onChange }: ConfigHabitOption
           revertAriaLabel="Cancel"
         />
       ) : (
-        <button
-          type="button"
-          className="pill config-habit-option-pills__add text-b-m"
-          aria-label="Add option"
+        <Button
+          type="tertiary"
+          size="small"
+          icon="plus"
+          text="Add"
           onClick={() => setAdding(true)}
-        >
-          <Icon name="plus" size="small" />
-        </button>
+        />
       )}
     </div>
   );
@@ -101,10 +101,11 @@ export function ConfigHabitStreakOptionsPills({
   return (
     <div className="config-habit-option-pills" role="list">
       {options.map((label) => (
-        <Pill
+        <TogglePill
           key={label}
+          size="small"
           selected={selectedSet.has(label)}
-          className="text-b-m"
+          className="text-b-s"
           onToggle={(nextSelected) => {
             if (nextSelected) {
               onChange([...selected, label]);
@@ -114,7 +115,7 @@ export function ConfigHabitStreakOptionsPills({
           }}
         >
           {label}
-        </Pill>
+        </TogglePill>
       ))}
     </div>
   );

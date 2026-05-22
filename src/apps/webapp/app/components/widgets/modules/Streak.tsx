@@ -39,15 +39,13 @@ export function Streak({ streak }: StreakProps) {
   );
   if (entries.length === 0) return null;
 
-  const currentPhrase = streak.current === 1 ? '1 day' : `${streak.current} days`;
-
   return (
-    <section className="streak streak--widget" aria-label={`Streak, ${currentPhrase}`}>
+    <section className="streak streak--widget" aria-label={`Streak, ${streak.streakText}`}>
       <div className="streak__meta text-b-m">
         <span className="text-light">Streak</span>
         <span className="streak__meta-count">
           {' '}
-          <span>{currentPhrase}</span>
+          <span>{streak.streakText}</span>
         </span>
       </div>
       <div className="streak__row" role="list">
@@ -61,7 +59,7 @@ export function Streak({ streak }: StreakProps) {
                 role="listitem"
                 aria-label={`${formatStreakDayLabel(dateKey)}: ${datum.value ?? 'No selection logged'}`}
               >
-                <Icon name="party-popper" size="small" />
+                <Icon name="party-popper" size="medium" />
               </Hoverable.Anchor>
               <Hoverable.Content className="streak__tooltip" side="top">
                 <div className="streak__tooltip-day text-light text-b-s">

@@ -174,7 +174,7 @@ export function TopNav({
           )}
           {dayProgressFullyComplete ? (
             <p className="top-nav__progress-caption top-nav__progress-caption--celebrate text-b-s text-light">
-              <Icon name="party" size="small" className="top-nav__progress-party" />
+              <Icon name="party" size="medium" className="top-nav__progress-party" />
               <span>Completed all goals!</span>
             </p>
           ) : progressCaption ? (

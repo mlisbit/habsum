@@ -44,12 +44,14 @@
   }
 }
 
-.button--small {
-  padding: functions.spacing(1, 2);
+.button--medium {
+  padding: functions.spacing(2, 3);
 }
 
-.button--tiny {
-  padding: functions.spacing(1);
+.button--small {
+  padding: var(--cta-padding-small);
+  // stylelint-disable-next-line
+  font-size: var(--font-size-s);
 }
 
 .button--large {
@@ -111,12 +113,12 @@
   padding: 0;
 }
 
-.button--icon.button--small {
+.button--icon.button--medium {
   width: 2rem;
   height: 2rem;
 }
 
-.button--icon.button--tiny {
+.button--icon.button--small {
   width: 1.5rem;
   height: 1.5rem;
 }

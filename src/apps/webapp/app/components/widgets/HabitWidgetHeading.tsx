@@ -36,7 +36,7 @@ export function HabitWidgetHeading({
       </h2>
       <Button
         type="tertiary"
-        size="small"
+        size="medium"
         icon="ellipsis-vertical"
         circle
         text=""

@@ -19,7 +19,7 @@ export function ConfigHabitFieldLabel({ htmlFor, label, info }: ConfigHabitField
           className="config-habit-field-label__info-anchor text-light"
           aria-label={`About ${label}`}
         >
-          <Icon name="info" size="small" />
+          <Icon name="info" size="medium" />
         </Hoverable.Anchor>
         <Hoverable.Content className="config-habit-field-label__info-tip text-b-s" side="top">
           {info}

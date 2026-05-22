@@ -5,6 +5,7 @@ import type { Habit, HabitHistory } from '@habsum/types/common/habit';
 import { fromDateKey, toDateKey } from '@habsum/utils';
 import type { HabitDef } from './config.js';
 import { getAllSelects, getAllTotals, getSelect, getSeries, getSummationEvents } from './db.js';
+import { habitApiTodayKey } from './server-time.js';
 import { mapSummationEventsToApi } from './summation-event-api.js';
 
 export type PatchBody = {
@@ -15,6 +16,7 @@ export type PatchBody = {
   date?: unknown;
   clientCreatedAt?: unknown;
   eventId?: unknown;
+  tzOffsetMinutes?: unknown;
 };
 
 export function parseHabitFilter(value: unknown): string[] {
@@ -180,19 +182,24 @@ function dayCountsTowardStreak(value: string | null, eligible: ReadonlySet<strin
   return value != null && eligible.has(value);
 }
 
+export function formatSelectStreakText(current: number): string {
+  return current === 1 ? '1 day' : `${current} days`;
+}
+
 /** Consecutive streak-eligible days ending on `viewDate` (may precede `MIN_STREAK_DAYS` chart window). */
 function currentSelectStreakLength(
   user: string,
   habitName: string,
   viewDate: string,
   eligible: ReadonlySet<string>,
+  omitEmptyViewDate: boolean,
 ): number {
   let n = 0;
-  for (
-    let d = viewDate, steps = 0;
-    steps < MAX_STREAK_BACKTRACK_DAYS;
-    steps++, d = addDaysUtc(d, -1)
-  ) {
+  let d = viewDate;
+  if (omitEmptyViewDate && getSelect(user, habitName, d) == null) {
+    d = addDaysUtc(d, -1);
+  }
+  for (let steps = 0; steps < MAX_STREAK_BACKTRACK_DAYS; steps++, d = addDaysUtc(d, -1)) {
     const value = getSelect(user, habitName, d);
     if (!dayCountsTowardStreak(value, eligible)) break;
     n++;
@@ -205,8 +212,11 @@ export function streakGraphForConfiguredWindow(
   habitName: string,
   viewDate: string,
   streakEligibleOptions: readonly string[],
+  at: Date = new Date(),
+  tzOffsetMinutes?: number,
 ): StreakGraphData {
   const eligible = new Set(streakEligibleOptions);
+  const omitEmptyViewDate = viewDate === habitApiTodayKey(at, tzOffsetMinutes);
   const start = addDaysUtc(viewDate, -(MIN_STREAK_DAYS - 1));
   const data = {} as Record<Day, StreakDatum>;
   for (let i = 0; i < MIN_STREAK_DAYS; i++) {
@@ -217,8 +227,9 @@ export function streakGraphForConfiguredWindow(
       include: value != null ? eligible.has(value) : null,
     };
   }
+  const current = currentSelectStreakLength(user, habitName, viewDate, eligible, omitEmptyViewDate);
   return {
     data,
-    current: currentSelectStreakLength(user, habitName, viewDate, eligible),
+    streakText: formatSelectStreakText(current),
   };
 }

@@ -48,7 +48,7 @@ const ICON_COMPONENTS = {
 export type IconName = keyof typeof ICON_COMPONENTS;
 
 /** Default pixel heights per preset (used by `Button` and `Icon`). */
-export const ICON_SIZES_PX = { tiny: 13, small: 16, medium: 18, large: 20 } as const;
+export const ICON_SIZES_PX = { small: 13, medium: 16, large: 20 } as const;
 
 type IconProps = {
   /** Which glyph to render. */

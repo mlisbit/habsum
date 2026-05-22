@@ -132,7 +132,7 @@ function CollapsibleCardToggle({
       }}
       {...props}
     >
-      <Icon name="chevronRight" size="small" />
+      <Icon name="chevronRight" size="medium" />
     </button>
   );
 }

@@ -95,7 +95,7 @@ function UserCredentialsModal({
         </dl>
       </ModalBody>
       <ModalActions>
-        <Button type="primary" size="small" text="Done" onClick={onClose} />
+        <Button type="primary" size="medium" text="Done" onClick={onClose} />
       </ModalActions>
     </>
   );
@@ -168,7 +168,7 @@ function AddUserModal({ onCreated, onClose }: AddUserModalProps) {
       <ModalActions>
         <Button
           type="secondary"
-          size="small"
+          size="medium"
           text="Cancel"
           disabled={isCreating}
           className="mr-2"
@@ -176,7 +176,7 @@ function AddUserModal({ onCreated, onClose }: AddUserModalProps) {
         />
         <Button
           type="primary"
-          size="small"
+          size="medium"
           text={isCreating ? 'Creating…' : 'Create'}
           disabled={isCreating || !canCreate}
           onClick={() => void handleCreate()}
@@ -223,7 +223,7 @@ function ResetPasswordModal({ targetUsername, onDone, onClose }: ManageUserModal
           <InfoText variant="error">{error}</InfoText>
         </ModalBody>
         <ModalActions>
-          <Button type="primary" size="small" text="Close" onClick={onClose} />
+          <Button type="primary" size="medium" text="Close" onClick={onClose} />
         </ModalActions>
       </>
     );
@@ -284,7 +284,7 @@ function DeleteUserModal({ targetUsername, onDone, onClose }: ManageUserModalPro
       <ModalActions>
         <Button
           type="secondary"
-          size="small"
+          size="medium"
           text="Cancel"
           disabled={busy}
           className="mr-2"
@@ -292,7 +292,7 @@ function DeleteUserModal({ targetUsername, onDone, onClose }: ManageUserModalPro
         />
         <Button
           type="primary"
-          size="small"
+          size="medium"
           text={busy ? 'Deleting…' : 'Delete user'}
           disabled={busy}
           onClick={() => void handleDelete()}
@@ -315,7 +315,7 @@ function UserRowIconAction({ tooltip, icon, ariaLabel, onClick }: UserRowIconAct
       <Hoverable.Anchor className="developer-page__users-action-anchor">
         <Button
           type="tertiary"
-          size="tiny"
+          size="medium"
           icon={icon}
           circle
           aria-label={ariaLabel}

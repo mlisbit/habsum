@@ -132,7 +132,7 @@ export function CountControl({
             ) : (
               <Button
                 type="tertiary"
-                size="small"
+                size="medium"
                 text="+"
                 disabled={pending}
                 className="count-control__amount-trigger text-b-m"
@@ -146,7 +146,7 @@ export function CountControl({
               <Button
                 key={`${delta}-${index}`}
                 type="secondary"
-                size="small"
+                size="medium"
                 text={formatIncrementLabel(delta)}
                 disabled={pending}
                 className={delta < 0 ? 'text-error' : undefined}
@@ -176,7 +176,7 @@ export function CountControl({
       {showMinus && !amountEditorOpen ? (
         <Button
           type="secondary"
-          size="small"
+          size="medium"
           icon="minus"
           circle
           text=""
@@ -214,7 +214,7 @@ export function CountControl({
         ) : (
           <Button
             type="tertiary"
-            size="small"
+            size="medium"
             text="+"
             disabled={pending}
             className="count-control__amount-trigger text-b-m"

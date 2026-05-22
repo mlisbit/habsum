@@ -111,11 +111,13 @@ function buildHabitPatchPayload(
   date: string,
 ): Record<string, unknown> {
   const d = new Date();
-  const clientCreatedAt = toDateKeyWithTime(d, d.getTimezoneOffset());
+  const tzOffsetMinutes = d.getTimezoneOffset();
+  const clientCreatedAt = toDateKeyWithTime(d, tzOffsetMinutes);
   return {
     ...body,
     date,
     clientCreatedAt,
+    tzOffsetMinutes,
   };
 }
 
@@ -255,7 +257,10 @@ export async function deleteUser(user: string) {
 }
 
 export async function getHabits(user: string, date?: string) {
-  const qs = date ? `?date=${encodeURIComponent(date)}` : '';
+  const params = new URLSearchParams();
+  if (date) params.set('date', date);
+  params.set('tzOffsetMinutes', String(new Date().getTimezoneOffset()));
+  const qs = `?${params.toString()}`;
   return request<HabitsResponse>(`/users/${encodeURIComponent(user)}/habits${qs}`);
 }
 

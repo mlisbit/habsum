@@ -10,6 +10,6 @@ export type StreakDatum = {
 /** Daily streak window: `data` keys are `YYYY-MM-DD`, oldest → newest (see `MIN_STREAK_DAYS` on the server). */
 export type StreakGraphData = {
   data: Record<Day, StreakDatum>;
-  /** Consecutive streak-eligible days ending on the API view date (`include`), may extend before `data`'s earliest day. */
-  current: number;
+  /** Consecutive streak-eligible days ending on the API view date, as a label (e.g. `3 days`). When the view date is the client’s local today (`tzOffsetMinutes`) and unlogged, counting starts from the previous day. */
+  streakText: string;
 };

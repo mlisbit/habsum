@@ -31,7 +31,7 @@ export function HabitWidgetMenuModal({
       <ModalBody className="habit-widget-menu-modal__body">
         <Button
           type="secondary"
-          size="small"
+          size="medium"
           text="Reset data for day"
           className="habit-widget-menu-modal__action"
           disabled={pending}
@@ -41,7 +41,7 @@ export function HabitWidgetMenuModal({
         />
         <Button
           type="secondary"
-          size="small"
+          size="medium"
           text="Edit widget"
           className="habit-widget-menu-modal__action"
           disabled={pending}

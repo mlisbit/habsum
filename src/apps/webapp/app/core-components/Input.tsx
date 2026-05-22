@@ -204,7 +204,7 @@ export function Input({
   const dismissButton = showDismissButton ? (
     <Button
       type="tertiary"
-      size="tiny"
+      size="small"
       icon="close"
       circle
       disabled={disabled}
@@ -249,7 +249,7 @@ export function Input({
       {submittable && (
         <Button
           type="primary"
-          size="small"
+          size="medium"
           icon="arrowUp"
           circle
           disabled={disabled || !canSubmit}

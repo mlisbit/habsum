@@ -43,7 +43,7 @@ function SessionRevokeButton({
       <Hoverable.Anchor className="security-page__session-revoke-anchor">
         <Button
           type="tertiary"
-          size="tiny"
+          size="small"
           icon="trash"
           circle
           aria-label={`Revoke session ${token}`}

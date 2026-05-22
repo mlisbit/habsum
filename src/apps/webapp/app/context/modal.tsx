@@ -63,7 +63,7 @@ export function ModalHeader({
       </h2>
       <Button
         type="tertiary"
-        size="small"
+        size="medium"
         icon="close"
         circle
         text=""

@@ -43,6 +43,19 @@ export function defaultHabitApiDateKey(at: Date): string {
   return toDateKey(at, 0);
 }
 
+/** `Date#getTimezoneOffset()` from query/body (`undefined` when missing or invalid). */
+export function parseTzOffsetMinutes(raw: unknown): number | undefined {
+  if (raw === undefined || raw === null || raw === '') return undefined;
+  const n = typeof raw === 'number' ? raw : Number(String(raw).trim());
+  if (!Number.isFinite(n) || !Number.isInteger(n) || n < -840 || n > 840) return undefined;
+  return n;
+}
+
+/** Client-local calendar “today” for streak omit logic (UTC when offset omitted). */
+export function habitApiTodayKey(at: Date, tzOffsetMinutes?: number): string {
+  return toDateKey(at, tzOffsetMinutes ?? 0);
+}
+
 /** Resolved habit `YYYY-MM-DD` for GET handlers (`?date=` optional; otherwise UTC “today”). */
 export function resolveHabitApiDateQuery(rawDate: unknown, at: Date): string {
   const key = typeof rawDate === 'string' ? habitQueryDateKey(rawDate) : null;
