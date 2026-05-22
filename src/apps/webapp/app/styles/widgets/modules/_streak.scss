@@ -10,10 +10,8 @@
 
 .streak__meta-row {
   display: flex;
-  flex-flow: row wrap;
-  align-items: baseline;
-  gap: functions.spacing(2);
-  margin-bottom: functions.spacing(1);
+  flex-flow: column;
+  gap: functions.spacing(1);
 }
 
 .streak__meta {
@@ -27,12 +25,25 @@
   text-underline-offset: 0.15em;
 }
 
+.streak__body {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.streak__rows {
+  display: flex;
+  flex-direction: column;
+  gap: functions.spacing(1);
+  min-width: 0;
+}
+
 .streak__row {
   display: flex;
+  flex-flow: row nowrap;
   align-items: center;
   justify-content: flex-start;
   gap: functions.spacing(1);
-  flex-wrap: wrap;
 }
 
 .streak__cell {
@@ -40,6 +51,43 @@
   align-items: center;
   justify-content: center;
   cursor: default;
+  flex: 0 0 auto;
+}
+
+.streak__cell--hit {
+  // stylelint-disable-next-line
+  color: var(--accent-selected);
+}
+
+.streak__cell--empty {
+  // stylelint-disable-next-line
+  color: var(--background-warning);
+}
+
+.streak__cell-icon {
+  .streak__cell--miss & {
+    fill: currentcolor;
+  }
+}
+
+.streak__cell--miss {
+  inline-size: 1rem;
+  block-size: 1rem;
+  border-radius: 50%;
+  background: var(--cta-base-background-danger);
+  // stylelint-disable-next-line
+  color: var(--background-primary);
+}
+
+.streak__cell--preview.streak__cell--miss {
+  inline-size: 1.75rem;
+  block-size: 1.75rem;
+}
+
+.streak__cell--today {
+  outline: 1px solid var(--border-color-faint);
+  outline-offset: 2px;
+  border-radius: 50%;
 }
 
 .streak__tooltip.hover-layer__panel {

@@ -278,6 +278,7 @@ export default function HabitDetailRoute() {
                     key={habitForWidget.name}
                     user={user}
                     habit={habitForWidget}
+                    dayKey={effectiveDate}
                     onSelectOption={async (opt) => {
                       await patchHabit(
                         user,

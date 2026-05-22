@@ -37,6 +37,7 @@ describe('streakGraphForConfiguredWindow', () => {
 
     expect(streak.streakText).toBe('2 days');
     expect(streak.data[viewDate]?.label).toBeUndefined();
+    expect(Object.keys(streak.data)).toHaveLength(14);
   });
 
   it('omits an unlogged UTC today from current streak length', () => {

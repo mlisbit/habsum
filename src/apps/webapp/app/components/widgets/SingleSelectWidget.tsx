@@ -10,6 +10,8 @@ import { Streak } from '~/components/widgets/modules/Streak';
 type SingleSelectWidgetProps = {
   user: string;
   habit: HabitRowSingleSelect;
+  /** Selected calendar day for this widget (`YYYY-MM-DD`). */
+  dayKey: string;
   onSelectOption: (option: string) => Promise<void>;
   /** Clears the stored selection for today (`null` in the API). */
   onClearSelection: () => Promise<void>;
@@ -24,6 +26,7 @@ function singleSelectIsComplete(habit: HabitRowSingleSelect): boolean {
 export function SingleSelectWidget({
   user,
   habit,
+  dayKey,
   onSelectOption,
   onClearSelection,
   surfaceClassName,
@@ -120,7 +123,7 @@ export function SingleSelectWidget({
           {error}
         </InfoText>
       ) : null}
-      {habit.streak ? <Streak streak={habit.streak} /> : null}
+      {habit.streak ? <Streak streak={habit.streak} viewDate={dayKey} /> : null}
     </div>
   );
 }

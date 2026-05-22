@@ -17,7 +17,7 @@ export type HabitRowSingleSelect = {
   goal: number | null;
   options: string[];
   value: string | null;
-  /** Present when YAML defines `streak.options`; `data` spans 7 periods ending on the API `date`, plus `streakText`. */
+  /** Present when YAML defines `streak.options`; `data` spans 14 periods ending on the API `date`, plus `streakText`. */
   streak?: StreakGraphData;
 };
 

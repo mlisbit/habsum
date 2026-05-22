@@ -179,7 +179,7 @@ export function habitHistoryIfConfigured(
 }
 
 /** Window length returned for `single_select.streak.data` in `GET .../habits` (inclusive end = API view date). */
-const MIN_STREAK_DAYS = 7;
+const STREAK_WINDOW_UNITS = 14;
 
 /** Max days to scan backward when computing `current` (handles multi-year streaks without an unbounded loop). */
 const MAX_STREAK_BACKTRACK_DAYS = 10 * 366;
@@ -325,7 +325,7 @@ function streakRunsEqual(a: StreakRun, b: StreakRun): boolean {
   return a.length === b.length && a.start === b.start && a.end === b.end;
 }
 
-/** Consecutive streak-eligible days ending on `viewDate` (may precede `MIN_STREAK_DAYS` chart window). */
+/** Consecutive streak-eligible days ending on `viewDate` (may precede `STREAK_WINDOW_UNITS` chart window). */
 function currentSelectStreakLength(
   user: string,
   habitName: string,
@@ -491,9 +491,9 @@ function streakGraphDailyWindow(
   eligible: ReadonlySet<string>,
   omitEmptyViewDate: boolean,
 ): StreakGraphData {
-  const start = addDaysUtc(viewDate, -(MIN_STREAK_DAYS - 1));
+  const start = addDaysUtc(viewDate, -(STREAK_WINDOW_UNITS - 1));
   const data = {} as Record<Day, StreakDatum>;
-  for (let i = 0; i < MIN_STREAK_DAYS; i++) {
+  for (let i = 0; i < STREAK_WINDOW_UNITS; i++) {
     const d = addDaysUtc(start, i);
     const value = getSelect(user, habitName, d);
     data[dayFromString(d)] = {
@@ -518,7 +518,7 @@ function streakGraphWeeklyWindow(
 ): StreakGraphData {
   const viewWeekStart = weekStartMonday(viewDate);
   const data = {} as Record<Day, StreakDatum>;
-  for (let i = MIN_STREAK_DAYS - 1; i >= 0; i--) {
+  for (let i = STREAK_WINDOW_UNITS - 1; i >= 0; i--) {
     const weekStart = addDaysUtc(viewWeekStart, -i * 7);
     const weekEnd = addDaysUtc(weekStart, 6);
     const hits = countEligibleDaysInRange(user, habitName, weekStart, weekEnd, eligible);
