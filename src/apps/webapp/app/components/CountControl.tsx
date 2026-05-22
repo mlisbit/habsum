@@ -3,6 +3,7 @@ import type { AnimationEvent } from 'react';
 import type { SummationOptions } from '@habsum/types/common/habit';
 import { Button } from '~/core-components/Button';
 import { Input } from '~/core-components/Input';
+import { classBuilder } from '~/utils/class-builder';
 import {
   defaultManualIncrementPlaceholder,
   formatIncrementLabel,
@@ -167,9 +168,10 @@ export function CountControl({
   const readAmountMagnitude = (fallback: number): number =>
     parseAmountToNumber(amountStr, fallback);
 
-  const amountInputClassName = ['text-b-m', minusHovered && showMinus ? 'text-error' : '']
-    .filter(Boolean)
-    .join(' ');
+  const amountInputClassName = classBuilder(
+    { 'text-error': minusHovered && showMinus },
+    'text-b-m',
+  );
 
   return (
     <div className="count-control">

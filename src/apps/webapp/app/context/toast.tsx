@@ -8,6 +8,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { classBuilder } from '~/utils/class-builder';
 
 export type ToastType = 'error' | 'success' | 'info' | 'notification';
 
@@ -109,7 +110,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           aria-live={active.type === 'error' ? 'assertive' : 'polite'}
         >
           <div
-            className={`toast toast--${active.type}`}
+            className={classBuilder(
+              {
+                'toast--error': active.type === 'error',
+                'toast--success': active.type === 'success',
+                'toast--info': active.type === 'info',
+                'toast--notification': active.type === 'notification',
+              },
+              'toast',
+            )}
             role={active.type === 'error' ? 'alert' : 'status'}
           >
             <p

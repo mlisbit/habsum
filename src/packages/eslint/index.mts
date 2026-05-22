@@ -1,5 +1,6 @@
 import type { ESLint } from 'eslint';
 import exclusiveBemBlock from './exclusive-bem-block.mjs';
+import noComputedClassname from './no-computed-classname.mjs';
 
 const plugin: ESLint.Plugin = {
   meta: {
@@ -8,6 +9,7 @@ const plugin: ESLint.Plugin = {
   },
   rules: {
     'exclusive-bem-block': exclusiveBemBlock,
+    'no-computed-classname': noComputedClassname,
   },
 };
 

@@ -19,6 +19,7 @@ export default tseslint.config(
     plugins: { habsum },
     rules: {
       'habsum/exclusive-bem-block': 'error',
+      'habsum/no-computed-classname': 'error',
     },
   },
 );

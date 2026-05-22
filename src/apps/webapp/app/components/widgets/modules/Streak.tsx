@@ -1,6 +1,7 @@
 // exclusive-bem-block: streak
 import type { Day } from '@habsum/types/common/day';
 import type { StreakDatum, StreakGraphData } from '@habsum/types/common/streak';
+import { classBuilder } from '~/utils/class-builder';
 import { Hoverable } from '~/core-components/Hoverable';
 import { Icon, type IconName } from '~/core-components/Icon';
 
@@ -70,14 +71,16 @@ function StreakCell({ dateKey, datum, isToday = false, preview = false }: Streak
   return (
     <Hoverable.Root>
       <Hoverable.Anchor
-        className={[
+        className={classBuilder(
+          {
+            'streak__cell--empty': mod === 'empty',
+            'streak__cell--miss': mod === 'miss',
+            'streak__cell--hit': mod === 'hit',
+            'streak__cell--today': isToday,
+            'streak__cell--preview': preview,
+          },
           'streak__cell',
-          `streak__cell--${mod}`,
-          isToday ? 'streak__cell--today' : '',
-          preview ? 'streak__cell--preview' : '',
-        ]
-          .filter(Boolean)
-          .join(' ')}
+        )}
         role={preview ? undefined : 'listitem'}
         aria-label={`${periodLabel}: ${valueLabel}`}
       >

@@ -12,5 +12,6 @@
     "declaration": false,
     "sourceMap": false
   },
-  "include": ["index.mts", "exclusive-bem-block.mts"]
+  "include": ["index.mts", "exclusive-bem-block.mts", "no-computed-classname.mts"],
+  "exclude": ["**/*.test.mts"]
 }
