@@ -6,8 +6,10 @@ import {
   formatHistoryPeriod,
   parseHabitDraftFromText,
   parseHistoryPeriod,
+  removeHabitFromConfigYaml,
   sortQuickAddItems,
   type ConfigHabitDraft,
+  addHabitToConfigYaml,
 } from '../configHabitDraft';
 
 const SAMPLE = `habits:
@@ -184,5 +186,30 @@ describe('applyHabitDraftToConfigYaml', () => {
     expect(Object.keys(habits)).toEqual(['pushups', 'soda']);
     expect(habits.pushups).toMatchObject({ type: 'summation', goal: 100 });
     expect(habits['push ups']).toBeUndefined();
+  });
+});
+
+describe('removeHabitFromConfigYaml', () => {
+  it('removes a habit and preserves order of the rest', () => {
+    const out = removeHabitFromConfigYaml(SAMPLE, 'push ups');
+    const habits = (yaml.load(out) as { habits: Record<string, unknown> }).habits;
+    expect(Object.keys(habits)).toEqual(['soda']);
+    expect(habits.soda).toMatchObject({ type: 'single_select' });
+  });
+});
+
+describe('addHabitToConfigYaml', () => {
+  it('appends a default summation habit with a unique name', () => {
+    const { text, habitName } = addHabitToConfigYaml(SAMPLE);
+    expect(habitName).toBe('New habit');
+    const habits = (yaml.load(text) as { habits: Record<string, unknown> }).habits;
+    expect(Object.keys(habits)).toEqual(['push ups', 'soda', 'New habit']);
+    expect(habits['New habit']).toEqual({ type: 'summation' });
+  });
+
+  it('allocates numbered names when the default is taken', () => {
+    const first = addHabitToConfigYaml(SAMPLE);
+    const second = addHabitToConfigYaml(first.text);
+    expect(second.habitName).toBe('New habit 2');
   });
 });

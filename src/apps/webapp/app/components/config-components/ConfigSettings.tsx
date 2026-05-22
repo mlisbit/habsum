@@ -1,5 +1,5 @@
 // exclusive-bem-block: config-page
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from '@remix-run/react';
 import { getUserConfig, putUserConfig } from '~/api.client';
 import { ConfigGuiEditor } from './ConfigGuiEditor';
@@ -32,6 +32,7 @@ export function ConfigSettings({ user }: ConfigSettingsProps) {
   const [saving, setSaving] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const addHabitRef = useRef<(() => void) | null>(null);
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -172,6 +173,15 @@ export function ConfigSettings({ user }: ConfigSettingsProps) {
         error={saveError}
         actions={
           <>
+            {!yamlView ? (
+              <Button
+                type="secondary"
+                icon="plus"
+                text="Add"
+                disabled={saving}
+                onClick={() => addHabitRef.current?.()}
+              />
+            ) : null}
             <Button
               type="primary"
               text={saving ? 'Saving…' : 'Save'}
@@ -199,6 +209,9 @@ export function ConfigSettings({ user }: ConfigSettingsProps) {
           onConfigTextChange={(next) => {
             setText(next);
             if (saveError != null) setSaveError(null);
+          }}
+          registerAddHabit={(fn) => {
+            addHabitRef.current = fn;
           }}
         />
       )}

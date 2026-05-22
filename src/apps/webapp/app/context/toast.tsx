@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from 'react';
 
-export type ToastType = 'error' | 'success' | 'notification';
+export type ToastType = 'error' | 'success' | 'info' | 'notification';
 
 export type ShowToastOptions = {
   message: string;
@@ -42,7 +42,7 @@ function isToastPayload(value: unknown): value is ShowToastOptions {
   return (
     typeof v.message === 'string' &&
     v.message.length > 0 &&
-    (v.type === 'error' || v.type === 'success' || v.type === 'notification')
+    (v.type === 'error' || v.type === 'success' || v.type === 'info' || v.type === 'notification')
   );
 }
 

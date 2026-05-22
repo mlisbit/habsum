@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { useLocation, useNavigate } from '@remix-run/react';
 import { useModal } from '~/context/modal';
+import { useToast } from '~/context/toast';
 import type { ConfigHabitCard } from '~/utils/configYaml';
 import {
   configEditHabitQueryValue,
@@ -18,6 +19,7 @@ import {
 } from '~/utils/habit-id';
 import { ConfigCard, createConfigCardDragPreview } from './ConfigCard';
 import { ConfigCardModal } from './ConfigCardModal';
+import { removeHabitFromConfigYaml, addHabitToConfigYaml } from '~/utils/configHabitDraft';
 
 type ConfigGuiEditorProps = {
   configText: string;
@@ -25,6 +27,7 @@ type ConfigGuiEditorProps = {
   order: string[];
   onOrderChange: (order: string[]) => void;
   onConfigTextChange: (text: string) => void;
+  registerAddHabit?: (addHabit: (() => void) | null) => void;
 };
 
 type ReorderSession = {
@@ -75,31 +78,158 @@ export function ConfigGuiEditor({
   order,
   onOrderChange,
   onConfigTextChange,
+  registerAddHabit,
 }: ConfigGuiEditorProps) {
   const [draggingName, setDraggingName] = useState<string | null>(null);
   const [insertIndex, setInsertIndex] = useState<number | null>(null);
   const listRef = useRef<HTMLUListElement>(null);
   const dragPreviewRef = useRef<HTMLElement | null>(null);
   const sessionRef = useRef<ReorderSession | null>(null);
-  const openedModalForHabitIdRef = useRef<string | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
   const { present, closeModal } = useModal();
+  const { showToast } = useToast();
+  const locationRef = useRef(location);
+  const configTextRef = useRef(configText);
+  const onConfigTextChangeRef = useRef(onConfigTextChange);
+  const pendingNewHabitRef = useRef<string | null>(null);
+  const pendingDeepLinkHabitIdRef = useRef<string | null | undefined>(undefined);
 
-  const editingHabitId = readConfigEditHabitId(location.search);
+  locationRef.current = location;
+  configTextRef.current = configText;
+  onConfigTextChangeRef.current = onConfigTextChange;
 
-  const setEditingHabitId = useCallback(
-    (habitId: string | null) => {
+  if (pendingDeepLinkHabitIdRef.current === undefined) {
+    pendingDeepLinkHabitIdRef.current = readConfigEditHabitId(location.search);
+  }
+
+  const syncHabitQueryParam = useCallback(
+    (habitId: string | null): Promise<void> => {
+      const { pathname, search } = locationRef.current;
       navigate(
         {
-          pathname: location.pathname,
-          search: withConfigEditHabitId(location.search, habitId),
+          pathname,
+          search: withConfigEditHabitId(search, habitId),
         },
         { replace: true },
       );
+      return Promise.resolve();
     },
-    [location.pathname, location.search, navigate],
+    [navigate],
   );
+
+  const closeHabitModal = useCallback(() => {
+    closeModal();
+  }, [closeModal]);
+
+  const onHabitModalRequestClose = useCallback(() => {
+    const pendingNewHabit = pendingNewHabitRef.current;
+    pendingNewHabitRef.current = null;
+    void syncHabitQueryParam(null);
+    if (pendingNewHabit) {
+      onConfigTextChangeRef.current(
+        removeHabitFromConfigYaml(configTextRef.current, pendingNewHabit),
+      );
+    }
+  }, [syncHabitQueryParam]);
+
+  const cancelHabitModal = closeHabitModal;
+
+  const handleDoneClick = useCallback(
+    async (next: string, appliedHabitName: string) => {
+      pendingNewHabitRef.current = null;
+      configTextRef.current = next;
+      closeModal();
+      onConfigTextChangeRef.current(next);
+      void syncHabitQueryParam(null);
+      showToast({
+        type: 'info',
+        message: `Applied changes to ${appliedHabitName}`,
+      });
+    },
+    [closeModal, showToast, syncHabitQueryParam],
+  );
+
+  const handleRemoveClick = useCallback(
+    async (habitName: string) => {
+      pendingNewHabitRef.current = null;
+      const next = removeHabitFromConfigYaml(configTextRef.current, habitName);
+      configTextRef.current = next;
+      closeModal();
+      onConfigTextChangeRef.current(next);
+      void syncHabitQueryParam(null);
+      showToast({
+        type: 'info',
+        message: `Removed ${habitName}`,
+      });
+    },
+    [closeModal, showToast, syncHabitQueryParam],
+  );
+
+  const openHabitModal = useCallback(
+    (habit: ConfigHabitCard, options?: { isNew?: boolean; configText?: string }) => {
+      const modalConfigText = options?.configText ?? configTextRef.current;
+      void syncHabitQueryParam(configEditHabitQueryValue(habit.name));
+      present({
+        size: 'large',
+        content: (
+          <ConfigCardModal
+            configText={modalConfigText}
+            habitName={habit.name}
+            isNewHabit={options?.isNew}
+            onDoneClick={handleDoneClick}
+            onRemoveClick={handleRemoveClick}
+            onCancel={cancelHabitModal}
+          />
+        ),
+        onRequestClose: onHabitModalRequestClose,
+      });
+    },
+    [
+      cancelHabitModal,
+      handleDoneClick,
+      handleRemoveClick,
+      onHabitModalRequestClose,
+      present,
+      syncHabitQueryParam,
+    ],
+  );
+
+  const addHabit = useCallback(() => {
+    const { text: next, habitName } = addHabitToConfigYaml(configTextRef.current);
+    configTextRef.current = next;
+    onConfigTextChangeRef.current(next);
+    pendingNewHabitRef.current = habitName;
+    openHabitModal(
+      {
+        name: habitName,
+        type: 'summation',
+        goal: null,
+        hasSummationOptions: false,
+        hasHistory: false,
+      },
+      { isNew: true, configText: next },
+    );
+  }, [openHabitModal]);
+
+  useEffect(() => {
+    registerAddHabit?.(addHabit);
+    return () => registerAddHabit?.(null);
+  }, [addHabit, registerAddHabit]);
+
+  useEffect(() => {
+    const habitId = pendingDeepLinkHabitIdRef.current;
+    if (!habitId) return;
+
+    const habitName = findHabitNameByConfigEditId(habits, habitId);
+    if (!habitName) return;
+
+    const habit = habits.find((h) => h.name === habitName);
+    if (!habit) return;
+
+    pendingDeepLinkHabitIdRef.current = null;
+    openHabitModal(habit);
+  }, [habits, openHabitModal]);
 
   const habitByName = new Map(habits.map((h) => [h.name, h]));
 
@@ -116,57 +246,6 @@ export function ConfigGuiEditor({
     document.body.style.removeProperty('user-select');
     document.body.style.removeProperty('cursor');
   }, []);
-
-  const closeHabitModal = useCallback(() => {
-    openedModalForHabitIdRef.current = null;
-    setEditingHabitId(null);
-    closeModal();
-  }, [closeModal, setEditingHabitId]);
-
-  const presentModalForHabit = useCallback(
-    (habit: ConfigHabitCard) => {
-      const habitId = configEditHabitQueryValue(habit.name);
-      openedModalForHabitIdRef.current = habitId;
-      present({
-        size: 'large',
-        content: (
-          <ConfigCardModal
-            configText={configText}
-            habitName={habit.name}
-            onDone={(next) => {
-              onConfigTextChange(next);
-              closeHabitModal();
-            }}
-            onCancel={closeHabitModal}
-          />
-        ),
-        onRequestClose: closeHabitModal,
-      });
-    },
-    [closeHabitModal, configText, onConfigTextChange, present],
-  );
-
-  const openHabitModal = useCallback(
-    (habit: ConfigHabitCard) => {
-      presentModalForHabit(habit);
-      setEditingHabitId(configEditHabitQueryValue(habit.name));
-    },
-    [presentModalForHabit, setEditingHabitId],
-  );
-
-  useEffect(() => {
-    if (!editingHabitId) {
-      openedModalForHabitIdRef.current = null;
-      return;
-    }
-    if (openedModalForHabitIdRef.current === editingHabitId) return;
-
-    const habitName = findHabitNameByConfigEditId(habits, editingHabitId);
-    const habit = habitName ? habits.find((h) => h.name === habitName) : undefined;
-    if (!habit) return;
-
-    presentModalForHabit(habit);
-  }, [editingHabitId, habits, presentModalForHabit]);
 
   const onReorderPointerDown = useCallback(
     (name: string, event: ReactPointerEvent<HTMLSpanElement>) => {

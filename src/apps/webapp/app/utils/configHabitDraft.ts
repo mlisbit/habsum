@@ -17,6 +17,27 @@ export type ConfigHabitDraft = {
   historyPeriodUnit: HistoryPeriodUnit;
 };
 
+function quickAddItemsEqual(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  return a.every((item, index) => item === b[index]);
+}
+
+/** Whether `draft` differs from the habit state captured when the modal opened. */
+export function isHabitDraftDirty(initial: ConfigHabitDraft, draft: ConfigHabitDraft): boolean {
+  return (
+    initial.name !== draft.name ||
+    initial.type !== draft.type ||
+    initial.goal !== draft.goal ||
+    !quickAddItemsEqual(initial.quickAddItems, draft.quickAddItems) ||
+    initial.optionsText !== draft.optionsText ||
+    initial.streakEnabled !== draft.streakEnabled ||
+    initial.streakOptionsText !== draft.streakOptionsText ||
+    initial.historyEnabled !== draft.historyEnabled ||
+    initial.historyPeriodAmount !== draft.historyPeriodAmount ||
+    initial.historyPeriodUnit !== draft.historyPeriodUnit
+  );
+}
+
 const DEFAULT_HISTORY_PERIOD_AMOUNT = '1';
 const DEFAULT_HISTORY_PERIOD_UNIT: HistoryPeriodUnit = 'w';
 
@@ -278,4 +299,59 @@ export function applyHabitDraftToConfigYaml(
 
   habits[newName] = def;
   return dumpConfigYaml(parsed, order);
+}
+
+export function removeHabitFromConfigYaml(text: string, habitName: string): string {
+  let parsed: unknown;
+  try {
+    parsed = yaml.load(text);
+  } catch {
+    throw new Error('invalid yaml');
+  }
+  if (!isRecord(parsed)) {
+    throw new Error('config must be a yaml mapping');
+  }
+  const habits = parsed.habits;
+  if (!isRecord(habits) || !Object.hasOwn(habits, habitName)) {
+    throw new Error(`unknown habit: ${habitName}`);
+  }
+
+  delete habits[habitName];
+  const order = parseConfigHabitCards(text)
+    .map((h) => h.name)
+    .filter((name) => name !== habitName);
+  return dumpConfigYaml(parsed, order);
+}
+
+const DEFAULT_NEW_HABIT_NAME = 'New habit';
+
+function uniqueNewHabitName(
+  existingNames: ReadonlySet<string>,
+  base = DEFAULT_NEW_HABIT_NAME,
+): string {
+  if (!existingNames.has(base)) return base;
+  let n = 2;
+  while (existingNames.has(`${base} ${n}`)) n++;
+  return `${base} ${n}`;
+}
+
+/** Appends a default summation habit and returns the updated YAML plus the new habit name. */
+export function addHabitToConfigYaml(text: string): { text: string; habitName: string } {
+  let parsed: unknown;
+  try {
+    parsed = yaml.load(text);
+  } catch {
+    throw new Error('invalid yaml');
+  }
+
+  const root: Record<string, unknown> = isRecord(parsed) ? parsed : { habits: {} };
+  const habits = isRecord(root.habits) ? root.habits : {};
+  root.habits = habits;
+
+  const existingNames = new Set(parseConfigHabitCards(text).map((h) => h.name));
+  const habitName = uniqueNewHabitName(existingNames);
+  habits[habitName] = { type: 'summation' };
+
+  const order = [...existingNames, habitName];
+  return { text: dumpConfigYaml(root, order), habitName };
 }

@@ -34,6 +34,14 @@
     transform: none;
     filter: none;
   }
+
+  &.button--danger {
+    background: var(--cta-base-background-danger);
+
+    &:focus-visible {
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--cta-base-background-danger) 35%, transparent);
+    }
+  }
 }
 
 .button--small {
@@ -59,6 +67,24 @@
 
   &:active {
     background: color-mix(in srgb, var(--text-color) 10%, transparent);
+  }
+
+  &.button--danger {
+    background: transparent;
+    color: var(--cta-base-background-danger);
+    border-color: var(--cta-secondary-border-danger);
+
+    &:hover {
+      background: color-mix(in srgb, var(--cta-base-background-danger) 10%, transparent);
+    }
+
+    &:active {
+      background: color-mix(in srgb, var(--cta-base-background-danger) 14%, transparent);
+    }
+
+    &:focus-visible {
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--cta-base-background-danger) 35%, transparent);
+    }
   }
 }
 

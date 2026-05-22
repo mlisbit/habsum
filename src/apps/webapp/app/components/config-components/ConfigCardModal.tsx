@@ -11,6 +11,7 @@ import { ConfigHabitOptionsPills, ConfigHabitStreakOptionsPills } from './Config
 import {
   applyHabitDraftToConfigYaml,
   formatOptionLines,
+  isHabitDraftDirty,
   parseHabitDraftFromText,
   parseOptionLines,
   sortQuickAddItems,
@@ -59,11 +60,20 @@ function ConfigHabitModalField({
 export type ConfigCardModalProps = {
   configText: string;
   habitName: string;
-  onDone: (nextConfigText: string) => void;
+  isNewHabit?: boolean;
+  onDoneClick: (nextConfigText: string, appliedHabitName: string) => void | Promise<void>;
+  onRemoveClick: (habitName: string) => void | Promise<void>;
   onCancel: () => void;
 };
 
-export function ConfigCardModal({ configText, habitName, onDone, onCancel }: ConfigCardModalProps) {
+export function ConfigCardModal({
+  configText,
+  habitName,
+  isNewHabit = false,
+  onDoneClick,
+  onRemoveClick,
+  onCancel,
+}: ConfigCardModalProps) {
   const initial = useMemo(
     () => parseHabitDraftFromText(configText, habitName),
     [configText, habitName],
@@ -73,7 +83,12 @@ export function ConfigCardModal({ configText, habitName, onDone, onCancel }: Con
   const [streakExpanded, setStreakExpanded] = useState(() => initial.streakEnabled);
   const [historyExpanded, setHistoryExpanded] = useState(() => initial.historyEnabled);
   const quickAddEnabled = draft.quickAddItems.length > 0;
+  const dirty = useMemo(
+    () => isHabitDraftDirty(initial, draft) || isNewHabit,
+    [draft, initial, isNewHabit],
+  );
   const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   const patch = (partial: Partial<ConfigHabitDraft>) => {
     setDraft((prev) => ({ ...prev, ...partial }));
@@ -99,11 +114,29 @@ export function ConfigCardModal({ configText, habitName, onDone, onCancel }: Con
     setError(null);
   };
 
-  const handleDone = () => {
+  const handleRemoveClick = async () => {
     try {
-      onDone(applyHabitDraftToConfigYaml(configText, draft, habitName));
+      setSaving(true);
+      setError(null);
+      await onRemoveClick(habitName);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDoneClick = async () => {
+    try {
+      const appliedHabitName = draft.name.trim() || habitName;
+      const next = applyHabitDraftToConfigYaml(configText, draft, habitName);
+      setSaving(true);
+      setError(null);
+      await onDoneClick(next, appliedHabitName);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -361,8 +394,24 @@ export function ConfigCardModal({ configText, habitName, onDone, onCancel }: Con
         ) : null}
       </ModalBody>
       <ModalActions>
-        <Button type="secondary" text="Cancel" onClick={onCancel} />
-        <Button type="primary" text="Done" onClick={handleDone} />
+        <div className="config-habit-modal__actions">
+          <Button
+            type="secondary"
+            color="danger"
+            text={saving ? 'Removing…' : 'Remove'}
+            onClick={() => void handleRemoveClick()}
+            disabled={saving}
+          />
+          <div className="config-habit-modal__actions-main">
+            <Button type="secondary" text="Cancel" onClick={onCancel} disabled={saving} />
+            <Button
+              type="primary"
+              text={saving ? 'Saving…' : 'Done'}
+              onClick={() => void handleDoneClick()}
+              disabled={saving || !dirty}
+            />
+          </div>
+        </div>
       </ModalActions>
     </>
   );

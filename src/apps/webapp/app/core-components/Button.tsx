@@ -5,6 +5,7 @@ export type ButtonIcon = IconName;
 
 type ButtonProps = {
   type: 'primary' | 'secondary' | 'tertiary';
+  color?: 'primary' | 'danger';
   size?: keyof typeof ICON_SIZES_PX;
   icon?: IconName;
   circle?: boolean;
@@ -13,6 +14,7 @@ type ButtonProps = {
 
 export function Button({
   type: visual,
+  color = 'primary',
   size = 'medium',
   icon,
   circle = false,
@@ -25,6 +27,7 @@ export function Button({
     'button',
     visual === 'secondary' && 'button--secondary',
     visual === 'tertiary' && 'button--tertiary',
+    color === 'danger' && 'button--danger',
     size !== 'medium' && `button--${size}`,
     isIconOnly && 'button--icon',
     circle && isIconOnly && 'button--circle',
