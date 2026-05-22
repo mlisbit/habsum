@@ -25,8 +25,12 @@ const FIELD_HELP = {
   quickAddOptions:
     'Quick-add amounts shown beside the manual entry field on habit cards (negative values subtract).',
   options: 'Allowed choices for this habit. Use + to add each option.',
-  streakEnabled: 'Track consecutive days where the selected option is one of the tracking options.',
-  streakOptionsInfo: 'Tap options to include them in consecutive-day tracking.',
+  streakEnabled:
+    'Track streaks where the selected option is one of the tracking options. Daily by default, or a target number of days per week.',
+  streakOptionsInfo: 'Tap options to include them in streak tracking.',
+  streakFrequency: 'How many days per week count toward the streak. Seven means every day.',
+  streakShowLongest:
+    'Show the longest historical streak on the habit card, with its date range on hover.',
   historyEnabled: 'Show a history chart for this habit over a configured time window.',
   historyLength:
     'How far back the habit detail page shows history. Default is 1 week when history is enabled.',
@@ -100,7 +104,13 @@ export function ConfigCardModal({
       ...prev,
       type,
       ...(type === 'summation'
-        ? { optionsText: '', streakEnabled: false, streakOptionsText: '' }
+        ? {
+            optionsText: '',
+            streakEnabled: false,
+            streakOptionsText: '',
+            streakFrequencyPerWeek: '7',
+            streakShowLongest: false,
+          }
         : {
             quickAddItems: [],
             goal: '',
@@ -305,6 +315,42 @@ export function ConfigCardModal({
                     options={habitOptions}
                     selected={streakOptions}
                     onChange={setStreakOptions}
+                  />
+                </ConfigHabitModalField>
+                <ConfigHabitModalField
+                  label="Frequency"
+                  info={FIELD_HELP.streakFrequency}
+                  htmlFor="habit-streak-frequency"
+                >
+                  <select
+                    id="habit-streak-frequency"
+                    className="config-habit-modal__select text-b-m"
+                    value={draft.streakFrequencyPerWeek}
+                    onChange={(e) => patch({ streakFrequencyPerWeek: e.target.value })}
+                  >
+                    {Array.from({ length: 7 }, (_, i) => {
+                      const n = i + 1;
+                      const value = String(n);
+                      const label = n === 1 ? '1 day per week' : `${n} days per week`;
+                      return (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </ConfigHabitModalField>
+                <ConfigHabitModalField
+                  label="Show longest"
+                  info={FIELD_HELP.streakShowLongest}
+                  htmlFor="habit-streak-show-longest"
+                >
+                  <input
+                    id="habit-streak-show-longest"
+                    className="config-habit-modal__checkbox"
+                    type="checkbox"
+                    checked={draft.streakShowLongest}
+                    onChange={(e) => patch({ streakShowLongest: e.target.checked })}
                   />
                 </ConfigHabitModalField>
               </CollapsibleCard.Content>

@@ -1,4 +1,9 @@
 import yaml from 'js-yaml';
+import {
+  DEFAULT_STREAK_FREQUENCY,
+  formatStreakFrequency,
+  parseStreakFrequencyDays,
+} from '@habsum/types/common/streak';
 import { dumpConfigYaml, parseConfigHabitCards } from './configYaml';
 
 export type HistoryPeriodUnit = 'd' | 'w';
@@ -12,6 +17,9 @@ export type ConfigHabitDraft = {
   optionsText: string;
   streakEnabled: boolean;
   streakOptionsText: string;
+  /** Streak days required per week (`1`–`7`; `7` = daily). */
+  streakFrequencyPerWeek: string;
+  streakShowLongest: boolean;
   historyEnabled: boolean;
   historyPeriodAmount: string;
   historyPeriodUnit: HistoryPeriodUnit;
@@ -32,6 +40,8 @@ export function isHabitDraftDirty(initial: ConfigHabitDraft, draft: ConfigHabitD
     initial.optionsText !== draft.optionsText ||
     initial.streakEnabled !== draft.streakEnabled ||
     initial.streakOptionsText !== draft.streakOptionsText ||
+    initial.streakFrequencyPerWeek !== draft.streakFrequencyPerWeek ||
+    initial.streakShowLongest !== draft.streakShowLongest ||
     initial.historyEnabled !== draft.historyEnabled ||
     initial.historyPeriodAmount !== draft.historyPeriodAmount ||
     initial.historyPeriodUnit !== draft.historyPeriodUnit
@@ -83,7 +93,10 @@ function readHabitStreakYaml(def: Record<string, unknown>): unknown {
   return def[HABIT_STREAK_YAML_KEY];
 }
 
-function writeHabitStreakYaml(def: Record<string, unknown>, value: { options: string[] }): void {
+function writeHabitStreakYaml(
+  def: Record<string, unknown>,
+  value: { options: string[]; frequency?: string; show_longest?: boolean },
+): void {
   def[HABIT_STREAK_YAML_KEY] = value;
 }
 
@@ -173,12 +186,20 @@ export function parseHabitDraftFromDef(name: string, def: unknown): ConfigHabitD
 
   let streakEnabled = false;
   let streakOptionsText = '';
+  let streakFrequencyPerWeek = '7';
+  let streakShowLongest = false;
   const streakBlock = readHabitStreakYaml(def);
   if (type === 'single_select' && isRecord(streakBlock) && Array.isArray(streakBlock.options)) {
     const streakOpts = streakBlock.options.filter((x): x is string => typeof x === 'string');
     if (streakOpts.length > 0) {
       streakEnabled = true;
       streakOptionsText = streakOpts.join('\n');
+      const frequencyRaw =
+        typeof streakBlock.frequency === 'string'
+          ? streakBlock.frequency
+          : DEFAULT_STREAK_FREQUENCY;
+      streakFrequencyPerWeek = String(parseStreakFrequencyDays(frequencyRaw));
+      streakShowLongest = streakBlock.show_longest === true;
     }
   }
 
@@ -199,6 +220,8 @@ export function parseHabitDraftFromDef(name: string, def: unknown): ConfigHabitD
     optionsText: options.join('\n'),
     streakEnabled,
     streakOptionsText,
+    streakFrequencyPerWeek,
+    streakShowLongest,
     historyEnabled: historyBlockEnabled,
     historyPeriodAmount,
     historyPeriodUnit,
@@ -245,7 +268,18 @@ function draftToRawHabit(draft: ConfigHabitDraft): Record<string, unknown> {
       if (streakOptions.length === 0) {
         throw new Error('tracking options must list at least one habit option');
       }
-      writeHabitStreakYaml(def, { options: streakOptions });
+      const streakYaml: { options: string[]; frequency?: string; show_longest?: boolean } = {
+        options: streakOptions,
+      };
+      const daysPerWeek = parseOptionalPositiveInt(draft.streakFrequencyPerWeek) ?? 7;
+      const frequency = formatStreakFrequency(daysPerWeek);
+      if (frequency !== DEFAULT_STREAK_FREQUENCY) {
+        streakYaml.frequency = frequency;
+      }
+      if (draft.streakShowLongest) {
+        streakYaml.show_longest = true;
+      }
+      writeHabitStreakYaml(def, streakYaml);
     }
   }
 

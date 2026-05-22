@@ -122,8 +122,22 @@ describe('parseHabitDraftFromText', () => {
       optionsText: 'none\nlight',
       streakEnabled: true,
       streakOptionsText: 'none',
+      streakFrequencyPerWeek: '7',
       historyEnabled: false,
     });
+  });
+
+  it('parses streak frequency from yaml', () => {
+    const yamlText = `habits:
+  gym:
+    type: single_select
+    options: [yes, no]
+    streak:
+      options: [yes]
+      frequency: 3d/1w
+`;
+    const draft = parseHabitDraftFromText(yamlText, 'gym');
+    expect(draft.streakFrequencyPerWeek).toBe('3');
   });
 });
 
@@ -141,6 +155,32 @@ describe('applyHabitDraftToConfigYaml', () => {
       type: 'summation',
       goal: 50,
       summation_options: [3, 7],
+    });
+  });
+
+  it('writes show_longest when enabled', () => {
+    const base = parseHabitDraftFromText(SAMPLE, 'soda');
+    const draft: ConfigHabitDraft = {
+      ...base,
+      streakShowLongest: true,
+    };
+    const out = applyHabitDraftToConfigYaml(SAMPLE, draft, 'soda');
+    const habits = (yaml.load(out) as { habits: Record<string, unknown> }).habits;
+    expect(habits.soda).toMatchObject({
+      streak: { options: ['none'], show_longest: true },
+    });
+  });
+
+  it('writes streak frequency as Nd/1w when not daily', () => {
+    const base = parseHabitDraftFromText(SAMPLE, 'soda');
+    const draft: ConfigHabitDraft = {
+      ...base,
+      streakFrequencyPerWeek: '3',
+    };
+    const out = applyHabitDraftToConfigYaml(SAMPLE, draft, 'soda');
+    const habits = (yaml.load(out) as { habits: Record<string, unknown> }).habits;
+    expect(habits.soda).toMatchObject({
+      streak: { options: ['none'], frequency: '3d/1w' },
     });
   });
 

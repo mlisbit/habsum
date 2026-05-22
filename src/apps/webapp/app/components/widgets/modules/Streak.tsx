@@ -41,30 +41,54 @@ export function Streak({ streak }: StreakProps) {
 
   return (
     <section className="streak streak--widget" aria-label={`Streak, ${streak.streakText}`}>
-      <div className="streak__meta text-b-m">
-        <span className="text-light">Streak</span>
-        <span className="streak__meta-count">
-          {' '}
-          <span>{streak.streakText}</span>
-        </span>
+      <div className="streak__meta-row">
+        <div className="streak__meta text-b-m">
+          <span className="text-light">Streak</span>
+          <span>
+            {' '}
+            <span>{streak.streakText}</span>
+          </span>
+        </div>
+        {streak.longestStreak ? (
+          <div className="streak__meta text-b-m">
+            <span className="text-light">Longest</span>
+            <span>
+              {' '}
+              <Hoverable.Root>
+                <Hoverable.Anchor
+                  className="streak__longest"
+                  aria-label={streak.longestStreak.range}
+                >
+                  <span>{streak.longestStreak.text}</span>
+                </Hoverable.Anchor>
+                <Hoverable.Content className="streak__tooltip" side="top">
+                  <div className="streak__tooltip-day text-light text-b-s">
+                    {streak.longestStreak.range}
+                  </div>
+                </Hoverable.Content>
+              </Hoverable.Root>
+            </span>
+          </div>
+        ) : null}
       </div>
       <div className="streak__row" role="list">
         {entries.map(([dateKey, datum]) => {
           const mod = streakCellModifier(datum);
+          const periodLabel = datum.label ?? formatStreakDayLabel(dateKey);
+          const valueLabel =
+            datum.value ?? (datum.label != null ? 'No streak days logged' : 'No selection logged');
           return (
             <Hoverable.Root key={dateKey}>
               <Hoverable.Anchor
                 className={`streak__cell streak__cell--${mod}`}
                 style={streakCellStyle(mod)}
                 role="listitem"
-                aria-label={`${formatStreakDayLabel(dateKey)}: ${datum.value ?? 'No selection logged'}`}
+                aria-label={`${periodLabel}: ${valueLabel}`}
               >
                 <Icon name="party-popper" size="medium" />
               </Hoverable.Anchor>
               <Hoverable.Content className="streak__tooltip" side="top">
-                <div className="streak__tooltip-day text-light text-b-s">
-                  {formatStreakDayLabel(dateKey)}
-                </div>
+                <div className="streak__tooltip-day text-light text-b-s">{periodLabel}</div>
                 <div className="text-b-m">{datum.value ?? '—'}</div>
               </Hoverable.Content>
             </Hoverable.Root>

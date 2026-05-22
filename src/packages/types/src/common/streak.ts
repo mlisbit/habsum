@@ -1,15 +1,51 @@
 import type { Day } from './day.js';
 
+/** Daily streak target (`7d/1w`). Omitted from YAML when streak has no `frequency` key. */
+export const DEFAULT_STREAK_FREQUENCY = '7d/1w';
+
+/** Days per week required for the streak. Missing or invalid YAML `frequency` → 7 (every day). */
+export function parseStreakFrequencyDays(spec?: string): number {
+  if (typeof spec !== 'string' || spec.trim().length === 0) return 7;
+  const m = spec.trim().match(/^(\d+)d\/1w$/);
+  if (!m) return 7;
+  const n = Number(m[1]);
+  if (!Number.isFinite(n) || n < 1 || n > 7) return 7;
+  return Math.trunc(n);
+}
+
+export function formatStreakFrequency(daysPerWeek: number): string {
+  const n = Math.trunc(daysPerWeek);
+  if (!Number.isFinite(n) || n < 1 || n > 7) {
+    throw new Error('streak frequency must be between 1 and 7 per week');
+  }
+  return `${n}d/1w`;
+}
+
+export function isDailyStreakFrequency(daysPerWeek: number): boolean {
+  return daysPerWeek >= 7;
+}
+
 export type StreakDatum = {
-  /** Selected option for this calendar day, or `null` if nothing recorded. */
+  /** Day: logged option, or `null`. Week: progress label (e.g. `2/3`), or `null` if nothing logged. */
   value: string | null;
-  /** `true` when `value` is in the habit’s configured `streak.options` (counts toward the streak). */
+  /** Day: streak-eligible selection. Week: week met the frequency target (`true`/`false`), or `null` while in progress. */
   include: boolean | null;
+  /** Week buckets: inclusive calendar range for this cell (e.g. `Mon, Jan 6 – Sun, Jan 12`). */
+  label?: string;
 };
 
-/** Daily streak window: `data` keys are `YYYY-MM-DD`, oldest → newest (see `MIN_STREAK_DAYS` on the server). */
+/** Longest historical streak when YAML sets `streak.show_longest`. */
+export type LongestStreak = {
+  /** e.g. `3 days` or `2 weeks (current)` when it matches the active streak. */
+  text: string;
+  range: string;
+};
+
+/** Streak window ending on the API view date. Keys are `YYYY-MM-DD` (day or week-start Monday). */
 export type StreakGraphData = {
   data: Record<Day, StreakDatum>;
-  /** Consecutive streak-eligible days ending on the API view date, as a label (e.g. `3 days`). When the view date is the client’s local today (`tzOffsetMinutes`) and unlogged, counting starts from the previous day. */
+  /** Consecutive periods ending on the view date (e.g. `3 days` or `2 weeks`). */
   streakText: string;
+  /** Present when `streak.show_longest` is enabled and a longest run exists. */
+  longestStreak?: LongestStreak;
 };

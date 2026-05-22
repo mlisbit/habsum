@@ -10,6 +10,11 @@ import {
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { parseSummationOptionsFromRaw, type SummationOptions } from '@habsum/types/common/habit';
+import {
+  DEFAULT_STREAK_FREQUENCY,
+  formatStreakFrequency,
+  parseStreakFrequencyDays,
+} from '@habsum/types/common/streak';
 import yaml from 'js-yaml';
 
 const rawDir = process.env.HABSUM_CONFIG_DIR;
@@ -40,6 +45,10 @@ export type HabitDef = {
   /** Subset of `options` whose selections count toward the streak (single_select only). */
   streak?: {
     options: string[];
+    /** Target streak days per week, e.g. `3d/1w`. Omitted when daily (`7d/1w`). */
+    frequency?: string;
+    /** When true, API includes `longestStreak` on streak responses. */
+    show_longest?: boolean;
   };
 };
 
@@ -251,7 +260,52 @@ function normalizeStreak(
     );
   }
 
-  return { options };
+  const frequency = normalizeStreakFrequency(raw.frequency, habitName);
+  const show_longest = normalizeStreakShowLongest(raw.show_longest, habitName);
+
+  return {
+    options,
+    ...(frequency !== DEFAULT_STREAK_FREQUENCY ? { frequency } : {}),
+    ...(show_longest ? { show_longest: true } : {}),
+  };
+}
+
+function normalizeStreakShowLongest(raw: unknown, habitName: string): boolean {
+  if (raw == null) return false;
+  if (typeof raw === 'boolean') return raw;
+  throw new ConfigValidationError(`habit "${habitName}" streak.show_longest must be a boolean`);
+}
+
+function normalizeStreakFrequency(raw: unknown, habitName: string): string {
+  if (raw == null) return DEFAULT_STREAK_FREQUENCY;
+
+  if (typeof raw !== 'string' || raw.trim().length === 0) {
+    throw new ConfigValidationError(
+      `habit "${habitName}" streak.frequency must be a string like "3d/1w"`,
+    );
+  }
+
+  const spec = raw.trim();
+  if (!/^\d+d\/1w$/.test(spec)) {
+    throw new ConfigValidationError(
+      `habit "${habitName}" streak.frequency must match Nd/1w (e.g. "3d/1w")`,
+    );
+  }
+
+  const days = parseStreakFrequencyDays(spec);
+  if (days < 1 || days > 7) {
+    throw new ConfigValidationError(
+      `habit "${habitName}" streak.frequency day count must be between 1 and 7`,
+    );
+  }
+
+  try {
+    return formatStreakFrequency(days);
+  } catch {
+    throw new ConfigValidationError(
+      `habit "${habitName}" streak.frequency day count must be between 1 and 7`,
+    );
+  }
 }
 
 export function createUserFromSampleConfig(

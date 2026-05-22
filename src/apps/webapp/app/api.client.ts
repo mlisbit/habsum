@@ -61,7 +61,7 @@ export type {
 } from '@habsum/types/common/habit';
 export type { BarGraphData, BarGraphDatum } from '@habsum/types/common/bar-chart';
 export type { Day } from '@habsum/types/common/day';
-export type { StreakDatum, StreakGraphData } from '@habsum/types/common/streak';
+export type { LongestStreak, StreakDatum, StreakGraphData } from '@habsum/types/common/streak';
 export type { HabitsResponse } from '@habsum/types/api-responses/habits-get';
 export type { PatchHabitResponse } from '@habsum/types/api-responses/habit-patch';
 export type { HistoryGetResponse } from '@habsum/types/api-responses/history-get';

@@ -8,8 +8,23 @@
   background: color-mix(in srgb, var(--background-secondary) 70%, transparent);
 }
 
-.streak__meta {
+.streak__meta-row {
+  display: flex;
+  flex-flow: row wrap;
+  align-items: baseline;
+  gap: functions.spacing(2);
   margin-bottom: functions.spacing(1);
+}
+
+.streak__meta {
+  min-width: 0;
+}
+
+.streak__longest {
+  cursor: default;
+  display: inline;
+  text-decoration: underline dotted;
+  text-underline-offset: 0.15em;
 }
 
 .streak__row {

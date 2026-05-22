@@ -564,6 +564,9 @@ userScopedRouter.get(
                   h.streak.options,
                   at,
                   tzOffsetMinutes,
+                  h.streak.frequency,
+                  h.streak.show_longest === true,
+                  firstDate,
                 ),
               }
             : {}),
@@ -664,6 +667,9 @@ userScopedRouter.patch(
                   known.streak.options,
                   at,
                   tzOffsetMinutes,
+                  known.streak.frequency,
+                  known.streak.show_longest === true,
+                  getFirstDate(user),
                 ),
               }
             : {}),
@@ -695,6 +701,9 @@ userScopedRouter.patch(
                 known.streak.options,
                 at,
                 tzOffsetMinutes,
+                known.streak.frequency,
+                known.streak.show_longest === true,
+                getFirstDate(user),
               ),
             }
           : {}),
