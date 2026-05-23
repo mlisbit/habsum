@@ -2,9 +2,14 @@ import type { BarGraphData } from '@habsum/types/common/bar-chart';
 import type { Habit, HabitHistory } from '@habsum/types/common/habit';
 
 /** Build a 7-day `HabitHistory` for tests from per-day totals (oldest → newest). */
-function habitHistoryWeek(values: readonly (number | null)[]): HabitHistory {
+function habitHistoryWeek(
+  values: readonly (number | null)[],
+  goal: number | null = null,
+): HabitHistory {
   const numericForTop = values.filter((v): v is number => v != null);
-  const top = numericForTop.length === 0 ? 1 : Math.max(1, ...numericForTop);
+  const maxValue = numericForTop.length === 0 ? 0 : Math.max(...numericForTop);
+  const goalFloor = goal != null && goal > 0 ? goal : 0;
+  const top = Math.max(1, maxValue, goalFloor);
   const graphData: BarGraphData = {};
   const keys = [
     '2020-06-08',
@@ -33,7 +38,7 @@ export const habitsFixtureProgressMixed: readonly Habit[] = [
   {
     name: 'push ups',
     goal: 100,
-    history: habitHistoryWeek([null, null, null, null, null, null, 41]),
+    history: habitHistoryWeek([null, null, null, null, null, null, 41], 100),
     type: 'summation',
     total: 41,
   },
@@ -53,7 +58,7 @@ export const habitsFixtureProgressMixed: readonly Habit[] = [
   {
     name: 'water intake',
     goal: 5,
-    history: habitHistoryWeek([null, null, null, null, null, null, 0]),
+    history: habitHistoryWeek([null, null, null, null, null, null, 0], 5),
     type: 'summation',
     total: 0,
   },
@@ -63,7 +68,7 @@ export const habitsFixtureProgressSecond: readonly Habit[] = [
   {
     name: 'push ups',
     goal: 100,
-    history: habitHistoryWeek([null, null, null, 41, 0, 0, 0]),
+    history: habitHistoryWeek([null, null, null, 41, 0, 0, 0], 100),
     type: 'summation',
     total: 0,
   },
@@ -83,7 +88,7 @@ export const habitsFixtureProgressSecond: readonly Habit[] = [
   {
     name: 'water intake',
     goal: 5,
-    history: habitHistoryWeek([null, null, null, 0, 0, 0, 0]),
+    history: habitHistoryWeek([null, null, null, 0, 0, 0, 0], 5),
     type: 'summation',
     total: 0,
   },

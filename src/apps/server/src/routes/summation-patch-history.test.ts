@@ -1,0 +1,55 @@
+import { join } from 'node:path';
+import { writeFileSync } from 'node:fs';
+import request from 'supertest';
+import { describe, expect, it } from 'vitest';
+import { toDateKey, toDateKeyWithTime } from '@habsum/utils';
+import { createApp } from '../app.js';
+import { ensureConfigLayout } from '../config.js';
+import { createUserSession, ensureUserPins } from '../db.js';
+import { SESSION_COOKIE_NAME } from '../session-cookie.js';
+
+function writeSummationUserConfig(user: string) {
+  ensureConfigLayout();
+  const usersDir = join(process.env.HABSUM_CONFIG_DIR!, 'users');
+  writeFileSync(
+    join(usersDir, `${user}.yaml`),
+    `habits:
+  push ups:
+    type: summation
+    goal: 100
+    history:
+      period: 1w
+`,
+    'utf8',
+  );
+}
+
+describe('PATCH /users/:user/habits summation history', () => {
+  it('returns history for the view day after the total is updated', async () => {
+    const user = 'patch-history-user';
+    writeSummationUserConfig(user);
+    ensureUserPins([user]);
+    const session = createUserSession(user, 3600);
+    const app = createApp();
+
+    const tzOffsetMinutes = new Date().getTimezoneOffset();
+    const date = toDateKey(new Date(), tzOffsetMinutes);
+    const clientCreatedAt = toDateKeyWithTime(new Date(), tzOffsetMinutes);
+
+    const res = await request(app)
+      .patch(`/users/${user}/habits`)
+      .set('Cookie', `${SESSION_COOKIE_NAME}=${session}`)
+      .send({
+        habit: 'push ups',
+        total: 5,
+        date,
+        clientCreatedAt,
+        tzOffsetMinutes,
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.total).toBe(5);
+    expect(res.body.history?.data?.user?.graphData?.[date]?.value).toBe(5);
+    expect(res.body.history?.data?.user?.graphData?.[date]?.top).toBe(100);
+  });
+});

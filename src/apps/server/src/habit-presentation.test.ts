@@ -5,11 +5,29 @@ vi.mock('./db.js', () => ({
 }));
 
 import { getSelect } from './db.js';
-import { formatSelectStreakText, streakGraphForConfiguredWindow } from './habit-presentation.js';
+import {
+  formatSelectStreakText,
+  historyGraphScaleTop,
+  streakGraphForConfiguredWindow,
+} from './habit-presentation.js';
 
 const user = 'tester';
 const habit = 'mood';
 const eligible = ['good'];
+
+describe('historyGraphScaleTop', () => {
+  it('uses the goal when it exceeds logged totals in the period', () => {
+    expect(historyGraphScaleTop([4], 5)).toBe(5);
+  });
+
+  it('uses the max logged total when it exceeds the goal', () => {
+    expect(historyGraphScaleTop([175], 100)).toBe(175);
+  });
+
+  it('falls back to 1 when there is no data and no goal', () => {
+    expect(historyGraphScaleTop([], null)).toBe(1);
+  });
+});
 
 describe('formatSelectStreakText', () => {
   it('pluralizes day count', () => {

@@ -583,6 +583,7 @@ userScopedRouter.get(
                 date,
                 firstDate,
                 h.history.period,
+                h.goal,
               ),
             }
           : {}),
@@ -713,7 +714,7 @@ userScopedRouter.patch(
 
     const mode = typeof action === 'string' ? action : 'add';
     const firstDate = getFirstDate(user);
-    const historyFields = habitHistoryIfConfigured(user, known, date, firstDate);
+    const historyFieldsAfterMutation = () => habitHistoryIfConfigured(user, known, date, firstDate);
 
     if (mode === 'delete_event') {
       const rawId = body.eventId;
@@ -734,7 +735,7 @@ userScopedRouter.patch(
         events: mapSummationEventsToApi(events),
         type: known.type,
         goal: known.goal,
-        ...historyFields,
+        ...historyFieldsAfterMutation(),
       };
       return res.json(out);
     }
@@ -749,7 +750,7 @@ userScopedRouter.patch(
         events: [],
         type: known.type,
         goal: known.goal,
-        ...historyFields,
+        ...historyFieldsAfterMutation(),
       };
       return res.json(out);
     }
@@ -788,7 +789,7 @@ userScopedRouter.patch(
       events: mapSummationEventsToApi(events),
       type: known.type,
       goal: known.goal,
-      ...historyFields,
+      ...historyFieldsAfterMutation(),
     };
     return res.json(out);
   },

@@ -2,7 +2,7 @@
 export type BarGraphDatum = {
   /** `null` when nothing was recorded for this bucket (e.g. no logging that day in history). */
   value: number | null;
-  /** Scale maximum; bar height is `value / top` (null values render as no fill). */
+  /** Scale maximum; bar height is `value / top`. History graphs use `max(goal, period max total)`. */
   top: number;
   /** Shown in the hover panel (e.g. localized time range for this bucket). */
   hoverLabel: string;

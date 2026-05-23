@@ -125,6 +125,16 @@ function formatHistoryDayHoverLabel(dateKey: string): string {
   return dt.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
+/** Y-axis max for history bars: at least 1, the period max logged total, and the habit goal when set. */
+export function historyGraphScaleTop(
+  values: readonly number[],
+  goal: number | null | undefined,
+): number {
+  const maxValue = values.length === 0 ? 0 : Math.max(...values);
+  const goalFloor = goal != null && goal > 0 ? goal : 0;
+  return Math.max(1, maxValue, goalFloor);
+}
+
 /** Builds `HabitHistory` for the view date window (`period` from config, e.g. `1w` → 7 daily bars). */
 export function habitHistoryForConfiguredPeriod(
   user: string,
@@ -132,6 +142,7 @@ export function habitHistoryForConfiguredPeriod(
   viewDate: string,
   firstDate: string | null,
   periodSpec: string,
+  goal: number | null | undefined = null,
 ): HabitHistory {
   const days = parsePeriodDays(periodSpec) ?? 7;
   const start = addDaysUtc(viewDate, -(days - 1));
@@ -144,7 +155,7 @@ export function habitHistoryForConfiguredPeriod(
     return byDate.get(d)!;
   });
   const numericForTop = series.filter((v): v is number => v != null);
-  const top = numericForTop.length === 0 ? 1 : Math.max(1, ...numericForTop);
+  const top = historyGraphScaleTop(numericForTop, goal);
   const graphData: BarGraphData = {};
   for (let i = 0; i < days; i++) {
     const d = addDaysUtc(start, i);
@@ -174,6 +185,7 @@ export function habitHistoryIfConfigured(
       viewDate,
       firstDate,
       habitDef.history.period,
+      habitDef.goal,
     ),
   };
 }

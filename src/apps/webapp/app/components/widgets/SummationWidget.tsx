@@ -131,7 +131,7 @@ export function SummationWidget({
         events={habit.events}
         onDeleteSummationEvent={(eventId) => runOp(() => onDeleteSummationEvent(eventId))}
       />
-      <History history={habit.history} />
+      <History history={habit.history} goal={goal} />
     </div>
   );
 }

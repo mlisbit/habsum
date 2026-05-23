@@ -96,6 +96,15 @@ function stripTsComments(source: string): string {
   return s;
 }
 
+/** Test/DOM queries — not markup; must not count as using an exclusive BEM block. */
+function stripDomQuerySelectors(source: string): string {
+  return source.replace(/\.querySelector(?:All)?\s*\(\s*['"][^'"]*['"]/g, '.querySelector(');
+}
+
+function stripForBlockUsageScan(source: string): string {
+  return stripDomQuerySelectors(stripTsComments(source));
+}
+
 function blockUsagePatterns(block: string): string[] {
   const esc = block.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const quoteClass = '["\'`]';
@@ -184,7 +193,7 @@ const rule: Rule.RuleModule = {
     return {
       Program() {
         const { text, directives } = parseDirectives(context);
-        const stripped = stripTsComments(text);
+        const stripped = stripForBlockUsageScan(text);
         const byBlock = getDeclarationsByBlock(filename);
 
         // --- Another component’s exclusive block used here ---
