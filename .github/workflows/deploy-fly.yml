@@ -1,4 +1,4 @@
-name: Deploy Fly.io
+name: Full Prod Deploy
 
 on:
   workflow_dispatch:
@@ -44,7 +44,7 @@ jobs:
     uses: ./.github/workflows/lint.yml
 
   test:
-    needs: lint
+    needs: gate
     if: needs.gate.outputs.create_release == 'true'
     uses: ./.github/workflows/test.yml
 
@@ -107,7 +107,7 @@ jobs:
 
   deploy-web:
     needs: [release, resolve-version, deploy-api]
-    if: always() && (needs.release.result == 'success' || needs.resolve-version.result == 'success')
+    if: needs.deploy-api.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout release tag

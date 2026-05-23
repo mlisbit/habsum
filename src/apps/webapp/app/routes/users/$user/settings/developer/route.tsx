@@ -576,7 +576,7 @@ export default function UserSettingsDeveloper() {
           ) : version ? (
             <dl className="developer-page__version-list">
               <div className="developer-page__version-row">
-                <dt className="text-b-m">Current</dt>
+                <dt className="text-b-m">Server</dt>
                 <dd className="developer-page__version-dd text-b-m">v{version.currentVersion}</dd>
               </div>
             </dl>
