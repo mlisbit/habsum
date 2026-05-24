@@ -23,6 +23,20 @@ export function diffDays(a: string, b: string, tzOffsetMinutes: number): number 
  *
  * When `today` is omitted it is inferred from “now” in `tzOffsetMinutes`.
  */
+/**
+ * Milliseconds from `now` until the next local calendar day starts.
+ */
+export function msUntilNextLocalDay(tzOffsetMinutes: number, now: Date = new Date()): number {
+  const todayKey = toDateKey(now, tzOffsetMinutes);
+  const nextDayStart = fromDateKey(addDays(todayKey, 1, tzOffsetMinutes), tzOffsetMinutes);
+  return Math.max(0, nextDayStart.getTime() - now.getTime());
+}
+
+/**
+ * Converts a calendar date key (YYYY-MM-DD) to a localized label (“Today”, or weekday + date).
+ *
+ * When `today` is omitted it is inferred from “now” in `tzOffsetMinutes`.
+ */
 export function formatHumanDate(dateKey: string, tzOffsetMinutes: number, today?: string): string {
   const todayKey = today ?? toDateKey(new Date(), tzOffsetMinutes);
   if (dateKey === todayKey) return 'Today';

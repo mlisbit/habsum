@@ -8,8 +8,8 @@ import { LOGIN_TOAST_USER_AREA, redirectToLoginWithToast } from '~/context/toast
 import { ensureUserSessionForRoute } from '~/utils/user-session-guard';
 import { awaitOucPopupBootstrap, getOucSessionToken } from '~/ouc.client';
 import { applyUiTheme } from '~/theme.client';
+import { useTodayDateKey } from '~/utils/use-today-date-key';
 import { getProgress } from '~/utils/habit-helpers';
-import { toDateKey } from '@habsum/utils';
 
 function useWideHabitsLayout(): boolean {
   return useSyncExternalStore(
@@ -40,7 +40,7 @@ export default function HabitsPage() {
   const [error, setError] = useState<string | null>(null);
   const [displayName, setDisplayName] = useState<string | null>(null);
   const tzOffsetMinutes = useMemo(() => new Date().getTimezoneOffset(), []);
-  const today = useMemo(() => toDateKey(new Date(), tzOffsetMinutes), [tzOffsetMinutes]);
+  const today = useTodayDateKey(tzOffsetMinutes);
   const effectiveDate = urlDate ?? today;
 
   useEffect(() => {
@@ -105,6 +105,7 @@ export default function HabitsPage() {
             ? `${window.location.pathname}?${qs.toString()}`
             : window.location.pathname;
           window.history.replaceState({}, '', nextUrl);
+          setUrlDate(null);
         }
       })
       .catch((e) => setError(e instanceof Error ? e.message : String(e)));

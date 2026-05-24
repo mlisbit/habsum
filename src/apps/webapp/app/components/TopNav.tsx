@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { fromDateKey, toDateKey } from '@habsum/utils';
+import { fromDateKey } from '@habsum/utils';
 import { diffDays } from '~/utils/date-utils';
+import { useTodayDateKey } from '~/utils/use-today-date-key';
 import { Button } from '~/core-components/Button';
 import { DayNav } from '~/components/DayNav';
 import { Hoverable } from '~/core-components/Hoverable';
@@ -60,7 +61,7 @@ export function TopNav({
   progress,
 }: TopNavProps) {
   const countdown = useTimeUntilEndOfDayLabel(effectiveDate, tzOffsetMinutes);
-  const today = useMemo(() => toDateKey(new Date(), tzOffsetMinutes), [tzOffsetMinutes]);
+  const today = useTodayDateKey(tzOffsetMinutes);
   const nextDisabled = effectiveDate >= today;
   const showBeforeDataNotice = firstDate != null && effectiveDate < firstDate;
 
