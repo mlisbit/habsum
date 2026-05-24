@@ -2,6 +2,7 @@ import Database from 'better-sqlite3';
 import { randomBytes } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
+import { hashPassword, isPasswordHashed, verifyPassword } from './password-hash.js';
 import { isAllowedUiTheme, isPlausibleEmail } from './request-helpers.js';
 
 const rawDir = process.env.HABSUM_CONFIG_DIR;
@@ -76,6 +77,25 @@ if (!usersTableHasColumn('beta_tester')) {
 if (!usersTableHasColumn('force_password_reset')) {
   db.exec('ALTER TABLE users ADD COLUMN force_password_reset INTEGER NOT NULL DEFAULT 0');
 }
+
+const migratePlainTextPinStmt = db.prepare<{ username: string; pin: string }>(`
+  UPDATE users SET pin = @pin WHERE username = @username
+`);
+
+/** Re-hash any legacy plain-text pins left in the database. */
+function migratePlainTextPins(): void {
+  const rows = db.prepare('SELECT username, pin FROM users').all() as Array<{
+    username: string;
+    pin: string;
+  }>;
+  for (const row of rows) {
+    if (!isPasswordHashed(row.pin)) {
+      migratePlainTextPinStmt.run({ username: row.username, pin: hashPassword(row.pin) });
+    }
+  }
+}
+
+migratePlainTextPins();
 
 db.exec(`
   UPDATE users SET email = 'mlisbit@gmail.com' WHERE username = 'user';
@@ -226,10 +246,11 @@ const deleteUserPinStmt = db.prepare<[string], unknown>('DELETE FROM users WHERE
 
 export function ensureUserPins(usernames: string[], defaultPin = '0'): void {
   const createdAt = new Date().toISOString();
+  const storedPin = hashPassword(defaultPin);
   for (const username of usernames) {
     ensureUserStmt.run({
       username,
-      pin: defaultPin,
+      pin: storedPin,
       admin: 0,
       createdAt,
     });
@@ -240,7 +261,7 @@ export function setUserPin(username: string, pin: string): void {
   const existing = getUserAdminStmt.get(username);
   insertUserStmt.run({
     username,
-    pin,
+    pin: hashPassword(pin),
     admin: existing?.admin ?? 0,
     createdAt: new Date().toISOString(),
   });
@@ -262,14 +283,14 @@ const createInitialAdminUserStmt = db.prepare<{ username: string; pin: string; c
 export function createInitialAdminUser(username: string, pin: string): void {
   createInitialAdminUserStmt.run({
     username,
-    pin,
+    pin: hashPassword(pin),
     createdAt: new Date().toISOString(),
   });
 }
 
 /** Updates stored login PIN only; preserves `admin`. Returns whether a row existed. */
 export function updateLoginPin(username: string, pin: string): boolean {
-  const result = updateLoginPinStmt.run({ username, pin });
+  const result = updateLoginPinStmt.run({ username, pin: hashPassword(pin) });
   return result.changes > 0;
 }
 
@@ -307,7 +328,12 @@ export function deleteUserPin(username: string): void {
 
 export function isUserPinValid(username: string, pin: string): boolean {
   const row = getUserPinStmt.get(username);
-  return row?.pin === pin;
+  if (!row) return false;
+  if (!verifyPassword(pin, row.pin)) return false;
+  if (!isPasswordHashed(row.pin)) {
+    updateLoginPin(username, pin);
+  }
+  return true;
 }
 
 /** Maps a login id (YAML username or stored email) to the account username. */
