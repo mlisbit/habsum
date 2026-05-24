@@ -1,21 +1,23 @@
+import path from 'node:path';
+import postcssSelectorParser from 'postcss-selector-parser';
 import stylelint, { type Plugin, type Rule } from 'stylelint';
-import type { Rule as PostcssRule } from 'postcss';
 
 /**
- * Enforces one BEM “primary namespace” per stylesheet (from top-level rules’ first-class),
- * and forbids unrelated BEM blocks combined in one top-level selector (e.g. `.block__inner .other-block`).
+ * Enforces one BEM “primary namespace” per stylesheet (from the filename), forbids
+ * unrelated BEM blocks anywhere in the file (including nested rules), forbids
+ * unrelated BEM blocks combined in one selector, and forbids universal/type selectors.
  */
 const ruleName = 'habsum/single-block-per-file';
 
 const messages = stylelint.utils.ruleMessages(ruleName, {
-  rejectedFile: (blocks: string[]) =>
-    `Expected only one BEM block in this file (from top-level rules), found ${blocks.length}: ${blocks
-      .map((b) => `"${b}"`)
-      .join(', ')}`,
+  rejectedForeignBlock: (foreign: string, expected: string) =>
+    `Foreign BEM block "${foreign}" is not allowed in a "${expected}" stylesheet`,
   rejectedMixedSelector: (parts: string[]) =>
     `Expected a single BEM primary block in this selector, found ${parts.length}: ${parts
       .map((p) => `"${p}"`)
       .join(', ')}`,
+  rejectedNonClassSelector: (expected: string) =>
+    `Use only BEM class selectors from "${expected}"; universal and type selectors are not allowed`,
 });
 
 const meta = {
@@ -28,7 +30,12 @@ function bemBlock(className: string): string {
   return className.split(/__|--/)[0]!;
 }
 
-/** Normalize atomic / vendor classes so they don’t collide with unrelated BEM bases. */
+function expectedBlockFromPath(file: string): string {
+  const base = path.basename(file, path.extname(file));
+  return base.replace(/^_/, '');
+}
+
+/** Normalize atomic / vendor / utility classes so they don’t count as foreign BEM blocks. */
 function primaryNamespace(className: string): string {
   if (
     className.startsWith('text-') ||
@@ -38,6 +45,9 @@ function primaryNamespace(className: string): string {
   ) {
     return '__text_atomic__';
   }
+  if (/^[mp][trblxy]?-\d+$/.test(className)) {
+    return '__spacing_atomic__';
+  }
   return bemBlock(className);
 }
 
@@ -45,7 +55,20 @@ function isAllowedCompanion(className: string): boolean {
   if (className === 'progress') return true;
   if (className.startsWith('cm-')) return true;
   if (bemBlock(className) === 'hover-layer') return true;
+  /** Core input innards styled from component blocks (e.g. count-control). */
+  if (bemBlock(className) === 'input') return true;
   return false;
+}
+
+function selectorUsesUniversalOrType(selector: string): boolean {
+  let found = false;
+  const parsed = postcssSelectorParser().astSync(selector);
+  parsed.walk((node) => {
+    if (node.type === 'universal' || node.type === 'tag') {
+      found = true;
+    }
+  });
+  return found;
 }
 
 const ruleFunction: Rule<boolean> = (primary) => (root, result) => {
@@ -55,23 +78,34 @@ const ruleFunction: Rule<boolean> = (primary) => (root, result) => {
   });
   if (!validOptions || primary === false) return;
 
-  const ruleBlocks: Array<{ block: string; node: PostcssRule }> = [];
-  const blocksInOrder: string[] = [];
-  const seenBlocks = new Set<string>();
+  const sourceFile = root.source?.input.file;
+  const expectedBlock = sourceFile ? expectedBlockFromPath(sourceFile) : null;
+  if (!expectedBlock) return;
+
+  const reportedForeign = new Set<string>();
+  const reportedMixed = new Set<string>();
+  const reportedNonClass = new Set<string>();
 
   root.walkRules((rule) => {
-    if (!rule.parent || rule.parent.type !== 'root') return;
-
-    let countedForFilePrimary = false;
-
-    let mixedReported = false;
+    if (rule.parent?.type === 'atrule' && rule.parent.name === 'keyframes') return;
 
     for (const selector of rule.selectors) {
-      const classes = [...selector.matchAll(CLASS_RE_GLOBAL)].map((m) => m[1]!).filter(Boolean);
-      const firstMatch = [...selector.matchAll(CLASS_RE_GLOBAL)][0]?.[1];
-      if (!firstMatch && classes.length <= 1) continue;
+      if (selector.includes('#{')) continue;
 
-      if (classes.length > 1 && firstMatch) {
+      if (selectorUsesUniversalOrType(selector) && !reportedNonClass.has(selector)) {
+        reportedNonClass.add(selector);
+        stylelint.utils.report({
+          message: messages.rejectedNonClassSelector(expectedBlock),
+          node: rule,
+          result,
+          ruleName,
+        });
+      }
+
+      const classes = [...selector.matchAll(CLASS_RE_GLOBAL)].map((m) => m[1]!).filter(Boolean);
+      if (classes.length === 0) continue;
+
+      if (classes.length > 1) {
         const anchorNs = primaryNamespace(classes[0]!);
         const intruders = new Set<string>();
 
@@ -80,46 +114,40 @@ const ruleFunction: Rule<boolean> = (primary) => (root, result) => {
           if (isAllowedCompanion(cls)) continue;
           const ns = primaryNamespace(cls);
           if (ns === '__text_atomic__') continue;
+          if (ns === '__spacing_atomic__') continue;
           if (ns === anchorNs) continue;
           intruders.add(ns);
         }
 
-        if (intruders.size > 0 && !mixedReported) {
+        if (intruders.size > 0 && !reportedMixed.has(selector)) {
+          reportedMixed.add(selector);
           stylelint.utils.report({
             message: messages.rejectedMixedSelector([anchorNs, ...intruders]),
             node: rule,
             result,
             ruleName,
           });
-          mixedReported = true;
         }
       }
 
-      if (!countedForFilePrimary && firstMatch) {
-        const block = bemBlock(firstMatch);
-        ruleBlocks.push({ block, node: rule });
-        if (!seenBlocks.has(block)) {
-          seenBlocks.add(block);
-          blocksInOrder.push(block);
-        }
-        countedForFilePrimary = true;
+      for (const cls of classes) {
+        if (isAllowedCompanion(cls)) continue;
+        const ns = primaryNamespace(cls);
+        if (ns === '__text_atomic__') continue;
+        if (ns === '__spacing_atomic__') continue;
+        if (ns === expectedBlock) continue;
+        if (reportedForeign.has(ns)) continue;
+
+        reportedForeign.add(ns);
+        stylelint.utils.report({
+          message: messages.rejectedForeignBlock(ns, expectedBlock),
+          node: rule,
+          result,
+          ruleName,
+        });
       }
     }
   });
-
-  if (blocksInOrder.length <= 1) return;
-
-  const primaryBlock = blocksInOrder[0]!;
-
-  for (const { block, node } of ruleBlocks) {
-    if (block === primaryBlock) continue;
-    stylelint.utils.report({
-      message: messages.rejectedFile(blocksInOrder),
-      node,
-      result,
-      ruleName,
-    });
-  }
 };
 
 ruleFunction.ruleName = ruleName;

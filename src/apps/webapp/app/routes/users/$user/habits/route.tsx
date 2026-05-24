@@ -146,7 +146,6 @@ export default function HabitsPage() {
           user={state!.user}
           habit={h}
           dayKey={effectiveDate}
-          surfaceClassName="habits-page__tile"
           onSelectOption={async (opt) => {
             const updated = await patchHabit(
               state!.user,
@@ -172,7 +171,6 @@ export default function HabitsPage() {
         user={state!.user}
         habit={h}
         dayKey={effectiveDate}
-        surfaceClassName="habits-page__tile"
         onAddAmount={async (delta) => {
           const updated = await patchHabit(
             state!.user,

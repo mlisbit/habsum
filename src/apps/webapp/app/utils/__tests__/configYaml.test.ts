@@ -84,6 +84,16 @@ describe('dumpConfigYaml', () => {
     ]);
   });
 
+  it('quotes numeric option labels so they round-trip as strings', () => {
+    const out = dumpConfigYaml({
+      habits: {
+        rating: { type: 'single_select', options: ['1', '2', '3'] },
+      },
+    });
+    expect(out).toContain("options: ['1', '2', '3']");
+    expect(parseConfigHabitCards(out)[0].optionLabels).toEqual(['1', '2', '3']);
+  });
+
   it('quotes option labels that need escaping', () => {
     const out = dumpConfigYaml({
       habits: {

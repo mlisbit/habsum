@@ -8,6 +8,7 @@ import { HabitWidgetMenuModal } from '~/components/widgets/modules/HabitWidgetMe
 import { InfoText } from '~/core-components/InfoText';
 import { ProgressBar } from '~/core-components/ProgressBar';
 import { useModal } from '~/context/modal';
+import { classBuilder } from '~/utils/class-builder';
 
 type SummationWidgetProps = {
   user: string;
@@ -20,8 +21,6 @@ type SummationWidgetProps = {
   interval?: number;
   /** Removes one logged summation event (modal row action). */
   onDeleteSummationEvent: (eventId: number) => Promise<void>;
-  /** Extra root class(es), e.g. page layout hooks (`habits-page__tile`). */
-  surfaceClassName?: string;
 };
 
 function summationIsComplete(habit: HabitRowSummation): boolean {
@@ -39,7 +38,6 @@ export function SummationWidget({
   onClearTotal,
   onDeleteSummationEvent,
   interval = 1,
-  surfaceClassName,
 }: SummationWidgetProps) {
   const total = habit.total;
   const goal = habit.goal;
@@ -79,17 +77,15 @@ export function SummationWidget({
 
   return (
     <div
-      className={[
-        'card',
-        'habit-summation',
-        habit.summationOptions?.increments.some((n) => n < 0)
-          ? 'habit-summation--step-sub-on-card-hover'
-          : '',
-        surfaceClassName,
-        isComplete ? 'habit-widget--complete' : '',
-      ]
-        .filter(Boolean)
-        .join(' ')}
+      className={classBuilder(
+        {
+          'habit-summation--step-sub-on-card-hover': habit.summationOptions?.increments.some(
+            (n) => n < 0,
+          ),
+          'habit-widget--complete': isComplete,
+        },
+        'card habit-summation',
+      )}
     >
       <div className="habit-summation__header">
         <HabitWidgetHeading

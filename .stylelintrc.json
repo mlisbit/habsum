@@ -17,7 +17,8 @@
       "rules": {
         "selector-max-type": null,
         "habsum/require-spacing-function": null,
-        "habsum/no-direct-color": null
+        "habsum/no-direct-color": null,
+        "habsum/single-block-per-file": null
       }
     },
     {

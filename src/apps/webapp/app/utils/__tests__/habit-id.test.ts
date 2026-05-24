@@ -4,7 +4,9 @@ import {
   configEditHabitUrl,
   findHabitNameByConfigEditId,
   readConfigEditHabitId,
+  readShowAddModal,
   withConfigEditHabitId,
+  withShowAddModal,
 } from '../habit-id';
 
 describe('config edit habit query param', () => {
@@ -17,6 +19,15 @@ describe('config edit habit query param', () => {
     expect(readConfigEditHabitId('?habit=push-ups&yaml=1')).toBe('push-ups');
     expect(withConfigEditHabitId('?yaml=1', 'push-ups')).toBe('?yaml=1&habit=push-ups');
     expect(withConfigEditHabitId('?habit=push-ups', null)).toBe('');
+  });
+
+  it('reads and writes the showAddModal query param', () => {
+    expect(readShowAddModal('')).toBe(false);
+    expect(readShowAddModal('?yaml=1')).toBe(false);
+    expect(readShowAddModal('?showAddModal=1')).toBe(true);
+    expect(readShowAddModal('?showAddModal=true')).toBe(true);
+    expect(withShowAddModal('?yaml=1', true)).toBe('?yaml=1&showAddModal=1');
+    expect(withShowAddModal('?showAddModal=1', false)).toBe('');
   });
 
   it('finds a habit name from the query id', () => {

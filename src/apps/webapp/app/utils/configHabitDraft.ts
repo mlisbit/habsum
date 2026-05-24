@@ -369,8 +369,11 @@ function uniqueNewHabitName(
   return `${base} ${n}`;
 }
 
-/** Appends a default summation habit and returns the updated YAML plus the new habit name. */
-export function addHabitToConfigYaml(text: string): { text: string; habitName: string } {
+/** Appends a default habit of the given type and returns the updated YAML plus the new habit name. */
+export function addHabitToConfigYaml(
+  text: string,
+  type: 'summation' | 'single_select' = 'summation',
+): { text: string; habitName: string } {
   let parsed: unknown;
   try {
     parsed = yaml.load(text);
@@ -384,7 +387,10 @@ export function addHabitToConfigYaml(text: string): { text: string; habitName: s
 
   const existingNames = new Set(parseConfigHabitCards(text).map((h) => h.name));
   const habitName = uniqueNewHabitName(existingNames);
-  habits[habitName] = { type: 'summation' };
+  habits[habitName] =
+    type === 'single_select'
+      ? { type: 'single_select', options: ['1', '2', '3'] }
+      : { type: 'summation' };
 
   const order = [...existingNames, habitName];
   return { text: dumpConfigYaml(root, order), habitName };

@@ -16,13 +16,14 @@
   display: block;
   text-decoration: none;
   cursor: pointer;
+  background: var(--background-tertiary);
   transition:
     transform 0.08s ease,
     border-color 0.12s ease,
     box-shadow 0.12s ease;
 
   &:hover {
-    border-color: color-mix(in srgb, var(--accent-selected) 45%, var(--border-color-faint));
+    outline: solid 1px var(--accent-selected);
     box-shadow: var(--elevation-shadow);
   }
 

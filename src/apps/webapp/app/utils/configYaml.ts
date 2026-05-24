@@ -74,6 +74,9 @@ const YAML_SCALAR_QUOTE_RE = /[\s:#\[\]{},'"\\&*!?|>%@`-]|^[-?]|^$/;
 
 /** Format a string for inline YAML lists; avoids js-yaml quoting yes/no/on/off as booleans. */
 export function formatYamlStringScalar(value: string): string {
+  if (/^\d+$/.test(value)) {
+    return `'${value}'`;
+  }
   if (!YAML_SCALAR_QUOTE_RE.test(value)) {
     return value;
   }

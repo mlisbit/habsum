@@ -1,11 +1,13 @@
 import { useCallback, useState } from 'react';
 import type { HabitRowSingleSelect } from '@habsum/types/common/habit';
+import { dayFromString } from '@habsum/types/common/day';
 import { HabitWidgetHeading } from '~/components/widgets/HabitWidgetHeading';
 import { HabitWidgetMenuModal } from '~/components/widgets/modules/HabitWidgetMenuModal';
 import { InfoText } from '~/core-components/InfoText';
 import { TogglePill } from '~/core-components/Pill';
 import { useModal } from '~/context/modal';
 import { Streak } from '~/components/widgets/modules/Streak';
+import { classBuilder } from '~/utils/class-builder';
 
 type SingleSelectWidgetProps = {
   user: string;
@@ -15,8 +17,6 @@ type SingleSelectWidgetProps = {
   onSelectOption: (option: string) => Promise<void>;
   /** Clears the stored selection for today (`null` in the API). */
   onClearSelection: () => Promise<void>;
-  /** Extra root class(es), e.g. page layout hooks (`habits-page__tile`). */
-  surfaceClassName?: string;
 };
 
 function singleSelectIsComplete(habit: HabitRowSingleSelect): boolean {
@@ -29,7 +29,6 @@ export function SingleSelectWidget({
   dayKey,
   onSelectOption,
   onClearSelection,
-  surfaceClassName,
 }: SingleSelectWidgetProps) {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -64,16 +63,7 @@ export function SingleSelectWidget({
   }, [present, closeModal, onClearSelection, pending, user, habit.name]);
 
   return (
-    <div
-      className={[
-        'card',
-        'habit-select',
-        surfaceClassName,
-        isComplete ? 'habit-widget--complete' : '',
-      ]
-        .filter(Boolean)
-        .join(' ')}
-    >
+    <div className={classBuilder({ 'habit-widget--complete': isComplete }, 'card habit-select')}>
       <div className="habit-select__row">
         <HabitWidgetHeading
           user={user}
@@ -123,7 +113,7 @@ export function SingleSelectWidget({
           {error}
         </InfoText>
       ) : null}
-      {habit.streak ? <Streak streak={habit.streak} viewDate={dayKey} /> : null}
+      {habit.streak ? <Streak streak={habit.streak} viewDate={dayFromString(dayKey)} /> : null}
     </div>
   );
 }

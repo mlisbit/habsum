@@ -3,6 +3,9 @@ import { dasherize } from '@habsum/utils';
 /** Query param on `/users/:user/settings/config` for deep-linking the habit edit modal. */
 export const CONFIG_EDIT_HABIT_QUERY_PARAM = 'habit';
 
+/** Query param on `/users/:user/settings/config` for deep-linking the add-habit type picker. */
+export const CONFIG_SHOW_ADD_MODAL_QUERY_PARAM = 'showAddModal';
+
 /**
  * Lowercase, dasherize, and safe-guard a habit name for a URL path segment
  * (e.g. `My Habit` → `my-habit`).
@@ -26,6 +29,20 @@ export function withConfigEditHabitId(search: string, habitId: string | null): s
   const qs = new URLSearchParams(search);
   if (habitId) qs.set(CONFIG_EDIT_HABIT_QUERY_PARAM, habitId);
   else qs.delete(CONFIG_EDIT_HABIT_QUERY_PARAM);
+  const next = qs.toString();
+  return next ? `?${next}` : '';
+}
+
+export function readShowAddModal(search: string): boolean {
+  const raw = new URLSearchParams(search).get(CONFIG_SHOW_ADD_MODAL_QUERY_PARAM);
+  if (raw === null) return false;
+  return raw === '' || raw === '1' || raw.toLowerCase() === 'true';
+}
+
+export function withShowAddModal(search: string, show: boolean): string {
+  const qs = new URLSearchParams(search);
+  if (show) qs.set(CONFIG_SHOW_ADD_MODAL_QUERY_PARAM, '1');
+  else qs.delete(CONFIG_SHOW_ADD_MODAL_QUERY_PARAM);
   const next = qs.toString();
   return next ? `?${next}` : '';
 }

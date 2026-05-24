@@ -6,12 +6,10 @@ export type ClassMap = Record<string, boolean | undefined | null | ''>;
  *
  * @example
  * classBuilder({ 'full-class-name--blah': isActive }, 'base-class-name')
+ * classBuilder({ 'text-error': isError }, 'settings__link text-b-l')
  */
-export function classBuilder(
-  classes: ClassMap,
-  ...bases: Array<string | false | null | undefined>
-): string {
-  const parts = bases.filter(Boolean) as string[];
+export function classBuilder(classes: ClassMap, base?: string | false | null | undefined): string {
+  const parts = typeof base === 'string' ? base.split(/\s+/).filter(Boolean) : [];
   for (const [name, active] of Object.entries(classes)) {
     if (active) parts.push(name);
   }

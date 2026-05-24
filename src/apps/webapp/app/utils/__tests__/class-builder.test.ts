@@ -18,13 +18,12 @@ describe('classBuilder', () => {
           'settings__link--active': false,
           'text-error': true,
         },
-        'settings__link',
-        'text-b-l',
+        'settings__link text-b-l',
       ),
     ).toBe('settings__link text-b-l text-error');
   });
 
-  it('supports multiple base classes', () => {
-    expect(classBuilder({}, 'foo', 'bar', 'baz')).toBe('foo bar baz');
+  it('supports multiple base classes in one string', () => {
+    expect(classBuilder({}, 'foo bar baz')).toBe('foo bar baz');
   });
 });

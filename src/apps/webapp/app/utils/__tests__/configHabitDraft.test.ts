@@ -247,6 +247,16 @@ describe('addHabitToConfigYaml', () => {
     expect(habits['New habit']).toEqual({ type: 'summation' });
   });
 
+  it('appends a default single select habit with starter options', () => {
+    const { text, habitName } = addHabitToConfigYaml(SAMPLE, 'single_select');
+    expect(habitName).toBe('New habit');
+    const habits = (yaml.load(text) as { habits: Record<string, unknown> }).habits;
+    expect(habits['New habit']).toEqual({
+      type: 'single_select',
+      options: ['1', '2', '3'],
+    });
+  });
+
   it('allocates numbered names when the default is taken', () => {
     const first = addHabitToConfigYaml(SAMPLE);
     const second = addHabitToConfigYaml(first.text);

@@ -12,5 +12,6 @@
     "declaration": false,
     "sourceMap": false
   },
-  "include": ["src/**/*.mts"]
+  "include": ["src/**/*.mts"],
+  "exclude": ["src/**/*.test.mts"]
 }

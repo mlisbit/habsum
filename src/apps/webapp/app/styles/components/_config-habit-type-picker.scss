@@ -1,0 +1,38 @@
+@use 'functions';
+
+.config-habit-type-picker {
+  display: flex;
+  flex-direction: column;
+  gap: functions.spacing(2);
+  min-width: 0;
+}
+
+.config-habit-type-picker__options {
+  display: flex;
+  flex-direction: column;
+  gap: functions.spacing(4);
+}
+
+.config-habit-type-picker__option {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: functions.spacing(1);
+  width: 100%;
+  min-width: 0;
+  margin-bottom: 0;
+  text-align: left;
+  font: inherit;
+}
+
+.config-habit-type-picker__preview {
+  pointer-events: none;
+  margin-top: functions.spacing(1);
+  min-width: 0;
+}
+
+.config-habit-type-picker__preview-sample {
+  display: flex;
+  flex-direction: column;
+  gap: functions.spacing(2);
+}
