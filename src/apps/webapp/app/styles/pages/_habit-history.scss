@@ -11,15 +11,22 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
+  gap: functions.spacing(2);
   margin-bottom: functions.spacing(3);
   padding-top: functions.spacing(4);
 }
 
-.habit-history__header-left {
-  display: flex;
-  gap: functions.spacing(2);
-  align-items: center;
+.habit-history__back {
+  flex-shrink: 0;
+}
+
+.habit-history__filters {
+  flex: 1 1 auto;
   min-width: 0;
+}
+
+.habit-history__title {
+  margin: 0;
 }
 
 .habit-history__filter-pills {
@@ -31,6 +38,34 @@
 .habit-history__day-nav {
   flex-shrink: 0;
   min-width: min(320px, 100%);
+}
+
+@media (max-width: 720px) {
+  .habit-history__header {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-areas:
+      'back day-nav'
+      'filters filters';
+    align-items: center;
+  }
+
+  .habit-history__back {
+    grid-area: back;
+  }
+
+  .habit-history__day-nav {
+    grid-area: day-nav;
+    justify-self: end;
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .habit-history__filters {
+    grid-area: filters;
+    width: 100%;
+  }
 }
 
 .habit-history__main {

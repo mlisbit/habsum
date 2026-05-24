@@ -204,22 +204,23 @@ export default function HabitDetailRoute() {
   return (
     <div className="habit-history">
       <div className="habit-history__header">
-        <div className="habit-history__header-left">
-          <Button
-            type="tertiary"
-            icon="chevronBack"
-            circle
-            text=""
-            title="Back to habits"
-            aria-label="Back to habits"
-            onClick={() =>
-              window.location.assign(
-                `/users/${encodeURIComponent(user)}/habits${
-                  selectedDate ? `?date=${encodeURIComponent(selectedDate)}` : ''
-                }`,
-              )
-            }
-          />
+        <Button
+          type="tertiary"
+          icon="chevronBack"
+          circle
+          text=""
+          title="Back to habits"
+          aria-label="Back to habits"
+          className="habit-history__back"
+          onClick={() =>
+            window.location.assign(
+              `/users/${encodeURIComponent(user)}/habits${
+                selectedDate ? `?date=${encodeURIComponent(selectedDate)}` : ''
+              }`,
+            )
+          }
+        />
+        <div className="habit-history__filters">
           {historyRes ? (
             <div className="habit-history__filter-pills">
               {Object.entries(historyRes.habits).map(([habitId, habitName]) => (
@@ -233,7 +234,7 @@ export default function HabitDetailRoute() {
               ))}
             </div>
           ) : (
-            <h1 className="text-h-xl">{habitFilterKey || 'Habit'}</h1>
+            <h1 className="habit-history__title text-h-xl">{habitFilterKey || 'Habit'}</h1>
           )}
         </div>
         <DayNav
