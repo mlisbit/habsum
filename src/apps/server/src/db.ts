@@ -297,6 +297,7 @@ export function completeForcedPasswordReset(username: string, pin: string): bool
 export function renameUserPin(fromUsername: string, toUsername: string): void {
   renameUserPinStmt.run({ fromUsername, toUsername });
   renameSessionsUsername(fromUsername, toUsername);
+  renameUserHabitData(fromUsername, toUsername);
 }
 
 export function deleteUserPin(username: string): void {
@@ -778,6 +779,23 @@ const deleteDailySelectStmt = db.prepare<[string, string, string], unknown>(
 
 export function deleteDailySelect(user: string, habit: string, date: string): void {
   deleteDailySelectStmt.run(user, habit, date);
+}
+
+const renameSummationEventsUserStmt = db.prepare<{ fromUsername: string; toUsername: string }>(`
+  UPDATE habit_summation_events
+  SET user = @toUsername
+  WHERE user = @fromUsername
+`);
+
+const renameDailySelectsUserStmt = db.prepare<{ fromUsername: string; toUsername: string }>(`
+  UPDATE habit_daily_selects
+  SET user = @toUsername
+  WHERE user = @fromUsername
+`);
+
+function renameUserHabitData(fromUsername: string, toUsername: string): void {
+  renameSummationEventsUserStmt.run({ fromUsername, toUsername });
+  renameDailySelectsUserStmt.run({ fromUsername, toUsername });
 }
 
 export function purgeUserData(user: string) {
