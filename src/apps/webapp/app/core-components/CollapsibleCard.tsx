@@ -146,7 +146,7 @@ function CollapsibleCardContent({ children, className, ...props }: CollapsibleCa
   return (
     <div
       id={contentId}
-      className={classNames('collapsible-card__content', className)}
+      className={classNames('card-padding', className)}
       hidden={!visible}
       {...props}
     >

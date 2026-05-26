@@ -33,7 +33,7 @@ export function DayNav({
           <HumanDate date={date} tzOffsetMinutes={tzOffsetMinutes} today={today} />
         </div>
         <div className="day-nav__actions">
-          <div className="day-nav__controls">
+          <div className="flex gap-2">
             <Button
               type="tertiary"
               size="medium"

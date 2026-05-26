@@ -6,7 +6,8 @@
     "./src/packages/stylelint/dist/no-direct-color.mjs",
     "./src/packages/stylelint/dist/bem-block-matches-filename.mjs",
     "./src/packages/stylelint/dist/theme-token-parity.mjs",
-    "./src/packages/stylelint/dist/theme-token-order.mjs"
+    "./src/packages/stylelint/dist/theme-token-order.mjs",
+    "./src/packages/stylelint/dist/atomic-class-enforcer.mjs"
   ],
   "overrides": [
     {
@@ -19,34 +20,6 @@
         "habsum/require-spacing-function": null,
         "habsum/no-direct-color": null,
         "habsum/single-block-per-file": null
-      }
-    },
-    {
-      "files": ["src/apps/webapp/app/styles/_reset.scss"],
-      "rules": {
-        "property-disallowed-list": [
-          ["font-size", "line-height", "font-weight"],
-          {
-            "message": "Use atomic typography classes (.text-h-*, .text-b-*, .text-light, .text-bold) defined in foundation/_text.scss"
-          }
-        ]
-      }
-    },
-    {
-      "files": ["src/apps/webapp/app/styles/core-components/_button.scss"],
-      "rules": {
-        "property-disallowed-list": [
-          ["font-size", "line-height", "font-weight"],
-          {
-            "message": "Use atomic typography classes (.text-h-*, .text-b-*, .text-light, .text-bold) defined in foundation/_text.scss"
-          }
-        ]
-      }
-    },
-    {
-      "files": ["src/apps/webapp/app/styles/foundation/_text.scss"],
-      "rules": {
-        "property-disallowed-list": null
       }
     },
     {
@@ -63,7 +36,6 @@
       "files": ["src/apps/webapp/app/styles/_theme.scss"],
       "rules": {
         "selector-max-type": null,
-        "property-disallowed-list": null,
         "habsum/bem-block-matches-filename": null,
         "habsum/single-block-per-file": null
       }
@@ -81,12 +53,7 @@
     "value-keyword-case": ["lower", { "ignoreProperties": ["/font/"] }],
     "scss/at-function-pattern": "^_?[a-z][a-z0-9-]*$",
     "at-rule-empty-line-before": null,
-    "property-disallowed-list": [
-      ["font-size", "line-height", "font-weight", "color"],
-      {
-        "message": "Use atomic text utility classes (.text-h-*, .text-b-*, .text-light, .text-bold) defined in foundation/_text.scss"
-      }
-    ],
+    "habsum/atomic-class-enforcer": true,
     "habsum/single-block-per-file": true,
     "habsum/require-spacing-function": true,
     "habsum/no-direct-color": true,

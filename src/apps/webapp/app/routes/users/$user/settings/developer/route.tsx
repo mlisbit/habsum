@@ -312,7 +312,7 @@ type UserRowIconActionProps = {
 function UserRowIconAction({ tooltip, icon, ariaLabel, onClick }: UserRowIconActionProps) {
   return (
     <Hoverable.Root>
-      <Hoverable.Anchor className="developer-page__users-action-anchor">
+      <Hoverable.Anchor className="flex">
         <Button
           type="tertiary"
           size="medium"

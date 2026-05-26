@@ -48,6 +48,8 @@
   }
 }
 
+// ignoring this line because buttons are not cards, and shouldnt really be "locked" to the spacing of them.
+// stylelint-disable-next-line habsum/atomic-class-enforcer
 .button--medium {
   padding: functions.spacing(2, 3);
 }

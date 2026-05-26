@@ -133,7 +133,7 @@ export function TopNav({
             </span>
           </div>
           <Hoverable.Root>
-            <Hoverable.Anchor className="top-nav__settings-anchor">
+            <Hoverable.Anchor className="flex">
               <Button
                 type="tertiary"
                 icon="gear"

@@ -179,7 +179,7 @@ export function Calendar({
             </div>
           ) : null}
         </div>
-        <div className="calendar__controls">
+        <div className="flex gap-2">
           <Button
             type="secondary"
             icon="chevronLeft"
