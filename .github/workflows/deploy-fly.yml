@@ -107,7 +107,7 @@ jobs:
 
   deploy-web:
     needs: [release, resolve-version, deploy-api]
-    if: needs.deploy-api.result == 'success'
+    if: always() && needs.deploy-api.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout release tag
