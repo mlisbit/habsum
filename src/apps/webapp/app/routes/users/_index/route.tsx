@@ -1,9 +1,5 @@
-import { useEffect } from 'react';
+import { Navigate } from '@remix-run/react';
 
 export default function UsersIndex() {
-  useEffect(() => {
-    window.location.replace('/login');
-  }, []);
-
-  return null;
+  return <Navigate to="/login" replace />;
 }

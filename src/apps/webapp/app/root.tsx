@@ -5,6 +5,7 @@ import { OucIndicator } from '~/components/OucIndicator';
 import { OucPopupBootstrap } from '~/components/OucPopupBootstrap';
 import { ModalProvider } from '~/context/modal';
 import { ToastProvider } from '~/context/toast';
+import { UserProvider } from '~/context/user';
 import stylesHref from '~/styles/main.scss?url';
 
 export const links: LinksFunction = () => [
@@ -36,9 +37,11 @@ export default function App() {
   return (
     <ModalProvider>
       <ToastProvider>
-        <OucPopupBootstrap />
-        <Outlet />
-        <OucIndicator />
+        <UserProvider>
+          <OucPopupBootstrap />
+          <Outlet />
+          <OucIndicator />
+        </UserProvider>
       </ToastProvider>
     </ModalProvider>
   );

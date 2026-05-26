@@ -1,13 +1,14 @@
-import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
-import { getAuthMe, getHabits, logout, patchHabit, type Habit } from '~/api.client';
+import { Link, useNavigate } from '@remix-run/react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { getHabits, logout, patchHabit, type Habit } from '~/api.client';
 import { Footer } from '~/components/Footer';
 import { TopNav } from '~/components/TopNav';
 import { SingleSelectWidget, SummationWidget } from '~/components/widgets';
 import { InfoText } from '~/core-components/InfoText';
-import { LOGIN_TOAST_USER_AREA, redirectToLoginWithToast } from '~/context/toast';
+import { useToast } from '~/context/toast';
+import { useUser } from '~/context/user';
 import { ensureUserSessionForRoute } from '~/utils/user-session-guard';
 import { awaitOucPopupBootstrap, getOucSessionToken } from '~/ouc.client';
-import { applyUiTheme } from '~/theme.client';
 import { useTodayDateKey } from '~/utils/use-today-date-key';
 import { getProgress } from '~/utils/habit-helpers';
 
@@ -32,21 +33,29 @@ function toListHabit(habit: Habit): Habit {
 }
 
 export default function HabitsPage() {
+  const navigate = useNavigate();
+  const { showToast, dismissToast } = useToast();
+  const {
+    me,
+    loading: userLoading,
+    isNewUser,
+    hasDismissedIntro,
+    dismissIntro,
+    refresh: refreshUser,
+  } = useUser();
+  const introToastOfferedRef = useRef(false);
+  const syncedEntitlementsAfterFirstActivityRef = useRef(false);
   const [user, setUser] = useState<string>('');
   // Source of truth: the URL. `null` means "today" (clean URL).
   const [urlDate, setUrlDate] = useState<string | null>(null);
   const [firstDate, setFirstDate] = useState<string | null>(null);
   const [state, setState] = useState<HabitsState | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [displayName, setDisplayName] = useState<string | null>(null);
   const tzOffsetMinutes = useMemo(() => new Date().getTimezoneOffset(), []);
   const today = useTodayDateKey(tzOffsetMinutes);
   const effectiveDate = urlDate ?? today;
 
   useEffect(() => {
-    const match = window.location.pathname.match(/^\/users\/([^/]+)\/habits\/?$/);
-    const routeUser = match ? decodeURIComponent(match[1]) : '';
-
     let cancelled = false;
     void (async () => {
       const bootstrapped = await awaitOucPopupBootstrap();
@@ -55,23 +64,6 @@ export default function HabitsPage() {
         setError('Operate-under session failed to start.');
         return;
       }
-
-      getAuthMe()
-        .then((me) => {
-          if (cancelled) return;
-          if (!routeUser) {
-            setUser('');
-            setDisplayName(null);
-            return;
-          }
-          if (!ensureUserSessionForRoute(routeUser, me)) return;
-          applyUiTheme(me.theme);
-          setDisplayName(me.displayName);
-          setUser(routeUser);
-        })
-        .catch(() => {
-          if (!cancelled && routeUser) redirectToLoginWithToast(LOGIN_TOAST_USER_AREA);
-        });
     })();
 
     const syncFromUrl = () => {
@@ -87,6 +79,39 @@ export default function HabitsPage() {
       window.removeEventListener('popstate', syncFromUrl);
     };
   }, []);
+
+  useEffect(() => {
+    if (userLoading) return;
+    const match = window.location.pathname.match(/^\/users\/([^/]+)\/habits\/?$/);
+    const routeUser = match ? decodeURIComponent(match[1]) : '';
+    if (!routeUser) {
+      setUser('');
+      return;
+    }
+    if (!ensureUserSessionForRoute(routeUser, me, { navigate })) return;
+    setUser(routeUser);
+  }, [me, userLoading, navigate]);
+
+  useEffect(() => {
+    introToastOfferedRef.current = false;
+  }, [user]);
+
+  useEffect(() => {
+    if (userLoading || !isNewUser || !user || hasDismissedIntro || introToastOfferedRef.current) {
+      return;
+    }
+    introToastOfferedRef.current = true;
+    showToast({
+      type: 'info',
+      title: 'Welcome to Habsum!',
+      titleIcon: 'hand',
+      message: 'We added a few example habits to help you get started.',
+      persistent: true,
+      ctaTitle: 'Customize habits',
+      ctaLocation: `/users/${encodeURIComponent(user)}/settings/config`,
+      onDismiss: dismissIntro,
+    });
+  }, [userLoading, isNewUser, user, hasDismissedIntro, showToast, dismissIntro]);
 
   useEffect(() => {
     if (!user) return;
@@ -133,6 +158,11 @@ export default function HabitsPage() {
         ),
       };
     });
+    if (isNewUser && !syncedEntitlementsAfterFirstActivityRef.current) {
+      syncedEntitlementsAfterFirstActivityRef.current = true;
+      dismissToast();
+      void refreshUser();
+    }
   };
 
   const wideTwoColumn = useWideHabitsLayout();
@@ -203,7 +233,7 @@ export default function HabitsPage() {
     <div className="habits-page">
       <TopNav
         username={user}
-        displayName={displayName}
+        displayName={me.username === user ? me.displayName : null}
         effectiveDate={effectiveDate}
         tzOffsetMinutes={tzOffsetMinutes}
         firstDate={firstDate}
@@ -211,9 +241,7 @@ export default function HabitsPage() {
         onBack={() => {
           void logout().then(() => window.location.assign('/login'));
         }}
-        onSettings={() =>
-          window.location.assign(`/users/${encodeURIComponent(user)}/settings/account`)
-        }
+        onSettings={() => navigate(`/users/${encodeURIComponent(user)}/settings/account`)}
         progress={dayProgress}
       />
 
@@ -237,6 +265,15 @@ export default function HabitsPage() {
       ) : (
         <div className="habits-page__stack">{state.habits.map((h) => renderHabit(h))}</div>
       )}
+
+      {state && user ? (
+        <Link
+          to={`/users/${encodeURIComponent(user)}/settings/config?showAddModal=1`}
+          className="button button--secondary button--medium habits-page__add-habit"
+        >
+          Add habit
+        </Link>
+      ) : null}
 
       <Footer />
     </div>

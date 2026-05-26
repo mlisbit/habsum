@@ -26,9 +26,41 @@
   border: 1px solid var(--border-color-faint);
 }
 
+.toast__content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: functions.spacing(1);
+}
+
+.toast__header {
+  display: flex;
+  align-items: center;
+  gap: functions.spacing(1);
+}
+
+.toast__title-icon {
+  flex-shrink: 0;
+  // stylelint-disable-next-line
+  color: var(--accent-selected);
+}
+
+.toast__title {
+  margin: 0;
+}
+
 .toast__message {
   margin: 0;
-  flex: 1;
+}
+
+.toast__cta {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+
+  &:hover {
+    filter: brightness(1.1);
+  }
 }
 
 .toast__dismiss {

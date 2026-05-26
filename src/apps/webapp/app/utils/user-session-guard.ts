@@ -1,5 +1,4 @@
 import type { MeGetResponse } from '@habsum/types/api-responses/me-get';
-import { LOGIN_TOAST_USER_AREA, redirectToLoginWithToast } from '~/context/toast';
 
 export function userNewPasswordPath(user: string): string {
   return `/users/${encodeURIComponent(user)}/new-password`;
@@ -20,6 +19,8 @@ export function isMeLoggedIn(
 type GuardOptions = {
   /** Use on `/users/:user/new-password` so the reset form can render. */
   allowNewPasswordRoute?: boolean;
+  /** Remix client navigation; omit only outside the router tree. */
+  navigate: (to: string) => void;
 };
 
 /**
@@ -29,18 +30,19 @@ type GuardOptions = {
 export function ensureUserSessionForRoute(
   routeUser: string,
   me: MeGetResponse,
-  options?: GuardOptions,
+  options: GuardOptions,
 ): boolean {
+  const { navigate } = options;
   if (!isMeLoggedIn(me) || me.username !== routeUser) {
-    redirectToLoginWithToast(LOGIN_TOAST_USER_AREA);
+    navigate('/login');
     return false;
   }
-  if (me.forcePasswordReset && !options?.allowNewPasswordRoute) {
-    window.location.replace(userNewPasswordPath(routeUser));
+  if (me.forcePasswordReset && !options.allowNewPasswordRoute) {
+    navigate(userNewPasswordPath(routeUser));
     return false;
   }
-  if (!me.forcePasswordReset && options?.allowNewPasswordRoute) {
-    window.location.replace(`/users/${encodeURIComponent(routeUser)}/habits`);
+  if (!me.forcePasswordReset && options.allowNewPasswordRoute) {
+    navigate(`/users/${encodeURIComponent(routeUser)}/habits`);
     return false;
   }
   return true;

@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
-import { useLocation } from '@remix-run/react';
-import { getAuthMe, logoutOuc } from '~/api.client';
+import { useEffect, useMemo } from 'react';
+import { logoutOuc } from '~/api.client';
+import { useUser } from '~/context/user';
 import {
   closeOucPopupWindow,
   getOucSessionToken,
@@ -9,35 +9,27 @@ import {
 } from '~/ouc.client';
 
 export function OucIndicator() {
-  const location = useLocation();
-  const [oucUser, setOucUser] = useState<string | null>(null);
-
-  const refresh = useCallback(() => {
-    if (!getOucSessionToken()) {
-      setOucUser(null);
-      return;
-    }
-
-    getAuthMe()
-      .then((me) => {
-        if (
-          me.username != null &&
-          'sessionTokenPrefix' in me &&
-          isOucSessionTokenPrefix(me.sessionTokenPrefix)
-        ) {
-          setOucUser(me.username);
-        } else {
-          setOucUser(null);
-        }
-      })
-      .catch(() => setOucUser(null));
-  }, []);
+  const { me, refresh } = useUser();
 
   useEffect(() => {
-    refresh();
-    window.addEventListener(OUC_CHANGED_EVENT, refresh);
-    return () => window.removeEventListener(OUC_CHANGED_EVENT, refresh);
-  }, [refresh, location.pathname]);
+    const onOucChanged = () => {
+      void refresh();
+    };
+    window.addEventListener(OUC_CHANGED_EVENT, onOucChanged);
+    return () => window.removeEventListener(OUC_CHANGED_EVENT, onOucChanged);
+  }, [refresh]);
+
+  const oucUser = useMemo(() => {
+    if (!getOucSessionToken()) return null;
+    if (
+      me.username != null &&
+      'sessionTokenPrefix' in me &&
+      isOucSessionTokenPrefix(me.sessionTokenPrefix)
+    ) {
+      return me.username;
+    }
+    return null;
+  }, [me]);
 
   if (!oucUser) return null;
 
@@ -52,7 +44,6 @@ export function OucIndicator() {
         aria-label="End operate-under session"
         onClick={() => {
           void logoutOuc().finally(() => {
-            setOucUser(null);
             closeOucPopupWindow();
           });
         }}

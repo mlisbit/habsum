@@ -1,5 +1,5 @@
 // exclusive-bem-block: account-page
-import { useBlocker, useParams } from '@remix-run/react';
+import { useBlocker, useNavigate, useParams } from '@remix-run/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DayWithTime } from '@habsum/types/common/day';
 import { dateFromDayWithTimeUtc } from '@habsum/types/common/day';
@@ -17,6 +17,7 @@ import { InfoText } from '~/core-components/InfoText';
 import { Input } from '~/core-components/Input';
 import { AlertModal, useModal } from '~/context/modal';
 import { useToast } from '~/context/toast';
+import { useUser } from '~/context/user';
 import {
   accountServerErrorToFieldMap,
   type AccountErrorMap,
@@ -68,6 +69,8 @@ function SaveFieldErrors({
 }
 
 export default function UserSettingsAccount() {
+  const navigate = useNavigate();
+  const { refresh } = useUser();
   const { user: routeUser } = useParams();
   const [saved, setSaved] = useState<AccountSnapshot | null>(null);
   const [draftUsername, setDraftUsername] = useState('');
@@ -241,7 +244,8 @@ export default function UserSettingsAccount() {
     try {
       const res = await patchUser(routeUser, patch);
       if (res.username !== routeUser) {
-        window.location.assign(`/users/${encodeURIComponent(res.username)}/settings/account`);
+        await refresh();
+        navigate(`/users/${encodeURIComponent(res.username)}/settings/account`);
         return;
       }
       const nextSnap: AccountSnapshot = {

@@ -28,3 +28,10 @@
   flex-direction: column;
   gap: functions.spacing(2);
 }
+
+.habits-page__add-habit {
+  align-self: center;
+  margin-top: functions.spacing(2);
+  text-decoration: none;
+  min-width: 200px;
+}

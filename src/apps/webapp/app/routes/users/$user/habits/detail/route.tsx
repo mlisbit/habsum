@@ -9,10 +9,9 @@ import { Button } from '~/core-components/Button';
 import { InfoText } from '~/core-components/InfoText';
 import { TogglePill } from '~/core-components/Pill';
 import { SingleSelectWidget, SummationWidget } from '~/components/widgets';
-import { getAuthMe, getHabitHistory, patchHabit, type Habit } from '~/api.client';
-import { LOGIN_TOAST_USER_AREA, redirectToLoginWithToast } from '~/context/toast';
+import { getHabitHistory, patchHabit, type Habit } from '~/api.client';
+import { useUser } from '~/context/user';
 import { ensureUserSessionForRoute } from '~/utils/user-session-guard';
-import { applyUiTheme } from '~/theme.client';
 import { toDateKey } from '@habsum/utils';
 import { addDays } from '~/utils/date-utils';
 
@@ -57,9 +56,10 @@ function parseHabitFilters(raw: string | null): string[] {
 
 // Habit detail — /users/:user/habits/detail?filter=:habitId or :habitId,:habitId
 export default function HabitDetailRoute() {
+  const navigate = useNavigate();
+  const { me, loading: userLoading } = useUser();
   const { user: routeUser } = useParams();
   const location = useLocation();
-  const navigate = useNavigate();
   const query = useMemo(() => new URLSearchParams(location.search), [location.search]);
   const user = routeUser ?? '';
   const habitIds = useMemo(() => parseHabitFilters(query.get('filter')), [query]);
@@ -74,21 +74,9 @@ export default function HabitDetailRoute() {
   const showJumpToToday = effectiveDate !== today;
 
   useEffect(() => {
-    if (!user) return;
-    let cancelled = false;
-    getAuthMe()
-      .then((me) => {
-        if (cancelled) return;
-        if (!ensureUserSessionForRoute(user, me)) return;
-        applyUiTheme(me.theme);
-      })
-      .catch(() => {
-        if (!cancelled) redirectToLoginWithToast(LOGIN_TOAST_USER_AREA);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [user]);
+    if (!user || userLoading) return;
+    if (!ensureUserSessionForRoute(user, me, { navigate })) return;
+  }, [user, me, userLoading, navigate]);
 
   const fetchHistory = useCallback(
     async (options: { mode: 'initial' | 'refresh'; cancelled?: { current: boolean } }) => {
@@ -213,7 +201,7 @@ export default function HabitDetailRoute() {
           aria-label="Back to habits"
           className="habit-history__back"
           onClick={() =>
-            window.location.assign(
+            navigate(
               `/users/${encodeURIComponent(user)}/habits${
                 selectedDate ? `?date=${encodeURIComponent(selectedDate)}` : ''
               }`,

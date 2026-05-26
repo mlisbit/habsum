@@ -1,12 +1,12 @@
+import { useNavigate } from '@remix-run/react';
 import { useEffect, useState } from 'react';
-import { getAuthMe, isServerConnectionFailure, loginUser, logout } from '~/api.client';
+import { loginUser, logout } from '~/api.client';
 import { Footer } from '~/components/Footer';
 import { Button } from '~/core-components/Button';
 import { InfoText } from '~/core-components/InfoText';
 import { Input } from '~/core-components/Input';
 import { clearLegacyClientLoginMarkers } from '~/cookies.client';
-import { SERVER_CONNECTION_ERROR_TOAST, useToast } from '~/context/toast';
-import { applyUiTheme } from '~/theme.client';
+import { useUser } from '~/context/user';
 import { isMeLoggedIn, userDefaultAppPath } from '~/utils/user-session-guard';
 
 function LoginForm({
@@ -105,38 +105,20 @@ function LoginForm({
 }
 
 export default function LoginRoute() {
-  const [currentUser, setCurrentUser] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const { me, refresh } = useUser();
+  const currentUser = me.username;
   const [signOutBusy, setSignOutBusy] = useState(false);
-  const { showToast } = useToast();
 
   useEffect(() => {
     clearLegacyClientLoginMarkers();
-    let cancelled = false;
-    getAuthMe()
-      .then((me) => {
-        if (!cancelled) {
-          setCurrentUser(me.username);
-          applyUiTheme(me.username ? me.theme : 'dark');
-        }
-      })
-      .catch((e) => {
-        if (!cancelled) {
-          setCurrentUser(null);
-          if (isServerConnectionFailure(e)) {
-            showToast(SERVER_CONNECTION_ERROR_TOAST);
-          }
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [showToast]);
+  }, []);
 
   const handleSignOut = async () => {
     setSignOutBusy(true);
     try {
       await logout();
-      setCurrentUser(null);
+      await refresh();
     } finally {
       setSignOutBusy(false);
     }
@@ -161,21 +143,11 @@ export default function LoginRoute() {
                 text={`Continue as ${currentUser}`}
                 disabled={signOutBusy}
                 onClick={() => {
-                  void getAuthMe()
-                    .then((me) => {
-                      if (isMeLoggedIn(me) && me.username === currentUser) {
-                        window.location.assign(
-                          userDefaultAppPath(currentUser, me.forcePasswordReset),
-                        );
-                      } else {
-                        window.location.assign(`/users/${encodeURIComponent(currentUser)}/habits`);
-                      }
-                    })
-                    .catch((e) => {
-                      if (isServerConnectionFailure(e)) {
-                        showToast(SERVER_CONNECTION_ERROR_TOAST);
-                      }
-                    });
+                  if (isMeLoggedIn(me) && me.username === currentUser) {
+                    navigate(userDefaultAppPath(currentUser, me.forcePasswordReset));
+                  } else {
+                    navigate(`/users/${encodeURIComponent(currentUser)}/habits`);
+                  }
                 }}
               />
               <Button

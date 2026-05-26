@@ -1,3 +1,4 @@
+import { Link } from '@remix-run/react';
 import {
   createContext,
   useCallback,
@@ -8,19 +9,26 @@ import {
   useState,
   type ReactNode,
 } from 'react';
+import { Icon, type IconName } from '~/core-components/Icon';
 import { classBuilder } from '~/utils/class-builder';
 
-export type ToastType = 'error' | 'success' | 'info' | 'notification';
+export type ToastType = 'error' | 'success' | 'info';
 
 export type ShowToastOptions = {
   message: string;
   type: ToastType;
-};
-
-/** Shown after redirect from a user URL when the session is missing or does not match that user. */
-export const LOGIN_TOAST_USER_AREA: ShowToastOptions = {
-  type: 'error',
-  message: 'Sign in to access this account.',
+  /** Optional heading above the message. */
+  title?: string;
+  /** Icon shown beside `title` when set. */
+  titleIcon?: IconName;
+  /** When true, the toast stays until the user dismisses it (no auto-hide timer). */
+  persistent?: boolean;
+  /** Inline link label shown immediately after `message`. */
+  ctaTitle?: string;
+  /** Route path for the inline CTA (e.g. `/users/foo/settings/config`). */
+  ctaLocation?: string;
+  /** Called when the toast is dismissed (button or replaced by another toast). */
+  onDismiss?: () => void;
 };
 
 export const SERVER_CONNECTION_ERROR_TOAST: ShowToastOptions = {
@@ -28,34 +36,12 @@ export const SERVER_CONNECTION_ERROR_TOAST: ShowToastOptions = {
   message: 'Error connecting to server',
 };
 
-const PENDING_LOGIN_TOAST_KEY = 'habsum:pendingLoginToast';
-
 type ToastContextValue = {
   showToast: (options: ShowToastOptions) => void;
   dismissToast: () => void;
 };
 
 const ToastContext = createContext<ToastContextValue | null>(null);
-
-function isToastPayload(value: unknown): value is ShowToastOptions {
-  if (!value || typeof value !== 'object') return false;
-  const v = value as Record<string, unknown>;
-  return (
-    typeof v.message === 'string' &&
-    v.message.length > 0 &&
-    (v.type === 'error' || v.type === 'success' || v.type === 'info' || v.type === 'notification')
-  );
-}
-
-/** Stores a toast for the next full-page load of `/login`, then redirects there. */
-export function redirectToLoginWithToast(options: ShowToastOptions): void {
-  try {
-    sessionStorage.setItem(PENDING_LOGIN_TOAST_KEY, JSON.stringify(options));
-  } catch {
-    // ignore quota / private mode
-  }
-  window.location.replace('/login');
-}
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [active, setActive] = useState<ShowToastOptions | null>(null);
@@ -66,7 +52,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       window.clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
     }
-    setActive(null);
+    setActive((current) => {
+      current?.onDismiss?.();
+      return null;
+    });
   }, []);
 
   const showToast = useCallback(
@@ -75,8 +64,13 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         window.clearTimeout(timeoutRef.current);
         timeoutRef.current = null;
       }
-      setActive(options);
-      timeoutRef.current = window.setTimeout(dismissToast, 6500);
+      setActive((current) => {
+        current?.onDismiss?.();
+        return options;
+      });
+      if (!options.persistent) {
+        timeoutRef.current = window.setTimeout(dismissToast, 6500);
+      }
     },
     [dismissToast],
   );
@@ -86,18 +80,6 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       if (timeoutRef.current != null) window.clearTimeout(timeoutRef.current);
     };
   }, []);
-
-  useEffect(() => {
-    try {
-      const raw = sessionStorage.getItem(PENDING_LOGIN_TOAST_KEY);
-      if (!raw) return;
-      sessionStorage.removeItem(PENDING_LOGIN_TOAST_KEY);
-      const parsed: unknown = JSON.parse(raw);
-      if (isToastPayload(parsed)) showToast(parsed);
-    } catch {
-      sessionStorage.removeItem(PENDING_LOGIN_TOAST_KEY);
-    }
-  }, [showToast]);
 
   const value = useMemo(() => ({ showToast, dismissToast }), [showToast, dismissToast]);
 
@@ -115,24 +97,50 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 'toast--error': active.type === 'error',
                 'toast--success': active.type === 'success',
                 'toast--info': active.type === 'info',
-                'toast--notification': active.type === 'notification',
               },
               'toast',
             )}
             role={active.type === 'error' ? 'alert' : 'status'}
+            aria-labelledby={active.title ? 'toast-title' : undefined}
           >
-            <p
-              className={[
-                'toast__message',
-                'text-b-m',
-                active.type === 'error' ? 'text-error' : null,
-                active.type === 'success' ? 'text-success' : null,
-              ]
-                .filter(Boolean)
-                .join(' ')}
-            >
-              {active.message}
-            </p>
+            <div className="toast__content">
+              {active.title ? (
+                <div className="toast__header">
+                  {active.titleIcon ? (
+                    <Icon
+                      name={active.titleIcon}
+                      size="large"
+                      sizePx={20}
+                      className="toast__title-icon"
+                    />
+                  ) : null}
+                  <p id="toast-title" className="toast__title text-h-s">
+                    {active.title}
+                  </p>
+                </div>
+              ) : null}
+              <p
+                className={[
+                  'toast__message',
+                  'text-b-m',
+                  active.type === 'error' ? 'text-error' : null,
+                  active.type === 'success' ? 'text-success' : null,
+                  active.title ? 'text-light' : null,
+                ]
+                  .filter(Boolean)
+                  .join(' ')}
+              >
+                {active.message}
+                {active.ctaTitle && active.ctaLocation ? (
+                  <>
+                    {' '}
+                    <Link to={active.ctaLocation} className="toast__cta" onClick={dismissToast}>
+                      {active.ctaTitle}
+                    </Link>
+                  </>
+                ) : null}
+              </p>
+            </div>
             <button
               type="button"
               className="toast__dismiss text-dismiss-glyph"

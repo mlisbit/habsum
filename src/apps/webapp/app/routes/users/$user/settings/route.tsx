@@ -1,11 +1,10 @@
-import { Link, Outlet, useLocation, useParams } from '@remix-run/react';
+import { Link, Outlet, useLocation, useNavigate, useParams } from '@remix-run/react';
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
-import { getAuthMe, getUserSession, logout } from '~/api.client';
-import { LOGIN_TOAST_USER_AREA, redirectToLoginWithToast } from '~/context/toast';
+import { getUserSession, logout } from '~/api.client';
+import { useUser } from '~/context/user';
 import { ensureUserSessionForRoute } from '~/utils/user-session-guard';
 import { Button } from '~/core-components/Button';
 import { Footer } from '~/components/Footer';
-import { applyUiTheme } from '~/theme.client';
 
 function useWideSettingsLayout(): boolean {
   return useSyncExternalStore(
@@ -28,6 +27,8 @@ function activeSettingsSectionLabel(path: string): string | null {
 }
 
 export default function UserSettingsLayout() {
+  const navigate = useNavigate();
+  const { me, loading: userLoading } = useUser();
   const { user } = useParams();
   const location = useLocation();
   const path = location.pathname;
@@ -38,22 +39,9 @@ export default function UserSettingsLayout() {
   const activeSection = useMemo(() => activeSettingsSectionLabel(path), [path]);
 
   useEffect(() => {
-    if (!user) return;
-    let cancelled = false;
-    getAuthMe()
-      .then((me) => {
-        if (cancelled) return;
-        if (!user) return;
-        if (!ensureUserSessionForRoute(user, me)) return;
-        applyUiTheme(me.theme);
-      })
-      .catch(() => {
-        if (!cancelled) redirectToLoginWithToast(LOGIN_TOAST_USER_AREA);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [user]);
+    if (!user || userLoading) return;
+    ensureUserSessionForRoute(user, me, { navigate });
+  }, [user, me, userLoading, navigate]);
 
   useEffect(() => {
     if (!user) return;
@@ -73,9 +61,9 @@ export default function UserSettingsLayout() {
 
   useEffect(() => {
     if (path.endsWith('/developer') && isAdmin === false) {
-      window.location.replace(`${base}/account`);
+      navigate(`${base}/account`);
     }
-  }, [base, isAdmin, path]);
+  }, [base, isAdmin, navigate, path]);
 
   useEffect(() => {
     setNavOpen(isWide);
@@ -104,9 +92,7 @@ export default function UserSettingsLayout() {
             title="Back to habits"
             aria-label="Back to habits"
             className="settings__back"
-            onClick={() =>
-              window.location.assign(`/users/${encodeURIComponent(user ?? '')}/habits`)
-            }
+            onClick={() => navigate(`/users/${encodeURIComponent(user ?? '')}/habits`)}
           />
 
           <div className="settings__header-text">

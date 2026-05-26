@@ -1,17 +1,13 @@
 // exclusive-bem-block: new-password-page
-import { useParams } from '@remix-run/react';
+import { useNavigate, useParams } from '@remix-run/react';
 import { useEffect, useMemo, useState } from 'react';
-import { getAuthMe, setUserNewPassword } from '~/api.client';
+import { setUserNewPassword } from '~/api.client';
 import { Button } from '~/core-components/Button';
 import { InfoText } from '~/core-components/InfoText';
 import { Input } from '~/core-components/Input';
 import { useToast } from '~/context/toast';
-import { applyUiTheme } from '~/theme.client';
-import {
-  ensureUserSessionForRoute,
-  isMeLoggedIn,
-  userDefaultAppPath,
-} from '~/utils/user-session-guard';
+import { useUser } from '~/context/user';
+import { ensureUserSessionForRoute, userDefaultAppPath } from '~/utils/user-session-guard';
 import {
   newPasswordServerErrorToFieldMap,
   type NewPasswordErrorMap,
@@ -36,6 +32,8 @@ function SaveFieldErrors({
 }
 
 export default function UserNewPasswordRoute() {
+  const navigate = useNavigate();
+  const { me, loading: userLoading, refresh } = useUser();
   const { user: routeUser } = useParams();
   const [pwdNew, setPwdNew] = useState('');
   const [pwdConfirm, setPwdConfirm] = useState('');
@@ -52,22 +50,11 @@ export default function UserNewPasswordRoute() {
   }, [pwdNew, pwdConfirm]);
 
   useEffect(() => {
-    if (!routeUser) return;
-    let cancelled = false;
-    getAuthMe()
-      .then((me) => {
-        if (cancelled) return;
-        if (!ensureUserSessionForRoute(routeUser, me, { allowNewPasswordRoute: true })) return;
-        applyUiTheme(isMeLoggedIn(me) ? me.theme : 'dark');
-        setAuthReady(true);
-      })
-      .catch(() => {
-        if (!cancelled) window.location.replace('/login');
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [routeUser]);
+    if (!routeUser || userLoading) return;
+    if (!ensureUserSessionForRoute(routeUser, me, { allowNewPasswordRoute: true, navigate }))
+      return;
+    setAuthReady(true);
+  }, [routeUser, me, userLoading, navigate]);
 
   const handleSave = async () => {
     if (!routeUser) return;
@@ -88,8 +75,9 @@ export default function UserNewPasswordRoute() {
     const newPin = pwdNew.trim();
     try {
       await setUserNewPassword(routeUser, { newPin });
+      await refresh();
       showToast({ type: 'success', message: 'Password updated.' });
-      window.location.assign(userDefaultAppPath(routeUser, false));
+      navigate(userDefaultAppPath(routeUser, false));
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       const mapped = newPasswordServerErrorToFieldMap(msg);

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useParams } from '@remix-run/react';
+import { useNavigate, useParams } from '@remix-run/react';
 import {
   adminDeleteUser,
   adminResetUserPassword,
@@ -329,6 +329,7 @@ function UserRowIconAction({ tooltip, icon, ariaLabel, onClick }: UserRowIconAct
 }
 
 export default function UserSettingsDeveloper() {
+  const navigate = useNavigate();
   const { user } = useParams();
   const [developerData, setDeveloperData] = useState<DeveloperGetResponse | null>(null);
   const [developerError, setDeveloperError] = useState<string | null>(null);
@@ -359,20 +360,20 @@ export default function UserSettingsDeveloper() {
         if (!cancelled) {
           setCanViewDeveloper(res.admin);
           if (!res.admin) {
-            window.location.replace(`/users/${encodeURIComponent(user)}/settings/account`);
+            navigate(`/users/${encodeURIComponent(user)}/settings/account`);
           }
         }
       })
       .catch(() => {
         if (!cancelled) {
           setCanViewDeveloper(false);
-          window.location.replace(`/users/${encodeURIComponent(user)}/settings/account`);
+          navigate(`/users/${encodeURIComponent(user)}/settings/account`);
         }
       });
     return () => {
       cancelled = true;
     };
-  }, [user]);
+  }, [navigate, user]);
 
   useEffect(() => {
     let cancelled = false;

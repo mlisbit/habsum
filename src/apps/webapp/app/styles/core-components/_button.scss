@@ -8,7 +8,9 @@
   border-radius: var(--border-radius-m);
   padding: functions.spacing(2, 3);
   white-space: nowrap;
+  text-align: center;
   cursor: pointer;
+  text-decoration: none;
   transition:
     transform 0.05s ease,
     filter 0.12s ease,
@@ -16,6 +18,7 @@
 
   &:hover {
     filter: brightness(1.05);
+    text-decoration: none;
   }
 
   &:active {
@@ -25,6 +28,7 @@
 
   &:focus-visible {
     outline: none;
+    text-decoration: none;
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--cta-base-background) 35%, transparent);
   }
 
