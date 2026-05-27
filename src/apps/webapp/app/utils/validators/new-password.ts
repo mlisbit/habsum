@@ -37,7 +37,9 @@ export function newPasswordServerErrorToFieldMap(serverMessage: string): NewPass
 
   if (
     m === 'new password is required' ||
-    m === 'new password must be different from the current one'
+    m === 'new password must be different from the current one' ||
+    m === 'invalid or expired reset link' ||
+    m === 'token is required'
   ) {
     addError(out, 'newPassword', m);
     return out;

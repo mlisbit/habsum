@@ -25,6 +25,7 @@ export default defineConfig({
             route('', 'routes/_index/route.tsx', { index: true });
             route('login', 'routes/login/route.tsx');
             route('forgot-password', 'routes/forgot-password.tsx');
+            route('reset-password', 'routes/reset-password.tsx');
             route('users', 'routes/users/_index/route.tsx', { index: true });
             route('users/:user/new-password', 'routes/users/$user/new-password/route.tsx');
             route('users/:user/habits', 'routes/users/$user/habits/route.tsx');

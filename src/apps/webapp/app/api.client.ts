@@ -33,6 +33,11 @@ import type {
   ForgotPasswordRequest,
   ForgotPasswordResponse,
 } from '@habsum/types/api-responses/forgot-password-post';
+import type { ResetPasswordValidateResponse } from '@habsum/types/api-responses/reset-password-get';
+import type {
+  ResetPasswordRequest,
+  ResetPasswordResponse,
+} from '@habsum/types/api-responses/reset-password-post';
 import type {
   CreateOucSessionResponse,
   OucLoginResponse,
@@ -157,6 +162,18 @@ export async function requestForgotPassword(email: string) {
   return request<ForgotPasswordResponse>('/auth/forgot-password', {
     method: 'POST',
     body: JSON.stringify({ email } satisfies ForgotPasswordRequest),
+  });
+}
+
+export async function validateResetPasswordToken(token: string) {
+  const qs = `?token=${encodeURIComponent(token)}`;
+  return request<ResetPasswordValidateResponse>(`/auth/reset-password${qs}`);
+}
+
+export async function submitResetPassword(body: ResetPasswordRequest) {
+  return request<ResetPasswordResponse>('/auth/reset-password', {
+    method: 'POST',
+    body: JSON.stringify(body),
   });
 }
 

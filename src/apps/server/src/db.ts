@@ -152,6 +152,23 @@ db.exec(`
   );
 `);
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS password_reset_tokens (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id TEXT NOT NULL,
+    token_hash TEXT NOT NULL,
+    expires_at INTEGER NOT NULL,
+    used_at INTEGER,
+    created_at INTEGER NOT NULL
+  );
+
+  CREATE INDEX IF NOT EXISTS password_reset_tokens_user_id_idx
+    ON password_reset_tokens (user_id);
+
+  CREATE UNIQUE INDEX IF NOT EXISTS password_reset_tokens_hash_unique
+    ON password_reset_tokens (token_hash);
+`);
+
 export type SummationEventRow = {
   id: number;
   date: string;
@@ -214,6 +231,35 @@ const upsertPasswordResetRequestStmt = db.prepare<{ username: string; requested_
   INSERT INTO password_reset_requests (username, requested_at)
   VALUES (@username, @requested_at)
   ON CONFLICT(username) DO UPDATE SET requested_at = excluded.requested_at
+`);
+
+const invalidateActivePasswordResetTokensStmt = db.prepare<{ userId: string; usedAt: number }>(`
+  UPDATE password_reset_tokens
+  SET used_at = @usedAt
+  WHERE user_id = @userId AND used_at IS NULL
+`);
+
+const insertPasswordResetTokenStmt = db.prepare<{
+  userId: string;
+  tokenHash: string;
+  expiresAt: number;
+  createdAt: number;
+}>(`
+  INSERT INTO password_reset_tokens (user_id, token_hash, expires_at, created_at)
+  VALUES (@userId, @tokenHash, @expiresAt, @createdAt)
+`);
+
+const findValidPasswordResetTokenStmt = db.prepare<
+  [string, number],
+  { id: number; user_id: string }
+>(`
+  SELECT id, user_id
+  FROM password_reset_tokens
+  WHERE token_hash = ? AND used_at IS NULL AND expires_at > ?
+`);
+
+const markPasswordResetTokenUsedStmt = db.prepare<{ id: number; usedAt: number }>(`
+  UPDATE password_reset_tokens SET used_at = @usedAt WHERE id = @id AND used_at IS NULL
 `);
 
 const userExistsStmt = db.prepare<[string], { username: string }>(
@@ -385,6 +431,40 @@ export function recordPasswordResetRequest(
   nowSec = Math.floor(Date.now() / 1000),
 ): void {
   upsertPasswordResetRequestStmt.run({ username, requested_at: nowSec });
+}
+
+export function invalidateActivePasswordResetTokens(
+  userId: string,
+  usedAt = Math.floor(Date.now() / 1000),
+): void {
+  invalidateActivePasswordResetTokensStmt.run({ userId, usedAt });
+}
+
+export function insertPasswordResetToken(input: {
+  userId: string;
+  tokenHash: string;
+  expiresAt: number;
+  createdAt: number;
+}): number {
+  const result = insertPasswordResetTokenStmt.run(input);
+  return Number(result.lastInsertRowid);
+}
+
+export function findValidPasswordResetToken(
+  tokenHash: string,
+  nowSec = Math.floor(Date.now() / 1000),
+): { id: number; userId: string } | null {
+  const row = findValidPasswordResetTokenStmt.get(tokenHash, nowSec);
+  if (!row) return null;
+  return { id: row.id, userId: row.user_id };
+}
+
+export function markPasswordResetTokenUsed(
+  id: number,
+  usedAt = Math.floor(Date.now() / 1000),
+): boolean {
+  const result = markPasswordResetTokenUsedStmt.run({ id, usedAt });
+  return result.changes > 0;
 }
 
 export function isEmailUsedByOtherUser(email: string, exceptUsername: string): boolean {

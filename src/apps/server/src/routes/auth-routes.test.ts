@@ -1,7 +1,8 @@
 import request from 'supertest';
 import { describe, expect, it, vi } from 'vitest';
 import { createApp } from '../app.js';
-import { ensureUserPins, patchUserProfile } from '../db.js';
+import { ensureUserPins, isUserPinValid, patchUserProfile, setUserPin } from '../db.js';
+import { issuePasswordResetToken } from '../password-reset-token.js';
 import * as passwordResetEmail from '../password-reset-email.js';
 
 describe('POST /auth/forgot-password', () => {
@@ -33,7 +34,11 @@ describe('POST /auth/forgot-password', () => {
       message: 'If an account exists for that email, reset instructions will be sent shortly.',
     });
     expect(sendSpy).toHaveBeenCalledOnce();
-    expect(sendSpy).toHaveBeenCalledWith('forgot-password-user', 'known@example.com');
+    expect(sendSpy).toHaveBeenCalledWith(
+      'forgot-password-user',
+      'known@example.com',
+      expect.any(String),
+    );
 
     sendSpy.mockRestore();
   });
@@ -75,6 +80,43 @@ describe('POST /auth/forgot-password', () => {
     expect(sendSpy).toHaveBeenCalledOnce();
 
     sendSpy.mockRestore();
+    vi.restoreAllMocks();
+  });
+});
+
+describe('password reset token flow', () => {
+  it('validates and consumes a reset token to change the password', async () => {
+    const app = createApp();
+    ensureUserPins(['reset-token-user']);
+    setUserPin('reset-token-user', 'old-secret');
+
+    const { token } = issuePasswordResetToken('reset-token-user');
+
+    await request(app).get('/auth/reset-password').query({ token }).expect(200);
+
+    await request(app)
+      .post('/auth/reset-password')
+      .send({ token, newPin: 'new-secret' })
+      .expect(200);
+
+    expect(isUserPinValid('reset-token-user', 'new-secret')).toBe(true);
+    expect(isUserPinValid('reset-token-user', 'old-secret')).toBe(false);
+
+    await request(app).get('/auth/reset-password').query({ token }).expect(400);
+  });
+
+  it('rejects expired reset tokens', async () => {
+    const app = createApp();
+    ensureUserPins(['expired-token-user']);
+    const now = 1_700_000_000_000;
+    vi.spyOn(Date, 'now').mockReturnValue(now * 1000);
+
+    const { token } = issuePasswordResetToken('expired-token-user', now);
+
+    vi.spyOn(Date, 'now').mockReturnValue((now + 16 * 60) * 1000);
+
+    await request(app).get('/auth/reset-password').query({ token }).expect(400);
+
     vi.restoreAllMocks();
   });
 });

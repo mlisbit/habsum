@@ -1,0 +1,245 @@
+// exclusive-bem-block: reset-password-page
+import { Link, useNavigate, useSearchParams } from '@remix-run/react';
+import { useEffect, useMemo, useState } from 'react';
+import { submitResetPassword, validateResetPasswordToken } from '~/api.client';
+import { Footer } from '~/components/Footer';
+import { Button } from '~/core-components/Button';
+import { InfoText } from '~/core-components/InfoText';
+import { Input } from '~/core-components/Input';
+import { useToast } from '~/context/toast';
+import {
+  newPasswordServerErrorToFieldMap,
+  type NewPasswordErrorMap,
+  validateNewPasswordSave,
+} from '~/utils/validators/new-password';
+
+function SaveFieldErrors({
+  id,
+  messages,
+  className,
+}: {
+  id: string;
+  messages: string[] | undefined;
+  className: string;
+}) {
+  if (!messages?.length) return null;
+  return (
+    <InfoText variant="error" className={className} id={id} aria-live="polite">
+      {messages.join(' ')}
+    </InfoText>
+  );
+}
+
+export default function ResetPasswordRoute() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get('token')?.trim() ?? '';
+  const { showToast } = useToast();
+
+  const [tokenState, setTokenState] = useState<'loading' | 'valid' | 'invalid'>('loading');
+  const [pwdNew, setPwdNew] = useState('');
+  const [pwdConfirm, setPwdConfirm] = useState('');
+  const [saveBusy, setSaveBusy] = useState(false);
+  const [saveFieldErrors, setSaveFieldErrors] = useState<NewPasswordErrorMap>({});
+
+  const newPasswordMatchFeedback = useMemo((): 'success' | 'error' | null => {
+    const next = pwdNew.trim();
+    const again = pwdConfirm.trim();
+    if (!next || !again) return null;
+    return next === again ? 'success' : 'error';
+  }, [pwdNew, pwdConfirm]);
+
+  useEffect(() => {
+    if (!token) {
+      setTokenState('invalid');
+      return;
+    }
+
+    let cancelled = false;
+    void validateResetPasswordToken(token)
+      .then(() => {
+        if (!cancelled) setTokenState('valid');
+      })
+      .catch(() => {
+        if (!cancelled) setTokenState('invalid');
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [token]);
+
+  const handleSave = async () => {
+    if (!token) return;
+
+    const validationErrors = validateNewPasswordSave({
+      newPassword: pwdNew,
+      confirmPassword: pwdConfirm,
+    });
+    const validationMessages = Object.values(validationErrors).flat();
+    if (validationMessages.length > 0) {
+      setSaveFieldErrors(validationErrors);
+      showToast({ type: 'error', message: validationMessages[0] });
+      return;
+    }
+    setSaveFieldErrors({});
+
+    setSaveBusy(true);
+    const newPin = pwdNew.trim();
+    try {
+      await submitResetPassword({ token, newPin });
+      showToast({ type: 'success', message: 'Password updated. You can log in now.' });
+      navigate('/login');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      const mapped = newPasswordServerErrorToFieldMap(msg);
+      setSaveFieldErrors(mapped);
+      showToast({ type: 'error', message: msg });
+    } finally {
+      setSaveBusy(false);
+    }
+  };
+
+  return (
+    <div className="users-index">
+      <div className="users-index__main">
+        <div className="card users-index__card">
+          <div className="users-index__header">
+            <h1 className="text-h-l">Reset password</h1>
+          </div>
+
+          {tokenState === 'loading' ? (
+            <p className="text-b-m users-index__hint">Checking reset link…</p>
+          ) : null}
+
+          {tokenState === 'invalid' ? (
+            <>
+              <InfoText className="mt-1 mb-1" variant="error">
+                This reset link is invalid or has expired.
+              </InfoText>
+              <Link to="/forgot-password" className="text-b-s text-link users-index__back-link">
+                Request a new reset link
+              </Link>
+            </>
+          ) : null}
+
+          {tokenState === 'valid' ? (
+            <>
+              <p className="text-b-m users-index__hint">Choose a new password for your account.</p>
+              <form
+                className="users-index__login-form"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  void handleSave();
+                }}
+              >
+                <div className="reset-password-page__field">
+                  <label htmlFor="reset-password" className="reset-password-page__label text-b-m">
+                    New password
+                  </label>
+                  <div className="reset-password-page__control">
+                    <Input
+                      id="reset-password"
+                      size="small"
+                      className="reset-password-page__input"
+                      type="password"
+                      value={pwdNew}
+                      onChange={(v) => {
+                        setPwdNew(v);
+                        setSaveFieldErrors({});
+                      }}
+                      placeholder="Required"
+                      dismissable
+                      submittable={false}
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      autoComplete="new-password"
+                    />
+                    <SaveFieldErrors
+                      id="reset-password-field-error"
+                      messages={saveFieldErrors.newPassword}
+                      className="reset-password-page__field-error"
+                    />
+                  </div>
+                </div>
+
+                <div className="reset-password-page__field">
+                  <label
+                    htmlFor="reset-password-confirm"
+                    className="reset-password-page__label text-b-m"
+                  >
+                    Confirm new password
+                  </label>
+                  <div className="reset-password-page__control">
+                    <Input
+                      id="reset-password-confirm"
+                      size="small"
+                      className="reset-password-page__input"
+                      type="password"
+                      value={pwdConfirm}
+                      onChange={(v) => {
+                        setPwdConfirm(v);
+                        setSaveFieldErrors({});
+                      }}
+                      placeholder="Required"
+                      dismissable
+                      submittable={false}
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
+                      autoComplete="new-password"
+                    />
+                    {newPasswordMatchFeedback === 'success' ? (
+                      <InfoText
+                        variant="success"
+                        className="reset-password-page__password-match-info"
+                      >
+                        Passwords match.
+                      </InfoText>
+                    ) : newPasswordMatchFeedback === 'error' ? (
+                      <InfoText
+                        variant="error"
+                        className="reset-password-page__password-match-info"
+                      >
+                        Passwords do not match.
+                      </InfoText>
+                    ) : null}
+                    <SaveFieldErrors
+                      id="reset-password-confirm-field-error"
+                      messages={saveFieldErrors.confirmPassword}
+                      className="reset-password-page__field-error"
+                    />
+                  </div>
+                </div>
+
+                <button type="submit" style={{ display: 'none' }} aria-hidden />
+
+                <Button
+                  type="primary"
+                  size="medium"
+                  text={saveBusy ? 'Saving…' : 'Save password'}
+                  disabled={
+                    saveBusy ||
+                    pwdNew.trim() === '' ||
+                    pwdConfirm.trim() === '' ||
+                    newPasswordMatchFeedback === 'error'
+                  }
+                  onClick={() => void handleSave()}
+                />
+              </form>
+            </>
+          ) : null}
+
+          {tokenState === 'valid' ? (
+            <Link to="/login" className="text-b-s text-link users-index__back-link">
+              Back to login
+            </Link>
+          ) : null}
+        </div>
+      </div>
+
+      <Footer />
+    </div>
+  );
+}

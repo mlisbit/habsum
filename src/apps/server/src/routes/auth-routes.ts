@@ -4,9 +4,14 @@ import type {
   ForgotPasswordRequest,
   ForgotPasswordResponse,
 } from '@habsum/types/api-responses/forgot-password-post';
+import type { ResetPasswordValidateResponse } from '@habsum/types/api-responses/reset-password-get';
+import type {
+  ResetPasswordRequest,
+  ResetPasswordResponse,
+} from '@habsum/types/api-responses/reset-password-post';
 import type { OucLoginRequest, OucLoginResponse } from '@habsum/types/api-responses/ouc-post';
 import type { LogoutResponse } from '@habsum/types/common/misc';
-import { isPlausibleEmail } from '../request-helpers.js';
+import { isPlausibleEmail, parsePin } from '../request-helpers.js';
 import { accountCreatedAtToApi } from '@habsum/types/common/day';
 import { listUsers } from '../config.js';
 import {
@@ -22,6 +27,12 @@ import {
 } from '../db.js';
 import { entitlementsForUser } from '../entitlements.js';
 import { sendPasswordResetEmail } from '../password-reset-email.js';
+import {
+  issuePasswordResetToken,
+  lookupValidPasswordResetToken,
+  consumePasswordResetToken,
+} from '../password-reset-token.js';
+import { isNewLoginPasswordAllowed, resetLoginPassword } from '../reset-login-password.js';
 import { appendClearSessionCookie, getSessionCookieValue } from '../session-cookie.js';
 import { getOucSessionHeader, resolveActiveSessionId } from '../session-request.js';
 
@@ -82,13 +93,62 @@ authRouter.post(
       }
 
       recordPasswordResetRequest(username);
-      await sendPasswordResetEmail(username, email);
+      const { token } = issuePasswordResetToken(username);
+      await sendPasswordResetEmail(username, email, token);
     }
 
     const body: ForgotPasswordResponse = {
       ok: true,
       message: 'If an account exists for that email, reset instructions will be sent shortly.',
     };
+    return res.json(body);
+  },
+);
+
+authRouter.get('/auth/reset-password', (req: Request, res: Response) => {
+  const token = typeof req.query.token === 'string' ? req.query.token.trim() : '';
+  if (!token) {
+    return res.status(400).json({ error: 'token is required' });
+  }
+
+  const row = lookupValidPasswordResetToken(token);
+  if (!row) {
+    return res.status(400).json({ error: 'invalid or expired reset link' });
+  }
+
+  const body: ResetPasswordValidateResponse = { ok: true };
+  return res.json(body);
+});
+
+authRouter.post(
+  '/auth/reset-password',
+  (req: Request<unknown, unknown, ResetPasswordRequest>, res: Response) => {
+    const token = typeof req.body?.token === 'string' ? req.body.token.trim() : '';
+    if (!token) {
+      return res.status(400).json({ error: 'token is required' });
+    }
+
+    const newPin = parsePin(req.body?.newPin);
+    if (newPin == null) {
+      return res.status(400).json({ error: 'new password is required' });
+    }
+
+    const row = lookupValidPasswordResetToken(token);
+    if (!row) {
+      return res.status(400).json({ error: 'invalid or expired reset link' });
+    }
+
+    if (!isNewLoginPasswordAllowed(row.userId, newPin)) {
+      return res.status(400).json({ error: 'new password must be different from the current one' });
+    }
+
+    if (!consumePasswordResetToken(row.id)) {
+      return res.status(400).json({ error: 'invalid or expired reset link' });
+    }
+
+    resetLoginPassword(row.userId, newPin);
+
+    const body: ResetPasswordResponse = { ok: true };
     return res.json(body);
   },
 );

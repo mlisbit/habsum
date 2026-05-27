@@ -22,6 +22,8 @@
     "./api-responses/user-password-change": "./src/api-responses/user-password-change.ts",
     "./api-responses/user-new-password": "./src/api-responses/user-new-password.ts",
     "./api-responses/ouc-post": "./src/api-responses/ouc-post.ts",
-    "./api-responses/forgot-password-post": "./src/api-responses/forgot-password-post.ts"
+    "./api-responses/forgot-password-post": "./src/api-responses/forgot-password-post.ts",
+    "./api-responses/reset-password-get": "./src/api-responses/reset-password-get.ts",
+    "./api-responses/reset-password-post": "./src/api-responses/reset-password-post.ts"
   }
 }
