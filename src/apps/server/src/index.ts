@@ -1,3 +1,4 @@
+import './load-env.js';
 import { join, resolve } from 'node:path';
 import { closeDb } from './db.js';
 import { createApp } from './app.js';

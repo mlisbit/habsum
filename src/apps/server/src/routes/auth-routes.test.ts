@@ -8,7 +8,9 @@ import * as passwordResetEmail from '../password-reset-email.js';
 describe('POST /auth/forgot-password', () => {
   it('returns the same success message whether or not the email is registered', async () => {
     const app = createApp();
-    const sendSpy = vi.spyOn(passwordResetEmail, 'sendPasswordResetEmail');
+    const sendSpy = vi
+      .spyOn(passwordResetEmail, 'sendPasswordResetEmail')
+      .mockResolvedValue(undefined);
 
     ensureUserPins(['forgot-password-user']);
     patchUserProfile('forgot-password-user', { email: 'known@example.com' });
@@ -52,7 +54,9 @@ describe('POST /auth/forgot-password', () => {
 
   it('rate limits repeat reset requests for the same user', async () => {
     const app = createApp();
-    const sendSpy = vi.spyOn(passwordResetEmail, 'sendPasswordResetEmail');
+    const sendSpy = vi
+      .spyOn(passwordResetEmail, 'sendPasswordResetEmail')
+      .mockResolvedValue(undefined);
     const now = 1_700_000_000_000;
     vi.spyOn(Date, 'now').mockReturnValue(now);
 
@@ -80,6 +84,25 @@ describe('POST /auth/forgot-password', () => {
     expect(sendSpy).toHaveBeenCalledOnce();
 
     sendSpy.mockRestore();
+    vi.restoreAllMocks();
+  });
+
+  it('returns an error to the client when email delivery fails for a known user', async () => {
+    const app = createApp();
+    vi.spyOn(passwordResetEmail, 'sendPasswordResetEmail').mockRejectedValue(
+      new Error('RESEND_API_KEY is not configured'),
+    );
+
+    ensureUserPins(['email-fail-user']);
+    patchUserProfile('email-fail-user', { email: 'fail@example.com' });
+
+    const res = await request(app)
+      .post('/auth/forgot-password')
+      .send({ email: 'fail@example.com' })
+      .expect(503);
+
+    expect(res.body).toEqual({ error: 'Something went wrong with your request' });
+
     vi.restoreAllMocks();
   });
 });

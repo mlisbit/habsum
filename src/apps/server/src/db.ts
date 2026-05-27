@@ -99,11 +99,6 @@ function migratePlainTextPins(): void {
 migratePlainTextPins();
 
 db.exec(`
-  UPDATE users SET email = 'mlisbit@gmail.com' WHERE username = 'user';
-  UPDATE users SET email = 'mlisbit@proton.me' WHERE username = 'mac';
-`);
-
-db.exec(`
   CREATE UNIQUE INDEX IF NOT EXISTS users_email_unique
   ON users (email)
   WHERE email IS NOT NULL AND trim(email) != '';

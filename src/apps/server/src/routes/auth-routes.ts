@@ -27,6 +27,7 @@ import {
 } from '../db.js';
 import { entitlementsForUser } from '../entitlements.js';
 import { sendPasswordResetEmail } from '../password-reset-email.js';
+import { isDevelopment } from '../env.js';
 import {
   issuePasswordResetToken,
   lookupValidPasswordResetToken,
@@ -81,6 +82,9 @@ authRouter.post(
     }
 
     const username = resolveUsernameByLoginId(email);
+    if (!username && isDevelopment()) {
+      console.log(`[habsum] forgot-password: no account for ${email} (generic success returned)`);
+    }
     if (username) {
       const retryAfterSeconds = passwordResetRetryAfterSeconds(username);
       if (retryAfterSeconds > 0) {
@@ -92,9 +96,15 @@ authRouter.post(
         return res.json(body);
       }
 
-      recordPasswordResetRequest(username);
-      const { token } = issuePasswordResetToken(username);
-      await sendPasswordResetEmail(username, email, token);
+      const { token, id: tokenId } = issuePasswordResetToken(username);
+      try {
+        await sendPasswordResetEmail(username, email, token);
+        recordPasswordResetRequest(username);
+      } catch (e) {
+        consumePasswordResetToken(tokenId);
+        console.error('[habsum] failed to send password reset email', e);
+        return res.status(503).json({ error: 'Something went wrong with your request' });
+      }
     }
 
     const body: ForgotPasswordResponse = {

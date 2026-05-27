@@ -1,5 +1,10 @@
 import { execFileSync } from 'node:child_process';
 
+const SECRET_PATH_EXCEPTIONS = [
+  /\.example$/,
+  /\.sample$/,
+];
+
 const SECRET_PATH_PATTERNS = [
   /^config\//,
   /^\.env(?:$|\.)/,
@@ -22,8 +27,10 @@ const stagedFiles = git(['diff', '--cached', '--name-only', '--diff-filter=ACMR'
   .split('\n')
   .filter(Boolean);
 
-const blockedPaths = stagedFiles.filter((file) =>
-  SECRET_PATH_PATTERNS.some((pattern) => pattern.test(file)),
+const blockedPaths = stagedFiles.filter(
+  (file) =>
+    !SECRET_PATH_EXCEPTIONS.some((pattern) => pattern.test(file)) &&
+    SECRET_PATH_PATTERNS.some((pattern) => pattern.test(file)),
 );
 
 const stagedDiff = git(['diff', '--cached', '--unified=0', '--no-ext-diff']);
