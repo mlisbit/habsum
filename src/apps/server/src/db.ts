@@ -3,6 +3,7 @@ import { randomBytes } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { hashPassword, isPasswordHashed, verifyPassword } from './password-hash.js';
+import { PASSWORD_RESET_COOLDOWN_SECONDS } from './constants.js';
 import { isAllowedUiTheme, isPlausibleEmail } from './request-helpers.js';
 
 const rawDir = process.env.HABSUM_CONFIG_DIR;
@@ -144,6 +145,13 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS sessions_username_idx ON sessions (username);
 `);
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS password_reset_requests (
+    username TEXT PRIMARY KEY,
+    requested_at INTEGER NOT NULL
+  );
+`);
+
 export type SummationEventRow = {
   id: number;
   date: string;
@@ -197,6 +205,16 @@ const getUserPinStmt = db.prepare<[string], UserPinRow>('SELECT pin FROM users W
 const getUsernameByEmailStmt = db.prepare<[string], { username: string }>(
   `SELECT username FROM users WHERE lower(trim(email)) = lower(trim(?))`,
 );
+
+const getPasswordResetRequestStmt = db.prepare<[string], { requested_at: number }>(
+  'SELECT requested_at FROM password_reset_requests WHERE username = ?',
+);
+
+const upsertPasswordResetRequestStmt = db.prepare<{ username: string; requested_at: number }>(`
+  INSERT INTO password_reset_requests (username, requested_at)
+  VALUES (@username, @requested_at)
+  ON CONFLICT(username) DO UPDATE SET requested_at = excluded.requested_at
+`);
 
 const userExistsStmt = db.prepare<[string], { username: string }>(
   'SELECT username FROM users WHERE username = ?',
@@ -348,6 +366,25 @@ export function resolveUsernameByLoginId(loginId: string): string | null {
 
   const row = userExistsStmt.get(trimmed);
   return row?.username ?? null;
+}
+
+/** Seconds until another password-reset email can be sent; `0` when allowed. */
+export function passwordResetRetryAfterSeconds(
+  username: string,
+  nowSec = Math.floor(Date.now() / 1000),
+): number {
+  const row = getPasswordResetRequestStmt.get(username);
+  if (!row) return 0;
+  const elapsed = nowSec - row.requested_at;
+  if (elapsed >= PASSWORD_RESET_COOLDOWN_SECONDS) return 0;
+  return PASSWORD_RESET_COOLDOWN_SECONDS - elapsed;
+}
+
+export function recordPasswordResetRequest(
+  username: string,
+  nowSec = Math.floor(Date.now() / 1000),
+): void {
+  upsertPasswordResetRequestStmt.run({ username, requested_at: nowSec });
 }
 
 export function isEmailUsedByOtherUser(email: string, exceptUsername: string): boolean {

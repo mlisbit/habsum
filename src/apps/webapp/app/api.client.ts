@@ -30,6 +30,10 @@ import type {
   UserSessionResponse,
 } from '@habsum/types/common/misc';
 import type {
+  ForgotPasswordRequest,
+  ForgotPasswordResponse,
+} from '@habsum/types/api-responses/forgot-password-post';
+import type {
   CreateOucSessionResponse,
   OucLoginResponse,
 } from '@habsum/types/api-responses/ouc-post';
@@ -147,6 +151,13 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export async function getAuthMe() {
   return request<MeGetResponse>('/auth/me');
+}
+
+export async function requestForgotPassword(email: string) {
+  return request<ForgotPasswordResponse>('/auth/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email } satisfies ForgotPasswordRequest),
+  });
 }
 
 export async function logout() {

@@ -1,7 +1,12 @@
 import { Router, type Request, type Response } from 'express';
 import type { MeGetResponse } from '@habsum/types/api-responses/me-get';
+import type {
+  ForgotPasswordRequest,
+  ForgotPasswordResponse,
+} from '@habsum/types/api-responses/forgot-password-post';
 import type { OucLoginRequest, OucLoginResponse } from '@habsum/types/api-responses/ouc-post';
 import type { LogoutResponse } from '@habsum/types/common/misc';
+import { isPlausibleEmail } from '../request-helpers.js';
 import { accountCreatedAtToApi } from '@habsum/types/common/day';
 import { listUsers } from '../config.js';
 import {
@@ -11,8 +16,12 @@ import {
   isOucSessionId,
   revokeUserSession,
   getUsernameForSession,
+  resolveUsernameByLoginId,
+  passwordResetRetryAfterSeconds,
+  recordPasswordResetRequest,
 } from '../db.js';
 import { entitlementsForUser } from '../entitlements.js';
+import { sendPasswordResetEmail } from '../password-reset-email.js';
 import { appendClearSessionCookie, getSessionCookieValue } from '../session-cookie.js';
 import { getOucSessionHeader, resolveActiveSessionId } from '../session-request.js';
 
@@ -48,6 +57,42 @@ authRouter.get('/auth/me', (req: Request, res: Response) => {
 });
 
 /** Validates an operate-under token (client stores it per-window; no shared cookie). */
+authRouter.post(
+  '/auth/forgot-password',
+  async (req: Request<unknown, unknown, ForgotPasswordRequest>, res: Response) => {
+    const rawEmail = req.body?.email;
+    if (typeof rawEmail !== 'string') {
+      return res.status(400).json({ error: 'email is required' });
+    }
+    const email = rawEmail.trim().toLowerCase();
+    if (!isPlausibleEmail(email)) {
+      return res.status(400).json({ error: 'invalid email' });
+    }
+
+    const username = resolveUsernameByLoginId(email);
+    if (username) {
+      const retryAfterSeconds = passwordResetRetryAfterSeconds(username);
+      if (retryAfterSeconds > 0) {
+        const body: ForgotPasswordResponse = {
+          ok: true,
+          message: 'please wait a little while longer',
+          timeout: retryAfterSeconds,
+        };
+        return res.json(body);
+      }
+
+      recordPasswordResetRequest(username);
+      await sendPasswordResetEmail(username, email);
+    }
+
+    const body: ForgotPasswordResponse = {
+      ok: true,
+      message: 'If an account exists for that email, reset instructions will be sent shortly.',
+    };
+    return res.json(body);
+  },
+);
+
 authRouter.post('/auth/ouc', (req: Request<unknown, unknown, OucLoginRequest>, res: Response) => {
   const token = typeof req.body?.token === 'string' ? req.body.token.trim() : '';
   if (!token || !isOucSessionId(token)) {

@@ -66,6 +66,15 @@
   gap: functions.spacing(2);
 }
 
+.users-index__forgot-password {
+  align-self: flex-end;
+  margin-top: calc(-1 * functions.spacing(1));
+}
+
+.users-index__back-link {
+  margin-top: functions.spacing(2);
+}
+
 .users-index__continue {
   display: flex;
   flex-direction: column;

@@ -1,4 +1,4 @@
-import { useNavigate } from '@remix-run/react';
+import { Link, useNavigate } from '@remix-run/react';
 import { useEffect, useState } from 'react';
 import { loginUser, logout } from '~/api.client';
 import { Footer } from '~/components/Footer';
@@ -84,6 +84,9 @@ function LoginForm({
           spellCheck={false}
           onChange={setPassword}
         />
+        <Link to="/forgot-password" className="text-b-s text-link users-index__forgot-password">
+          Forgot password?
+        </Link>
         <button type="submit" style={{ display: 'none' }} aria-hidden />
 
         {error ? (
