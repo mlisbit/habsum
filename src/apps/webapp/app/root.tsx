@@ -7,6 +7,7 @@ import { ModalProvider } from '~/context/modal';
 import { ToastProvider } from '~/context/toast';
 import { UserProvider } from '~/context/user';
 import stylesHref from '~/styles/main.scss?url';
+import { UI_THEME_STORAGE_KEY } from '~/theme.shared';
 
 export const links: LinksFunction = () => [
   { rel: 'stylesheet', href: stylesHref },
@@ -15,12 +16,26 @@ export const links: LinksFunction = () => [
 
 export const meta: MetaFunction = () => [{ title: 'habsum' }];
 
+const initialThemeScript = `
+(() => {
+  let stored;
+  try {
+    stored = window.localStorage.getItem('${UI_THEME_STORAGE_KEY}');
+  } catch {}
+  const preference = stored === 'light' || stored === 'dark' ? stored : null;
+  const theme =
+    preference ?? (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+  document.documentElement.dataset.theme = theme;
+})();
+`;
+
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" data-theme="dark">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
+        <script dangerouslySetInnerHTML={{ __html: initialThemeScript }} />
         <Meta />
         <Links />
       </head>

@@ -51,7 +51,7 @@ authRouter.get('/auth/me', (req: Request, res: Response) => {
     const body: MeGetResponse = {
       username: null,
       displayName: null,
-      theme: 'dark',
+      theme: null,
       email: null,
       createdAt: null,
       entitlements: [],

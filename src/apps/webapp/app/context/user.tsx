@@ -11,13 +11,13 @@ import {
 import type { MeGetResponse } from '@habsum/types/api-responses/me-get';
 import { ProductEntitlement } from '@habsum/types/common/entitlement';
 import { getAuthMe } from '~/api.client';
-import { applyUiTheme } from '~/theme.client';
+import { syncTheme } from '~/theme.client';
 import { isMeLoggedIn } from '~/utils/user-session-guard';
 
 const LOGGED_OUT_ME: MeGetResponse = {
   username: null,
   displayName: null,
-  theme: 'dark',
+  theme: null,
   email: null,
   createdAt: null,
   entitlements: [],
@@ -50,10 +50,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
       try {
         const next = await getAuthMe();
         setMe(next);
-        applyUiTheme(isMeLoggedIn(next) ? next.theme : 'dark');
       } catch {
         setMe(LOGGED_OUT_ME);
-        applyUiTheme('dark');
       } finally {
         setLoading(false);
       }
@@ -70,6 +68,17 @@ export function UserProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  useEffect(() => {
+    if (loading) return;
+    const theme = isMeLoggedIn(me) ? me.theme : null;
+    syncTheme(theme);
+    if (theme != null) return;
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const onChange = () => syncTheme(null);
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, [me, loading]);
 
   const hasDismissedIntro = useMemo(
     () => (isMeLoggedIn(me) ? introDismissedByUser[me.username] === true : false),

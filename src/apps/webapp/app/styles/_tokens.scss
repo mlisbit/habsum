@@ -49,8 +49,8 @@ html[data-theme='light'] {
   --background-primary: #f7f8fa;
   --background-secondary: #fff;
   --background-tertiary: #f7f8fa;
-  --background-disabled: #272b36;
-  --background-warning: color-mix(in srgb, var(--accent-red-1) 18%, var(--background-disabled));
+  --background-disabled: #a6acbd;
+  --background-warning: var(--accent-red-1);
   --background-input: color-mix(in srgb, var(--background-secondary) 94%, var(--background) 6%);
   --background-modal-backdrop: rgb(0 0 0 / 45%);
 
@@ -70,7 +70,7 @@ html[data-theme='light'] {
 
   // accents
   --accent-selected: #2d6cdf;
-  --accent-red-1: #d64545;
+  --accent-red-1: #d98f8f;
 
   // other
   --elevation-shadow: 0 1px 2px rgb(0 0 0 / 4%), 0 2px 8px rgb(0 0 0 / 6%);

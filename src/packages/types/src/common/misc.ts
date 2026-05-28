@@ -43,7 +43,7 @@ export type UserSessionResponse = {
   admin: boolean;
   displayName: string | null;
   email: string;
-  theme: string;
+  theme: string | null;
   /** Account creation time as UTC day + time. */
   createdAt: DayWithTime;
   /** Same entitlement list as `GET /auth/me` (see `MeGetLoggedIn['entitlements']`). */

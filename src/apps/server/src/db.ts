@@ -64,7 +64,7 @@ if (!usersTableHasColumn('display_name')) {
   db.exec('ALTER TABLE users ADD COLUMN display_name TEXT');
 }
 if (!usersTableHasColumn('theme')) {
-  db.exec(`ALTER TABLE users ADD COLUMN theme TEXT NOT NULL DEFAULT 'dark'`);
+  db.exec('ALTER TABLE users ADD COLUMN theme TEXT');
 }
 if (!usersTableHasColumn('email')) {
   db.exec('ALTER TABLE users ADD COLUMN email TEXT');
@@ -78,6 +78,45 @@ if (!usersTableHasColumn('beta_tester')) {
 if (!usersTableHasColumn('force_password_reset')) {
   db.exec('ALTER TABLE users ADD COLUMN force_password_reset INTEGER NOT NULL DEFAULT 0');
 }
+
+function usersThemeColumnIsNotNull(): boolean {
+  const cols = db.prepare("PRAGMA table_info('users')").all() as Array<{
+    name: string;
+    notnull: number;
+  }>;
+  return cols.find((c) => c.name === 'theme')?.notnull === 1;
+}
+
+/** SQLite builds here cannot `ALTER COLUMN … DROP NOT NULL`; rebuild when `theme` was NOT NULL. */
+function migrateUsersThemeToNullable(): void {
+  if (!usersTableHasColumn('theme') || !usersThemeColumnIsNotNull()) return;
+  db.exec(`
+    CREATE TABLE users_theme_nullable (
+      username TEXT PRIMARY KEY,
+      pin TEXT NOT NULL,
+      admin INTEGER NOT NULL DEFAULT 0,
+      display_name TEXT,
+      theme TEXT,
+      email TEXT,
+      created_at TEXT,
+      beta_tester INTEGER NOT NULL DEFAULT 1,
+      force_password_reset INTEGER NOT NULL DEFAULT 0
+    );
+
+    INSERT INTO users_theme_nullable (
+      username, pin, admin, display_name, theme, email, created_at, beta_tester, force_password_reset
+    )
+    SELECT
+      username, pin, admin, display_name, theme, email, created_at,
+      COALESCE(beta_tester, 1), COALESCE(force_password_reset, 0)
+    FROM users;
+
+    DROP TABLE users;
+    ALTER TABLE users_theme_nullable RENAME TO users;
+  `);
+}
+
+migrateUsersThemeToNullable();
 
 const migratePlainTextPinStmt = db.prepare<{ username: string; pin: string }>(`
   UPDATE users SET pin = @pin WHERE username = @username
@@ -204,7 +243,7 @@ const insertUserStmt = db.prepare<{
   createdAt: string;
 }>(`
   INSERT INTO users (username, pin, admin, display_name, theme, email, created_at)
-  VALUES (@username, @pin, @admin, NULL, 'dark', NULL, @createdAt)
+  VALUES (@username, @pin, @admin, NULL, NULL, NULL, @createdAt)
   ON CONFLICT(username) DO UPDATE SET
     pin = excluded.pin,
     admin = excluded.admin,
@@ -218,7 +257,7 @@ const ensureUserStmt = db.prepare<{
   createdAt: string;
 }>(`
   INSERT OR IGNORE INTO users (username, pin, admin, display_name, theme, email, created_at)
-  VALUES (@username, @pin, @admin, NULL, 'dark', NULL, @createdAt)
+  VALUES (@username, @pin, @admin, NULL, NULL, NULL, @createdAt)
 `);
 
 const getUserPinStmt = db.prepare<[string], UserPinRow>('SELECT pin FROM users WHERE username = ?');
@@ -462,7 +501,7 @@ export function isUserBetaTester(username: string): boolean {
 
 export function getUserProfile(username: string): {
   displayName: string | null;
-  theme: string;
+  theme: string | null;
   email: string | null;
   /** Non-empty stored or synthetic ISO string (row missing until first sync). */
   createdAt: string;
@@ -471,12 +510,12 @@ export function getUserProfile(username: string): {
   if (!row) {
     return {
       displayName: null,
-      theme: 'dark',
+      theme: null,
       email: null,
       createdAt: new Date().toISOString(),
     };
   }
-  const theme = row.theme != null && isAllowedUiTheme(row.theme) ? row.theme : 'dark';
+  const theme = row.theme == null ? null : isAllowedUiTheme(row.theme) ? row.theme : 'dark';
   return {
     displayName: row.display_name,
     theme,
@@ -487,7 +526,7 @@ export function getUserProfile(username: string): {
 
 export function patchUserProfile(
   username: string,
-  patch: { displayName?: string | null; theme?: string; email?: string },
+  patch: { displayName?: string | null; theme?: string | null; email?: string },
 ): void {
   const sets: string[] = [];
   const params: Record<string, unknown> = { username };
@@ -515,7 +554,7 @@ export function patchUserProfile(
     params as {
       username: string;
       displayName?: string | null;
-      theme?: string;
+      theme?: string | null;
       email?: string | null;
     },
   );
@@ -525,7 +564,7 @@ export function patchUserProfile(
       params as {
         username: string;
         displayName?: string | null;
-        theme?: string;
+        theme?: string | null;
         email?: string | null;
       },
     );

@@ -38,7 +38,12 @@ export function validateAccountSave(input: AccountSavePayload): AccountErrorMap 
     addError(errors, 'email', 'Enter a valid email address.');
   }
 
-  if (input.theme != null && input.theme !== 'light' && input.theme !== 'dark') {
+  if (
+    input.theme != null &&
+    input.theme !== 'light' &&
+    input.theme !== 'dark' &&
+    input.theme !== 'system'
+  ) {
     addError(errors, 'theme', 'Choose a valid theme.');
   }
 
@@ -94,8 +99,12 @@ export function accountServerErrorToFieldMap(serverMessage: string): AccountErro
     return out;
   }
 
-  if (m === 'theme must be a string') {
-    addError(out, 'theme', m);
+  if (m === 'theme must be a string' || m === 'theme must be a string or null') {
+    addError(
+      out,
+      'theme',
+      'Theme could not be saved. Stop and restart `npm run dev`, then try again.',
+    );
     return out;
   }
 

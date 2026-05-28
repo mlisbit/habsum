@@ -69,12 +69,12 @@ import {
 } from '../habit-presentation.js';
 import { authenticatedSessionId, requireMatchingRouteUser } from '../middleware/auth.js';
 import {
-  isAllowedUiTheme,
   isPlausibleEmail,
   isSafeConfigUserId,
   isSafeLoginId,
   loadUserConfigForResponse,
   parsePin,
+  parseThemePatchInput,
 } from '../request-helpers.js';
 import { accountCreatedAtToApi } from '@habsum/types/common/day';
 import { entitlementsForUser } from '../entitlements.js';
@@ -294,17 +294,14 @@ userScopedRouter.patch(
     }
 
     let hasTheme = false;
-    let theme: string | undefined;
+    let theme: string | null | undefined;
     if ('theme' in body) {
       hasTheme = true;
-      if (typeof body.theme !== 'string') {
-        return res.status(400).json({ error: 'theme must be a string' });
-      }
-      const t = body.theme.trim();
-      if (!isAllowedUiTheme(t)) {
+      const parsed = parseThemePatchInput(body.theme);
+      if (parsed === 'invalid') {
         return res.status(400).json({ error: 'invalid theme' });
       }
-      theme = t;
+      theme = parsed;
     }
 
     let hasEmail = false;

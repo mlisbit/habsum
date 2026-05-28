@@ -24,15 +24,21 @@ import {
   type AccountFieldKey,
   validateAccountSave,
 } from '~/utils/validators/account';
-import { applyUiTheme, UI_THEME_OPTIONS } from '~/theme.client';
-
-type ThemeOption = (typeof UI_THEME_OPTIONS)[number];
+import {
+  applyUiTheme,
+  preferenceToSelectValue,
+  selectValueToPreference,
+  syncTheme,
+  themePreferenceToApi,
+  UI_THEME_SELECT_OPTIONS,
+  type UiThemePreference,
+} from '~/theme.client';
 
 type AccountSnapshot = {
   username: string;
   displayName: string;
   email: string;
-  theme: ThemeOption;
+  theme: UiThemePreference;
   createdAt: DayWithTime;
   entitlements: ProductEntitlement[];
 };
@@ -76,7 +82,7 @@ export default function UserSettingsAccount() {
   const [draftUsername, setDraftUsername] = useState('');
   const [draftDisplay, setDraftDisplay] = useState('');
   const [draftEmail, setDraftEmail] = useState('');
-  const [draftTheme, setDraftTheme] = useState<ThemeOption>('dark');
+  const [draftTheme, setDraftTheme] = useState<UiThemePreference>(null);
   const [saveBusy, setSaveBusy] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
   const [saveFieldErrors, setSaveFieldErrors] = useState<AccountErrorMap>({});
@@ -92,7 +98,8 @@ export default function UserSettingsAccount() {
     const res = await getUserSession(routeUser);
     const display = res.displayName ?? '';
     const email = res.email ?? '';
-    const theme: ThemeOption = res.theme === 'light' ? 'light' : 'dark';
+    const theme: UiThemePreference =
+      res.theme === 'light' || res.theme === 'dark' ? res.theme : null;
     const snap: AccountSnapshot = {
       username: routeUser,
       displayName: display,
@@ -106,7 +113,7 @@ export default function UserSettingsAccount() {
     setDraftDisplay(display);
     setDraftEmail(email);
     setDraftTheme(theme);
-    applyUiTheme(theme);
+    syncTheme(theme);
     setSaveFieldErrors({});
   }, [routeUser]);
 
@@ -151,7 +158,7 @@ export default function UserSettingsAccount() {
   useEffect(
     () => () => {
       if (hasDirtyRef.current && savedRef.current) {
-        applyUiTheme(savedRef.current.theme);
+        syncTheme(savedRef.current.theme);
       }
     },
     [],
@@ -172,7 +179,7 @@ export default function UserSettingsAccount() {
     setDraftDisplay(saved.displayName);
     setDraftEmail(saved.email);
     setDraftTheme(saved.theme);
-    applyUiTheme(saved.theme);
+    syncTheme(saved.theme);
     setSaveFieldErrors({});
   }, [saved]);
 
@@ -221,14 +228,14 @@ export default function UserSettingsAccount() {
       patch.email = nextEmail;
     }
     if (draftTheme !== saved.theme) {
-      patch.theme = draftTheme;
+      patch.theme = themePreferenceToApi(draftTheme);
     }
 
     const validationErrors = validateAccountSave({
       username: nextUsername,
       displayName: nextDisplay === '' ? null : nextDisplay,
       email: nextEmail,
-      theme: draftTheme,
+      theme: themePreferenceToApi(draftTheme),
     });
     const validationMessages = Object.values(validationErrors).flat();
     if (validationMessages.length > 0) {
@@ -261,7 +268,7 @@ export default function UserSettingsAccount() {
       setDraftDisplay(nextDisplay);
       setDraftEmail(nextEmail);
       setDraftTheme(draftTheme);
-      applyUiTheme(draftTheme);
+      syncTheme(draftTheme);
 
       showToast({ type: 'success', message: 'Saved.' });
       setSaveFieldErrors({});
@@ -430,21 +437,21 @@ export default function UserSettingsAccount() {
                   <select
                     id="account-theme"
                     className="account-page__select text-b-m"
-                    value={draftTheme}
+                    value={preferenceToSelectValue(draftTheme)}
                     disabled={saveBusy}
                     aria-describedby={
                       saveFieldErrors.theme?.length ? 'account-field-error-theme' : undefined
                     }
                     onChange={(e) => {
-                      const t = e.target.value === 'light' ? 'light' : 'dark';
+                      const t = selectValueToPreference(e.target.value);
                       setDraftTheme(t);
                       applyUiTheme(t);
                       clearSaveFieldError('theme');
                     }}
                   >
-                    {UI_THEME_OPTIONS.map((opt) => (
-                      <option key={opt} value={opt}>
-                        {opt === 'dark' ? 'Dark' : 'Light'}
+                    {UI_THEME_SELECT_OPTIONS.map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
                       </option>
                     ))}
                   </select>

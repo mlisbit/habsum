@@ -6,7 +6,8 @@ export type MeGetLoggedOut = {
   username: null;
   displayName: null;
   email: null;
-  theme: 'dark';
+  /** `null` follows the OS color scheme. */
+  theme: null;
   createdAt: null;
   entitlements: [];
 };
@@ -19,8 +20,8 @@ export type MeGetLoggedIn = {
   displayName: string | null;
   /** Login email (unique); also accepted on the login form instead of username. */
   email: string;
-  /** UI theme key (e.g. `light`, `dark`). */
-  theme: string;
+  /** UI theme (`light`, `dark`); `null` follows the OS color scheme. */
+  theme: string | null;
   /**
    * Account row creation time: UTC calendar date + time (`YYYY-MM-DD HH:MM:SS`).
    */

@@ -25,6 +25,16 @@ export function isAllowedUiTheme(value: string): boolean {
   return (ALLOWED_UI_THEMES as readonly string[]).includes(value);
 }
 
+/** PATCH body `theme`: `null` / empty / `system` → DB null (OS default); otherwise `light` or `dark`. */
+export function parseThemePatchInput(value: unknown): string | null | 'invalid' {
+  if (value == null) return null;
+  if (typeof value !== 'string') return 'invalid';
+  const t = value.trim();
+  if (t === '' || t.toLowerCase() === 'system') return null;
+  if (isAllowedUiTheme(t)) return t;
+  return 'invalid';
+}
+
 export function loadUserConfigForResponse(user: string, res: Response) {
   try {
     const config = loadUserConfig(user);
