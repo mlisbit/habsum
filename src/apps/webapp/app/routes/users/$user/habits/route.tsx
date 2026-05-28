@@ -11,15 +11,12 @@ import { ensureUserSessionForRoute } from '~/utils/user-session-guard';
 import { awaitOucPopupBootstrap, getOucSessionToken } from '~/ouc.client';
 import { useTodayDateKey } from '~/utils/use-today-date-key';
 import { getProgress } from '~/utils/habit-helpers';
+import { getMediaQuerySnapshot, subscribeToMediaQuery } from '~/utils/media-query-store';
 
 function useWideHabitsLayout(): boolean {
   return useSyncExternalStore(
-    (onStoreChange) => {
-      const mq = window.matchMedia('(min-width: 721px)');
-      mq.addEventListener('change', onStoreChange);
-      return () => mq.removeEventListener('change', onStoreChange);
-    },
-    () => window.matchMedia('(min-width: 721px)').matches,
+    (onStoreChange) => subscribeToMediaQuery('(min-width: 721px)', onStoreChange),
+    () => getMediaQuerySnapshot('(min-width: 721px)'),
     () => true,
   );
 }

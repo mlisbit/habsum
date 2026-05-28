@@ -13,7 +13,6 @@ import {
   type MutableRefObject,
   type ReactNode,
 } from 'react';
-import { createPortal } from 'react-dom';
 
 /** Where the floating panel is placed relative to the anchor (before viewport clamp / flip). */
 export type HoverablePanelSide = 'top' | 'bottom' | 'left' | 'right';
@@ -121,7 +120,7 @@ type HoverableContentProps = Omit<HTMLAttributes<HTMLDivElement>, 'children'> & 
   side?: HoverablePanelSide;
 };
 
-/** Portal panel; intrinsic width — set min/max sizing via your feature classNames on `Hoverable.Content`. */
+/** Fixed-position panel; intrinsic width — set min/max sizing via your feature classNames on `Hoverable.Content`. */
 function HoverableContent({
   children,
   className,
@@ -209,9 +208,9 @@ function HoverableContent({
     };
   }, [open, anchorRef, offset, side]);
 
-  if (!open || typeof document === 'undefined') return null;
+  if (!open) return null;
 
-  return createPortal(
+  return (
     <div
       ref={panelRef}
       role="tooltip"
@@ -220,8 +219,7 @@ function HoverableContent({
       {...rest}
     >
       {children}
-    </div>,
-    document.body,
+    </div>
   );
 }
 

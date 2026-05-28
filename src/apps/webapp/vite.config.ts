@@ -9,9 +9,17 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const stylesDir = path.join(__dirname, 'app', 'styles');
 
 export default defineConfig({
+  resolve: {
+    dedupe: ['react', 'react-dom', 'react/jsx-runtime'],
+  },
+  optimizeDeps: {
+    noDiscovery: true,
+    include: [],
+  },
   plugins: [
     remix({
       ssr: false,
+      ignoredRouteFiles: ['**/*'],
       future: {
         v3_fetcherPersist: true,
         v3_relativeSplatPath: true,

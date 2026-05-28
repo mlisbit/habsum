@@ -4,6 +4,7 @@ import CodeMirror from '@uiw/react-codemirror';
 import { autocompletion, type Completion, type CompletionContext } from '@codemirror/autocomplete';
 import { yaml } from '@codemirror/lang-yaml';
 import { oneDark } from '@codemirror/theme-one-dark';
+import { getMediaQuerySnapshot, subscribeToMediaQuery } from '~/utils/media-query-store';
 
 const HABIT_TYPE_COMPLETIONS: Completion[] = [
   {
@@ -37,12 +38,8 @@ function habitTypeCompletion(context: CompletionContext) {
 
 function usePrefersDark() {
   return useSyncExternalStore(
-    (onChange) => {
-      const mq = window.matchMedia('(prefers-color-scheme: dark)');
-      mq.addEventListener('change', onChange);
-      return () => mq.removeEventListener('change', onChange);
-    },
-    () => window.matchMedia('(prefers-color-scheme: dark)').matches,
+    (onStoreChange) => subscribeToMediaQuery('(prefers-color-scheme: dark)', onStoreChange),
+    () => getMediaQuerySnapshot('(prefers-color-scheme: dark)'),
     () => false,
   );
 }
