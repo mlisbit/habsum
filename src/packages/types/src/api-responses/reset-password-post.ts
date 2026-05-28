@@ -6,4 +6,6 @@ export type ResetPasswordRequest = {
 
 export type ResetPasswordResponse = {
   ok: true;
+  /** Present when an invite token completes and the user is logged in automatically. */
+  user?: string;
 };

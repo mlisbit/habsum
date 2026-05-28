@@ -1,5 +1,10 @@
 import { createHash, randomBytes } from 'node:crypto';
-import { PASSWORD_RESET_TOKEN_BYTES, PASSWORD_RESET_TOKEN_TTL_SECONDS } from './constants.js';
+import {
+  INVITE_TOKEN_TTL_SECONDS,
+  PASSWORD_RESET_TOKEN_BYTES,
+  PASSWORD_RESET_TOKEN_TTL_SECONDS,
+  type PasswordResetTokenPurpose,
+} from './constants.js';
 import {
   findValidPasswordResetToken,
   insertPasswordResetToken,
@@ -15,19 +20,25 @@ export function generatePasswordResetToken(): string {
   return randomBytes(PASSWORD_RESET_TOKEN_BYTES).toString('base64url');
 }
 
+function tokenTtlSeconds(purpose: PasswordResetTokenPurpose): number {
+  return purpose === 'invite' ? INVITE_TOKEN_TTL_SECONDS : PASSWORD_RESET_TOKEN_TTL_SECONDS;
+}
+
 export function issuePasswordResetToken(
   userId: string,
+  purpose: PasswordResetTokenPurpose,
   nowSec = Math.floor(Date.now() / 1000),
 ): { token: string; expiresAt: number; id: number } {
-  invalidateActivePasswordResetTokens(userId, nowSec);
+  invalidateActivePasswordResetTokens(userId, purpose, nowSec);
   const token = generatePasswordResetToken();
   const tokenHash = hashPasswordResetToken(token);
-  const expiresAt = nowSec + PASSWORD_RESET_TOKEN_TTL_SECONDS;
+  const expiresAt = nowSec + tokenTtlSeconds(purpose);
   const id = insertPasswordResetToken({
     userId,
     tokenHash,
     expiresAt,
     createdAt: nowSec,
+    purpose,
   });
   return { token, expiresAt, id };
 }
@@ -35,10 +46,16 @@ export function issuePasswordResetToken(
 export function lookupValidPasswordResetToken(
   token: string,
   nowSec = Math.floor(Date.now() / 1000),
-): { id: number; userId: string } | null {
+): { id: number; userId: string; purpose: PasswordResetTokenPurpose } | null {
   const trimmed = token.trim();
   if (!trimmed) return null;
-  return findValidPasswordResetToken(hashPasswordResetToken(trimmed), nowSec);
+  const row = findValidPasswordResetToken(hashPasswordResetToken(trimmed), nowSec);
+  if (!row) return null;
+  return {
+    id: row.id,
+    userId: row.userId,
+    purpose: row.purpose === 'invite' ? 'invite' : 'reset',
+  };
 }
 
 export function consumePasswordResetToken(

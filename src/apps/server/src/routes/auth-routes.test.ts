@@ -1,6 +1,7 @@
 import request from 'supertest';
 import { describe, expect, it, vi } from 'vitest';
 import { createApp } from '../app.js';
+import { createUserFromSampleConfig, ensureConfigLayout } from '../config.js';
 import { ensureUserPins, isUserPinValid, patchUserProfile, setUserPin } from '../db.js';
 import { issuePasswordResetToken } from '../password-reset-token.js';
 import * as passwordResetEmail from '../password-reset-email.js';
@@ -113,9 +114,13 @@ describe('password reset token flow', () => {
     ensureUserPins(['reset-token-user']);
     setUserPin('reset-token-user', 'old-secret');
 
-    const { token } = issuePasswordResetToken('reset-token-user');
+    const { token } = issuePasswordResetToken('reset-token-user', 'reset');
 
-    await request(app).get('/auth/reset-password').query({ token }).expect(200);
+    const validateRes = await request(app).get('/auth/reset-password').query({ token }).expect(200);
+    expect(validateRes.body).toEqual({
+      ok: true,
+      purpose: 'reset',
+    });
 
     await request(app)
       .post('/auth/reset-password')
@@ -134,12 +139,43 @@ describe('password reset token flow', () => {
     const now = 1_700_000_000_000;
     vi.spyOn(Date, 'now').mockReturnValue(now * 1000);
 
-    const { token } = issuePasswordResetToken('expired-token-user', now);
+    const { token } = issuePasswordResetToken('expired-token-user', 'reset', now);
 
     vi.spyOn(Date, 'now').mockReturnValue((now + 16 * 60) * 1000);
 
     await request(app).get('/auth/reset-password').query({ token }).expect(400);
 
     vi.restoreAllMocks();
+  });
+
+  it('returns display name for invite tokens and auto-logs in after password set', async () => {
+    ensureConfigLayout();
+    const app = createApp();
+    createUserFromSampleConfig('invite-setup-user');
+    setUserPin('invite-setup-user', 'temp-secret');
+    patchUserProfile('invite-setup-user', { displayName: 'Alex', email: 'alex@example.com' });
+
+    const { token } = issuePasswordResetToken('invite-setup-user', 'invite');
+
+    const validateRes = await request(app).get('/auth/reset-password').query({ token }).expect(200);
+    expect(validateRes.body).toEqual({
+      ok: true,
+      purpose: 'invite',
+      displayName: 'Alex',
+    });
+
+    const resetRes = await request(app)
+      .post('/auth/reset-password')
+      .send({ token, newPin: 'chosen-secret' })
+      .expect(200);
+
+    expect(resetRes.body).toEqual({ ok: true, user: 'invite-setup-user' });
+    const sessionCookie = resetRes.headers['set-cookie']?.[0]?.split(';')[0];
+    expect(sessionCookie).toMatch(/^habsum_sid=/);
+    expect(isUserPinValid('invite-setup-user', 'chosen-secret')).toBe(true);
+
+    const meRes = await request(app).get('/auth/me').set('Cookie', sessionCookie!).expect(200);
+
+    expect(meRes.body).toMatchObject({ username: 'invite-setup-user', displayName: 'Alex' });
   });
 });

@@ -14,15 +14,35 @@ import {
   patchUserProfile,
   purgeUserData,
   resolveUsernameByLoginId,
-  setUserForcePasswordReset,
   setUserPin,
   updateLoginPin,
 } from '../db.js';
 import { requireAdmin } from '../middleware/auth.js';
 import { isPlausibleEmail, isSafeConfigUserId } from '../request-helpers.js';
+import { consumePasswordResetToken, issuePasswordResetToken } from '../password-reset-token.js';
 import { sessionTtlSeconds } from '../session-cookie.js';
+import { sendInviteEmail } from '../invite-email.js';
 import { generateTemporaryPassword } from '../temporary-password.js';
 import { allocateUsernameForEmail } from '../username-from-email.js';
+
+function parseOptionalDisplayName(body: CreateUserRequest | undefined): {
+  displayName?: string | null;
+  error?: string;
+} {
+  if (!body || !('displayName' in body)) return {};
+  const raw = body.displayName;
+  if (raw === null) return { displayName: null };
+  if (typeof raw !== 'string') {
+    return { error: 'displayName must be a string or null' };
+  }
+  const trimmed = raw.trim();
+  return { displayName: trimmed === '' ? null : trimmed };
+}
+
+function rollbackCreatedUser(username: string): void {
+  deleteUserConfigFile(username);
+  deleteUserPin(username);
+}
 
 export const usersAdminRouter = Router();
 
@@ -54,7 +74,7 @@ usersAdminRouter.post('/users/ouc', requireAdmin, (req: Request, res: Response) 
 usersAdminRouter.post(
   '/users',
   requireAdmin,
-  (req: Request<unknown, unknown, CreateUserRequest>, res: Response) => {
+  async (req: Request<unknown, unknown, CreateUserRequest>, res: Response) => {
     const rawEmail = req.body?.email;
     if (typeof rawEmail !== 'string') {
       return res.status(400).json({ error: 'email is required' });
@@ -65,6 +85,16 @@ usersAdminRouter.post(
     }
     if (resolveUsernameByLoginId(email)) {
       return res.status(409).json({ error: 'email already in use' });
+    }
+
+    const sendInviteEmailFlag = req.body?.sendInviteEmail === true;
+    const parsedDisplayName = parseOptionalDisplayName(req.body);
+    if (parsedDisplayName.error) {
+      return res.status(400).json({ error: parsedDisplayName.error });
+    }
+    const displayName = parsedDisplayName.displayName;
+    if (sendInviteEmailFlag && !displayName) {
+      return res.status(400).json({ error: 'displayName is required to send invite email' });
     }
 
     const name = allocateUsernameForEmail(email);
@@ -82,16 +112,34 @@ usersAdminRouter.post(
 
     setUserPin(out.user, password);
     try {
-      patchUserProfile(out.user, { email });
+      patchUserProfile(out.user, {
+        email,
+        ...(displayName !== undefined ? { displayName } : {}),
+      });
     } catch (e) {
-      deleteUserConfigFile(out.user);
-      deleteUserPin(out.user);
+      rollbackCreatedUser(out.user);
       const msg = e instanceof Error ? e.message : 'failed to save profile';
       return res.status(500).json({ error: msg });
     }
-    setUserForcePasswordReset(out.user, true);
 
-    const body: CreateUserResponse = { ok: true, user: out.user, password };
+    if (sendInviteEmailFlag) {
+      const { token, id: tokenId } = issuePasswordResetToken(out.user, 'invite');
+      try {
+        await sendInviteEmail(email, displayName!, token);
+      } catch (e) {
+        consumePasswordResetToken(tokenId);
+        rollbackCreatedUser(out.user);
+        const msg = e instanceof Error ? e.message : 'failed to send invite email';
+        return res.status(500).json({ error: msg });
+      }
+    }
+
+    const body: CreateUserResponse = {
+      ok: true,
+      user: out.user,
+      password,
+      ...(sendInviteEmailFlag ? { inviteEmailSent: true } : {}),
+    };
     return res.status(201).json(body);
   },
 );
@@ -114,7 +162,6 @@ usersAdminRouter.patch('/users', requireAdmin, (req: Request, res: Response) => 
   if (!updateLoginPin(name, password)) {
     setUserPin(name, password);
   }
-  setUserForcePasswordReset(name, true);
 
   const body = { ok: true as const, user: name, password };
   return res.json(body);

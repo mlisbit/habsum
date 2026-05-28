@@ -1,4 +1,4 @@
-import { clearUserForcePasswordReset, isUserPinValid, setUserPin, updateLoginPin } from './db.js';
+import { isUserPinValid, setUserPin, updateLoginPin } from './db.js';
 
 /** Updates login password for a forgot-password reset flow. */
 export function resetLoginPassword(userId: string, newPin: string): void {
@@ -6,7 +6,6 @@ export function resetLoginPassword(userId: string, newPin: string): void {
   if (!updated) {
     setUserPin(userId, newPin);
   }
-  clearUserForcePasswordReset(userId);
 }
 
 export function isNewLoginPasswordAllowed(userId: string, newPin: string): boolean {

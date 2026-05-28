@@ -1,12 +1,14 @@
 // exclusive-bem-block: reset-password-page
 import { Link, useNavigate, useSearchParams } from '@remix-run/react';
 import { useEffect, useMemo, useState } from 'react';
+import type { PasswordResetTokenPurpose } from '@habsum/types/api-responses/reset-password-get';
 import { submitResetPassword, validateResetPasswordToken } from '~/api.client';
 import { Footer } from '~/components/Footer';
 import { Button } from '~/core-components/Button';
 import { InfoText } from '~/core-components/InfoText';
 import { Input } from '~/core-components/Input';
 import { useToast } from '~/context/toast';
+import { userDefaultAppPath } from '~/utils/user-session-guard';
 import {
   newPasswordServerErrorToFieldMap,
   type NewPasswordErrorMap,
@@ -37,6 +39,8 @@ export default function ResetPasswordRoute() {
   const { showToast } = useToast();
 
   const [tokenState, setTokenState] = useState<'loading' | 'valid' | 'invalid'>('loading');
+  const [tokenPurpose, setTokenPurpose] = useState<PasswordResetTokenPurpose>('reset');
+  const [inviteDisplayName, setInviteDisplayName] = useState<string | null>(null);
   const [pwdNew, setPwdNew] = useState('');
   const [pwdConfirm, setPwdConfirm] = useState('');
   const [saveBusy, setSaveBusy] = useState(false);
@@ -57,8 +61,12 @@ export default function ResetPasswordRoute() {
 
     let cancelled = false;
     void validateResetPasswordToken(token)
-      .then(() => {
-        if (!cancelled) setTokenState('valid');
+      .then((res) => {
+        if (!cancelled) {
+          setTokenPurpose(res.purpose);
+          setInviteDisplayName(res.purpose === 'invite' ? (res.displayName ?? null) : null);
+          setTokenState('valid');
+        }
       })
       .catch(() => {
         if (!cancelled) setTokenState('invalid');
@@ -68,6 +76,24 @@ export default function ResetPasswordRoute() {
       cancelled = true;
     };
   }, [token]);
+
+  const isInvite = tokenPurpose === 'invite';
+  const inviteGreetingName = inviteDisplayName?.trim() || null;
+  const pageTitle = isInvite
+    ? inviteGreetingName
+      ? `Welcome, ${inviteGreetingName}`
+      : 'Set up your account'
+    : 'Reset password';
+  const loadingHint = isInvite ? 'Checking invite link…' : 'Checking reset link…';
+  const invalidMessage = isInvite
+    ? 'This invite link is invalid or has expired.'
+    : 'This reset link is invalid or has expired.';
+  const validHint = isInvite
+    ? inviteGreetingName
+      ? `Hi ${inviteGreetingName}, choose a password for your Habsum account.`
+      : 'Choose a password for your new Habsum account.'
+    : 'Choose a new password for your account.';
+  const successMessage = isInvite ? 'Welcome to Habsum!' : 'Password updated. You can log in now.';
 
   const handleSave = async () => {
     if (!token) return;
@@ -87,8 +113,12 @@ export default function ResetPasswordRoute() {
     setSaveBusy(true);
     const newPin = pwdNew.trim();
     try {
-      await submitResetPassword({ token, newPin });
-      showToast({ type: 'success', message: 'Password updated. You can log in now.' });
+      const res = await submitResetPassword({ token, newPin });
+      showToast({ type: 'success', message: successMessage });
+      if (res.user) {
+        window.location.assign(userDefaultAppPath(res.user));
+        return;
+      }
       navigate('/login');
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -105,27 +135,29 @@ export default function ResetPasswordRoute() {
       <div className="users-index__main">
         <div className="card users-index__card">
           <div className="users-index__header">
-            <h1 className="text-h-l">Reset password</h1>
+            <h1 className="text-h-l">{pageTitle}</h1>
           </div>
 
           {tokenState === 'loading' ? (
-            <p className="text-b-m users-index__hint">Checking reset link…</p>
+            <p className="text-b-m users-index__hint">{loadingHint}</p>
           ) : null}
 
           {tokenState === 'invalid' ? (
             <>
               <InfoText className="mt-1 mb-1" variant="error">
-                This reset link is invalid or has expired.
+                {invalidMessage}
               </InfoText>
-              <Link to="/forgot-password" className="text-b-s text-link users-index__back-link">
-                Request a new reset link
-              </Link>
+              {!isInvite ? (
+                <Link to="/forgot-password" className="text-b-s text-link users-index__back-link">
+                  Request a new reset link
+                </Link>
+              ) : null}
             </>
           ) : null}
 
           {tokenState === 'valid' ? (
             <>
-              <p className="text-b-m users-index__hint">Choose a new password for your account.</p>
+              <p className="text-b-m users-index__hint">{validHint}</p>
               <form
                 className="users-index__login-form"
                 onSubmit={(e) => {
@@ -231,7 +263,7 @@ export default function ResetPasswordRoute() {
             </>
           ) : null}
 
-          {tokenState === 'valid' ? (
+          {tokenState === 'valid' && !isInvite ? (
             <Link to="/login" className="text-b-s text-link users-index__back-link">
               Back to login
             </Link>

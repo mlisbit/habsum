@@ -9,10 +9,6 @@ import type {
   UserPasswordChangeRequest,
   UserPasswordChangeResponse,
 } from '@habsum/types/api-responses/user-password-change';
-import type {
-  UserNewPasswordRequest,
-  UserNewPasswordResponse,
-} from '@habsum/types/api-responses/user-new-password';
 import type { SecurityGetResponse } from '@habsum/types/api-responses/security-get';
 import type {
   SecuritySessionDeleteResponse,
@@ -20,6 +16,7 @@ import type {
 } from '@habsum/types/api-responses/security-delete';
 import type {
   AdminResetUserPasswordResponse,
+  CreateUserRequest,
   CreateUserResponse,
   ListUsersResponse,
   LoginUserResponse,
@@ -208,10 +205,20 @@ export async function getDeveloper() {
   return request<DeveloperGetResponse>('/developer');
 }
 
-export async function createUser(email: string) {
+export async function createUser(
+  email: string,
+  options?: { displayName?: string; sendInviteEmail?: boolean },
+) {
+  const body: CreateUserRequest = { email };
+  if (options?.displayName !== undefined) {
+    body.displayName = options.displayName.trim() || null;
+  }
+  if (options?.sendInviteEmail) {
+    body.sendInviteEmail = true;
+  }
   return request<CreateUserResponse>('/users', {
     method: 'POST',
-    body: JSON.stringify({ email }),
+    body: JSON.stringify(body),
   });
 }
 
@@ -266,13 +273,6 @@ export async function patchUser(user: string, body: UsersPatchRequest) {
 
 export async function changeUserPassword(user: string, body: UserPasswordChangeRequest) {
   return request<UserPasswordChangeResponse>(`/users/${encodeURIComponent(user)}/password`, {
-    method: 'POST',
-    body: JSON.stringify(body),
-  });
-}
-
-export async function setUserNewPassword(user: string, body: UserNewPasswordRequest) {
-  return request<UserNewPasswordResponse>(`/users/${encodeURIComponent(user)}/new-password`, {
     method: 'POST',
     body: JSON.stringify(body),
   });

@@ -37,7 +37,7 @@ function LoginForm({
     setIsLoggingIn(true);
     try {
       const res = await loginUser(id, nextPassword);
-      window.location.assign(userDefaultAppPath(res.user, res.forcePasswordReset));
+      window.location.assign(userDefaultAppPath(res.user));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'login failed');
     } finally {
@@ -147,7 +147,7 @@ export default function LoginRoute() {
                 disabled={signOutBusy}
                 onClick={() => {
                   if (isMeLoggedIn(me) && me.username === currentUser) {
-                    navigate(userDefaultAppPath(currentUser, me.forcePasswordReset));
+                    navigate(userDefaultAppPath(currentUser));
                   } else {
                     navigate(`/users/${encodeURIComponent(currentUser)}/habits`);
                   }

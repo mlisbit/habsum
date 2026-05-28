@@ -12,7 +12,6 @@ import type { HabitsResponse } from '@habsum/types/api-responses/habits-get';
 import type { PatchHabitResponse } from '@habsum/types/api-responses/habit-patch';
 import type { HistoryGetResponse } from '@habsum/types/api-responses/history-get';
 import type { UserPasswordChangeRequest } from '@habsum/types/api-responses/user-password-change';
-import type { UserNewPasswordRequest } from '@habsum/types/api-responses/user-new-password';
 import type { SecurityGetResponse } from '@habsum/types/api-responses/security-get';
 import type {
   SecuritySessionDeleteResponse,
@@ -39,8 +38,6 @@ import {
   deleteSummationEvent,
   deleteSummationEventsForDay,
   deleteUserPin,
-  clearUserForcePasswordReset,
-  completeForcedPasswordReset,
   ensureUserPins,
   isEmailUsedByOtherUser,
   resolveUsernameByLoginId,
@@ -51,7 +48,6 @@ import {
   getSummationDayTotal,
   getUserProfile,
   isUserAdmin,
-  isUserForcePasswordReset,
   isUserPinValid,
   patchUserProfile,
   purgeUserData,
@@ -71,11 +67,7 @@ import {
   type PatchBody,
   streakGraphForConfiguredWindow,
 } from '../habit-presentation.js';
-import {
-  authenticatedSessionId,
-  rejectIfForcePasswordReset,
-  requireMatchingRouteUser,
-} from '../middleware/auth.js';
+import { authenticatedSessionId, requireMatchingRouteUser } from '../middleware/auth.js';
 import {
   isAllowedUiTheme,
   isPlausibleEmail,
@@ -126,13 +118,10 @@ userScopedRouter.post(
     const body: LoginUserResponse = {
       ok: true,
       user,
-      forcePasswordReset: isUserForcePasswordReset(user),
     };
     return res.json(body);
   },
 );
-
-userScopedRouter.use(rejectIfForcePasswordReset);
 
 /** GET /users/:user/security */
 userScopedRouter.get(
@@ -272,43 +261,6 @@ userScopedRouter.post(
     const updated = updateLoginPin(user, newPin);
     if (!updated) {
       setUserPin(user, newPin);
-    }
-
-    return res.json({ ok: true });
-  },
-);
-
-/** POST /users/:user/new-password — required reset flow when `force_password_reset` is set. */
-userScopedRouter.post(
-  '/new-password',
-  requireMatchingRouteUser,
-  (req: Request<{ user: string }, unknown, UserNewPasswordRequest>, res: Response) => {
-    const { user } = req.params;
-    if (!isSafeConfigUserId(user)) {
-      return res.status(400).json({ error: 'invalid user' });
-    }
-
-    const config = loadUserConfigForResponse(user, res);
-    if (!config) return;
-    ensureUserPins(listUsers());
-
-    if (!isUserForcePasswordReset(user)) {
-      return res.status(403).json({ error: 'password reset is not required' });
-    }
-
-    const newPin = parsePin(req.body?.newPin);
-    if (newPin == null) {
-      return res.status(400).json({ error: 'new password is required' });
-    }
-
-    if (isUserPinValid(user, newPin)) {
-      return res.status(400).json({ error: 'new password must be different from the current one' });
-    }
-
-    let updated = completeForcedPasswordReset(user, newPin);
-    if (!updated) {
-      setUserPin(user, newPin);
-      clearUserForcePasswordReset(user);
     }
 
     return res.json({ ok: true });

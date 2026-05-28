@@ -154,7 +154,8 @@ db.exec(`
     token_hash TEXT NOT NULL,
     expires_at INTEGER NOT NULL,
     used_at INTEGER,
-    created_at INTEGER NOT NULL
+    created_at INTEGER NOT NULL,
+    purpose TEXT NOT NULL DEFAULT 'reset'
   );
 
   CREATE INDEX IF NOT EXISTS password_reset_tokens_user_id_idx
@@ -163,6 +164,16 @@ db.exec(`
   CREATE UNIQUE INDEX IF NOT EXISTS password_reset_tokens_hash_unique
     ON password_reset_tokens (token_hash);
 `);
+
+function passwordResetTokensTableHasColumn(column: string): boolean {
+  const cols = db.prepare("PRAGMA table_info('password_reset_tokens')").all() as Array<{
+    name: string;
+  }>;
+  return cols.some((c) => c.name === column);
+}
+if (!passwordResetTokensTableHasColumn('purpose')) {
+  db.exec(`ALTER TABLE password_reset_tokens ADD COLUMN purpose TEXT NOT NULL DEFAULT 'reset'`);
+}
 
 export type SummationEventRow = {
   id: number;
@@ -179,8 +190,6 @@ type SelectSeriesRow = { date: string; value: string };
 type UserPinRow = { pin: string };
 type UserAdminRow = { admin: number };
 type UserBetaTesterRow = { beta_tester: number };
-type UserForcePasswordResetRow = { force_password_reset: number };
-
 type UserProfileCols = {
   display_name: string | null;
   theme: string | null;
@@ -228,10 +237,14 @@ const upsertPasswordResetRequestStmt = db.prepare<{ username: string; requested_
   ON CONFLICT(username) DO UPDATE SET requested_at = excluded.requested_at
 `);
 
-const invalidateActivePasswordResetTokensStmt = db.prepare<{ userId: string; usedAt: number }>(`
+const invalidateActivePasswordResetTokensStmt = db.prepare<{
+  userId: string;
+  purpose: string;
+  usedAt: number;
+}>(`
   UPDATE password_reset_tokens
   SET used_at = @usedAt
-  WHERE user_id = @userId AND used_at IS NULL
+  WHERE user_id = @userId AND used_at IS NULL AND purpose = @purpose
 `);
 
 const insertPasswordResetTokenStmt = db.prepare<{
@@ -239,16 +252,17 @@ const insertPasswordResetTokenStmt = db.prepare<{
   tokenHash: string;
   expiresAt: number;
   createdAt: number;
+  purpose: string;
 }>(`
-  INSERT INTO password_reset_tokens (user_id, token_hash, expires_at, created_at)
-  VALUES (@userId, @tokenHash, @expiresAt, @createdAt)
+  INSERT INTO password_reset_tokens (user_id, token_hash, expires_at, created_at, purpose)
+  VALUES (@userId, @tokenHash, @expiresAt, @createdAt, @purpose)
 `);
 
 const findValidPasswordResetTokenStmt = db.prepare<
   [string, number],
-  { id: number; user_id: string }
+  { id: number; user_id: string; purpose: string }
 >(`
-  SELECT id, user_id
+  SELECT id, user_id, purpose
   FROM password_reset_tokens
   WHERE token_hash = ? AND used_at IS NULL AND expires_at > ?
 `);
@@ -282,18 +296,6 @@ const getUserAdminStmt = db.prepare<[string], UserAdminRow>(
 const getUserBetaTesterStmt = db.prepare<[string], UserBetaTesterRow>(
   'SELECT beta_tester FROM users WHERE username = ?',
 );
-
-const getUserForcePasswordResetStmt = db.prepare<[string], UserForcePasswordResetRow>(
-  'SELECT force_password_reset FROM users WHERE username = ?',
-);
-
-const setUserForcePasswordResetStmt = db.prepare<{ username: string; value: number }>(`
-  UPDATE users SET force_password_reset = @value WHERE username = @username
-`);
-
-const clearUserForcePasswordResetStmt = db.prepare<[string], unknown>(`
-  UPDATE users SET force_password_reset = 0 WHERE username = ?
-`);
 
 const renameUserPinStmt = db.prepare<{ fromUsername: string; toUsername: string }>(`
   UPDATE users
@@ -353,27 +355,6 @@ export function updateLoginPin(username: string, pin: string): boolean {
   return result.changes > 0;
 }
 
-/** Whether the account must set a new login password before using the app. */
-export function isUserForcePasswordReset(username: string): boolean {
-  const row = getUserForcePasswordResetStmt.get(username);
-  return row?.force_password_reset === 1;
-}
-
-export function setUserForcePasswordReset(username: string, force: boolean): void {
-  setUserForcePasswordResetStmt.run({ username, value: force ? 1 : 0 });
-}
-
-export function clearUserForcePasswordReset(username: string): void {
-  clearUserForcePasswordResetStmt.run(username);
-}
-
-/** Sets login PIN and clears `force_password_reset`. Returns whether a user row existed. */
-export function completeForcedPasswordReset(username: string, pin: string): boolean {
-  const updated = updateLoginPin(username, pin);
-  if (updated) clearUserForcePasswordReset(username);
-  return updated;
-}
-
 export function renameUserPin(fromUsername: string, toUsername: string): void {
   renameUserPinStmt.run({ fromUsername, toUsername });
   renameSessionsUsername(fromUsername, toUsername);
@@ -430,9 +411,10 @@ export function recordPasswordResetRequest(
 
 export function invalidateActivePasswordResetTokens(
   userId: string,
+  purpose: string,
   usedAt = Math.floor(Date.now() / 1000),
 ): void {
-  invalidateActivePasswordResetTokensStmt.run({ userId, usedAt });
+  invalidateActivePasswordResetTokensStmt.run({ userId, purpose, usedAt });
 }
 
 export function insertPasswordResetToken(input: {
@@ -440,6 +422,7 @@ export function insertPasswordResetToken(input: {
   tokenHash: string;
   expiresAt: number;
   createdAt: number;
+  purpose: string;
 }): number {
   const result = insertPasswordResetTokenStmt.run(input);
   return Number(result.lastInsertRowid);
@@ -448,10 +431,10 @@ export function insertPasswordResetToken(input: {
 export function findValidPasswordResetToken(
   tokenHash: string,
   nowSec = Math.floor(Date.now() / 1000),
-): { id: number; userId: string } | null {
+): { id: number; userId: string; purpose: string } | null {
   const row = findValidPasswordResetTokenStmt.get(tokenHash, nowSec);
   if (!row) return null;
-  return { id: row.id, userId: row.user_id };
+  return { id: row.id, userId: row.user_id, purpose: row.purpose };
 }
 
 export function markPasswordResetTokenUsed(

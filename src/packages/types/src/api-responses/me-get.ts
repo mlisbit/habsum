@@ -31,11 +31,6 @@ export type MeGetLoggedIn = {
    * daily selection or summation events yet.
    */
   entitlements: ProductEntitlement[];
-  /**
-   * When true, the client must send the user to `/users/:user/new-password` before other app
-   * routes (set after admin or email recovery issues a temporary password).
-   */
-  forcePasswordReset: boolean;
   /** First 8 characters of the session id (e.g. `OUC_a1b2` for operate-under sessions). */
   sessionTokenPrefix: string;
 };

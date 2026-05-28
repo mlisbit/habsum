@@ -44,9 +44,11 @@ type CreatedUserCredentials = {
   user: string;
   password: string;
   email: string;
+  displayName?: string;
+  inviteEmailSent?: boolean;
 };
 
-type AddUserModalProps = {
+type InviteUserModalProps = {
   onCreated: (credentials: CreatedUserCredentials) => void;
   onClose: () => void;
 };
@@ -110,7 +112,7 @@ function UserCreatedCredentialsModal({
   return (
     <UserCredentialsModal
       title="Account created"
-      description="Share these login details with the user. They will be asked to choose a new password on first sign-in."
+      description="Share these login details with the user."
       user={user}
       password={password}
       email={email}
@@ -119,41 +121,93 @@ function UserCreatedCredentialsModal({
   );
 }
 
-function AddUserModal({ onCreated, onClose }: AddUserModalProps) {
+function UserInvitedModal({
+  email,
+  displayName,
+  onClose,
+}: {
+  email: string;
+  displayName: string;
+  onClose: () => void;
+}) {
+  return (
+    <>
+      <ModalHeader>Invite sent</ModalHeader>
+      <ModalBody className="developer-page__add-user-modal">
+        <p className="text-light text-b-m">
+          An invite email was sent to {email} for {displayName}. They can set their password from
+          the link in that message.
+        </p>
+      </ModalBody>
+      <ModalActions>
+        <Button type="primary" size="medium" text="Done" onClick={onClose} />
+      </ModalActions>
+    </>
+  );
+}
+
+function InviteUserModal({ onCreated, onClose }: InviteUserModalProps) {
+  const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const trimmedEmail = email.trim();
+  const trimmedDisplayName = displayName.trim();
   const canCreate = isPlausibleEmail(trimmedEmail);
+  const canSendInvite = canCreate && trimmedDisplayName !== '';
 
-  const handleCreate = async () => {
+  const submit = async (sendInviteEmail: boolean) => {
     const nextEmail = trimmedEmail.toLowerCase();
-    if (!isPlausibleEmail(nextEmail) || isCreating) return;
+    if (!isPlausibleEmail(nextEmail) || isSubmitting) return;
+    if (sendInviteEmail && trimmedDisplayName === '') return;
 
     setError(null);
-    setIsCreating(true);
+    setIsSubmitting(true);
     try {
-      const res = await createUser(nextEmail);
-      onCreated({ user: res.user, password: res.password, email: nextEmail });
+      const res = await createUser(nextEmail, {
+        displayName: trimmedDisplayName || undefined,
+        sendInviteEmail,
+      });
+      onCreated({
+        user: res.user,
+        password: res.password,
+        email: nextEmail,
+        displayName: trimmedDisplayName || undefined,
+        inviteEmailSent: res.inviteEmailSent,
+      });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'failed to create user');
     } finally {
-      setIsCreating(false);
+      setIsSubmitting(false);
     }
   };
 
   return (
     <>
-      <ModalHeader>Add user</ModalHeader>
+      <ModalHeader>Invite user</ModalHeader>
       <ModalBody className="developer-page__add-user-modal">
         <p className="text-light text-b-m">
-          Enter an email address. A username and temporary password will be generated automatically.
+          Enter a display name and email address. Use Create to share a temporary password manually,
+          or Send email to deliver a setup link.
         </p>
         <Input
           size="small"
           className="developer-page__add-user-input"
+          placeholder="Display name"
+          disabled={isSubmitting}
+          dismissable
+          submittable={false}
+          autoCapitalize="words"
+          autoCorrect="off"
+          spellCheck={false}
+          autoComplete="name"
+          onChange={setDisplayName}
+        />
+        <Input
+          size="small"
+          className="developer-page__add-user-input"
           placeholder="Email"
-          disabled={isCreating}
+          disabled={isSubmitting}
           dismissable
           submittable={false}
           autoCapitalize="none"
@@ -170,16 +224,24 @@ function AddUserModal({ onCreated, onClose }: AddUserModalProps) {
           type="secondary"
           size="medium"
           text="Cancel"
-          disabled={isCreating}
+          disabled={isSubmitting}
           className="mr-2"
           onClick={onClose}
         />
         <Button
+          type="secondary"
+          size="medium"
+          text={isSubmitting ? 'Creating…' : 'Create'}
+          disabled={isSubmitting || !canCreate}
+          className="mr-2"
+          onClick={() => void submit(false)}
+        />
+        <Button
           type="primary"
           size="medium"
-          text={isCreating ? 'Creating…' : 'Create'}
-          disabled={isCreating || !canCreate}
-          onClick={() => void handleCreate()}
+          text={isSubmitting ? 'Sending…' : 'Send email'}
+          disabled={isSubmitting || !canSendInvite}
+          onClick={() => void submit(true)}
         />
       </ModalActions>
     </>
@@ -243,7 +305,7 @@ function ResetPasswordModal({ targetUsername, onDone, onClose }: ManageUserModal
   return (
     <UserCredentialsModal
       title="New password"
-      description={`A new temporary password was generated for ${targetUsername}. Share it securely; they must choose a new password on next sign-in.`}
+      description={`A new temporary password was generated for ${targetUsername}. Share it securely.`}
       user={credentials.user}
       password={credentials.password}
       onClose={onClose}
@@ -418,16 +480,29 @@ export default function UserSettingsDeveloper() {
           actions={
             <Button
               type="secondary"
-              text="Add user"
+              text="Invite user"
               onClick={() => {
                 setUserToolStatus(null);
                 present({
                   content: (
-                    <AddUserModal
+                    <InviteUserModal
                       onCreated={(credentials) => {
                         closeModal();
-                        setUserToolStatus(`Created user "${credentials.user}".`);
                         void loadUsers();
+                        if (credentials.inviteEmailSent && credentials.displayName) {
+                          setUserToolStatus(`Invite sent to ${credentials.email}.`);
+                          present({
+                            content: (
+                              <UserInvitedModal
+                                email={credentials.email}
+                                displayName={credentials.displayName}
+                                onClose={closeModal}
+                              />
+                            ),
+                          });
+                          return;
+                        }
+                        setUserToolStatus(`Created user "${credentials.user}".`);
                         present({
                           content: (
                             <UserCreatedCredentialsModal {...credentials} onClose={closeModal} />

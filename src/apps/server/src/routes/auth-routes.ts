@@ -17,13 +17,13 @@ import { listUsers } from '../config.js';
 import {
   ensureUserPins,
   getUserProfile,
-  isUserForcePasswordReset,
   isOucSessionId,
   revokeUserSession,
   getUsernameForSession,
   resolveUsernameByLoginId,
   passwordResetRetryAfterSeconds,
   recordPasswordResetRequest,
+  createUserSession,
 } from '../db.js';
 import { entitlementsForUser } from '../entitlements.js';
 import { sendPasswordResetEmail } from '../password-reset-email.js';
@@ -34,7 +34,12 @@ import {
   consumePasswordResetToken,
 } from '../password-reset-token.js';
 import { isNewLoginPasswordAllowed, resetLoginPassword } from '../reset-login-password.js';
-import { appendClearSessionCookie, getSessionCookieValue } from '../session-cookie.js';
+import {
+  appendClearSessionCookie,
+  appendSessionCookie,
+  getSessionCookieValue,
+  sessionTtlSeconds,
+} from '../session-cookie.js';
 import { getOucSessionHeader, resolveActiveSessionId } from '../session-request.js';
 
 export const authRouter = Router();
@@ -62,7 +67,6 @@ authRouter.get('/auth/me', (req: Request, res: Response) => {
     email: profile.email ?? '',
     createdAt: accountCreatedAtToApi(profile.createdAt),
     entitlements: entitlementsForUser(user),
-    forcePasswordReset: isUserForcePasswordReset(user),
     sessionTokenPrefix: sid!.slice(0, 8),
   };
   return res.json(body);
@@ -96,7 +100,7 @@ authRouter.post(
         return res.json(body);
       }
 
-      const { token, id: tokenId } = issuePasswordResetToken(username);
+      const { token, id: tokenId } = issuePasswordResetToken(username, 'reset');
       try {
         await sendPasswordResetEmail(username, email, token);
         recordPasswordResetRequest(username);
@@ -126,7 +130,11 @@ authRouter.get('/auth/reset-password', (req: Request, res: Response) => {
     return res.status(400).json({ error: 'invalid or expired reset link' });
   }
 
-  const body: ResetPasswordValidateResponse = { ok: true };
+  const body: ResetPasswordValidateResponse = {
+    ok: true,
+    purpose: row.purpose,
+    ...(row.purpose === 'invite' ? { displayName: getUserProfile(row.userId).displayName } : {}),
+  };
   return res.json(body);
 });
 
@@ -157,6 +165,14 @@ authRouter.post(
     }
 
     resetLoginPassword(row.userId, newPin);
+
+    if (row.purpose === 'invite') {
+      ensureUserPins([row.userId]);
+      const sessionId = createUserSession(row.userId, sessionTtlSeconds());
+      appendSessionCookie(res, sessionId);
+      const body: ResetPasswordResponse = { ok: true, user: row.userId };
+      return res.json(body);
+    }
 
     const body: ResetPasswordResponse = { ok: true };
     return res.json(body);
