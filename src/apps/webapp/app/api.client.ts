@@ -41,6 +41,7 @@ import type {
 } from '@habsum/types/api-responses/ouc-post';
 import { toDateKeyWithTime } from '@habsum/utils';
 import { oucSessionRequestHeaders, clearOucSessionToken } from '~/ouc.client';
+import { WEBAPP_VERSION } from '~/version';
 
 export type {
   ApiErrorBody,
@@ -133,6 +134,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
     headers: {
       'content-type': 'application/json',
+      'x-habsum-web-version': WEBAPP_VERSION,
       ...oucSessionRequestHeaders(),
       ...(init?.headers ?? {}),
     },

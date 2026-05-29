@@ -78,6 +78,12 @@ if (!usersTableHasColumn('beta_tester')) {
 if (!usersTableHasColumn('force_password_reset')) {
   db.exec('ALTER TABLE users ADD COLUMN force_password_reset INTEGER NOT NULL DEFAULT 0');
 }
+if (!usersTableHasColumn('last_login_at')) {
+  db.exec('ALTER TABLE users ADD COLUMN last_login_at INTEGER');
+}
+if (!usersTableHasColumn('web_and_api_version')) {
+  db.exec('ALTER TABLE users ADD COLUMN web_and_api_version TEXT');
+}
 
 function usersThemeColumnIsNotNull(): boolean {
   const cols = db.prepare("PRAGMA table_info('users')").all() as Array<{
@@ -100,15 +106,19 @@ function migrateUsersThemeToNullable(): void {
       email TEXT,
       created_at TEXT,
       beta_tester INTEGER NOT NULL DEFAULT 1,
-      force_password_reset INTEGER NOT NULL DEFAULT 0
+      force_password_reset INTEGER NOT NULL DEFAULT 0,
+      last_login_at INTEGER,
+      web_and_api_version TEXT
     );
 
     INSERT INTO users_theme_nullable (
-      username, pin, admin, display_name, theme, email, created_at, beta_tester, force_password_reset
+      username, pin, admin, display_name, theme, email, created_at, beta_tester,
+      force_password_reset, last_login_at, web_and_api_version
     )
     SELECT
       username, pin, admin, display_name, theme, email, created_at,
-      COALESCE(beta_tester, 1), COALESCE(force_password_reset, 0)
+      COALESCE(beta_tester, 1), COALESCE(force_password_reset, 0), last_login_at,
+      web_and_api_version
     FROM users;
 
     DROP TABLE users;
@@ -235,6 +245,13 @@ type UserProfileCols = {
   email: string | null;
   created_at: string;
 };
+type UserListRow = {
+  username: string;
+  display_name: string | null;
+  email: string | null;
+  last_login_at: number | null;
+  web_and_api_version: string | null;
+};
 
 const insertUserStmt = db.prepare<{
   username: string;
@@ -344,6 +361,29 @@ const renameUserPinStmt = db.prepare<{ fromUsername: string; toUsername: string 
 
 const deleteUserPinStmt = db.prepare<[string], unknown>('DELETE FROM users WHERE username = ?');
 
+const recordUserLoginMetadataStmt = db.prepare<{
+  username: string;
+  lastLoginAt: number;
+  webAndApiVersion: string;
+}>(`
+  UPDATE users
+  SET
+    last_login_at = @lastLoginAt,
+    web_and_api_version = @webAndApiVersion
+  WHERE username = @username
+`);
+
+const listUserRowsStmt = db.prepare<[], UserListRow>(`
+  SELECT username, display_name, email, last_login_at, web_and_api_version
+  FROM users
+`);
+
+const countUserEventsStmt = db.prepare<[string, string], { event_count: number }>(`
+  SELECT
+    (SELECT COUNT(*) FROM habit_summation_events WHERE user = ?) +
+    (SELECT COUNT(*) FROM habit_daily_selects WHERE user = ?) AS event_count
+`);
+
 export function ensureUserPins(usernames: string[], defaultPin = '0'): void {
   const createdAt = new Date().toISOString();
   const storedPin = hashPassword(defaultPin);
@@ -413,6 +453,34 @@ export function isUserPinValid(username: string, pin: string): boolean {
     updateLoginPin(username, pin);
   }
   return true;
+}
+
+export function recordUserLoginMetadata(
+  username: string,
+  webAndApiVersion: string,
+  lastLoginAt = Math.floor(Date.now() / 1000),
+): void {
+  recordUserLoginMetadataStmt.run({ username, lastLoginAt, webAndApiVersion });
+}
+
+export function listUserRows(): Array<{
+  username: string;
+  displayName: string | null;
+  email: string | null;
+  lastLoginAt: number | null;
+  webAndApiVersion: string | null;
+}> {
+  return listUserRowsStmt.all().map((row) => ({
+    username: row.username,
+    displayName: row.display_name,
+    email: row.email,
+    lastLoginAt: row.last_login_at,
+    webAndApiVersion: row.web_and_api_version,
+  }));
+}
+
+export function countUserEvents(username: string): number {
+  return countUserEventsStmt.get(username, username)?.event_count ?? 0;
 }
 
 /** Maps a login id (YAML username or stored email) to the account username. */

@@ -5,12 +5,18 @@ import type {
   ListUsersResponse,
 } from '@habsum/types/common/misc';
 import type { CreateOucSessionResponse } from '@habsum/types/api-responses/ouc-post';
-import { createUserFromSampleConfig, deleteUserConfigFile, listUsers } from '../config.js';
 import {
+  createUserFromSampleConfig,
+  deleteUserConfigFile,
+  listUsers,
+  loadUserConfig,
+} from '../config.js';
+import {
+  countUserEvents,
   createOucUserSession,
   deleteUserPin,
   ensureUserPins,
-  isEmailUsedByOtherUser,
+  listUserRows,
   patchUserProfile,
   purgeUserData,
   resolveUsernameByLoginId,
@@ -24,6 +30,7 @@ import { sessionTtlSeconds } from '../session-cookie.js';
 import { sendInviteEmail } from '../invite-email.js';
 import { generateTemporaryPassword } from '../temporary-password.js';
 import { allocateUsernameForEmail } from '../username-from-email.js';
+import { entitlementsForUser } from '../entitlements.js';
 
 function parseOptionalDisplayName(body: CreateUserRequest | undefined): {
   displayName?: string | null;
@@ -44,11 +51,29 @@ function rollbackCreatedUser(username: string): void {
   deleteUserPin(username);
 }
 
+function countConfiguredHabits(username: string): number {
+  return loadUserConfig(username)?.habits.length ?? 0;
+}
+
 export const usersAdminRouter = Router();
 
 usersAdminRouter.get('/users', requireAdmin, (_req: Request, res: Response) => {
-  const users = listUsers();
-  ensureUserPins(users);
+  const usernames = listUsers();
+  ensureUserPins(usernames);
+  const rowsByUsername = new Map(listUserRows().map((row) => [row.username, row]));
+  const users: ListUsersResponse['users'] = usernames.map((username) => {
+    const row = rowsByUsername.get(username);
+    return {
+      username,
+      displayName: row?.displayName ?? null,
+      email: row?.email ?? '',
+      lastLoginAt: row?.lastLoginAt ?? null,
+      webAndApiVersion: row?.webAndApiVersion ?? null,
+      habitCount: countConfiguredHabits(username),
+      eventCount: countUserEvents(username),
+      entitlements: entitlementsForUser(username),
+    };
+  });
   const body: ListUsersResponse = { users };
   res.json(body);
 });

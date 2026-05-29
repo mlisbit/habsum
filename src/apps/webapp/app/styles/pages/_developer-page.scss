@@ -7,10 +7,6 @@
   min-width: 0;
 }
 
-.developer-page__user-tools-status {
-  margin-block-end: functions.spacing(2);
-}
-
 .developer-page__users-list {
   list-style: none;
   padding: 0;
@@ -34,9 +30,59 @@
   }
 }
 
-.developer-page__users-list-name {
+.developer-page__users-list-summary {
   min-width: 0;
   flex: 1;
+  display: flex;
+  gap: functions.spacing(1);
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.developer-page__users-list-name,
+.developer-page__users-list-meta {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.developer-page__users-list-name {
+  appearance: none;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    text-decoration: underline;
+  }
+}
+
+.developer-page__user-details-modal {
+  margin-block: functions.spacing(3);
+}
+
+.developer-page__user-details {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: functions.spacing(2);
+}
+
+.developer-page__user-details-row {
+  display: grid;
+  grid-template-columns: minmax(0, 140px) 1fr;
+  gap: functions.spacing(1) functions.spacing(2);
+  align-items: baseline;
+  margin: 0;
+}
+
+.developer-page__user-details-term,
+.developer-page__user-details-value {
+  margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .developer-page__users-list-actions {

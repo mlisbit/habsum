@@ -1,10 +1,20 @@
 import request from 'supertest';
+import { ProductEntitlement } from '@habsum/types/common/entitlement';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../app.js';
-import { ensureConfigLayout } from '../config.js';
-import { countAdmins, createInitialAdminUser, createUserSession, ensureUserPins } from '../db.js';
+import { createUserFromSampleConfig, ensureConfigLayout } from '../config.js';
+import {
+  addToTotal,
+  countAdmins,
+  createInitialAdminUser,
+  createUserSession,
+  ensureUserPins,
+  patchUserProfile,
+  setSelect,
+} from '../db.js';
 import * as inviteEmail from '../invite-email.js';
 import { SESSION_COOKIE_NAME } from '../session-cookie.js';
+import { PACKAGE_VERSION } from '../version.js';
 
 function adminSessionCookie(): string {
   ensureConfigLayout();
@@ -77,5 +87,59 @@ describe('POST /users', () => {
 
     expect(res.status).toBe(400);
     expect(res.body).toEqual({ error: 'displayName is required to send invite email' });
+  });
+});
+
+describe('GET /users', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('includes null last login until /auth/me resolves, then returns unix seconds', async () => {
+    ensureConfigLayout();
+    createUserFromSampleConfig('login-audit-user');
+    ensureUserPins(['login-audit-user']);
+    patchUserProfile('login-audit-user', {
+      displayName: 'Login Audit',
+      email: 'login-audit@example.com',
+    });
+    addToTotal('login-audit-user', 'push ups', '2026-05-28', 10, "datetime('now')");
+    setSelect('login-audit-user', 'soda consumption', '2026-05-28', 'none');
+    const app = createApp();
+
+    const beforeLoginRes = await request(app).get('/users').set('Cookie', adminSessionCookie());
+    expect(beforeLoginRes.status).toBe(200);
+    expect(beforeLoginRes.body.users).toContainEqual({
+      username: 'login-audit-user',
+      displayName: 'Login Audit',
+      email: 'login-audit@example.com',
+      lastLoginAt: null,
+      webAndApiVersion: null,
+      habitCount: 3,
+      eventCount: 2,
+      entitlements: [ProductEntitlement.BETA_TESTER],
+    });
+
+    const userSession = createUserSession('login-audit-user', 3600);
+    vi.spyOn(Date, 'now').mockReturnValue(1_900_000_000_000);
+
+    await request(app)
+      .get('/auth/me')
+      .set('Cookie', `${SESSION_COOKIE_NAME}=${userSession}`)
+      .set('x-habsum-web-version', PACKAGE_VERSION)
+      .expect(200);
+
+    const afterLoginRes = await request(app).get('/users').set('Cookie', adminSessionCookie());
+    expect(afterLoginRes.status).toBe(200);
+    expect(afterLoginRes.body.users).toContainEqual({
+      username: 'login-audit-user',
+      displayName: 'Login Audit',
+      email: 'login-audit@example.com',
+      lastLoginAt: 1_900_000_000,
+      webAndApiVersion: PACKAGE_VERSION,
+      habitCount: 3,
+      eventCount: 2,
+      entitlements: [ProductEntitlement.BETA_TESTER],
+    });
   });
 });

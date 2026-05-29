@@ -12,7 +12,22 @@ export type ServerTimeResponse = {
   timezone: string;
 };
 
-export type ListUsersResponse = { users: string[] };
+export type ListUserItem = {
+  username: string;
+  displayName: string | null;
+  email: string;
+  /** Unix timestamp in seconds. `null` means `/auth/me` has never resolved for this user. */
+  lastLoginAt: number | null;
+  /** Last API/web version pair observed when `/auth/me` resolved for this user. */
+  webAndApiVersion: string | null;
+  /** Number of habits currently configured in the user's YAML. */
+  habitCount: number;
+  /** Number of stored habit activity rows for this user. */
+  eventCount: number;
+  entitlements: ProductEntitlement[];
+};
+
+export type ListUsersResponse = { users: ListUserItem[] };
 
 /** POST /users — admin creates an account from email (server assigns username + password). */
 export type CreateUserRequest = {

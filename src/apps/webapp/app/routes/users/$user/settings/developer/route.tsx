@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from '@remix-run/react';
+import type { ListUserItem } from '@habsum/types/common/misc';
 import {
   adminDeleteUser,
   adminResetUserPassword,
@@ -18,6 +19,7 @@ import type { IconName } from '~/core-components/Icon';
 import { InfoText } from '~/core-components/InfoText';
 import { Input } from '~/core-components/Input';
 import { ModalActions, ModalBody, ModalHeader, useModal } from '~/context/modal';
+import { useToast } from '~/context/toast';
 
 const clockFormat: Intl.DateTimeFormatOptions = {
   weekday: 'long',
@@ -32,6 +34,83 @@ const clockFormat: Intl.DateTimeFormatOptions = {
 
 function formatInstantInZone(iso: string, timeZone: string) {
   return new Date(iso).toLocaleString(undefined, { ...clockFormat, timeZone });
+}
+
+function formatUnixTimeLocal(unixSeconds: number | null): string {
+  if (unixSeconds == null) return 'Never';
+  const d = new Date(unixSeconds * 1000);
+  if (Number.isNaN(d.getTime())) return 'Unknown';
+  return new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(d);
+}
+
+function formatCount(value: number, singular: string): string {
+  return `${value} ${singular}${value === 1 ? '' : 's'}`;
+}
+
+function formatEntitlements(entitlements: readonly string[]): string {
+  return entitlements.length > 0 ? entitlements.join(', ') : 'None';
+}
+
+function UserDetailsModal({ user, onClose }: { user: ListUserItem; onClose: () => void }) {
+  const displayName = user.displayName || user.username;
+
+  return (
+    <>
+      <ModalHeader>{displayName}</ModalHeader>
+      <ModalBody className="developer-page__user-details-modal">
+        <dl className="developer-page__user-details">
+          <div className="developer-page__user-details-row">
+            <dt className="developer-page__user-details-term text-b-m text-light">Username</dt>
+            <dd className="developer-page__user-details-value text-b-m">{user.username}</dd>
+          </div>
+          <div className="developer-page__user-details-row">
+            <dt className="developer-page__user-details-term text-b-m text-light">Email</dt>
+            <dd className="developer-page__user-details-value text-b-m">
+              {user.email || 'Not set'}
+            </dd>
+          </div>
+          <div className="developer-page__user-details-row">
+            <dt className="developer-page__user-details-term text-b-m text-light">Display name</dt>
+            <dd className="developer-page__user-details-value text-b-m">
+              {user.displayName || 'Not set'}
+            </dd>
+          </div>
+          <div className="developer-page__user-details-row">
+            <dt className="developer-page__user-details-term text-b-m text-light">Last login</dt>
+            <dd className="developer-page__user-details-value text-b-m">
+              {formatUnixTimeLocal(user.lastLoginAt)}
+            </dd>
+          </div>
+          <div className="developer-page__user-details-row">
+            <dt className="developer-page__user-details-term text-b-m text-light">Habits</dt>
+            <dd className="developer-page__user-details-value text-b-m">{user.habitCount}</dd>
+          </div>
+          <div className="developer-page__user-details-row">
+            <dt className="developer-page__user-details-term text-b-m text-light">Events</dt>
+            <dd className="developer-page__user-details-value text-b-m">{user.eventCount}</dd>
+          </div>
+          <div className="developer-page__user-details-row">
+            <dt className="developer-page__user-details-term text-b-m text-light">Entitlements</dt>
+            <dd className="developer-page__user-details-value text-b-m">
+              {formatEntitlements(user.entitlements)}
+            </dd>
+          </div>
+          <div className="developer-page__user-details-row">
+            <dt className="developer-page__user-details-term text-b-m text-light">Version</dt>
+            <dd className="developer-page__user-details-value text-b-m">
+              {user.webAndApiVersion ?? 'Unknown'}
+            </dd>
+          </div>
+        </dl>
+      </ModalBody>
+      <ModalActions>
+        <Button type="primary" size="medium" text="Done" onClick={onClose} />
+      </ModalActions>
+    </>
+  );
 }
 
 function isPlausibleEmail(value: string): boolean {
@@ -256,26 +335,22 @@ type ManageUserModalProps = {
 
 function ResetPasswordModal({ targetUsername, onDone, onClose }: ManageUserModalProps) {
   const [credentials, setCredentials] = useState<{ user: string; password: string } | null>(null);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        const res = await adminResetUserPassword(targetUsername);
-        if (cancelled) return;
-        setCredentials({ user: res.user, password: res.password });
-        onDone();
-      } catch (e) {
-        if (!cancelled) {
-          setError(e instanceof Error ? e.message : 'Failed to reset password');
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [targetUsername]);
+  const handleReset = async () => {
+    setError(null);
+    setBusy(true);
+    try {
+      const res = await adminResetUserPassword(targetUsername);
+      setCredentials({ user: res.user, password: res.password });
+      onDone();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Failed to reset password');
+    } finally {
+      setBusy(false);
+    }
+  };
 
   if (error) {
     return (
@@ -285,7 +360,21 @@ function ResetPasswordModal({ targetUsername, onDone, onClose }: ManageUserModal
           <InfoText variant="error">{error}</InfoText>
         </ModalBody>
         <ModalActions>
-          <Button type="primary" size="medium" text="Close" onClick={onClose} />
+          <Button
+            type="secondary"
+            size="medium"
+            text="Cancel"
+            disabled={busy}
+            className="mr-2"
+            onClick={onClose}
+          />
+          <Button
+            type="primary"
+            size="medium"
+            text={busy ? 'Changing…' : 'Try again'}
+            disabled={busy}
+            onClick={() => void handleReset()}
+          />
         </ModalActions>
       </>
     );
@@ -296,8 +385,31 @@ function ResetPasswordModal({ targetUsername, onDone, onClose }: ManageUserModal
       <>
         <ModalHeader>Change password</ModalHeader>
         <ModalBody className="developer-page__add-user-modal">
-          <p className="text-light text-b-m">Generating a new password for {targetUsername}…</p>
+          <p className="text-b-m">
+            Generate a new temporary password for{' '}
+            <strong className="text-bold">{targetUsername}</strong>?
+          </p>
+          <p className="text-light text-b-m">
+            Their current password will stop working immediately. Share the new password securely.
+          </p>
         </ModalBody>
+        <ModalActions>
+          <Button
+            type="secondary"
+            size="medium"
+            text="Cancel"
+            disabled={busy}
+            className="mr-2"
+            onClick={onClose}
+          />
+          <Button
+            type="primary"
+            size="medium"
+            text={busy ? 'Changing…' : 'Change password'}
+            disabled={busy}
+            onClick={() => void handleReset()}
+          />
+        </ModalActions>
       </>
     );
   }
@@ -396,11 +508,11 @@ export default function UserSettingsDeveloper() {
   const [developerData, setDeveloperData] = useState<DeveloperGetResponse | null>(null);
   const [developerError, setDeveloperError] = useState<string | null>(null);
   const [browserNow, setBrowserNow] = useState(() => new Date());
-  const [userToolStatus, setUserToolStatus] = useState<string | null>(null);
-  const [users, setUsers] = useState<string[] | null>(null);
+  const [users, setUsers] = useState<ListUserItem[] | null>(null);
   const [usersError, setUsersError] = useState<string | null>(null);
   const [canViewDeveloper, setCanViewDeveloper] = useState<boolean | null>(null);
   const { present, closeModal } = useModal();
+  const { showToast } = useToast();
 
   const loadUsers = useCallback(async () => {
     setUsersError(null);
@@ -482,7 +594,6 @@ export default function UserSettingsDeveloper() {
               type="secondary"
               text="Invite user"
               onClick={() => {
-                setUserToolStatus(null);
                 present({
                   content: (
                     <InviteUserModal
@@ -490,7 +601,10 @@ export default function UserSettingsDeveloper() {
                         closeModal();
                         void loadUsers();
                         if (credentials.inviteEmailSent && credentials.displayName) {
-                          setUserToolStatus(`Invite sent to ${credentials.email}.`);
+                          showToast({
+                            type: 'success',
+                            message: `Invite sent to ${credentials.email}.`,
+                          });
                           present({
                             content: (
                               <UserInvitedModal
@@ -502,7 +616,10 @@ export default function UserSettingsDeveloper() {
                           });
                           return;
                         }
-                        setUserToolStatus(`Created user "${credentials.user}".`);
+                        showToast({
+                          type: 'success',
+                          message: `Created user "${credentials.user}".`,
+                        });
                         present({
                           content: (
                             <UserCreatedCredentialsModal {...credentials} onClose={closeModal} />
@@ -518,11 +635,6 @@ export default function UserSettingsDeveloper() {
           }
         />
         <div className="card-padding">
-          {userToolStatus ? (
-            <p className="text-light text-b-m developer-page__user-tools-status">
-              {userToolStatus}
-            </p>
-          ) : null}
           {usersError ? (
             <p className="text-light text-b-m">Could not load users: {usersError}</p>
           ) : users == null ? (
@@ -531,11 +643,34 @@ export default function UserSettingsDeveloper() {
             <p className="text-light text-b-m">No users found.</p>
           ) : (
             <ul className="developer-page__users-list">
-              {users.map((username) => {
+              {users.map((userRow) => {
+                const { username } = userRow;
+                const primaryName = userRow.displayName || username;
+                const summaryParts = [
+                  userRow.email || 'No email',
+                  `Last login: ${formatUnixTimeLocal(userRow.lastLoginAt)}`,
+                  formatCount(userRow.habitCount, 'habit'),
+                  formatCount(userRow.eventCount, 'event'),
+                ];
                 const isCurrentUser = username === user;
                 return (
                   <li key={username} className="developer-page__users-list-row">
-                    <span className="developer-page__users-list-name text-b-m">{username}</span>
+                    <div className="developer-page__users-list-summary">
+                      <button
+                        type="button"
+                        className="developer-page__users-list-name text-b-m mr-2"
+                        onClick={() => {
+                          present({
+                            content: <UserDetailsModal user={userRow} onClose={closeModal} />,
+                          });
+                        }}
+                      >
+                        {primaryName}
+                      </button>
+                      <span className="developer-page__users-list-meta text-b-s text-light">
+                        {summaryParts.join(' · ')}
+                      </span>
+                    </div>
                     {!isCurrentUser ? (
                       <div className="developer-page__users-list-actions">
                         <UserRowIconAction
@@ -543,22 +678,24 @@ export default function UserSettingsDeveloper() {
                           icon="user-lock"
                           ariaLabel={`Open operate-under session for ${username}`}
                           onClick={() => {
-                            setUserToolStatus(null);
                             void (async () => {
                               try {
                                 const res = await createOucSession(username);
                                 const opened = openOucWindow(res.user, res.token);
-                                setUserToolStatus(
-                                  opened
+                                showToast({
+                                  type: opened ? 'success' : 'error',
+                                  message: opened
                                     ? `Opened "${username}" in a new operate-under window.`
                                     : `Could not open operate-under window for "${username}". Allow pop-ups and try again.`,
-                                );
+                                });
                               } catch (e) {
-                                setUserToolStatus(
-                                  e instanceof Error
-                                    ? e.message
-                                    : 'Failed to create operate-under session.',
-                                );
+                                showToast({
+                                  type: 'error',
+                                  message:
+                                    e instanceof Error
+                                      ? e.message
+                                      : 'Failed to create operate-under session.',
+                                });
                               }
                             })();
                           }}
@@ -568,15 +705,15 @@ export default function UserSettingsDeveloper() {
                           icon="key-round"
                           ariaLabel={`Change password for ${username}`}
                           onClick={() => {
-                            setUserToolStatus(null);
                             present({
                               content: (
                                 <ResetPasswordModal
                                   targetUsername={username}
                                   onDone={() => {
-                                    setUserToolStatus(
-                                      `Generated a new password for "${username}".`,
-                                    );
+                                    showToast({
+                                      type: 'success',
+                                      message: `Generated a new password for "${username}".`,
+                                    });
                                   }}
                                   onClose={closeModal}
                                 />
@@ -589,13 +726,15 @@ export default function UserSettingsDeveloper() {
                           icon="trash"
                           ariaLabel={`Delete user ${username}`}
                           onClick={() => {
-                            setUserToolStatus(null);
                             present({
                               content: (
                                 <DeleteUserModal
                                   targetUsername={username}
                                   onDone={() => {
-                                    setUserToolStatus(`Deleted user "${username}".`);
+                                    showToast({
+                                      type: 'success',
+                                      message: `Deleted user "${username}".`,
+                                    });
                                     void loadUsers();
                                   }}
                                   onClose={closeModal}

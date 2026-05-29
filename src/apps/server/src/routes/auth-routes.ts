@@ -23,9 +23,11 @@ import {
   resolveUsernameByLoginId,
   passwordResetRetryAfterSeconds,
   recordPasswordResetRequest,
+  recordUserLoginMetadata,
   createUserSession,
 } from '../db.js';
 import { entitlementsForUser } from '../entitlements.js';
+import { PACKAGE_VERSION } from '../version.js';
 import { sendPasswordResetEmail } from '../password-reset-email.js';
 import { isDevelopment } from '../env.js';
 import {
@@ -44,6 +46,20 @@ import { getOucSessionHeader, resolveActiveSessionId } from '../session-request.
 
 export const authRouter = Router();
 
+const WEB_VERSION_HEADER = 'x-habsum-web-version';
+
+function cleanVersion(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed.length > 0 && trimmed.length <= 80 ? trimmed : null;
+}
+
+function webAndApiVersionForRequest(req: Request): string {
+  const webVersion = cleanVersion(req.headers[WEB_VERSION_HEADER]);
+  if (!webVersion || webVersion === PACKAGE_VERSION) return PACKAGE_VERSION;
+  return `web ${webVersion} / api ${PACKAGE_VERSION}`;
+}
+
 authRouter.get('/auth/me', (req: Request, res: Response) => {
   const sid = resolveActiveSessionId(req);
   const user = sid ? getUsernameForSession(sid) : null;
@@ -59,6 +75,7 @@ authRouter.get('/auth/me', (req: Request, res: Response) => {
     return res.json(body);
   }
   ensureUserPins(listUsers());
+  recordUserLoginMetadata(user, webAndApiVersionForRequest(req));
   const profile = getUserProfile(user);
   const body: MeGetResponse = {
     username: user,
