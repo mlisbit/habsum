@@ -47,7 +47,6 @@ export function ConfigHabitQuickAddPills({ values, onChange }: ConfigHabitQuickA
         <DismissablePill
           key={`${label}-${index}`}
           role="listitem"
-          className="text-b-m"
           dismissAriaLabel={`Remove ${label}`}
           onDismiss={() => removeAt(index)}
         >

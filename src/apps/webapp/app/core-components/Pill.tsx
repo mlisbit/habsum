@@ -1,16 +1,9 @@
 // exclusive-bem-block: pill
 import type { ButtonHTMLAttributes, HTMLAttributes, ReactNode } from 'react';
 import { Icon } from '~/core-components/Icon';
-
-function classNames(...values: Array<string | false | null | undefined>) {
-  return values.filter(Boolean).join(' ');
-}
+import { classBuilder } from '~/utils/class-builder';
 
 export type PillSize = 'large' | 'small';
-
-function pillSizeClass(size: PillSize): string {
-  return size === 'small' ? 'pill--small' : 'pill--large';
-}
 
 type TogglePillProps = {
   selected: boolean;
@@ -31,12 +24,13 @@ export function TogglePill({
   return (
     <button
       type={type}
-      className={classNames(
-        'pill',
-        'pill--toggle',
-        pillSizeClass(size),
-        selected && 'pill--selected',
-        className,
+      className={classBuilder(
+        {
+          'pill--selected': selected,
+          'pill--small text-b-s': size === 'small',
+          'pill--large text-b-m': size === 'large',
+        },
+        `pill pill--toggle ${className}`,
       )}
       aria-pressed={selected}
       onClick={() => onToggle(!selected)}
@@ -64,7 +58,13 @@ export function DismissablePill({
 }: DismissablePillProps) {
   return (
     <span
-      className={classNames('pill', 'pill--dismissable', pillSizeClass(size), className)}
+      className={classBuilder(
+        {
+          'pill--small text-b-s': size === 'small',
+          'pill--large text-b-m': size === 'large',
+        },
+        `pill pill--dismissable ${className}`,
+      )}
       {...props}
     >
       <span className="pill__label">{children}</span>

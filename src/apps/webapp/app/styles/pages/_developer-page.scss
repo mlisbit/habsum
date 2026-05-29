@@ -39,25 +39,9 @@
   flex-wrap: wrap;
 }
 
-.developer-page__users-list-name,
 .developer-page__users-list-meta {
   min-width: 0;
   overflow-wrap: anywhere;
-}
-
-.developer-page__users-list-name {
-  appearance: none;
-  border: 0;
-  padding: 0;
-  background: transparent;
-  font: inherit;
-  text-align: start;
-  cursor: pointer;
-
-  &:hover,
-  &:focus-visible {
-    text-decoration: underline;
-  }
 }
 
 .developer-page__user-details-modal {

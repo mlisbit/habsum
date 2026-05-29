@@ -658,7 +658,7 @@ export default function UserSettingsDeveloper() {
                     <div className="developer-page__users-list-summary">
                       <button
                         type="button"
-                        className="developer-page__users-list-name text-b-m mr-2"
+                        className="text-color-link text-b-m mr-2"
                         onClick={() => {
                           present({
                             content: <UserDetailsModal user={userRow} onClose={closeModal} />,

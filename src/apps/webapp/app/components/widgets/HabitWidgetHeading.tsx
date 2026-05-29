@@ -29,11 +29,9 @@ export function HabitWidgetHeading({
 
   return (
     <div className="habit-widget__heading">
-      <h2 className="text-h-l habit-widget__heading-title">
-        <Link className="habit-widget__title text-h-l" to={to}>
-          {habitName}
-        </Link>
-      </h2>
+      <Link className="text-color-link text-h-m" to={to}>
+        {habitName}
+      </Link>
       <Button
         type="tertiary"
         size="medium"

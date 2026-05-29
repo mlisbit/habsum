@@ -6,11 +6,6 @@
   gap: functions.spacing(1);
 }
 
-.habit-widget__heading-title {
-  margin: 0;
-  min-width: 0;
-}
-
 .habit-widget__menu {
   flex-shrink: 0;
 }
@@ -18,16 +13,6 @@
 .habit-widget__heading-actions {
   flex-shrink: 0;
   margin-left: auto;
-}
-
-.habit-widget__title {
-  text-decoration: none;
-  font: inherit;
-  display: inline;
-
-  &:hover {
-    text-decoration: underline;
-  }
 }
 
 .habit-widget--complete {

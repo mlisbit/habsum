@@ -43,7 +43,6 @@ export function ConfigHabitOptionsPills({ options, onChange }: ConfigHabitOption
           key={label}
           size="small"
           role="listitem"
-          className="text-b-s"
           dismissAriaLabel={`Remove ${label}`}
           onDismiss={() => removeOption(label)}
         >
