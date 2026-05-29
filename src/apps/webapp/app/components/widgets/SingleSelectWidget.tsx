@@ -63,7 +63,7 @@ export function SingleSelectWidget({
   }, [present, closeModal, onClearSelection, pending, user, habit.name]);
 
   return (
-    <div className={classBuilder({ 'habit-widget--complete': isComplete }, 'card habit-select')}>
+    <div className={classBuilder({ 'habit-widget--complete': isComplete }, 'card')}>
       <div className="habit-select__row">
         <HabitWidgetHeading
           user={user}

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from '@remix-run/react';
+import type { MetaFunction } from '@remix-run/node';
 import { Calendar, type CalendarDataRender } from '~/components/Calendar';
 import { CellDataDisplay } from '~/components/CellDataDisplay';
 import { CellHoverDisplay } from '~/components/CellHoverDisplay';
@@ -14,6 +15,9 @@ import { useUser } from '~/context/user';
 import { ensureUserSessionForRoute } from '~/utils/user-session-guard';
 import { toDateKey } from '@habsum/utils';
 import { addDays } from '~/utils/date-utils';
+import { userPageTitle } from '~/utils/page-title';
+
+export const meta: MetaFunction = ({ params }) => [{ title: userPageTitle(params.user) }];
 
 type HistoryGetPayload = Awaited<ReturnType<typeof getHabitHistory>>;
 

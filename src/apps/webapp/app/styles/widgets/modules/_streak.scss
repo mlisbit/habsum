@@ -1,13 +1,5 @@
 @use 'functions';
 
-.streak--widget {
-  margin-top: functions.spacing(3);
-  padding: functions.spacing(2);
-  border-radius: var(--border-radius-m);
-  border: 1px solid var(--border-color-faint);
-  background: color-mix(in srgb, var(--background-secondary) 70%, transparent);
-}
-
 .streak__meta-row {
   display: flex;
   flex-flow: column;
@@ -40,18 +32,7 @@
 
 .streak__row {
   display: flex;
-  flex-flow: row nowrap;
-  align-items: center;
-  justify-content: flex-start;
   gap: functions.spacing(1);
-}
-
-.streak__cell {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  cursor: default;
-  flex: 0 0 auto;
 }
 
 .streak__cell--hit {
@@ -66,17 +47,9 @@
 
 .streak__cell-icon {
   .streak__cell--miss & {
-    fill: currentcolor;
+    // stylelint-disable-next-line
+    color: var(--accent-red-1);
   }
-}
-
-.streak__cell--miss {
-  inline-size: 1rem;
-  block-size: 1rem;
-  border-radius: 50%;
-  background: var(--cta-base-background-danger);
-  // stylelint-disable-next-line
-  color: var(--background-primary);
 }
 
 .streak__cell--preview.streak__cell--miss {

@@ -71,16 +71,13 @@ function StreakCell({ dateKey, datum, isToday = false, preview = false }: Streak
   return (
     <Hoverable.Root>
       <Hoverable.Anchor
-        className={classBuilder(
-          {
-            'streak__cell--empty': mod === 'empty',
-            'streak__cell--miss': mod === 'miss',
-            'streak__cell--hit': mod === 'hit',
-            'streak__cell--today': isToday,
-            'streak__cell--preview': preview,
-          },
-          'streak__cell',
-        )}
+        className={classBuilder({
+          'streak__cell--empty': mod === 'empty',
+          'streak__cell--miss': mod === 'miss',
+          'streak__cell--hit': mod === 'hit',
+          'streak__cell--today': isToday,
+          'streak__cell--preview': preview,
+        })}
         role={preview ? undefined : 'listitem'}
         aria-label={`${periodLabel}: ${valueLabel}`}
       >
@@ -116,7 +113,7 @@ export function Streak({ streak, viewDate }: StreakProps) {
   const todayEntry = entries.find(([dateKey]) => dateKey === todayKey);
 
   return (
-    <section className="streak streak--widget" aria-label={`Streak, ${streak.streakText}`}>
+    <section className="card mt-3" aria-label={`Streak, ${streak.streakText}`}>
       <div className="streak__body">
         <div className="flex align-items-center gap-2">
           {todayEntry ? <StreakCell dateKey={todayEntry[0]} datum={todayEntry[1]} preview /> : null}

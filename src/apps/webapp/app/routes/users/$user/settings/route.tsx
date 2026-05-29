@@ -1,4 +1,5 @@
 import { Link, Outlet, useLocation, useNavigate, useParams } from '@remix-run/react';
+import type { MetaFunction } from '@remix-run/node';
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { getUserSession, logout } from '~/api.client';
 import { useUser } from '~/context/user';
@@ -6,6 +7,11 @@ import { ensureUserSessionForRoute } from '~/utils/user-session-guard';
 import { Button } from '~/core-components/Button';
 import { Footer } from '~/components/Footer';
 import { getMediaQuerySnapshot, subscribeToMediaQuery } from '~/utils/media-query-store';
+import { userPageTitle } from '~/utils/page-title';
+
+export const meta: MetaFunction = ({ params }) => [
+  { title: userPageTitle(params.user, 'Settings') },
+];
 
 function useWideSettingsLayout(): boolean {
   return useSyncExternalStore(

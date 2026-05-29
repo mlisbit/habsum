@@ -1,4 +1,5 @@
 import { Link, useNavigate } from '@remix-run/react';
+import type { MetaFunction } from '@remix-run/node';
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { getHabits, logout, patchHabit, type Habit } from '~/api.client';
 import { Footer } from '~/components/Footer';
@@ -12,6 +13,9 @@ import { awaitOucPopupBootstrap, getOucSessionToken } from '~/ouc.client';
 import { useTodayDateKey } from '~/utils/use-today-date-key';
 import { getProgress } from '~/utils/habit-helpers';
 import { getMediaQuerySnapshot, subscribeToMediaQuery } from '~/utils/media-query-store';
+import { userPageTitle } from '~/utils/page-title';
+
+export const meta: MetaFunction = ({ params }) => [{ title: userPageTitle(params.user) }];
 
 function useWideHabitsLayout(): boolean {
   return useSyncExternalStore(

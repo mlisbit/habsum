@@ -12,8 +12,8 @@ html[data-theme='dark'] {
   --background-secondary: #161922;
   --background-tertiary: #20242e;
   --background-disabled: #272b36;
-  --background-warning: color-mix(in srgb, var(--accent-red-1) 30%, var(--background-disabled));
-  --background-input: color-mix(in srgb, var(--background-secondary) 86%, rgb(255 255 255) 14%);
+  --background-warning: #5b333a;
+  --background-input: #161922;
   --background-modal-backdrop: rgb(0 0 0 / 45%);
 
   // text colors
