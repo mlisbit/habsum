@@ -1,6 +1,6 @@
 {
   "name": "habsum",
-  "version": "0.1.14",
+  "version": "0.1.15",
   "private": true,
   "description": "Habit tracker - lightweight Express server + Remix webapp",
   "workspaces": [
