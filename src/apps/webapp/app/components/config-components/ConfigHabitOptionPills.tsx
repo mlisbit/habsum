@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Button } from '~/core-components/Button';
 import { Input } from '~/core-components/Input';
-import { DismissablePill, TogglePill } from '~/core-components/Pill';
+import { EditablePill, TogglePill } from '~/core-components/Pill';
 
 type ConfigHabitOptionsPillsProps = {
   options: string[];
@@ -15,6 +15,14 @@ export function ConfigHabitOptionsPills({ options, onChange }: ConfigHabitOption
 
   const removeOption = (label: string) => {
     onChange(options.filter((opt) => opt !== label));
+  };
+
+  const renameOption = (label: string, nextRaw: string): boolean => {
+    const next = nextRaw.trim();
+    if (next === '' || next === label) return true;
+    if (options.includes(next)) return false;
+    onChange(options.map((opt) => (opt === label ? next : opt)));
+    return true;
   };
 
   const cancelAdd = () => {
@@ -39,15 +47,15 @@ export function ConfigHabitOptionsPills({ options, onChange }: ConfigHabitOption
   return (
     <div className="config-habit-option-pills" role="list">
       {options.map((label) => (
-        <DismissablePill
+        <EditablePill
           key={label}
+          value={label}
           size="small"
           role="listitem"
           dismissAriaLabel={`Remove ${label}`}
+          onSubmit={(next) => renameOption(label, next)}
           onDismiss={() => removeOption(label)}
-        >
-          {label}
-        </DismissablePill>
+        />
       ))}
       {adding ? (
         <Input

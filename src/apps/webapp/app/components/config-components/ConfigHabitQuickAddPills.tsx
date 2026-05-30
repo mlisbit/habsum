@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Button } from '~/core-components/Button';
 import { Input } from '~/core-components/Input';
-import { DismissablePill } from '~/core-components/Pill';
+import { EditablePill } from '~/core-components/Pill';
 import { sortQuickAddItems } from '~/utils/configHabitDraft';
 
 type ConfigHabitQuickAddPillsProps = {
@@ -26,6 +26,13 @@ export function ConfigHabitQuickAddPills({ values, onChange }: ConfigHabitQuickA
     onChange(values.filter((_, i) => i !== index));
   };
 
+  const renameAt = (index: number, raw: string): boolean => {
+    const label = parseQuickAddValue(raw);
+    if (label == null) return raw.trim() === '';
+    onChange(sortQuickAddItems(values.map((value, i) => (i === index ? label : value))));
+    return true;
+  };
+
   const cancelAdd = () => {
     setAdding(false);
     setAddDraft('');
@@ -44,14 +51,14 @@ export function ConfigHabitQuickAddPills({ values, onChange }: ConfigHabitQuickA
   return (
     <div className="config-habit-quick-add-pills" role="list">
       {values.map((label, index) => (
-        <DismissablePill
+        <EditablePill
           key={`${label}-${index}`}
+          value={label}
           role="listitem"
           dismissAriaLabel={`Remove ${label}`}
+          onSubmit={(next) => renameAt(index, next)}
           onDismiss={() => removeAt(index)}
-        >
-          {label}
-        </DismissablePill>
+        />
       ))}
       {adding ? (
         <Input

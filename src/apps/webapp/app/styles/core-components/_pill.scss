@@ -85,8 +85,58 @@
   }
 }
 
+.pill--editable {
+  display: inline-flex;
+  align-items: center;
+  cursor: text;
+  pointer-events: auto;
+  // stylelint-disable-next-line
+  gap: functions.spacing(1);
+  transition:
+    box-shadow 0.12s ease,
+    background 0.12s ease;
+
+  &.pill--large {
+    // stylelint-disable-next-line
+    padding: 4px 4px 4px 12px;
+  }
+
+  &.pill--small {
+    // stylelint-disable-next-line
+    padding: 4px 4px 4px 12px;
+  }
+
+  &:hover,
+  &:active {
+    transform: none;
+    filter: none;
+    background: color-mix(in srgb, var(--text-color) 5%, transparent);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-selected) 35%, transparent);
+  }
+}
+
+.pill--editing {
+  background: color-mix(in srgb, var(--text-color) 5%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-selected) 20%, transparent);
+}
+
 .pill__label {
   min-width: 0;
+}
+
+.pill__input {
+  min-width: 2ch;
+  max-width: 18ch;
+  padding: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  pointer-events: auto;
 }
 
 .pill__dismiss-button {
