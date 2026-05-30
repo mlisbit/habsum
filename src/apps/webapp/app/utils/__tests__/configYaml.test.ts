@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildConfigMigrations,
   dumpConfigYaml,
   habitOrderKey,
   parseConfigHabitCards,
@@ -107,5 +108,66 @@ describe('dumpConfigYaml', () => {
 describe('habitOrderKey', () => {
   it('changes when order changes', () => {
     expect(habitOrderKey(['a', 'b'])).not.toBe(habitOrderKey(['b', 'a']));
+  });
+});
+
+describe('buildConfigMigrations', () => {
+  it('includes a habit rename migration', () => {
+    const next = `habits:
+  pushups:
+    type: summation
+    goal: 100
+  soda consumption:
+    type: single_select
+    options: [none, light, moderate]
+  pull ups:
+    type: summation
+`;
+    expect(buildConfigMigrations(SAMPLE, next)).toEqual([['push ups', 'pushups']]);
+  });
+
+  it('includes a single-select option rename migration', () => {
+    const previous = `habits:
+  mood:
+    type: single_select
+    options: [blackout, okay]
+`;
+    const next = `habits:
+  mood:
+    type: single_select
+    options: [wrecked, okay]
+`;
+    expect(buildConfigMigrations(previous, next)).toEqual([['mood.blackout', 'mood.wrecked']]);
+  });
+
+  it('includes option renames under a renamed habit', () => {
+    const previous = `habits:
+  drinking:
+    type: single_select
+    options: [blackout, okay]
+`;
+    const next = `habits:
+  drinking log:
+    type: single_select
+    options: [wrecked, okay]
+`;
+    expect(buildConfigMigrations(previous, next)).toEqual([
+      ['drinking', 'drinking log'],
+      ['drinking.blackout', 'drinking log.wrecked'],
+    ]);
+  });
+
+  it('does not treat add/remove option changes as renames', () => {
+    const previous = `habits:
+  mood:
+    type: single_select
+    options: [blackout, okay]
+`;
+    const next = `habits:
+  mood:
+    type: single_select
+    options: [blackout, okay, wrecked]
+`;
+    expect(buildConfigMigrations(previous, next)).toEqual([]);
   });
 });

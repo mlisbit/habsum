@@ -1009,6 +1009,51 @@ export function deleteDailySelect(user: string, habit: string, date: string): vo
   deleteDailySelectStmt.run(user, habit, date);
 }
 
+const renameSummationHabitStmt = db.prepare<{
+  user: string;
+  fromHabit: string;
+  toHabit: string;
+}>(`
+  UPDATE habit_summation_events
+  SET habit = @toHabit
+  WHERE user = @user AND habit = @fromHabit
+`);
+
+const renameDailySelectsHabitStmt = db.prepare<{
+  user: string;
+  fromHabit: string;
+  toHabit: string;
+}>(`
+  UPDATE habit_daily_selects
+  SET habit = @toHabit
+  WHERE user = @user AND habit = @fromHabit
+`);
+
+const renameDailySelectValueStmt = db.prepare<{
+  user: string;
+  habit: string;
+  fromValue: string;
+  toValue: string;
+}>(`
+  UPDATE habit_daily_selects
+  SET value = @toValue
+  WHERE user = @user AND habit = @habit AND value = @fromValue
+`);
+
+export function renameHabitData(user: string, fromHabit: string, toHabit: string): void {
+  renameSummationHabitStmt.run({ user, fromHabit, toHabit });
+  renameDailySelectsHabitStmt.run({ user, fromHabit, toHabit });
+}
+
+export function renameDailySelectValue(
+  user: string,
+  habit: string,
+  fromValue: string,
+  toValue: string,
+): void {
+  renameDailySelectValueStmt.run({ user, habit, fromValue, toValue });
+}
+
 const renameSummationEventsUserStmt = db.prepare<{ fromUsername: string; toUsername: string }>(`
   UPDATE habit_summation_events
   SET user = @toUsername

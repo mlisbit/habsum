@@ -5,6 +5,7 @@ import type {
   LoginUserResponse,
   PurgeUserDataResponse,
   UserConfigGetResponse,
+  UserConfigPutRequest,
   UserConfigPutResponse,
   UserSessionResponse,
 } from '@habsum/types/common/misc';
@@ -23,6 +24,7 @@ import { isForbiddenUsername } from '../forbidden-usernames.js';
 import {
   deleteUserConfigFile,
   listUsers,
+  loadUserConfig,
   readUserConfigFileText,
   renameUserConfigFile,
   writeUserConfigFileText,
@@ -51,6 +53,8 @@ import {
   isUserPinValid,
   patchUserProfile,
   purgeUserData,
+  renameDailySelectValue,
+  renameHabitData,
   renameUserPin,
   setSelect,
   setTotal,
@@ -85,6 +89,103 @@ import {
   parseTzOffsetMinutes,
   resolveHabitApiDateQuery,
 } from '../server-time.js';
+
+type ConfigMigrationTuple = [string, string];
+
+type ClassifiedConfigMigrations = {
+  habitRenames: ConfigMigrationTuple[];
+  optionRenames: Array<{ habit: string; fromOption: string; toOption: string }>;
+};
+
+function parseConfigMigrationTuples(raw: unknown): ConfigMigrationTuple[] | null {
+  if (raw == null) return [];
+  if (!Array.isArray(raw)) return null;
+
+  const migrations: ConfigMigrationTuple[] = [];
+  for (const item of raw) {
+    if (
+      !Array.isArray(item) ||
+      item.length !== 2 ||
+      typeof item[0] !== 'string' ||
+      typeof item[1] !== 'string'
+    ) {
+      return null;
+    }
+    migrations.push([item[0], item[1]]);
+  }
+  return migrations;
+}
+
+function optionMigrationForHabitPair(
+  fromPath: string,
+  toPath: string,
+  previousHabit: HabitDef,
+  nextHabit: HabitDef,
+): { habit: string; fromOption: string; toOption: string } | null {
+  if (previousHabit.type !== 'single_select' || nextHabit.type !== 'single_select') return null;
+
+  for (const fromOption of previousHabit.options ?? []) {
+    if (`${previousHabit.name}.${fromOption}` !== fromPath) continue;
+    for (const toOption of nextHabit.options ?? []) {
+      if (`${nextHabit.name}.${toOption}` === toPath) {
+        return { habit: nextHabit.name, fromOption, toOption };
+      }
+    }
+  }
+
+  return null;
+}
+
+function classifyConfigMigrations(
+  migrations: ConfigMigrationTuple[],
+  previousHabits: HabitDef[],
+  nextHabits: HabitDef[],
+): ClassifiedConfigMigrations {
+  const previousByName = new Map(previousHabits.map((habit) => [habit.name, habit]));
+  const nextByName = new Map(nextHabits.map((habit) => [habit.name, habit]));
+  const habitRenames: ConfigMigrationTuple[] = [];
+  const optionRenames: ClassifiedConfigMigrations['optionRenames'] = [];
+
+  for (const [fromPath, toPath] of migrations) {
+    const previousHabit = previousByName.get(fromPath);
+    const nextHabit = nextByName.get(toPath);
+    if (previousHabit && nextHabit) {
+      habitRenames.push([fromPath, toPath]);
+      continue;
+    }
+
+    for (const oldHabit of previousHabits) {
+      for (const newHabit of nextHabits) {
+        const optionRename = optionMigrationForHabitPair(fromPath, toPath, oldHabit, newHabit);
+        if (optionRename) {
+          optionRenames.push(optionRename);
+        }
+      }
+    }
+  }
+
+  return { habitRenames, optionRenames };
+}
+
+function applyConfigDataMigrations(
+  user: string,
+  migrations: ConfigMigrationTuple[],
+  previousHabits: HabitDef[],
+  nextHabits: HabitDef[],
+): void {
+  const { habitRenames, optionRenames } = classifyConfigMigrations(
+    migrations,
+    previousHabits,
+    nextHabits,
+  );
+
+  for (const [fromHabit, toHabit] of habitRenames) {
+    renameHabitData(user, fromHabit, toHabit);
+  }
+  for (const { habit, fromOption, toOption } of optionRenames) {
+    renameDailySelectValue(user, habit, fromOption, toOption);
+  }
+}
 
 export const userScopedRouter = Router({ mergeParams: true });
 
@@ -762,7 +863,7 @@ userScopedRouter.get(
 userScopedRouter.put(
   '/config',
   requireMatchingRouteUser,
-  (req: Request<{ user: string }, unknown, { text?: unknown }>, res: Response) => {
+  (req: Request<{ user: string }, unknown, Partial<UserConfigPutRequest>>, res: Response) => {
     const { user } = req.params;
     if (!isSafeConfigUserId(user)) {
       return res.status(400).json({ error: 'invalid user' });
@@ -771,9 +872,21 @@ userScopedRouter.put(
     if (typeof text !== 'string') {
       return res.status(400).json({ error: 'text is required' });
     }
+    const migrations = parseConfigMigrationTuples(req.body?.migrations);
+    if (migrations == null) {
+      return res.status(400).json({ error: 'migrations must be an array of string tuples' });
+    }
+    const previousConfig = loadUserConfig(user);
+    if (!previousConfig) return res.status(404).json({ error: 'user not found' });
+
     const out = writeUserConfigFileText(user, text);
     if (!out.ok) {
       return res.status(400).json({ error: out.error });
+    }
+    if (migrations.length > 0) {
+      const nextConfig = loadUserConfig(user);
+      if (!nextConfig) return res.status(404).json({ error: 'user not found' });
+      applyConfigDataMigrations(user, migrations, previousConfig.habits, nextConfig.habits);
     }
     const body: UserConfigPutResponse = { ok: true, user };
     res.json(body);

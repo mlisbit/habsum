@@ -8,6 +8,7 @@ import { SettingsHeader } from '~/components/SettingsHeader';
 import { Button } from '~/core-components/Button';
 import { useToast } from '~/context/toast';
 import {
+  buildConfigMigrations,
   habitOrderKey,
   parseConfigHabitCards,
   reorderHabitsInConfigYaml,
@@ -121,7 +122,8 @@ export function ConfigSettings({ user }: ConfigSettingsProps) {
     setSaveError(null);
     try {
       const payload = yamlView ? text : reorderHabitsInConfigYaml(text, habitOrder);
-      await putUserConfig(user, payload);
+      const migrations = buildConfigMigrations(initialText, payload);
+      await putUserConfig(user, payload, migrations);
       setText(payload);
       setInitialText(payload);
       const order = parseConfigHabitCards(payload).map((h) => h.name);
@@ -135,7 +137,7 @@ export function ConfigSettings({ user }: ConfigSettingsProps) {
     } finally {
       setSaving(false);
     }
-  }, [dirty, habitOrder, showToast, text, user, yamlView]);
+  }, [dirty, habitOrder, initialText, showToast, text, user, yamlView]);
 
   if (loading) {
     return (

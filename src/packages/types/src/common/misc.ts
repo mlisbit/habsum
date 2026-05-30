@@ -67,6 +67,13 @@ export type UserSessionResponse = {
 
 export type UserConfigGetResponse = { text: string };
 
+export type UserConfigMigration = [from: string, to: string];
+
+export type UserConfigPutRequest = {
+  text: string;
+  migrations: UserConfigMigration[];
+};
+
 export type UserConfigPutResponse = { ok: true; user: string };
 
 export type PurgeUserDataResponse = { ok: true; user: string };
