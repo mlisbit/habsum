@@ -230,6 +230,15 @@ export type SummationEventRow = {
   amount: number;
   createdAt: string;
 };
+export type DailySelectExportRow = {
+  habit: string;
+  date: string;
+  value: string;
+  updatedAt: string;
+};
+export type SummationEventExportRow = SummationEventRow & {
+  habit: string;
+};
 
 type TotalRow = { total: number; eventCount: number };
 type FirstDateRow = { date: string };
@@ -864,6 +873,20 @@ const allSelectsStmt = db.prepare<[string, string], SelectSeriesRow>(`
   ORDER BY date ASC
 `);
 
+const allDailySelectsForUserStmt = db.prepare<[string], DailySelectExportRow>(`
+  SELECT habit, date, value, updated_at AS updatedAt
+  FROM habit_daily_selects
+  WHERE user = ?
+  ORDER BY date ASC, habit ASC
+`);
+
+const allSummationEventsForUserStmt = db.prepare<[string], SummationEventExportRow>(`
+  SELECT habit, id, date, amount, created_at AS createdAt
+  FROM habit_summation_events
+  WHERE user = ?
+  ORDER BY date ASC, habit ASC, id ASC
+`);
+
 const habitFirstDateStmt = db.prepare<[string, string, string, string], FirstDateRow>(`
   SELECT MIN(date) AS date
   FROM (
@@ -967,6 +990,14 @@ export function getSummationEvents(user: string, habit: string, date: string): S
 
 export function getAllSelects(user: string, habit: string): Array<{ date: string; value: string }> {
   return allSelectsStmt.all(user, habit);
+}
+
+export function getAllDailySelectsForUser(user: string): DailySelectExportRow[] {
+  return allDailySelectsForUserStmt.all(user);
+}
+
+export function getAllSummationEventsForUser(user: string): SummationEventExportRow[] {
+  return allSummationEventsForUserStmt.all(user);
 }
 
 export function getHabitFirstDate(user: string, habit: string): string | null {

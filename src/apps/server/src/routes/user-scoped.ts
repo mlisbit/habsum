@@ -41,6 +41,8 @@ import {
   deleteSummationEventsForDay,
   deleteUserPin,
   ensureUserPins,
+  getAllDailySelectsForUser,
+  getAllSummationEventsForUser,
   isEmailUsedByOtherUser,
   resolveUsernameByLoginId,
   getFirstDate,
@@ -96,6 +98,34 @@ type ClassifiedConfigMigrations = {
   habitRenames: ConfigMigrationTuple[];
   optionRenames: Array<{ habit: string; fromOption: string; toOption: string }>;
 };
+
+function csvCell(value: string | number | null | undefined): string {
+  if (value == null) return '';
+  const s = String(value);
+  return /[",\r\n]/.test(s) ? `"${s.replaceAll('"', '""')}"` : s;
+}
+
+function csvLine(values: Array<string | number | null | undefined>): string {
+  return values.map(csvCell).join(',');
+}
+
+function userDataCsv(user: string): string {
+  const lines = [
+    csvLine(['record_type', 'habit', 'date', 'value', 'event_id', 'amount', 'created_at']),
+  ];
+
+  for (const row of getAllDailySelectsForUser(user)) {
+    lines.push(csvLine(['daily_select', row.habit, row.date, row.value, '', '', row.updatedAt]));
+  }
+
+  for (const row of getAllSummationEventsForUser(user)) {
+    lines.push(
+      csvLine(['summation_event', row.habit, row.date, '', row.id, row.amount, row.createdAt]),
+    );
+  }
+
+  return `${lines.join('\n')}\n`;
+}
 
 function parseConfigMigrationTuples(raw: unknown): ConfigMigrationTuple[] | null {
   if (raw == null) return [];
@@ -890,6 +920,22 @@ userScopedRouter.put(
     }
     const body: UserConfigPutResponse = { ok: true, user };
     res.json(body);
+  },
+);
+
+userScopedRouter.get(
+  '/data',
+  requireMatchingRouteUser,
+  (req: Request<{ user: string }>, res: Response) => {
+    const { user } = req.params;
+    const config = loadUserConfigForResponse(user, res);
+    if (!config) return;
+
+    res
+      .status(200)
+      .type('text/csv')
+      .set('Content-Disposition', `attachment; filename="${user}-habsum-data.csv"`)
+      .send(userDataCsv(user));
   },
 );
 

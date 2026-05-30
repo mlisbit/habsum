@@ -359,6 +359,28 @@ export async function putUserConfig(user: string, text: string, migrations: User
   });
 }
 
+export async function downloadUserDataCsv(user: string): Promise<Blob> {
+  const res = await fetch(`${SERVER_URL}${API_PREFIX}/users/${encodeURIComponent(user)}/data`, {
+    credentials: 'include',
+    headers: {
+      'x-habsum-web-version': WEBAPP_VERSION,
+      ...oucSessionRequestHeaders(),
+    },
+  });
+  const bodyText = await res.text();
+  if (!res.ok) {
+    let message = res.statusText;
+    try {
+      const j = JSON.parse(bodyText) as { error?: string };
+      if (j.error) message = j.error;
+    } catch {
+      if (bodyText) message = bodyText;
+    }
+    throw new ApiRequestError(res.status, message);
+  }
+  return new Blob([bodyText], { type: 'text/csv;charset=utf-8' });
+}
+
 export async function purgeUserData(user: string) {
   const qs = '';
   const res = await fetch(

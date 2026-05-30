@@ -118,6 +118,17 @@
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-selected) 35%, transparent);
 }
 
+.account-page__data {
+  display: flex;
+  justify-content: space-between;
+  gap: functions.spacing(2);
+  align-items: center;
+}
+
+.account-page__data-title {
+  margin-top: 0;
+}
+
 .account-page__danger {
   background: var(--background-warning);
   display: flex;

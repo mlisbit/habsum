@@ -6,6 +6,7 @@ import { dateFromDayWithTimeUtc } from '@habsum/types/common/day';
 import type { ProductEntitlement } from '@habsum/types/common/entitlement';
 import {
   deleteUser,
+  downloadUserDataCsv,
   getUserSession,
   logout,
   patchUser,
@@ -85,6 +86,7 @@ export default function UserSettingsAccount() {
   const [draftTheme, setDraftTheme] = useState<UiThemePreference>(null);
   const [saveBusy, setSaveBusy] = useState(false);
   const [deleteBusy, setDeleteBusy] = useState(false);
+  const [downloadBusy, setDownloadBusy] = useState(false);
   const [saveFieldErrors, setSaveFieldErrors] = useState<AccountErrorMap>({});
   const { showToast } = useToast();
 
@@ -282,6 +284,27 @@ export default function UserSettingsAccount() {
     }
   };
 
+  const handleDownloadData = async () => {
+    if (!routeUser) return;
+    setDownloadBusy(true);
+    try {
+      const blob = await downloadUserDataCsv(routeUser);
+      const href = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = href;
+      link.download = `${routeUser}-habsum-data.csv`;
+      document.body.append(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(href);
+      showToast({ type: 'success', message: 'Data export started.' });
+    } catch (e) {
+      showToast({ type: 'error', message: e instanceof Error ? e.message : String(e) });
+    } finally {
+      setDownloadBusy(false);
+    }
+  };
+
   const loaded = saved != null;
 
   return (
@@ -466,6 +489,25 @@ export default function UserSettingsAccount() {
           )}
         </div>
       </div>
+
+      {loaded ? (
+        <div className="card account-page__data">
+          <div>
+            <h3 className="account-page__data-title text-h-s">Data</h3>
+            <p className="text-light text-b-m">
+              Download a CSV of habit daily selections and summation events.
+            </p>
+          </div>
+
+          <Button
+            type="secondary"
+            icon="download"
+            text={downloadBusy ? 'Downloading…' : 'Download CSV'}
+            disabled={!routeUser || downloadBusy}
+            onClick={() => void handleDownloadData()}
+          />
+        </div>
+      ) : null}
 
       {loaded ? (
         <div className="card account-page__danger">
