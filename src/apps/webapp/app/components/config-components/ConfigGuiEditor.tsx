@@ -10,6 +10,7 @@ import {
 import { useLocation, useNavigate } from '@remix-run/react';
 import { useModal } from '~/context/modal';
 import { useToast } from '~/context/toast';
+import type { UserConfigInsights, UserConfigSingleSelectHabitInsight } from '~/api.client';
 import type { ConfigHabitCard } from '~/utils/configYaml';
 import {
   configEditHabitQueryValue,
@@ -20,18 +21,32 @@ import {
   withShowAddModal,
 } from '~/utils/habit-id';
 import { ConfigCard, createConfigCardDragPreview } from './ConfigCard';
-import { ConfigCardModal } from './ConfigCardModal';
+import { ConfigSingleSelectHabitModal } from './single-select/ConfigSingleSelectHabitModal';
+import { ConfigSummationHabitModal } from './summation/ConfigSummationHabitModal';
 import { ConfigHabitTypePickerModal, type HabitTypeChoice } from './ConfigHabitTypePickerModal';
 import { removeHabitFromConfigYaml, addHabitToConfigYaml } from '~/utils/configHabitDraft';
 
 type ConfigGuiEditorProps = {
   configText: string;
   habits: ConfigHabitCard[];
+  insights: UserConfigInsights;
   order: string[];
   onOrderChange: (order: string[]) => void;
   onConfigTextChange: (text: string) => void;
   registerAddHabit?: (addHabit: (() => void) | null) => void;
 };
+
+function singleSelectInsightForHabit(
+  insights: UserConfigInsights,
+  habitName: string,
+): UserConfigSingleSelectHabitInsight {
+  const insight = insights[habitName];
+  if (insight == null || !('optionsWithData' in insight)) {
+    return { optionsWithData: [] };
+  }
+  const { optionsWithData } = insight as { optionsWithData?: unknown };
+  return Array.isArray(optionsWithData) ? { optionsWithData } : { optionsWithData: [] };
+}
 
 type ReorderSession = {
   name: string;
@@ -78,6 +93,7 @@ function ConfigInsertMarker() {
 export function ConfigGuiEditor({
   configText,
   habits,
+  insights,
   order,
   onOrderChange,
   onConfigTextChange,
@@ -191,19 +207,32 @@ export function ConfigGuiEditor({
   const openHabitModal = useCallback(
     (habit: ConfigHabitCard, options?: { isNew?: boolean; configText?: string }) => {
       const modalConfigText = options?.configText ?? configTextRef.current;
-      void syncHabitQueryParam(configEditHabitQueryValue(habit.name));
-      present({
-        size: 'xl',
-        content: (
-          <ConfigCardModal
+      const content =
+        habit.type === 'single_select' ? (
+          <ConfigSingleSelectHabitModal
             configText={modalConfigText}
             habitName={habit.name}
+            insight={singleSelectInsightForHabit(insights, habit.name)}
             isNewHabit={options?.isNew}
             onDoneClick={handleDoneClick}
             onRemoveClick={handleRemoveClick}
             onCancel={cancelHabitModal}
           />
-        ),
+        ) : (
+          <ConfigSummationHabitModal
+            configText={modalConfigText}
+            habitName={habit.name}
+            insight={insights[habit.name] ?? {}}
+            isNewHabit={options?.isNew}
+            onDoneClick={handleDoneClick}
+            onRemoveClick={handleRemoveClick}
+            onCancel={cancelHabitModal}
+          />
+        );
+      void syncHabitQueryParam(configEditHabitQueryValue(habit.name));
+      present({
+        size: 'xl',
+        content,
         onRequestClose: onHabitModalRequestClose,
       });
     },
@@ -211,6 +240,7 @@ export function ConfigGuiEditor({
       cancelHabitModal,
       handleDoneClick,
       handleRemoveClick,
+      insights,
       onHabitModalRequestClose,
       present,
       syncHabitQueryParam,

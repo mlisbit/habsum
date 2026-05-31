@@ -55,11 +55,47 @@ describe('PUT /users/:user/config migrations', () => {
           ['push ups', 'pushups'],
           ['mood.blackout', 'mood.wrecked'],
         ],
+        deletions: [],
       })
       .expect(200);
 
     expect(getAllTotals(user, 'push ups')).toEqual([]);
     expect(getAllTotals(user, 'pushups')).toEqual([{ date: '2025-01-01', total: 12 }]);
     expect(getSelect(user, 'mood', '2025-01-01')).toBe('wrecked');
+  });
+
+  it('deletes historical option data for config deletions', async () => {
+    const user = 'config-deletions-user';
+    writeUserConfig(
+      user,
+      `habits:
+  mood:
+    type: single_select
+    options: [blackout, okay]
+`,
+    );
+    ensureUserPins([user]);
+    setSelect(user, 'mood', '2025-01-01', 'blackout');
+    setSelect(user, 'mood', '2025-01-02', 'okay');
+
+    const session = createUserSession(user, 3600);
+    const nextText = `habits:
+  mood:
+    type: single_select
+    options: [okay]
+`;
+
+    await request(createApp())
+      .put(`/users/${user}/config`)
+      .set('Cookie', `${SESSION_COOKIE_NAME}=${session}`)
+      .send({
+        text: nextText,
+        migrations: [],
+        deletions: ['mood.blackout'],
+      })
+      .expect(200);
+
+    expect(getSelect(user, 'mood', '2025-01-01')).toBeNull();
+    expect(getSelect(user, 'mood', '2025-01-02')).toBe('okay');
   });
 });

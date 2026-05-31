@@ -37,6 +37,7 @@ import {
   revokeOtherUserSessions,
   revokeUserSessionByTokenPrefix,
   deleteDailySelect,
+  deleteDailySelectValue,
   deleteSummationEvent,
   deleteSummationEventsForDay,
   deleteUserPin,
@@ -48,6 +49,7 @@ import {
   getFirstDate,
   getHabitFirstDate,
   getSelect,
+  getSelectValuesWithData,
   getSummationEvents,
   getSummationDayTotal,
   getUserProfile,
@@ -99,6 +101,22 @@ type ClassifiedConfigMigrations = {
   optionRenames: Array<{ habit: string; fromOption: string; toOption: string }>;
 };
 
+type ConfigDeletion = { habit: string; option: string };
+
+function configInsightsForUser(
+  user: string,
+  habits: HabitDef[],
+): UserConfigGetResponse['insights'] {
+  const insights: UserConfigGetResponse['insights'] = {};
+  for (const habit of habits) {
+    insights[habit.name] =
+      habit.type === 'single_select'
+        ? { optionsWithData: getSelectValuesWithData(user, habit.name) }
+        : {};
+  }
+  return insights;
+}
+
 function csvCell(value: string | number | null | undefined): string {
   if (value == null) return '';
   const s = String(value);
@@ -144,6 +162,36 @@ function parseConfigMigrationTuples(raw: unknown): ConfigMigrationTuple[] | null
     migrations.push([item[0], item[1]]);
   }
   return migrations;
+}
+
+function parseConfigDeletions(raw: unknown): string[] | null {
+  if (raw == null) return [];
+  if (!Array.isArray(raw)) return null;
+  return raw.every((item): item is string => typeof item === 'string') ? raw : null;
+}
+
+function optionDeletionForPath(path: string, previousHabits: HabitDef[]): ConfigDeletion | null {
+  for (const habit of previousHabits) {
+    if (habit.type !== 'single_select') continue;
+    for (const option of habit.options ?? []) {
+      if (`${habit.name}.${option}` === path) {
+        return { habit: habit.name, option };
+      }
+    }
+  }
+  return null;
+}
+
+function applyConfigDataDeletions(
+  user: string,
+  deletions: string[],
+  previousHabits: HabitDef[],
+): void {
+  for (const path of deletions) {
+    const deletion = optionDeletionForPath(path, previousHabits);
+    if (!deletion) continue;
+    deleteDailySelectValue(user, deletion.habit, deletion.option);
+  }
 }
 
 function optionMigrationForHabitPair(
@@ -885,7 +933,12 @@ userScopedRouter.get(
     }
     const text = readUserConfigFileText(user);
     if (text == null) return res.status(404).json({ error: 'user not found' });
-    const body: UserConfigGetResponse = { text };
+    const config = loadUserConfig(user);
+    if (!config) return res.status(404).json({ error: 'user not found' });
+    const body: UserConfigGetResponse = {
+      text,
+      insights: configInsightsForUser(user, config.habits),
+    };
     res.json(body);
   },
 );
@@ -906,6 +959,10 @@ userScopedRouter.put(
     if (migrations == null) {
       return res.status(400).json({ error: 'migrations must be an array of string tuples' });
     }
+    const deletions = parseConfigDeletions(req.body?.deletions);
+    if (deletions == null) {
+      return res.status(400).json({ error: 'deletions must be an array of strings' });
+    }
     const previousConfig = loadUserConfig(user);
     if (!previousConfig) return res.status(404).json({ error: 'user not found' });
 
@@ -917,6 +974,9 @@ userScopedRouter.put(
       const nextConfig = loadUserConfig(user);
       if (!nextConfig) return res.status(404).json({ error: 'user not found' });
       applyConfigDataMigrations(user, migrations, previousConfig.habits, nextConfig.habits);
+    }
+    if (deletions.length > 0) {
+      applyConfigDataDeletions(user, deletions, previousConfig.habits);
     }
     const body: UserConfigPutResponse = { ok: true, user };
     res.json(body);

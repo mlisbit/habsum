@@ -22,6 +22,7 @@ import type {
   LoginUserResponse,
   LogoutResponse,
   PurgeUserDataResponse,
+  UserConfigDeletion,
   UserConfigGetResponse,
   UserConfigMigration,
   UserConfigPutRequest,
@@ -55,10 +56,15 @@ export type {
   LogoutResponse,
   PurgeUserDataResponse,
   ServerTimeResponse,
+  UserConfigDeletion,
   UserConfigGetResponse,
+  UserConfigHabitInsight,
+  UserConfigInsights,
   UserConfigMigration,
   UserConfigPutRequest,
   UserConfigPutResponse,
+  UserConfigSingleSelectHabitInsight,
+  UserConfigSummationHabitInsight,
   UserSessionResponse,
 } from '@habsum/types/common/misc';
 export type {
@@ -351,8 +357,13 @@ export async function getUserConfig(user: string) {
   return request<UserConfigGetResponse>(`/users/${encodeURIComponent(user)}/config`);
 }
 
-export async function putUserConfig(user: string, text: string, migrations: UserConfigMigration[]) {
-  const body: UserConfigPutRequest = { text, migrations };
+export async function putUserConfig(
+  user: string,
+  text: string,
+  migrations: UserConfigMigration[],
+  deletions: UserConfigDeletion[],
+) {
+  const body: UserConfigPutRequest = { text, migrations, deletions };
   return request<UserConfigPutResponse>(`/users/${encodeURIComponent(user)}/config`, {
     method: 'PUT',
     body: JSON.stringify(body),

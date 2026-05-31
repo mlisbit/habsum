@@ -76,6 +76,10 @@
   color: var(--text-success);
 }
 
+.text-warning {
+  color: var(--text-warning);
+}
+
 // Larger "×" dismiss control: muted until hover (used by toast and similar).
 .text-dismiss-glyph {
   font-size: 1.25rem;

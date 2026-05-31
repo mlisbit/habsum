@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildConfigDeletions,
   buildConfigMigrations,
   dumpConfigYaml,
   habitOrderKey,
@@ -169,5 +170,46 @@ describe('buildConfigMigrations', () => {
     options: [blackout, okay, wrecked]
 `;
     expect(buildConfigMigrations(previous, next)).toEqual([]);
+  });
+});
+
+describe('buildConfigDeletions', () => {
+  it('does not include renamed single-select options', () => {
+    const previous = `habits:
+  mood:
+    type: single_select
+    options: [blackout, okay]
+`;
+    const next = `habits:
+  mood:
+    type: single_select
+    options: [wrecked, okay]
+`;
+    expect(buildConfigDeletions(previous, next)).toEqual([]);
+  });
+
+  it('includes removed single-select options', () => {
+    const previous = `habits:
+  mood:
+    type: single_select
+    options: [blackout, okay]
+`;
+    const next = `habits:
+  mood:
+    type: single_select
+    options: [okay]
+`;
+    expect(buildConfigDeletions(previous, next)).toEqual(['mood.blackout']);
+  });
+
+  it('does not include option removals under deleted habits', () => {
+    const previous = `habits:
+  mood:
+    type: single_select
+    options: [blackout, okay]
+`;
+    const next = `habits: {}
+`;
+    expect(buildConfigDeletions(previous, next)).toEqual([]);
   });
 });

@@ -1,13 +1,14 @@
 // exclusive-bem-block: config-page
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from '@remix-run/react';
-import { getUserConfig, putUserConfig } from '~/api.client';
+import { getUserConfig, putUserConfig, type UserConfigInsights } from '~/api.client';
 import { ConfigGuiEditor } from './ConfigGuiEditor';
 import { ConfigYamlEditor } from './ConfigYamlEditor';
 import { SettingsHeader } from '~/components/SettingsHeader';
 import { Button } from '~/core-components/Button';
 import { useToast } from '~/context/toast';
 import {
+  buildConfigDeletions,
   buildConfigMigrations,
   habitOrderKey,
   parseConfigHabitCards,
@@ -28,6 +29,7 @@ export function ConfigSettings({ user }: ConfigSettingsProps) {
   const [text, setText] = useState('');
   const [initialText, setInitialText] = useState('');
   const [habitOrder, setHabitOrder] = useState<string[]>([]);
+  const [insights, setInsights] = useState<UserConfigInsights>({});
   const [initialHabitOrderKey, setInitialHabitOrderKey] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -45,6 +47,7 @@ export function ConfigSettings({ user }: ConfigSettingsProps) {
       .then((r) => {
         setText(r.text);
         setInitialText(r.text);
+        setInsights(r.insights);
         try {
           const cards = parseConfigHabitCards(r.text);
           const order = cards.map((h) => h.name);
@@ -123,10 +126,20 @@ export function ConfigSettings({ user }: ConfigSettingsProps) {
     try {
       const payload = yamlView ? text : reorderHabitsInConfigYaml(text, habitOrder);
       const migrations = buildConfigMigrations(initialText, payload);
-      await putUserConfig(user, payload, migrations);
+      const deletions = buildConfigDeletions(initialText, payload);
+      await putUserConfig(user, payload, migrations, deletions);
       setText(payload);
       setInitialText(payload);
-      const order = parseConfigHabitCards(payload).map((h) => h.name);
+      const cards = parseConfigHabitCards(payload);
+      setInsights((prev) =>
+        Object.fromEntries(
+          cards.map((habit) => [
+            habit.name,
+            prev[habit.name] ?? (habit.type === 'single_select' ? { optionsWithData: [] } : {}),
+          ]),
+        ),
+      );
+      const order = cards.map((h) => h.name);
       setHabitOrder(order);
       setInitialHabitOrderKey(habitOrderKey(order));
       showToast({ type: 'success', message: 'Saved.' });
@@ -206,6 +219,7 @@ export function ConfigSettings({ user }: ConfigSettingsProps) {
         <ConfigGuiEditor
           configText={text}
           habits={habitCards}
+          insights={insights}
           order={habitOrder}
           onOrderChange={setHabitOrder}
           onConfigTextChange={(next) => {

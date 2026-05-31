@@ -873,6 +873,13 @@ const allSelectsStmt = db.prepare<[string, string], SelectSeriesRow>(`
   ORDER BY date ASC
 `);
 
+const selectValuesWithDataStmt = db.prepare<[string, string], { value: string }>(`
+  SELECT DISTINCT value
+  FROM habit_daily_selects
+  WHERE user = ? AND habit = ?
+  ORDER BY value ASC
+`);
+
 const allDailySelectsForUserStmt = db.prepare<[string], DailySelectExportRow>(`
   SELECT habit, date, value, updated_at AS updatedAt
   FROM habit_daily_selects
@@ -992,6 +999,10 @@ export function getAllSelects(user: string, habit: string): Array<{ date: string
   return allSelectsStmt.all(user, habit);
 }
 
+export function getSelectValuesWithData(user: string, habit: string): string[] {
+  return selectValuesWithDataStmt.all(user, habit).map((row) => row.value);
+}
+
 export function getAllDailySelectsForUser(user: string): DailySelectExportRow[] {
   return allDailySelectsForUserStmt.all(user);
 }
@@ -1038,6 +1049,19 @@ const deleteDailySelectStmt = db.prepare<[string, string, string], unknown>(
 
 export function deleteDailySelect(user: string, habit: string, date: string): void {
   deleteDailySelectStmt.run(user, habit, date);
+}
+
+const deleteDailySelectValueStmt = db.prepare<{
+  user: string;
+  habit: string;
+  value: string;
+}>(`
+  DELETE FROM habit_daily_selects
+  WHERE user = @user AND habit = @habit AND value = @value
+`);
+
+export function deleteDailySelectValue(user: string, habit: string, value: string): void {
+  deleteDailySelectValueStmt.run({ user, habit, value });
 }
 
 const renameSummationHabitStmt = db.prepare<{

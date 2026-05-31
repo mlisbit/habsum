@@ -1,5 +1,5 @@
 import yaml from 'js-yaml';
-import type { UserConfigMigration } from '@habsum/types/common/misc';
+import type { UserConfigDeletion, UserConfigMigration } from '@habsum/types/common/misc';
 
 export type ConfigHabitCard = {
   name: string;
@@ -153,6 +153,24 @@ function optionMigrations(
   ]);
 }
 
+function removedOptionsWithoutRename(
+  previousHabit: RawHabitEntry,
+  nextHabit: RawHabitEntry,
+): string[] {
+  if (previousHabit.type !== 'single_select' || nextHabit.type !== 'single_select') return [];
+
+  const previousOptions = new Set(previousHabit.optionLabels);
+  const nextOptions = new Set(nextHabit.optionLabels);
+  const removed = previousHabit.optionLabels.filter((option) => !nextOptions.has(option));
+  const added = nextHabit.optionLabels.filter((option) => !previousOptions.has(option));
+  const looksLikeRename =
+    previousHabit.optionLabels.length === nextHabit.optionLabels.length &&
+    removed.length > 0 &&
+    removed.length === added.length;
+
+  return looksLikeRename ? [] : removed;
+}
+
 export function buildConfigMigrations(
   previousText: string,
   nextText: string,
@@ -173,6 +191,25 @@ export function buildConfigMigrations(
   }
 
   return migrations;
+}
+
+export function buildConfigDeletions(previousText: string, nextText: string): UserConfigDeletion[] {
+  const previousEntries = parseConfigMigrationEntries(previousText);
+  const nextEntries = parseConfigMigrationEntries(nextText);
+  const nextByName = new Map(nextEntries.map((entry) => [entry.name, entry]));
+  const deletions: UserConfigDeletion[] = [];
+
+  for (const previous of previousEntries) {
+    if (previous.type !== 'single_select') continue;
+    const next = nextByName.get(previous.name);
+    if (!next || next.type !== 'single_select') continue;
+
+    for (const option of removedOptionsWithoutRename(previous, next)) {
+      deletions.push(migrationPath(previous.name, option));
+    }
+  }
+
+  return deletions;
 }
 
 const YAML_DUMP_OPTS = { lineWidth: -1, noRefs: true };

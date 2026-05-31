@@ -34,6 +34,13 @@
   min-block-size: 2.25rem;
 }
 
+.config-habit-modal__field-control-stack {
+  display: flex;
+  flex-flow: column nowrap;
+  gap: functions.spacing(2);
+  min-width: 0;
+}
+
 .config-habit-modal__field--option-pills .config-habit-modal__label {
   align-self: flex-start;
   padding-block-start: functions.spacing(1);

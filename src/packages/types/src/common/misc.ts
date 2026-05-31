@@ -65,13 +65,28 @@ export type UserSessionResponse = {
   entitlements: ProductEntitlement[];
 };
 
-export type UserConfigGetResponse = { text: string };
+export type UserConfigSummationHabitInsight = Record<string, never>;
+
+export type UserConfigSingleSelectHabitInsight = {
+  /** Distinct option values with stored selections for this user and habit. */
+  optionsWithData: string[];
+};
+
+export type UserConfigHabitInsight =
+  | UserConfigSummationHabitInsight
+  | UserConfigSingleSelectHabitInsight;
+
+export type UserConfigInsights = Record<string, UserConfigHabitInsight>;
+
+export type UserConfigGetResponse = { text: string; insights: UserConfigInsights };
 
 export type UserConfigMigration = [from: string, to: string];
+export type UserConfigDeletion = string;
 
 export type UserConfigPutRequest = {
   text: string;
   migrations: UserConfigMigration[];
+  deletions: UserConfigDeletion[];
 };
 
 export type UserConfigPutResponse = { ok: true; user: string };

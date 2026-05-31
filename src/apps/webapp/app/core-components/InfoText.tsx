@@ -1,7 +1,7 @@
 import type { HTMLAttributes, ReactNode } from 'react';
 import { Icon, type IconName } from './Icon';
 
-type InfoTextVariant = 'info' | 'error' | 'success';
+type InfoTextVariant = 'info' | 'error' | 'success' | 'warning';
 
 type InfoTextProps = {
   variant: InfoTextVariant;
@@ -12,12 +12,14 @@ const ICON_BY_VARIANT = {
   info: 'info',
   error: 'octagon-x',
   success: 'circle-check',
+  warning: 'info',
 } as const satisfies Record<InfoTextVariant, IconName>;
 
 const TEXT_CLASS_BY_VARIANT = {
   info: 'text-light',
   error: 'text-error',
   success: 'text-success',
+  warning: 'text-warning',
 } as const satisfies Record<InfoTextVariant, string>;
 
 export function InfoText({ variant, children, className, ...rest }: InfoTextProps) {
