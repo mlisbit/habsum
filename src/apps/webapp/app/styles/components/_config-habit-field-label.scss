@@ -3,6 +3,13 @@
 // Block: config-habit-field-label
 .config-habit-field-label {
   display: flex;
+  flex-flow: column nowrap;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.config-habit-field-label__heading {
+  display: flex;
   flex-flow: row nowrap;
   align-items: center;
   gap: functions.spacing(1);
@@ -10,6 +17,10 @@
 }
 
 .config-habit-field-label__text {
+  margin: 0;
+}
+
+.config-habit-field-label__info {
   margin: 0;
 }
 

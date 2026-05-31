@@ -62,6 +62,10 @@
   transform: rotate(90deg);
 }
 
+.collapsible-card__content {
+  padding: functions.spacing(3);
+}
+
 .collapsible-card__content[hidden] {
   display: none;
 }

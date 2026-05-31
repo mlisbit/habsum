@@ -193,7 +193,7 @@ export function ConfigGuiEditor({
       const modalConfigText = options?.configText ?? configTextRef.current;
       void syncHabitQueryParam(configEditHabitQueryValue(habit.name));
       present({
-        size: 'large',
+        size: 'xl',
         content: (
           <ConfigCardModal
             configText={modalConfigText}
@@ -245,7 +245,7 @@ export function ConfigGuiEditor({
   const openAddModal = useCallback(() => {
     void syncShowAddModalQueryParam(true);
     present({
-      size: 'large',
+      size: 'xl',
       content: <ConfigHabitTypePickerModal onSelect={addHabitWithType} />,
       onRequestClose: onAddModalRequestClose,
     });
@@ -279,7 +279,7 @@ export function ConfigGuiEditor({
 
     pendingShowAddModalRef.current = false;
     present({
-      size: 'large',
+      size: 'xl',
       content: <ConfigHabitTypePickerModal onSelect={addHabitWithType} />,
       onRequestClose: onAddModalRequestClose,
     });

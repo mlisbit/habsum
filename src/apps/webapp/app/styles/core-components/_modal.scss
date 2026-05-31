@@ -21,6 +21,10 @@
   width: min(100%, 36rem);
 }
 
+.modal__dialog--xl {
+  width: min(100%, 48rem);
+}
+
 .modal__header {
   display: flex;
   align-items: center;

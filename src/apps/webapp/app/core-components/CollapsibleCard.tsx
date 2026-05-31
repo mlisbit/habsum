@@ -7,10 +7,7 @@ import {
   type ReactNode,
 } from 'react';
 import { Icon } from '~/core-components/Icon';
-
-function classNames(...values: Array<string | false | null | undefined>) {
-  return values.filter(Boolean).join(' ');
-}
+import { classBuilder } from '~/utils/class-builder';
 
 type CollapsibleCardContextValue = {
   expanded: boolean;
@@ -56,11 +53,12 @@ function CollapsibleCardRoot({
   return (
     <CollapsibleCardContext.Provider value={value}>
       <div
-        className={classNames(
-          'collapsible-card',
-          'card',
-          expanded && collapsible && 'collapsible-card--expanded',
-          className,
+        className={classBuilder(
+          {
+            'collapsible-card--expanded': expanded && collapsible,
+            [className ?? '']: Boolean(className),
+          },
+          'collapsible-card card',
         )}
       >
         {children}
@@ -81,7 +79,10 @@ function CollapsibleCardHeader({
 
   return (
     <div
-      className={classNames('collapsible-card__header', className)}
+      className={classBuilder(
+        { [className ?? '']: Boolean(className) },
+        'collapsible-card__header',
+      )}
       onClick={(event) => {
         onClick?.(event);
         if (event.defaultPrevented) return;
@@ -114,10 +115,12 @@ function CollapsibleCardToggle({
   return (
     <button
       type="button"
-      className={classNames(
+      className={classBuilder(
+        {
+          'collapsible-card__toggle--expanded': expanded,
+          [className ?? '']: Boolean(className),
+        },
         'collapsible-card__toggle',
-        expanded && 'collapsible-card__toggle--expanded',
-        className,
       )}
       disabled={!collapsible}
       aria-expanded={collapsible ? expanded : false}
@@ -146,7 +149,10 @@ function CollapsibleCardContent({ children, className, ...props }: CollapsibleCa
   return (
     <div
       id={contentId}
-      className={classNames('card-padding', className)}
+      className={classBuilder(
+        { [className ?? '']: Boolean(className) },
+        'collapsible-card__content',
+      )}
       hidden={!visible}
       {...props}
     >

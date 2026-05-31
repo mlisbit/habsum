@@ -18,27 +18,10 @@ import {
   type ConfigHabitDraft,
 } from '~/utils/configHabitDraft';
 
-const FIELD_HELP = {
-  name: 'Display name for this habit in config and the app. Must be unique among habits.',
-  type: 'Whether this habit tracks a numeric total (summation) or one choice from a list (single select).',
-  goal: 'Optional daily or rolling target for the total. Leave blank if you do not use a goal.',
-  quickAddOptions:
-    'Quick-add amounts shown beside the manual entry field on habit cards (negative values subtract).',
-  options: 'Allowed choices for this habit. Use + to add each option.',
-  streakEnabled:
-    'Track streaks where the selected option is one of the tracking options. Daily by default, or a target number of days per week.',
-  streakOptionsInfo: 'Tap options to include them in streak tracking.',
-  streakFrequency: 'How many days per week count toward the streak. Seven means every day.',
-  streakShowLongest:
-    'Show the longest historical streak on the habit card, with its date range on hover.',
-  historyEnabled: 'Show a history chart for this habit over a configured time window.',
-  historyLength:
-    'How far back the habit detail page shows history. Default is 1 week when history is enabled.',
-} as const;
-
 type ConfigHabitModalFieldProps = {
   label: string;
-  info: string;
+  info?: string | null;
+  tooltip?: string | null;
   htmlFor?: string;
   className?: string;
   children: ReactNode;
@@ -47,15 +30,20 @@ type ConfigHabitModalFieldProps = {
 function ConfigHabitModalField({
   label,
   info,
+  tooltip,
   htmlFor,
   className,
   children,
 }: ConfigHabitModalFieldProps) {
   return (
     <div className={['config-habit-modal__field', className].filter(Boolean).join(' ')}>
-      <div className="config-habit-modal__label">
-        <ConfigHabitFieldLabel htmlFor={htmlFor} label={label} info={info} />
-      </div>
+      <ConfigHabitFieldLabel
+        htmlFor={htmlFor}
+        label={label}
+        info={info ?? undefined}
+        tooltip={tooltip ?? undefined}
+        className="config-habit-modal__label"
+      />
       <div className="config-habit-modal__control">{children}</div>
     </div>
   );
@@ -83,9 +71,8 @@ export function ConfigCardModal({
     [configText, habitName],
   );
   const [draft, setDraft] = useState<ConfigHabitDraft>(initial);
-  const [quickAddExpanded, setQuickAddExpanded] = useState(() => initial.quickAddItems.length > 0);
   const [streakExpanded, setStreakExpanded] = useState(() => initial.streakEnabled);
-  const [historyExpanded, setHistoryExpanded] = useState(() => initial.historyEnabled);
+  const goalEnabled = draft.goal.trim() !== '';
   const quickAddEnabled = draft.quickAddItems.length > 0;
   const dirty = useMemo(
     () => isHabitDraftDirty(initial, draft) || isNewHabit,
@@ -96,31 +83,6 @@ export function ConfigCardModal({
 
   const patch = (partial: Partial<ConfigHabitDraft>) => {
     setDraft((prev) => ({ ...prev, ...partial }));
-    setError(null);
-  };
-
-  const onTypeChange = (type: ConfigHabitDraft['type']) => {
-    setDraft((prev) => ({
-      ...prev,
-      type,
-      ...(type === 'summation'
-        ? {
-            optionsText: '',
-            streakEnabled: false,
-            streakOptionsText: '',
-            streakFrequencyPerWeek: '7',
-            streakShowLongest: false,
-          }
-        : {
-            quickAddItems: [],
-            goal: '',
-            historyEnabled: false,
-          }),
-    }));
-    if (type === 'single_select') {
-      setQuickAddExpanded(false);
-      setHistoryExpanded(false);
-    }
     setError(null);
   };
 
@@ -168,13 +130,40 @@ export function ConfigCardModal({
     });
   };
 
+  const setGoalEnabled = (enabled: boolean) => {
+    patch({ goal: enabled ? draft.goal.trim() || '1' : '' });
+  };
+
+  const setQuickAddEnabled = (enabled: boolean) => {
+    if (enabled) {
+      patch({
+        quickAddItems:
+          draft.quickAddItems.length > 0 ? draft.quickAddItems : sortQuickAddItems(['1', '10']),
+      });
+      return;
+    }
+    patch({ quickAddItems: [] });
+  };
+
+  const setHistoryEnabled = (historyEnabled: boolean) => {
+    patch({
+      historyEnabled,
+      ...(historyEnabled
+        ? {
+            historyPeriodAmount: draft.historyPeriodAmount.trim() || '1',
+            historyPeriodUnit: draft.historyPeriodUnit,
+          }
+        : {}),
+    });
+  };
+
   const editingHabitName = draft.name.trim() || habitName;
 
   return (
     <>
-      <ModalHeader>Editing habit: {editingHabitName}</ModalHeader>
+      <ModalHeader>Editing "{editingHabitName}"</ModalHeader>
       <ModalBody className="config-habit-modal">
-        <ConfigHabitModalField label="Name" info={FIELD_HELP.name} htmlFor="habit-name">
+        <ConfigHabitModalField label="Name" htmlFor="habit-name">
           <Input
             id="habit-name"
             className="config-habit-modal__name"
@@ -185,89 +174,69 @@ export function ConfigCardModal({
           />
         </ConfigHabitModalField>
 
-        <ConfigHabitModalField label="Type" info={FIELD_HELP.type} htmlFor="habit-type">
-          <select
-            id="habit-type"
-            className="config-habit-modal__select text-b-m"
-            value={draft.type}
-            onChange={(e) =>
-              onTypeChange(e.target.value === 'single_select' ? 'single_select' : 'summation')
-            }
-          >
-            <option value="summation">Summation</option>
-            <option value="single_select">Single select</option>
-          </select>
-        </ConfigHabitModalField>
-
         {draft.type === 'summation' ? (
           <>
-            <ConfigHabitModalField label="Goal" info={FIELD_HELP.goal} htmlFor="habit-goal">
-              <Input
-                id="habit-goal"
-                type="number"
-                size="small"
-                className="config-habit-modal__input"
-                value={draft.goal}
-                onChange={(goal) => patch({ goal })}
-                placeholder="Optional"
-              />
-            </ConfigHabitModalField>
-
-            <CollapsibleCard
-              expanded={quickAddExpanded}
-              collapsible={quickAddEnabled}
-              onExpandedChange={setQuickAddExpanded}
-            >
-              <CollapsibleCard.Header>
-                <div className="collapsible-card__header-main">
-                  <input
-                    id="habit-quick-add-enabled"
-                    className="config-habit-modal__checkbox"
-                    type="checkbox"
-                    checked={quickAddEnabled}
-                    onClick={(e) => e.stopPropagation()}
-                    onChange={(e) => {
-                      const enabled = e.target.checked;
-                      if (enabled) {
-                        patch({
-                          quickAddItems:
-                            draft.quickAddItems.length > 0
-                              ? draft.quickAddItems
-                              : sortQuickAddItems(['1', '10']),
-                        });
-                        setQuickAddExpanded(true);
-                        return;
-                      }
-                      patch({ quickAddItems: [] });
-                      setQuickAddExpanded(false);
-                    }}
-                  />
-                  <div
-                    className="config-habit-modal__collapsible-header-label"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <ConfigHabitFieldLabel
-                      htmlFor="habit-quick-add-enabled"
-                      label="Quick add options"
-                      info={FIELD_HELP.quickAddOptions}
-                    />
-                  </div>
-                </div>
-                <CollapsibleCard.Toggle ariaLabel="Toggle quick add options" />
-              </CollapsibleCard.Header>
-              <CollapsibleCard.Content>
-                <ConfigHabitQuickAddPills
-                  values={draft.quickAddItems}
-                  onChange={(quickAddItems) => patch({ quickAddItems })}
+            <div className="config-habit-modal__field">
+              <div className="config-habit-modal__label config-habit-modal__checkbox-field">
+                <input
+                  id="habit-goal-enabled"
+                  className="config-habit-modal__checkbox"
+                  type="checkbox"
+                  checked={goalEnabled}
+                  onChange={(e) => setGoalEnabled(e.target.checked)}
                 />
-              </CollapsibleCard.Content>
-            </CollapsibleCard>
+                <ConfigHabitFieldLabel
+                  htmlFor="habit-goal-enabled"
+                  label="Goal"
+                  info="Reach this amount to complete the habit."
+                />
+              </div>
+              <div className="config-habit-modal__control">
+                {goalEnabled ? (
+                  <Input
+                    id="habit-goal"
+                    type="number"
+                    size="small"
+                    className="config-habit-modal__input"
+                    value={draft.goal}
+                    onChange={(goal) => patch({ goal })}
+                    placeholder="Goal"
+                  />
+                ) : null}
+              </div>
+            </div>
+
+            <div className="config-habit-modal__field config-habit-modal__field--option-pills">
+              <div className="config-habit-modal__label config-habit-modal__checkbox-field">
+                <input
+                  id="habit-quick-add-enabled"
+                  className="config-habit-modal__checkbox"
+                  type="checkbox"
+                  checked={quickAddEnabled}
+                  onChange={(e) => setQuickAddEnabled(e.target.checked)}
+                />
+                <ConfigHabitFieldLabel
+                  htmlFor="habit-quick-add-enabled"
+                  label="Quick add options"
+                  info="Frequently used amounts that can be added with one click."
+                />
+              </div>
+              <div className="config-habit-modal__control">
+                {quickAddEnabled ? (
+                  <ConfigHabitQuickAddPills
+                    values={draft.quickAddItems}
+                    onChange={(quickAddItems) => patch({ quickAddItems })}
+                  />
+                ) : null}
+              </div>
+            </div>
           </>
         ) : (
           <>
             <ConfigHabitModalField
-              label="Options"
-              info={FIELD_HELP.options}
+              label="Values"
+              info="Values that can be selected when recording this habit."
+              tooltip="The available choices when recording this habit. For example, a mood habit might use values such as “great”, “good”, “okay”, and “bad”."
               className="config-habit-modal__field--option-pills"
             >
               <ConfigHabitOptionsPills options={habitOptions} onChange={setHabitOptions} />
@@ -277,6 +246,7 @@ export function ConfigCardModal({
               expanded={streakExpanded}
               collapsible={draft.streakEnabled}
               onExpandedChange={setStreakExpanded}
+              className="config-habit-modal__collpasable-card"
             >
               <CollapsibleCard.Header>
                 <div className="collapsible-card__header-main">
@@ -299,16 +269,17 @@ export function ConfigCardModal({
                     <ConfigHabitFieldLabel
                       htmlFor="habit-tracking-enabled"
                       label="Streak tracking"
-                      info={FIELD_HELP.streakEnabled}
+                      tooltip="Track consecutive successful days for this habit. Disable this if you only want to record entries without streaks."
                     />
                   </div>
                 </div>
                 <CollapsibleCard.Toggle ariaLabel="Toggle tracking options" />
               </CollapsibleCard.Header>
-              <CollapsibleCard.Content>
+              <CollapsibleCard.Content className="flex flex-flow-col gap-3">
                 <ConfigHabitModalField
                   label="Streak options"
-                  info={FIELD_HELP.streakOptionsInfo}
+                  info="Values that count toward maintaining a streak."
+                  tooltip="Select which values count as a successful day for streak tracking. If multiple values are selected, any of them will maintain the streak."
                   className="config-habit-modal__field--option-pills"
                 >
                   <ConfigHabitStreakOptionsPills
@@ -319,7 +290,7 @@ export function ConfigCardModal({
                 </ConfigHabitModalField>
                 <ConfigHabitModalField
                   label="Frequency"
-                  info={FIELD_HELP.streakFrequency}
+                  info="Complete this habit at least this many days each week to continue your streak."
                   htmlFor="habit-streak-frequency"
                 >
                   <select
@@ -340,11 +311,7 @@ export function ConfigCardModal({
                     })}
                   </select>
                 </ConfigHabitModalField>
-                <ConfigHabitModalField
-                  label="Show longest"
-                  info={FIELD_HELP.streakShowLongest}
-                  htmlFor="habit-streak-show-longest"
-                >
+                <div className="config-habit-modal__checkbox-field">
                   <input
                     id="habit-streak-show-longest"
                     className="config-habit-modal__checkbox"
@@ -352,85 +319,49 @@ export function ConfigCardModal({
                     checked={draft.streakShowLongest}
                     onChange={(e) => patch({ streakShowLongest: e.target.checked })}
                   />
-                </ConfigHabitModalField>
+                  <ConfigHabitFieldLabel
+                    htmlFor="habit-streak-show-longest"
+                    label="Show longest streak"
+                  />
+                </div>
               </CollapsibleCard.Content>
             </CollapsibleCard>
           </>
         )}
 
         {draft.type === 'summation' ? (
-          <CollapsibleCard
-            expanded={historyExpanded}
-            collapsible={draft.historyEnabled}
-            onExpandedChange={setHistoryExpanded}
-          >
-            <CollapsibleCard.Header>
-              <div className="collapsible-card__header-main">
-                <input
-                  id="habit-history-enabled"
-                  className="config-habit-modal__checkbox"
-                  type="checkbox"
-                  checked={draft.historyEnabled}
-                  onClick={(e) => e.stopPropagation()}
-                  onChange={(e) => {
-                    const historyEnabled = e.target.checked;
-                    patch({
-                      historyEnabled,
-                      ...(historyEnabled
-                        ? {
-                            historyPeriodAmount: draft.historyPeriodAmount.trim() || '1',
-                            historyPeriodUnit: draft.historyPeriodUnit,
-                          }
-                        : {}),
-                    });
-                    setHistoryExpanded(historyEnabled);
-                  }}
-                />
-                <div
-                  className="config-habit-modal__collapsible-header-label"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <ConfigHabitFieldLabel
-                    htmlFor="habit-history-enabled"
-                    label="History"
-                    info={FIELD_HELP.historyEnabled}
-                  />
-                </div>
-              </div>
-              <CollapsibleCard.Toggle ariaLabel="Toggle history options" />
-            </CollapsibleCard.Header>
-            <CollapsibleCard.Content>
-              <ConfigHabitModalField
-                label="History length"
-                info={FIELD_HELP.historyLength}
-                htmlFor="habit-history-amount"
-              >
-                <div className="config-habit-modal__history-period">
+          <div className="config-habit-modal__field">
+            <div className="config-habit-modal__label config-habit-modal__checkbox-field">
+              <input
+                id="habit-history-enabled"
+                className="config-habit-modal__checkbox"
+                type="checkbox"
+                checked={draft.historyEnabled}
+                onChange={(e) => setHistoryEnabled(e.target.checked)}
+              />
+              <ConfigHabitFieldLabel
+                htmlFor="habit-history-enabled"
+                label="History"
+                info="Show a chart of past entries for this habit."
+              />
+            </div>
+            <div className="config-habit-modal__control">
+              {draft.historyEnabled ? (
+                <div className="config-habit-modal__history-length">
                   <Input
                     id="habit-history-amount"
                     type="number"
                     size="small"
-                    className="config-habit-modal__history-period-amount"
+                    className="config-habit-modal__history-length-input"
                     value={draft.historyPeriodAmount}
                     onChange={(historyPeriodAmount) => patch({ historyPeriodAmount })}
+                    placeholder="Length"
                   />
-                  <select
-                    id="habit-history-unit"
-                    className="config-habit-modal__select config-habit-modal__history-period-unit text-b-m"
-                    value={draft.historyPeriodUnit}
-                    onChange={(e) =>
-                      patch({
-                        historyPeriodUnit: e.target.value === 'd' ? 'd' : ('w' as const),
-                      })
-                    }
-                  >
-                    <option value="w">Weeks</option>
-                    <option value="d">Days</option>
-                  </select>
+                  <span className="text-b-m text-light">weeks</span>
                 </div>
-              </ConfigHabitModalField>
-            </CollapsibleCard.Content>
-          </CollapsibleCard>
+              ) : null}
+            </div>
+          </div>
         ) : null}
 
         {error != null ? (

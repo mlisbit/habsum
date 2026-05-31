@@ -10,7 +10,7 @@ import {
 } from 'react';
 import { Button } from '~/core-components/Button';
 
-export type ModalSize = 'medium' | 'large';
+export type ModalSize = 'medium' | 'large' | 'xl';
 
 type ActiveModal = {
   generation: number;
@@ -173,7 +173,12 @@ export function ModalProvider({ children }: { children: ReactNode }) {
       {active ? (
         <div className="modal__backdrop" role="presentation" onClick={closeModal}>
           <div
-            className={['modal__dialog', 'card', active.size === 'large' && 'modal__dialog--large']
+            className={[
+              'modal__dialog',
+              'card',
+              active.size === 'large' && 'modal__dialog--large',
+              active.size === 'xl' && 'modal__dialog--xl',
+            ]
               .filter(Boolean)
               .join(' ')}
             role="dialog"

@@ -4,6 +4,10 @@
   display: flex;
 }
 
+.flex-flow-col {
+  flex-flow: column;
+}
+
 .align-items-center {
   align-items: center;
 }
@@ -14,4 +18,8 @@
 
 .gap-2 {
   gap: functions.spacing(2);
+}
+
+.gap-3 {
+  gap: functions.spacing(3);
 }
