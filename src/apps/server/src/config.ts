@@ -37,6 +37,7 @@ export type HabitDef = {
   type: HabitType;
   goal: number | null;
   options?: string[];
+  theme?: string;
   /** Fixed +/− steps from YAML `summation_options` (array) or legacy `{ sub, add }`. */
   summationOptions?: SummationOptions;
   history?: {
@@ -61,6 +62,7 @@ type RawHabit = {
   type?: HabitType;
   goal?: number;
   options?: string[];
+  theme?: unknown;
   /** `[subtract, add]` or `{ sub, add }` / `{ add, sub }` */
   summation_options?: unknown;
   summationOptions?: unknown;
@@ -186,6 +188,10 @@ function parseUserConfig(user: string, parsed: unknown): UserConfig {
         type,
         goal: rawHabit.goal ?? null,
         options: opts,
+        theme:
+          type === 'single_select' && typeof rawHabit.theme === 'string'
+            ? rawHabit.theme
+            : undefined,
         summationOptions:
           type === 'summation'
             ? parseSummationOptionsFromRaw(rawHabit.summation_options ?? rawHabit.summationOptions)

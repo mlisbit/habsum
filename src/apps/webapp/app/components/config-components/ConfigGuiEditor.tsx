@@ -248,8 +248,14 @@ export function ConfigGuiEditor({
   );
 
   const addHabitWithType = useCallback(
-    (type: HabitTypeChoice) => {
-      const { text: next, habitName } = addHabitToConfigYaml(configTextRef.current, type);
+    (typeChoice: HabitTypeChoice) => {
+      const type = typeChoice === 'checkbox' ? 'single_select' : typeChoice;
+      const checkboxTheme = typeChoice === 'checkbox';
+      const { text: next, habitName } = addHabitToConfigYaml(
+        configTextRef.current,
+        type,
+        checkboxTheme ? { theme: 'checkbox' } : undefined,
+      );
       configTextRef.current = next;
       onConfigTextChangeRef.current(next);
       pendingNewHabitRef.current = habitName;
@@ -260,7 +266,9 @@ export function ConfigGuiEditor({
           goal: null,
           hasSummationOptions: false,
           hasHistory: false,
-          ...(type === 'single_select' ? { optionLabels: ['1', '2', '3'] } : {}),
+          ...(type === 'single_select'
+            ? { optionLabels: checkboxTheme ? ['yes', 'no'] : ['1', '2', '3'] }
+            : {}),
         },
         { isNew: true, configText: next },
       );

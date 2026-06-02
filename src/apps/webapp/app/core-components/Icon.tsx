@@ -1,5 +1,6 @@
 import {
   ArrowUp,
+  Check,
   ChevronLeft,
   ChevronRight,
   Circle,
@@ -35,6 +36,7 @@ const ICON_COMPONENTS = {
   /** Same glyph as `chevronLeft`, for semantics (e.g. “back”). */
   chevronBack: ChevronLeft,
   arrowUp: ArrowUp,
+  check: Check,
   close: X,
   'circle-check': CircleCheck,
   circle: Circle,

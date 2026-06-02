@@ -35,4 +35,13 @@ export const PREVIEW_SINGLE_SELECT_HABIT: HabitRowSingleSelect = {
   streak: PREVIEW_SINGLE_SELECT_STREAK,
 };
 
+export const PREVIEW_CHECKBOX_HABIT: HabitRowSingleSelect = {
+  name: 'Brush teeth',
+  type: 'single_select',
+  goal: null,
+  options: ['yes', 'no'],
+  theme: 'checkbox',
+  value: null,
+};
+
 export async function previewNoop(): Promise<void> {}

@@ -21,3 +21,26 @@
 .habit-select__option--dim {
   opacity: 0.55;
 }
+
+.habit-select__checkbox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--border-color-faint);
+  border-radius: var(--border-radius-s);
+  background: var(--background-secondary);
+  cursor: pointer;
+}
+
+.habit-select__checkbox:hover:not(:disabled) {
+  border-color: var(--accent-selected);
+  background: var(--background-tertiary);
+}
+
+.habit-select__checkbox:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}

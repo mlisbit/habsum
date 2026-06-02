@@ -15,6 +15,7 @@ export type ConfigHabitDraft = {
   /** Ordered numeric amounts for YAML `summation_options`. */
   quickAddItems: string[];
   optionsText: string;
+  theme: string;
   streakEnabled: boolean;
   streakOptionsText: string;
   /** Streak days required per week (`1`–`7`; `7` = daily). */
@@ -38,6 +39,7 @@ export function isHabitDraftDirty(initial: ConfigHabitDraft, draft: ConfigHabitD
     initial.goal !== draft.goal ||
     !quickAddItemsEqual(initial.quickAddItems, draft.quickAddItems) ||
     initial.optionsText !== draft.optionsText ||
+    initial.theme !== draft.theme ||
     initial.streakEnabled !== draft.streakEnabled ||
     initial.streakOptionsText !== draft.streakOptionsText ||
     initial.streakFrequencyPerWeek !== draft.streakFrequencyPerWeek ||
@@ -218,6 +220,7 @@ export function parseHabitDraftFromDef(name: string, def: unknown): ConfigHabitD
     goal,
     ...parseQuickAddFromDef(def),
     optionsText: options.join('\n'),
+    theme: type === 'single_select' && typeof def.theme === 'string' ? def.theme : '',
     streakEnabled,
     streakOptionsText,
     streakFrequencyPerWeek,
@@ -261,6 +264,9 @@ function draftToRawHabit(draft: ConfigHabitDraft): Record<string, unknown> {
       throw new Error('single select habits need at least one option');
     }
     def.options = options;
+    if (draft.theme.trim().length > 0) {
+      def.theme = draft.theme.trim();
+    }
 
     if (draft.streakEnabled) {
       const allowed = new Set(options);
@@ -373,6 +379,7 @@ function uniqueNewHabitName(
 export function addHabitToConfigYaml(
   text: string,
   type: 'summation' | 'single_select' = 'summation',
+  options?: { theme?: string },
 ): { text: string; habitName: string } {
   let parsed: unknown;
   try {
@@ -389,7 +396,9 @@ export function addHabitToConfigYaml(
   const habitName = uniqueNewHabitName(existingNames);
   habits[habitName] =
     type === 'single_select'
-      ? { type: 'single_select', options: ['1', '2', '3'] }
+      ? options?.theme === 'checkbox'
+        ? { type: 'single_select', options: ['yes', 'no'], theme: 'checkbox' }
+        : { type: 'single_select', options: ['1', '2', '3'] }
       : { type: 'summation' };
 
   const order = [...existingNames, habitName];

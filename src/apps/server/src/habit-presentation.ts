@@ -57,6 +57,7 @@ export function habitRowsForHistory(
         type: 'single_select',
         goal: habitDef.goal,
         options: habitDef.options ?? [],
+        ...(habitDef.theme ? { theme: habitDef.theme } : {}),
         value: r.value,
       } satisfies Habit,
     }));
@@ -85,6 +86,7 @@ export function emptyHabitForHistory(habitDef: HabitDef): Habit {
       type: 'single_select',
       goal: habitDef.goal,
       options: habitDef.options ?? [],
+      ...(habitDef.theme ? { theme: habitDef.theme } : {}),
       value: null,
     } satisfies Habit;
   }

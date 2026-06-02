@@ -10,6 +10,7 @@ export type PatchHabitResponse =
       value: string | null;
       type: 'single_select';
       options: string[];
+      theme?: string;
       /** Same shape as `GET .../habits` when YAML defines `streak`. */
       streak?: StreakGraphData;
     }

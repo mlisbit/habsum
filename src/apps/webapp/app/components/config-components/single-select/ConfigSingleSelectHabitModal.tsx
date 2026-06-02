@@ -34,6 +34,10 @@ function removedOptionsWithoutRename(
   return looksLikeRename ? [] : removed;
 }
 
+function hasYesNoOptions(options: string[]): boolean {
+  return options.length === 2 && options.includes('yes') && options.includes('no');
+}
+
 export function ConfigSingleSelectHabitModal(props: ConfigSingleSelectHabitModalProps) {
   const {
     draft,
@@ -58,12 +62,14 @@ export function ConfigSingleSelectHabitModal(props: ConfigSingleSelectHabitModal
   const removedOptionsWithDataLabel = removedOptionsWithData
     .map((option) => `"${option}"`)
     .join(', ');
+  const showCheckboxThemeToggle = hasYesNoOptions(habitOptions);
 
   const setHabitOptions = (options: string[]) => {
     const allowed = new Set(options);
     patch({
       optionsText: formatOptionLines(options),
       streakOptionsText: formatOptionLines(streakOptions.filter((opt) => allowed.has(opt))),
+      ...(hasYesNoOptions(options) ? {} : { theme: '' }),
     });
   };
 
@@ -97,6 +103,22 @@ export function ConfigSingleSelectHabitModal(props: ConfigSingleSelectHabitModal
         >
           <div className="config-habit-modal__field-control-stack">
             <ConfigHabitOptionsPills options={habitOptions} onChange={setHabitOptions} />
+            {showCheckboxThemeToggle ? (
+              <div className="config-habit-modal__checkbox-field">
+                <input
+                  id="habit-theme-checkbox"
+                  className="config-habit-modal__checkbox"
+                  type="checkbox"
+                  checked={draft.theme === 'checkbox'}
+                  onChange={(e) => patch({ theme: e.target.checked ? 'checkbox' : '' })}
+                />
+                <ConfigHabitFieldLabel
+                  htmlFor="habit-theme-checkbox"
+                  label="Show as checkbox"
+                  tooltip="Render yes, no, and empty values as a tri-state checkbox on the habit page."
+                />
+              </div>
+            ) : null}
             {removedOptionsWithData.length > 0 ? (
               <InfoText variant="warning" className="config-habit-modal__error">
                 Your existing entries that use {removedOptionsWithDataLabel} value will also be

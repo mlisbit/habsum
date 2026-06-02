@@ -200,6 +200,59 @@ describe('applyHabitDraftToConfigYaml', () => {
     });
   });
 
+  it('preserves existing single_select theme when editing in the GUI', () => {
+    const yamlText = `habits:
+  brush teeth:
+    type: single_select
+    options: [yes, no]
+    theme: checkbox
+`;
+    const base = parseHabitDraftFromText(yamlText, 'brush teeth');
+    const draft: ConfigHabitDraft = {
+      ...base,
+      name: 'brush before bed',
+    };
+    const out = applyHabitDraftToConfigYaml(yamlText, draft, 'brush teeth');
+    const habits = (yaml.load(out) as { habits: Record<string, unknown> }).habits;
+    expect(habits['brush before bed']).toEqual({
+      type: 'single_select',
+      options: ['yes', 'no'],
+      theme: 'checkbox',
+    });
+  });
+
+  it('writes and removes single_select checkbox theme from the draft', () => {
+    const yamlText = `habits:
+  brush teeth:
+    type: single_select
+    options: [yes, no]
+`;
+    const base = parseHabitDraftFromText(yamlText, 'brush teeth');
+    const themed = applyHabitDraftToConfigYaml(
+      yamlText,
+      { ...base, theme: 'checkbox' },
+      'brush teeth',
+    );
+    let habits = (yaml.load(themed) as { habits: Record<string, unknown> }).habits;
+    expect(habits['brush teeth']).toEqual({
+      type: 'single_select',
+      options: ['yes', 'no'],
+      theme: 'checkbox',
+    });
+
+    const themedBase = parseHabitDraftFromText(themed, 'brush teeth');
+    const unthemed = applyHabitDraftToConfigYaml(
+      themed,
+      { ...themedBase, theme: '' },
+      'brush teeth',
+    );
+    habits = (yaml.load(unthemed) as { habits: Record<string, unknown> }).habits;
+    expect(habits['brush teeth']).toEqual({
+      type: 'single_select',
+      options: ['yes', 'no'],
+    });
+  });
+
   it('writes history period from amount and unit', () => {
     const base = parseHabitDraftFromText(SAMPLE, 'push ups');
     const draft: ConfigHabitDraft = {
@@ -254,6 +307,19 @@ describe('addHabitToConfigYaml', () => {
     expect(habits['New habit']).toEqual({
       type: 'single_select',
       options: ['1', '2', '3'],
+    });
+  });
+
+  it('appends a checkbox single select habit with yes/no options and theme', () => {
+    const { text, habitName } = addHabitToConfigYaml(SAMPLE, 'single_select', {
+      theme: 'checkbox',
+    });
+    expect(habitName).toBe('New habit');
+    const habits = (yaml.load(text) as { habits: Record<string, unknown> }).habits;
+    expect(habits['New habit']).toEqual({
+      type: 'single_select',
+      options: ['yes', 'no'],
+      theme: 'checkbox',
     });
   });
 

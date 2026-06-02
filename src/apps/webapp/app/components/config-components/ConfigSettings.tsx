@@ -1,11 +1,12 @@
 // exclusive-bem-block: config-page
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useLocation, useNavigate } from '@remix-run/react';
+import { useBlocker, useLocation, useNavigate } from '@remix-run/react';
 import { getUserConfig, putUserConfig, type UserConfigInsights } from '~/api.client';
 import { ConfigGuiEditor } from './ConfigGuiEditor';
 import { ConfigYamlEditor } from './ConfigYamlEditor';
 import { SettingsHeader } from '~/components/SettingsHeader';
 import { Button } from '~/core-components/Button';
+import { AlertModal, useModal } from '~/context/modal';
 import { useToast } from '~/context/toast';
 import {
   buildConfigDeletions,
@@ -37,6 +38,7 @@ export function ConfigSettings({ user }: ConfigSettingsProps) {
   const [saveError, setSaveError] = useState<string | null>(null);
   const addHabitRef = useRef<(() => void) | null>(null);
   const { showToast } = useToast();
+  const { present, closeModal } = useModal();
 
   useEffect(() => {
     if (!user) return;
@@ -74,6 +76,39 @@ export function ConfigSettings({ user }: ConfigSettingsProps) {
   const yamlDirty = text !== initialText;
   const orderDirty = habitOrderKey(habitOrder) !== initialHabitOrderKey;
   const dirty = yamlDirty || orderDirty;
+  const blocker = useBlocker(
+    ({ currentLocation, nextLocation }) =>
+      dirty && currentLocation.pathname !== nextLocation.pathname,
+  );
+  const blockerRef = useRef(blocker);
+  blockerRef.current = blocker;
+  const presentRef = useRef(present);
+  presentRef.current = present;
+  const closeModalRef = useRef(closeModal);
+  closeModalRef.current = closeModal;
+
+  useEffect(() => {
+    if (blocker.state !== 'blocked') return;
+    const dismiss = presentRef.current({
+      onRequestClose: () => {
+        const b = blockerRef.current;
+        if (b.state === 'blocked') b.reset();
+      },
+      content: (
+        <AlertModal
+          title="Unsaved changes"
+          message="You have unsaved changes on this page. Leave now and they will be discarded."
+          onCancel={() => closeModalRef.current()}
+          onContinueWithoutSaving={() => {
+            dismiss();
+            const b = blockerRef.current;
+            if (b.state === 'blocked') b.proceed();
+          }}
+        />
+      ),
+    });
+    return dismiss;
+  }, [blocker.state]);
 
   const toggleView = useCallback(() => {
     if (!yamlView && orderDirty) {

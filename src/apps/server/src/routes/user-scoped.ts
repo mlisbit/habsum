@@ -682,6 +682,7 @@ userScopedRouter.get(
           goal: h.goal,
           type: 'single_select' as const,
           options: h.options ?? [],
+          ...(h.theme ? { theme: h.theme } : {}),
           value: getSelect(user, h.name, date),
           ...(h.streak
             ? {
@@ -787,6 +788,7 @@ userScopedRouter.patch(
           value: null,
           type: known.type,
           options: opts,
+          ...(known.theme ? { theme: known.theme } : {}),
           ...(known.streak
             ? {
                 streak: streakGraphForConfiguredWindow(
@@ -821,6 +823,7 @@ userScopedRouter.patch(
         value: next,
         type: known.type,
         options: opts,
+        ...(known.theme ? { theme: known.theme } : {}),
         ...(known.streak
           ? {
               streak: streakGraphForConfiguredWindow(

@@ -4,13 +4,14 @@ import { SingleSelectWidget, SummationWidget } from '~/components/widgets';
 import { ModalBody, ModalHeader } from '~/context/modal';
 import {
   PREVIEW_SINGLE_SELECT_HABIT,
+  PREVIEW_CHECKBOX_HABIT,
   PREVIEW_SUMMATION_HABIT,
   PREVIEW_USER,
   PREVIEW_VIEW_DATE,
   previewNoop,
 } from './utils';
 
-export type HabitTypeChoice = 'summation' | 'single_select';
+export type HabitTypeChoice = 'summation' | 'single_select' | 'checkbox';
 
 type ConfigHabitTypePickerModalProps = {
   onSelect: (type: HabitTypeChoice) => void;
@@ -34,6 +35,18 @@ function SingleSelectTypePreview() {
     <SingleSelectWidget
       user={PREVIEW_USER}
       habit={PREVIEW_SINGLE_SELECT_HABIT}
+      dayKey={PREVIEW_VIEW_DATE}
+      onSelectOption={previewNoop}
+      onClearSelection={previewNoop}
+    />
+  );
+}
+
+function CheckboxTypePreview() {
+  return (
+    <SingleSelectWidget
+      user={PREVIEW_USER}
+      habit={PREVIEW_CHECKBOX_HABIT}
       dayKey={PREVIEW_VIEW_DATE}
       onSelectOption={previewNoop}
       onClearSelection={previewNoop}
@@ -81,6 +94,12 @@ export function ConfigHabitTypePickerModal({ onSelect }: ConfigHabitTypePickerMo
             description="Pick one option from a list, with optional streak tracking."
             preview={<SingleSelectTypePreview />}
             onSelect={() => onSelect('single_select')}
+          />
+          <TypeOption
+            title="Checkbox"
+            description="Track yes, no, or empty with a compact tri-state checkbox."
+            preview={<CheckboxTypePreview />}
+            onSelect={() => onSelect('checkbox')}
           />
         </div>
       </ModalBody>
