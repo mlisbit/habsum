@@ -68,8 +68,10 @@ function TypeOption({ title, description, onSelect, preview }: TypeOptionProps) 
       className="card card--clickable config-habit-type-picker__option"
       onClick={onSelect}
     >
-      <span className="text-h-m">{title}</span>
-      <p className="text-b-s text-light">{description}</p>
+      <div className="config-habit-type-picker__option-copy">
+        <span className="text-h-m">{title}</span>
+        <p className="config-habit-type-picker__description text-b-s text-light">{description}</p>
+      </div>
       <div className="config-habit-type-picker__preview">
         <div className="config-habit-type-picker__preview-sample">{preview}</div>
       </div>
@@ -80,24 +82,24 @@ function TypeOption({ title, description, onSelect, preview }: TypeOptionProps) 
 export function ConfigHabitTypePickerModal({ onSelect }: ConfigHabitTypePickerModalProps) {
   return (
     <>
-      <ModalHeader>Choose your habit style</ModalHeader>
+      <ModalHeader>How do you want to track this habit?</ModalHeader>
       <ModalBody className="config-habit-type-picker">
         <div className="config-habit-type-picker__options">
           <TypeOption
-            title="Summation"
-            description="Track a numeric total for the day, with an optional goal."
+            title="Count toward a goal"
+            description="Great for water, reading, exercise, or anything you measure with numbers."
             preview={<SummationTypePreview />}
             onSelect={() => onSelect('summation')}
           />
           <TypeOption
-            title="Single select"
-            description="Pick one option from a list, with optional streak tracking."
+            title="Choose one option"
+            description="Great for mood, alcohol intake, sleep quality, or other ratings."
             preview={<SingleSelectTypePreview />}
             onSelect={() => onSelect('single_select')}
           />
           <TypeOption
-            title="Checkbox"
-            description="Track yes, no, or empty with a compact tri-state checkbox."
+            title="Yes / No"
+            description="Great for habits that are simply done or not done."
             preview={<CheckboxTypePreview />}
             onSelect={() => onSelect('checkbox')}
           />

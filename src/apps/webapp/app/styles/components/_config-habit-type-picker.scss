@@ -14,10 +14,10 @@
 }
 
 .config-habit-type-picker__option {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: functions.spacing(1);
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(14rem, 3fr);
+  align-items: center;
+  gap: functions.spacing(3);
   width: 100%;
   min-width: 0;
   margin-bottom: 0;
@@ -25,9 +25,19 @@
   font: inherit;
 }
 
+.config-habit-type-picker__option-copy {
+  display: flex;
+  flex-direction: column;
+  gap: functions.spacing(1);
+  min-width: 0;
+}
+
+.config-habit-type-picker__description {
+  margin: 0;
+}
+
 .config-habit-type-picker__preview {
   pointer-events: none;
-  margin-top: functions.spacing(1);
   min-width: 0;
 }
 
@@ -35,4 +45,12 @@
   display: flex;
   flex-direction: column;
   gap: functions.spacing(2);
+}
+
+@media (max-width: 640px) {
+  .config-habit-type-picker__option {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    gap: functions.spacing(2);
+  }
 }
