@@ -4,8 +4,8 @@ import { dayFromString } from '@habsum/types/common/day';
 import { HabitWidgetHeading } from '~/components/widgets/HabitWidgetHeading';
 import { HabitWidgetMenuModal } from '~/components/widgets/modules/HabitWidgetMenuModal';
 import { InfoText } from '@habsum/ui/components/InfoText';
-import { Icon } from '@habsum/ui/components/Icon';
 import { TogglePill } from '@habsum/ui/components/Pill';
+import { TernaryCheckbox, type TernaryCheckboxValue } from '@habsum/ui/components/TernaryCheckbox';
 import { useModal } from '@habsum/ui/contexts/modal';
 import { Streak } from '~/components/widgets/modules/Streak';
 import { classBuilder } from '~/utils/class-builder';
@@ -33,10 +33,8 @@ function isCheckboxTheme(habit: HabitRowSingleSelect): boolean {
   );
 }
 
-function nextCheckboxThemeValue(value: string | null): 'yes' | 'no' | null {
-  if (value == null) return 'yes';
-  if (value === 'yes') return 'no';
-  return null;
+function toTernaryCheckboxValue(value: string | null): TernaryCheckboxValue {
+  return value === 'yes' || value === 'no' ? value : null;
 }
 
 export function SingleSelectWidget({
@@ -90,19 +88,11 @@ export function SingleSelectWidget({
           onMenuClick={openResetModal}
         />
         {checkboxTheme ? (
-          <button
-            className={classBuilder(
-              {
-                'habit-select__checkbox--yes': habit.value === 'yes',
-                'habit-select__checkbox--no': habit.value === 'no',
-              },
-              'habit-select__checkbox',
-            )}
-            type="button"
+          <TernaryCheckbox
+            value={toTernaryCheckboxValue(habit.value)}
             aria-label={`${habit.name}: ${habit.value ?? 'not set'}`}
             disabled={pending}
-            onClick={() => {
-              const nextValue = nextCheckboxThemeValue(habit.value);
+            onChange={(nextValue) => {
               void (async () => {
                 setPending(true);
                 setError(null);
@@ -119,12 +109,7 @@ export function SingleSelectWidget({
                 }
               })();
             }}
-          >
-            {habit.value === 'yes' ? (
-              <Icon name="check" sizePx={24} className="text-success" />
-            ) : null}
-            {habit.value === 'no' ? <Icon name="close" sizePx={24} className="text-error" /> : null}
-          </button>
+          />
         ) : (
           <div className="habit-select__options">
             {habit.options.map((opt) => {

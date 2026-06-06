@@ -78,11 +78,11 @@ export function ModalHeader({
 }
 
 export function ModalBody({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={className}>{children}</div>;
+  return <div className={['modal__content', className].filter(Boolean).join(' ')}>{children}</div>;
 }
 
-export function ModalActions({ children }: { children: ReactNode }) {
-  return <div className="modal__actions">{children}</div>;
+export function ModalFooter({ children, className }: { children: ReactNode; className?: string }) {
+  return <div className={['modal__footer', className].filter(Boolean).join(' ')}>{children}</div>;
 }
 
 export type AlertModalProps = {
@@ -113,10 +113,10 @@ export function AlertModal({
       <ModalBody>
         <p className="text-b-m text-light">{message}</p>
       </ModalBody>
-      <ModalActions>
+      <ModalFooter>
         <Button type="secondary" text={cancelLabel} onClick={onCancel} />
         <Button type="primary" text={continueLabel} onClick={onContinueWithoutSaving} />
-      </ModalActions>
+      </ModalFooter>
     </>
   );
 }
@@ -176,7 +176,6 @@ export function ModalProvider({ children }: { children: ReactNode }) {
           <div
             className={[
               'modal__dialog',
-              'card',
               active.size === 'large' && 'modal__dialog--large',
               active.size === 'xl' && 'modal__dialog--xl',
             ]

@@ -44,10 +44,6 @@
   overflow-wrap: anywhere;
 }
 
-.developer-page__user-details-modal {
-  margin-block: functions.spacing(3);
-}
-
 .developer-page__user-details {
   margin: 0;
   display: flex;
@@ -84,7 +80,6 @@
   display: flex;
   flex-direction: column;
   gap: functions.spacing(2);
-  margin-block: functions.spacing(3);
 }
 
 .developer-page__add-user-input {

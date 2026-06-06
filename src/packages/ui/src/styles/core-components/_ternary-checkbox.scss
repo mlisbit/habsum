@@ -1,0 +1,23 @@
+// Block: ternary-checkbox
+.ternary-checkbox {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--cta-secondary-border);
+  border-radius: var(--border-radius-m);
+  background: var(--background-secondary);
+  cursor: pointer;
+}
+
+.ternary-checkbox:hover:not(:disabled) {
+  border-color: var(--accent-selected);
+  background: var(--background-tertiary);
+}
+
+.ternary-checkbox:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}

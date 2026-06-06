@@ -18,7 +18,7 @@ import { Hoverable } from '@habsum/ui/components/Hoverable';
 import type { IconName } from '@habsum/ui/components/Icon';
 import { InfoText } from '@habsum/ui/components/InfoText';
 import { Input } from '@habsum/ui/components/Input';
-import { ModalActions, ModalBody, ModalHeader, useModal } from '@habsum/ui/contexts/modal';
+import { ModalBody, ModalFooter, ModalHeader, useModal } from '@habsum/ui/contexts/modal';
 import { useToast } from '@habsum/ui/contexts/toast';
 
 const clockFormat: Intl.DateTimeFormatOptions = {
@@ -106,9 +106,9 @@ function UserDetailsModal({ user, onClose }: { user: ListUserItem; onClose: () =
           </div>
         </dl>
       </ModalBody>
-      <ModalActions>
+      <ModalFooter>
         <Button type="primary" size="medium" text="Done" onClick={onClose} />
-      </ModalActions>
+      </ModalFooter>
     </>
   );
 }
@@ -175,9 +175,9 @@ function UserCredentialsModal({
           </div>
         </dl>
       </ModalBody>
-      <ModalActions>
+      <ModalFooter>
         <Button type="primary" size="medium" text="Done" onClick={onClose} />
-      </ModalActions>
+      </ModalFooter>
     </>
   );
 }
@@ -218,9 +218,9 @@ function UserInvitedModal({
           the link in that message.
         </p>
       </ModalBody>
-      <ModalActions>
+      <ModalFooter>
         <Button type="primary" size="medium" text="Done" onClick={onClose} />
-      </ModalActions>
+      </ModalFooter>
     </>
   );
 }
@@ -298,7 +298,7 @@ function InviteUserModal({ onCreated, onClose }: InviteUserModalProps) {
         />
         {error ? <InfoText variant="error">{error}</InfoText> : null}
       </ModalBody>
-      <ModalActions>
+      <ModalFooter>
         <Button
           type="secondary"
           size="medium"
@@ -322,7 +322,7 @@ function InviteUserModal({ onCreated, onClose }: InviteUserModalProps) {
           disabled={isSubmitting || !canSendInvite}
           onClick={() => void submit(true)}
         />
-      </ModalActions>
+      </ModalFooter>
     </>
   );
 }
@@ -359,7 +359,7 @@ function ResetPasswordModal({ targetUsername, onDone, onClose }: ManageUserModal
         <ModalBody className="developer-page__add-user-modal">
           <InfoText variant="error">{error}</InfoText>
         </ModalBody>
-        <ModalActions>
+        <ModalFooter>
           <Button
             type="secondary"
             size="medium"
@@ -375,7 +375,7 @@ function ResetPasswordModal({ targetUsername, onDone, onClose }: ManageUserModal
             disabled={busy}
             onClick={() => void handleReset()}
           />
-        </ModalActions>
+        </ModalFooter>
       </>
     );
   }
@@ -393,7 +393,7 @@ function ResetPasswordModal({ targetUsername, onDone, onClose }: ManageUserModal
             Their current password will stop working immediately. Share the new password securely.
           </p>
         </ModalBody>
-        <ModalActions>
+        <ModalFooter>
           <Button
             type="secondary"
             size="medium"
@@ -409,7 +409,7 @@ function ResetPasswordModal({ targetUsername, onDone, onClose }: ManageUserModal
             disabled={busy}
             onClick={() => void handleReset()}
           />
-        </ModalActions>
+        </ModalFooter>
       </>
     );
   }
@@ -455,7 +455,7 @@ function DeleteUserModal({ targetUsername, onDone, onClose }: ManageUserModalPro
         </p>
         {error ? <InfoText variant="error">{error}</InfoText> : null}
       </ModalBody>
-      <ModalActions>
+      <ModalFooter>
         <Button
           type="secondary"
           size="medium"
@@ -471,7 +471,7 @@ function DeleteUserModal({ targetUsername, onDone, onClose }: ManageUserModalPro
           disabled={busy}
           onClick={() => void handleDelete()}
         />
-      </ModalActions>
+      </ModalFooter>
     </>
   );
 }

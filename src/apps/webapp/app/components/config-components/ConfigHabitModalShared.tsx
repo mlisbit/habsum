@@ -1,6 +1,6 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import type { UserConfigHabitInsight } from '~/api.client';
-import { ModalActions } from '@habsum/ui/contexts/modal';
+import { ModalFooter } from '@habsum/ui/contexts/modal';
 import { Button } from '@habsum/ui/components/Button';
 import { ConfigHabitFieldLabel } from './ConfigHabitFieldLabel';
 import {
@@ -136,25 +136,23 @@ export function ConfigHabitModalActions({
   onDoneClick: () => void;
 }) {
   return (
-    <ModalActions>
-      <div className="config-habit-modal__actions">
+    <ModalFooter className="config-habit-modal__actions">
+      <Button
+        type="secondary"
+        color="danger"
+        text={saving ? 'Removing…' : 'Remove'}
+        onClick={onRemoveClick}
+        disabled={saving}
+      />
+      <div className="config-habit-modal__actions-main">
+        <Button type="secondary" text="Cancel" onClick={onCancel} disabled={saving} />
         <Button
-          type="secondary"
-          color="danger"
-          text={saving ? 'Removing…' : 'Remove'}
-          onClick={onRemoveClick}
-          disabled={saving}
+          type="primary"
+          text={saving ? 'Saving…' : 'Done'}
+          onClick={onDoneClick}
+          disabled={saving || !dirty}
         />
-        <div className="config-habit-modal__actions-main">
-          <Button type="secondary" text="Cancel" onClick={onCancel} disabled={saving} />
-          <Button
-            type="primary"
-            text={saving ? 'Saving…' : 'Done'}
-            onClick={onDoneClick}
-            disabled={saving || !dirty}
-          />
-        </div>
       </div>
-    </ModalActions>
+    </ModalFooter>
   );
 }

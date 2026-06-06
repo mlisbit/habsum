@@ -14,7 +14,9 @@
 .modal__dialog {
   width: min(100%, 22rem);
   margin-bottom: 0;
+  background: var(--background-secondary);
   box-shadow: var(--elevation-shadow);
+  border-radius: var(--border-radius-m);
 }
 
 .modal__dialog--large {
@@ -25,11 +27,21 @@
   width: min(100%, 48rem);
 }
 
+.modal__content {
+  padding: functions.spacing(3);
+  min-width: 0;
+}
+
 .modal__header {
   display: flex;
   align-items: center;
   gap: functions.spacing(1);
-  margin-bottom: functions.spacing(3);
+  padding: functions.spacing(2, 3);
+  border-bottom: 1px solid var(--border-color-faint);
+}
+
+.modal__footer {
+  border-top: 1px solid var(--border-color-faint);
 }
 
 .modal__header-title {
@@ -53,8 +65,8 @@
   margin-left: auto;
 }
 
-.modal__actions {
-  margin-top: functions.spacing(3);
+.modal__footer {
   display: flex;
   justify-content: flex-end;
+  padding: functions.spacing(2, 3);
 }
