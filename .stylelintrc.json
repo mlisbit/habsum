@@ -12,8 +12,8 @@
   "overrides": [
     {
       "files": [
-        "src/apps/webapp/app/styles/_reset.scss",
-        "src/apps/webapp/app/styles/_tokens.scss"
+        "src/packages/ui/src/styles/_reset.scss",
+        "src/packages/ui/src/styles/_tokens.scss"
       ],
       "rules": {
         "selector-max-type": null,
@@ -24,8 +24,8 @@
     },
     {
       "files": [
-        "src/apps/webapp/app/styles/foundation/_text.scss",
-        "src/apps/webapp/app/styles/foundation/_atomic.scss"
+        "src/packages/ui/src/styles/foundation/_text.scss",
+        "src/packages/ui/src/styles/foundation/_atomic.scss"
       ],
       "rules": {
         "habsum/bem-block-matches-filename": null,
@@ -33,7 +33,7 @@
       }
     },
     {
-      "files": ["src/apps/webapp/app/styles/_theme.scss"],
+      "files": ["src/packages/ui/src/styles/_theme.scss"],
       "rules": {
         "selector-max-type": null,
         "habsum/bem-block-matches-filename": null,

@@ -5,9 +5,9 @@ import { HabitWidgetHeading } from '~/components/widgets/HabitWidgetHeading';
 import { History } from '~/components/widgets/modules/History';
 import { Events } from '~/components/widgets/modules/Events';
 import { HabitWidgetMenuModal } from '~/components/widgets/modules/HabitWidgetMenuModal';
-import { InfoText } from '~/core-components/InfoText';
-import { ProgressBar } from '~/core-components/ProgressBar';
-import { useModal } from '~/context/modal';
+import { InfoText } from '@habsum/ui/components/InfoText';
+import { ProgressBar } from '@habsum/ui/components/ProgressBar';
+import { useModal } from '@habsum/ui/contexts/modal';
 import { classBuilder } from '~/utils/class-builder';
 
 type SummationWidgetProps = {

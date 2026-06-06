@@ -1,1 +1,1 @@
-export const UI_THEME_STORAGE_KEY = 'habsum.uiThemePreference';
+export { UI_THEME_STORAGE_KEY } from '@habsum/ui/theme';

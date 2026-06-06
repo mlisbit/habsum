@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { ModalBody, ModalHeader } from '~/context/modal';
-import { CollapsibleCard } from '~/core-components/CollapsibleCard';
-import { InfoText } from '~/core-components/InfoText';
-import { Input } from '~/core-components/Input';
+import { ModalBody, ModalHeader } from '@habsum/ui/contexts/modal';
+import { CollapsibleCard } from '@habsum/ui/components/CollapsibleCard';
+import { InfoText } from '@habsum/ui/components/InfoText';
+import { Input } from '@habsum/ui/components/Input';
 import type { UserConfigSingleSelectHabitInsight } from '~/api.client';
 import { ConfigHabitFieldLabel } from '../ConfigHabitFieldLabel';
 import { ConfigHabitOptionsPills, ConfigHabitStreakOptionsPills } from './ConfigHabitOptionPills';

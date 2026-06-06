@@ -4,10 +4,10 @@ import { useEffect, useMemo, useState } from 'react';
 import type { PasswordResetTokenPurpose } from '@habsum/types/api-responses/reset-password-get';
 import { submitResetPassword, validateResetPasswordToken } from '~/api.client';
 import { Footer } from '~/components/Footer';
-import { Button } from '~/core-components/Button';
-import { InfoText } from '~/core-components/InfoText';
-import { Input } from '~/core-components/Input';
-import { useToast } from '~/context/toast';
+import { Button } from '@habsum/ui/components/Button';
+import { InfoText } from '@habsum/ui/components/InfoText';
+import { Input } from '@habsum/ui/components/Input';
+import { useToast } from '@habsum/ui/contexts/toast';
 import { userDefaultAppPath } from '~/utils/user-session-guard';
 import {
   newPasswordServerErrorToFieldMap,

@@ -1,6 +1,6 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import type { InputHTMLAttributes, KeyboardEvent } from 'react';
-import { Button } from '~/core-components/Button';
+import { Button } from './Button';
 
 function sanitizeDigitsOnly(raw: string): string {
   return raw.replace(/\D/g, '');

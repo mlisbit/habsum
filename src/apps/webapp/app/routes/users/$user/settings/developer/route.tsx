@@ -13,13 +13,13 @@ import {
 } from '~/api.client';
 import { openOucWindow } from '~/ouc.client';
 import { SettingsHeader } from '~/components/SettingsHeader';
-import { Button } from '~/core-components/Button';
-import { Hoverable } from '~/core-components/Hoverable';
-import type { IconName } from '~/core-components/Icon';
-import { InfoText } from '~/core-components/InfoText';
-import { Input } from '~/core-components/Input';
-import { ModalActions, ModalBody, ModalHeader, useModal } from '~/context/modal';
-import { useToast } from '~/context/toast';
+import { Button } from '@habsum/ui/components/Button';
+import { Hoverable } from '@habsum/ui/components/Hoverable';
+import type { IconName } from '@habsum/ui/components/Icon';
+import { InfoText } from '@habsum/ui/components/InfoText';
+import { Input } from '@habsum/ui/components/Input';
+import { ModalActions, ModalBody, ModalHeader, useModal } from '@habsum/ui/contexts/modal';
+import { useToast } from '@habsum/ui/contexts/toast';
 
 const clockFormat: Intl.DateTimeFormatOptions = {
   weekday: 'long',

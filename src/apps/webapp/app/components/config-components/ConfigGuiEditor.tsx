@@ -8,8 +8,8 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from 'react';
 import { useLocation, useNavigate } from '@remix-run/react';
-import { useModal } from '~/context/modal';
-import { useToast } from '~/context/toast';
+import { useModal } from '@habsum/ui/contexts/modal';
+import { useToast } from '@habsum/ui/contexts/toast';
 import type { UserConfigInsights, UserConfigSingleSelectHabitInsight } from '~/api.client';
 import type { ConfigHabitCard } from '~/utils/configYaml';
 import {

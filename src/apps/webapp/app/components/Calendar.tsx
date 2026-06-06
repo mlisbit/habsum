@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Button } from '~/core-components/Button';
-import { Hoverable, type HoverablePanelSide } from '~/core-components/Hoverable';
+import { Button } from '@habsum/ui/components/Button';
+import { Hoverable, type HoverablePanelSide } from '@habsum/ui/components/Hoverable';
 import { fromDateKey, toDateKey } from '@habsum/utils';
 import { addDays } from '~/utils/date-utils';
 

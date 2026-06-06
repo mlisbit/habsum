@@ -1,8 +1,8 @@
 // exclusive-bem-block: config-habit-quick-add-pills
 import { useState } from 'react';
-import { Button } from '~/core-components/Button';
-import { Input } from '~/core-components/Input';
-import { EditablePill } from '~/core-components/Pill';
+import { Button } from '@habsum/ui/components/Button';
+import { Input } from '@habsum/ui/components/Input';
+import { EditablePill } from '@habsum/ui/components/Pill';
 import { sortQuickAddItems } from '~/utils/configHabitDraft';
 
 type ConfigHabitQuickAddPillsProps = {

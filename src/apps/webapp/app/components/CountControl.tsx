@@ -1,8 +1,8 @@
 import { useCallback, useState } from 'react';
 import type { AnimationEvent } from 'react';
 import type { SummationOptions } from '@habsum/types/common/habit';
-import { Button } from '~/core-components/Button';
-import { Input } from '~/core-components/Input';
+import { Button } from '@habsum/ui/components/Button';
+import { Input } from '@habsum/ui/components/Input';
 import { classBuilder } from '~/utils/class-builder';
 import {
   defaultManualIncrementPlaceholder,

@@ -6,6 +6,7 @@
   "workspaces": [
     "src/packages/types",
     "src/packages/utils",
+    "src/packages/ui",
     "src/packages/eslint",
     "src/packages/stylelint",
     "src/apps/server",
@@ -14,12 +15,13 @@
   "scripts": {
     "dev:server": "HABSUM_CONFIG_DIR=\"$PWD/config\" npm --workspace src/apps/server run dev",
     "dev:webapp": "npm --workspace src/apps/webapp run dev",
-    "dev": "npm-run-all --parallel dev:server dev:webapp",
+    "dev:ports:free": "node scripts/kill-dev-ports.mjs 3000 3001",
+    "dev": "npm run dev:ports:free && npm-run-all --parallel dev:server dev:webapp",
     "start": "HABSUM_CONFIG_DIR=\"$PWD/config\" npm --workspace src/apps/server run start",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "npm run lint:js && npm run lint:css",
-    "lint:js": "npm run lint:js --workspace @habsum/webapp",
+    "lint:js": "npm run lint:js --workspace @habsum/webapp && npm run lint:js --workspace @habsum/ui",
     "lint:css": "stylelint \"src/**/*.{css,scss}\"",
     "lint:css:fix": "stylelint \"src/**/*.{css,scss}\" --fix",
     "test": "npm-run-all test:webapp test:server",
@@ -52,6 +54,9 @@
     ],
     "src/apps/webapp/**/*.{ts,tsx}": [
       "eslint --max-warnings=0 --config src/apps/webapp/eslint.config.mjs"
+    ],
+    "src/packages/ui/**/*.{ts,tsx}": [
+      "eslint --max-warnings=0 --config src/packages/ui/eslint.config.mjs"
     ],
     "*.{js,jsx,ts,tsx,json,md,yml,yaml,html}": [
       "prettier --write"

@@ -1,7 +1,7 @@
 // exclusive-bem-block: config-habit-type-picker
 import type { ReactNode } from 'react';
 import { SingleSelectWidget, SummationWidget } from '~/components/widgets';
-import { ModalBody, ModalHeader } from '~/context/modal';
+import { ModalBody, ModalHeader } from '@habsum/ui/contexts/modal';
 import {
   PREVIEW_SINGLE_SELECT_HABIT,
   PREVIEW_CHECKBOX_HABIT,

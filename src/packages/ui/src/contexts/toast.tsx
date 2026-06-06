@@ -1,4 +1,3 @@
-import { Link } from '@remix-run/react';
 import {
   createContext,
   useCallback,
@@ -7,10 +6,12 @@ import {
   useMemo,
   useRef,
   useState,
+  type ComponentType,
   type ReactNode,
 } from 'react';
-import { Icon, type IconName } from '~/core-components/Icon';
-import { classBuilder } from '~/utils/class-builder';
+
+import { Icon, type IconName } from '../components/Icon';
+import { classBuilder } from '../utils/class-builder';
 
 export type ToastType = 'error' | 'success' | 'info';
 
@@ -41,9 +42,22 @@ type ToastContextValue = {
   dismissToast: () => void;
 };
 
+export type ToastLinkComponent = ComponentType<{
+  to: string;
+  className?: string;
+  onClick?: () => void;
+  children: ReactNode;
+}>;
+
 const ToastContext = createContext<ToastContextValue | null>(null);
 
-export function ToastProvider({ children }: { children: ReactNode }) {
+export function ToastProvider({
+  children,
+  linkComponent: LinkComponent,
+}: {
+  children: ReactNode;
+  linkComponent?: ToastLinkComponent;
+}) {
   const [active, setActive] = useState<ShowToastOptions | null>(null);
   const timeoutRef = useRef<number | null>(null);
 
@@ -134,9 +148,19 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 {active.ctaTitle && active.ctaLocation ? (
                   <>
                     {' '}
-                    <Link to={active.ctaLocation} className="toast__cta" onClick={dismissToast}>
-                      {active.ctaTitle}
-                    </Link>
+                    {LinkComponent ? (
+                      <LinkComponent
+                        to={active.ctaLocation}
+                        className="toast__cta"
+                        onClick={dismissToast}
+                      >
+                        {active.ctaTitle}
+                      </LinkComponent>
+                    ) : (
+                      <a href={active.ctaLocation} className="toast__cta" onClick={dismissToast}>
+                        {active.ctaTitle}
+                      </a>
+                    )}
                   </>
                 ) : null}
               </p>
@@ -147,7 +171,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               aria-label="Dismiss notification"
               onClick={dismissToast}
             >
-              ×
+              {'\u00d7'}
             </button>
           </div>
         </div>

@@ -7,6 +7,15 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const stylesDir = path.join(__dirname, 'app', 'styles');
+const componentLibraryStylesDir = path.resolve(
+  __dirname,
+  '..',
+  '..',
+  'packages',
+  'ui',
+  'src',
+  'styles',
+);
 
 export default defineConfig({
   resolve: {
@@ -56,7 +65,7 @@ export default defineConfig({
     preprocessorOptions: {
       scss: {
         api: 'modern',
-        loadPaths: [stylesDir],
+        loadPaths: [stylesDir, componentLibraryStylesDir],
       },
     },
   },

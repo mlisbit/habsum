@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link } from '@remix-run/react';
-import { Button } from '~/core-components/Button';
+import { Button } from '@habsum/ui/components/Button';
 import { habitDetailUrl } from '~/utils/habit-id';
 
 type HabitWidgetHeadingProps = {

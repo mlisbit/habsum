@@ -2,8 +2,8 @@
 import { useCallback, useMemo, useState } from 'react';
 import type { SummationEvent, SummationEventCreatedAt } from '@habsum/types/common/habit';
 import { BarGraph } from '~/components/BarGraph';
-import { Button } from '~/core-components/Button';
-import { ModalBody, ModalHeader, useModal } from '~/context/modal';
+import { Button } from '@habsum/ui/components/Button';
+import { ModalBody, ModalHeader, useModal } from '@habsum/ui/contexts/modal';
 import { summationHourlyBarGraphData } from '~/utils/formatters/summation-hourly-bar-data';
 
 type EventsProps = {

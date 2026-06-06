@@ -1,6 +1,6 @@
 import { toDateKey } from '@habsum/utils';
-import { Button } from '~/core-components/Button';
-import { HumanDate } from '~/core-components/HumanDate';
+import { Button } from '@habsum/ui/components/Button';
+import { HumanDate } from '@habsum/ui/components/HumanDate';
 import { addDays } from '~/utils/date-utils';
 
 function classNames(...values: Array<string | false | null | undefined>) {

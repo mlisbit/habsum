@@ -1,8 +1,8 @@
 // exclusive-bem-block: config-habit-option-pills
 import { useState } from 'react';
-import { Button } from '~/core-components/Button';
-import { Input } from '~/core-components/Input';
-import { EditablePill, TogglePill } from '~/core-components/Pill';
+import { Button } from '@habsum/ui/components/Button';
+import { Input } from '@habsum/ui/components/Input';
+import { EditablePill, TogglePill } from '@habsum/ui/components/Pill';
 
 type ConfigHabitOptionsPillsProps = {
   options: string[];

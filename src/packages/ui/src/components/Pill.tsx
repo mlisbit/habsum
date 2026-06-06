@@ -1,8 +1,8 @@
 // exclusive-bem-block: pill
 import { useEffect, useRef, useState } from 'react';
 import type { ButtonHTMLAttributes, HTMLAttributes, KeyboardEvent, ReactNode } from 'react';
-import { Icon } from '~/core-components/Icon';
-import { classBuilder } from '~/utils/class-builder';
+import { Icon } from './Icon';
+import { classBuilder } from '../utils/class-builder';
 
 export type PillSize = 'large' | 'small';
 

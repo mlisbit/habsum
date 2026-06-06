@@ -1,7 +1,7 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import type { UserConfigHabitInsight } from '~/api.client';
-import { ModalActions } from '~/context/modal';
-import { Button } from '~/core-components/Button';
+import { ModalActions } from '@habsum/ui/contexts/modal';
+import { Button } from '@habsum/ui/components/Button';
 import { ConfigHabitFieldLabel } from './ConfigHabitFieldLabel';
 import {
   applyHabitDraftToConfigYaml,

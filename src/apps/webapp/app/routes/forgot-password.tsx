@@ -2,9 +2,9 @@ import { Link } from '@remix-run/react';
 import { useEffect, useState } from 'react';
 import { requestForgotPassword } from '~/api.client';
 import { Footer } from '~/components/Footer';
-import { Button } from '~/core-components/Button';
-import { InfoText } from '~/core-components/InfoText';
-import { Input } from '~/core-components/Input';
+import { Button } from '@habsum/ui/components/Button';
+import { InfoText } from '@habsum/ui/components/InfoText';
+import { Input } from '@habsum/ui/components/Input';
 
 export default function ForgotPasswordRoute() {
   const [email, setEmail] = useState('');

@@ -5,9 +5,9 @@ import { getUserConfig, putUserConfig, type UserConfigInsights } from '~/api.cli
 import { ConfigGuiEditor } from './ConfigGuiEditor';
 import { ConfigYamlEditor } from './ConfigYamlEditor';
 import { SettingsHeader } from '~/components/SettingsHeader';
-import { Button } from '~/core-components/Button';
-import { AlertModal, useModal } from '~/context/modal';
-import { useToast } from '~/context/toast';
+import { Button } from '@habsum/ui/components/Button';
+import { AlertModal, useModal } from '@habsum/ui/contexts/modal';
+import { useToast } from '@habsum/ui/contexts/toast';
 import {
   buildConfigDeletions,
   buildConfigMigrations,

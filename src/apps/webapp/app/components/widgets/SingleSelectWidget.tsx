@@ -3,10 +3,10 @@ import type { HabitRowSingleSelect } from '@habsum/types/common/habit';
 import { dayFromString } from '@habsum/types/common/day';
 import { HabitWidgetHeading } from '~/components/widgets/HabitWidgetHeading';
 import { HabitWidgetMenuModal } from '~/components/widgets/modules/HabitWidgetMenuModal';
-import { InfoText } from '~/core-components/InfoText';
-import { Icon } from '~/core-components/Icon';
-import { TogglePill } from '~/core-components/Pill';
-import { useModal } from '~/context/modal';
+import { InfoText } from '@habsum/ui/components/InfoText';
+import { Icon } from '@habsum/ui/components/Icon';
+import { TogglePill } from '@habsum/ui/components/Pill';
+import { useModal } from '@habsum/ui/contexts/modal';
 import { Streak } from '~/components/widgets/modules/Streak';
 import { classBuilder } from '~/utils/class-builder';
 

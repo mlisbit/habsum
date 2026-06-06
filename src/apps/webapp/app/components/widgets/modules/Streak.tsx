@@ -2,8 +2,8 @@
 import type { Day } from '@habsum/types/common/day';
 import type { StreakDatum, StreakGraphData } from '@habsum/types/common/streak';
 import { classBuilder } from '~/utils/class-builder';
-import { Hoverable } from '~/core-components/Hoverable';
-import { Icon, type IconName } from '~/core-components/Icon';
+import { Hoverable } from '@habsum/ui/components/Hoverable';
+import { Icon, type IconName } from '@habsum/ui/components/Icon';
 
 function formatStreakDayLabel(dateKey: Day): string {
   const [ys, ms, ds] = dateKey.split('-');

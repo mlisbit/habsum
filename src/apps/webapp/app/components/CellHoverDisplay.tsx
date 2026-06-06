@@ -1,5 +1,5 @@
 import type { Habit } from '~/api.client';
-import { ProgressBar } from '~/core-components/ProgressBar';
+import { ProgressBar } from '@habsum/ui/components/ProgressBar';
 
 function summationEventCountLabel(habit: Extract<Habit, { type: 'summation' }>): string | null {
   if (habit.events == null || habit.events.length === 0) return null;

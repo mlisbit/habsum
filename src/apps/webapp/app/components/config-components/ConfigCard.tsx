@@ -1,7 +1,7 @@
 // exclusive-bem-block: config-card
 import type { MouseEvent, PointerEvent } from 'react';
-import { Button } from '~/core-components/Button';
-import { Icon } from '~/core-components/Icon';
+import { Button } from '@habsum/ui/components/Button';
+import { Icon } from '@habsum/ui/components/Icon';
 import type { ConfigHabitCard } from '~/utils/configYaml';
 import { habitDetailLines } from './configHabitDisplay';
 

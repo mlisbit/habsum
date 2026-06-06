@@ -2,11 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { fromDateKey } from '@habsum/utils';
 import { diffDays } from '~/utils/date-utils';
 import { useTodayDateKey } from '~/utils/use-today-date-key';
-import { Button } from '~/core-components/Button';
+import { Button } from '@habsum/ui/components/Button';
 import { DayNav } from '~/components/DayNav';
-import { Hoverable } from '~/core-components/Hoverable';
-import { Icon } from '~/core-components/Icon';
-import { ProgressBar } from '~/core-components/ProgressBar';
+import { Hoverable } from '@habsum/ui/components/Hoverable';
+import { Icon } from '@habsum/ui/components/Icon';
+import { ProgressBar } from '@habsum/ui/components/ProgressBar';
 import type { DayProgressBreakdown } from '~/utils/habit-helpers';
 
 function useTimeUntilEndOfDayLabel(dateKey: string, tzOffsetMinutes: number): string {

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { getUserSession, logout } from '~/api.client';
 import { useUser } from '~/context/user';
 import { ensureUserSessionForRoute } from '~/utils/user-session-guard';
-import { Button } from '~/core-components/Button';
+import { Button } from '@habsum/ui/components/Button';
 import { Footer } from '~/components/Footer';
 import { getMediaQuerySnapshot, subscribeToMediaQuery } from '~/utils/media-query-store';
 import { userPageTitle } from '~/utils/page-title';

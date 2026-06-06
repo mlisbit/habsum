@@ -6,8 +6,8 @@ import {
   type HTMLAttributes,
   type ReactNode,
 } from 'react';
-import { Icon } from '~/core-components/Icon';
-import { classBuilder } from '~/utils/class-builder';
+import { Icon } from './Icon';
+import { classBuilder } from '../utils/class-builder';
 
 type CollapsibleCardContextValue = {
   expanded: boolean;

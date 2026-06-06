@@ -1,6 +1,6 @@
-import { ModalBody, ModalHeader } from '~/context/modal';
-import { InfoText } from '~/core-components/InfoText';
-import { Input } from '~/core-components/Input';
+import { ModalBody, ModalHeader } from '@habsum/ui/contexts/modal';
+import { InfoText } from '@habsum/ui/components/InfoText';
+import { Input } from '@habsum/ui/components/Input';
 import { ConfigHabitFieldLabel } from '../ConfigHabitFieldLabel';
 import { ConfigHabitQuickAddPills } from '../ConfigHabitQuickAddPills';
 import {

@@ -1,6 +1,6 @@
 // exclusive-bem-block: config-habit-field-label
-import { Icon } from '~/core-components/Icon';
-import { Hoverable } from '~/core-components/Hoverable';
+import { Icon } from '@habsum/ui/components/Icon';
+import { Hoverable } from '@habsum/ui/components/Hoverable';
 import { classBuilder } from '~/utils/class-builder';
 
 type ConfigHabitFieldLabelProps = {

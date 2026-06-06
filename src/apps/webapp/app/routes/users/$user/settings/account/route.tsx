@@ -13,11 +13,11 @@ import {
   type UsersPatchRequest,
 } from '~/api.client';
 import { SettingsHeader } from '~/components/SettingsHeader';
-import { Button } from '~/core-components/Button';
-import { InfoText } from '~/core-components/InfoText';
-import { Input } from '~/core-components/Input';
-import { AlertModal, useModal } from '~/context/modal';
-import { useToast } from '~/context/toast';
+import { Button } from '@habsum/ui/components/Button';
+import { InfoText } from '@habsum/ui/components/InfoText';
+import { Input } from '@habsum/ui/components/Input';
+import { AlertModal, useModal } from '@habsum/ui/contexts/modal';
+import { useToast } from '@habsum/ui/contexts/toast';
 import { useUser } from '~/context/user';
 import {
   accountServerErrorToFieldMap,

@@ -1,6 +1,6 @@
 // exclusive-bem-block: bar-graph
 import type { BarGraphData } from '@habsum/types/common/bar-chart';
-import { Hoverable } from '~/core-components/Hoverable';
+import { Hoverable } from '@habsum/ui/components/Hoverable';
 
 type BarGraphProps = {
   data: BarGraphData;

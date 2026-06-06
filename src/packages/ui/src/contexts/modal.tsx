@@ -8,7 +8,8 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { Button } from '~/core-components/Button';
+
+import { Button } from '../components/Button';
 
 export type ModalSize = 'medium' | 'large' | 'xl';
 
@@ -35,7 +36,7 @@ type ModalContextValue = {
 
 const ModalContext = createContext<ModalContextValue | null>(null);
 
-/** Shell slots for modal content. Compose inside `present({ content: <>…</> })`. */
+/** Shell slots for modal content. Compose inside `present({ content: <>...</> })`. */
 export function ModalHeader({
   children,
   id = 'modal-title',
@@ -97,7 +98,7 @@ export type AlertModalProps = {
   onContinueWithoutSaving: () => void;
 };
 
-/** Two-action confirmation layout for `present({ content: <AlertModal … /> })`. */
+/** Two-action confirmation layout for `present({ content: <AlertModal ... /> })`. */
 export function AlertModal({
   title,
   message,

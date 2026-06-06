@@ -1,5 +1,5 @@
 import type { ElementType, ReactNode } from 'react';
-import { InfoText } from '~/core-components/InfoText';
+import { InfoText } from '@habsum/ui/components/InfoText';
 
 export type SettingsHeaderProps = {
   title: string;

@@ -1,6 +1,6 @@
 import { useNavigate } from '@remix-run/react';
-import { Button } from '~/core-components/Button';
-import { ModalBody, ModalHeader } from '~/context/modal';
+import { Button } from '@habsum/ui/components/Button';
+import { ModalBody, ModalHeader } from '@habsum/ui/contexts/modal';
 import { configEditHabitUrl } from '~/utils/habit-id';
 
 type HabitWidgetMenuModalProps = {

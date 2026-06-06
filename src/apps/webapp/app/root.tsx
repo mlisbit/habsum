@@ -1,10 +1,10 @@
-import { Links, Meta, Outlet, Scripts, ScrollRestoration } from '@remix-run/react';
+import { Link, Links, Meta, Outlet, Scripts, ScrollRestoration } from '@remix-run/react';
 import type { LinksFunction, MetaFunction } from '@remix-run/node';
 
 import { OucIndicator } from '~/components/OucIndicator';
 import { OucPopupBootstrap } from '~/components/OucPopupBootstrap';
-import { ModalProvider } from '~/context/modal';
-import { ToastProvider } from '~/context/toast';
+import { ModalProvider } from '@habsum/ui/contexts/modal';
+import { ToastProvider } from '@habsum/ui/contexts/toast';
 import { UserProvider } from '~/context/user';
 import stylesHref from '~/styles/main.scss?url';
 import { UI_THEME_STORAGE_KEY } from '~/theme.shared';
@@ -29,6 +29,24 @@ const initialThemeScript = `
 })();
 `;
 
+function ToastLink({
+  to,
+  className,
+  onClick,
+  children,
+}: {
+  to: string;
+  className?: string;
+  onClick?: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link to={to} className={className} onClick={onClick}>
+      {children}
+    </Link>
+  );
+}
+
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
@@ -51,7 +69,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <ModalProvider>
-      <ToastProvider>
+      <ToastProvider linkComponent={ToastLink}>
         <UserProvider>
           <OucPopupBootstrap />
           <Outlet />

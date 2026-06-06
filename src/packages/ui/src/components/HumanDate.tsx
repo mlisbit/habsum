@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { formatHumanDate } from '~/utils/date-utils';
+import { formatHumanDate } from '../utils/date-utils';
 
 export { formatHumanDate };
 
