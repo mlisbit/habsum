@@ -1,13 +1,13 @@
 {
   "extends": ["stylelint-config-standard-scss"],
   "plugins": [
-    "./src/packages/stylelint/dist/single-block-per-file.mjs",
-    "./src/packages/stylelint/dist/require-spacing-function.mjs",
-    "./src/packages/stylelint/dist/no-direct-color.mjs",
-    "./src/packages/stylelint/dist/bem-block-matches-filename.mjs",
-    "./src/packages/stylelint/dist/theme-token-parity.mjs",
-    "./src/packages/stylelint/dist/theme-token-order.mjs",
-    "./src/packages/stylelint/dist/atomic-class-enforcer.mjs"
+    "./src/packages/stylelint/dist/rules/single-block-per-file/index.mjs",
+    "./src/packages/stylelint/dist/rules/require-spacing-function/index.mjs",
+    "./src/packages/stylelint/dist/rules/token-use-enforcer/index.mjs",
+    "./src/packages/stylelint/dist/rules/bem-block-matches-filename/index.mjs",
+    "./src/packages/stylelint/dist/rules/theme-token-parity/index.mjs",
+    "./src/packages/stylelint/dist/rules/theme-token-order/index.mjs",
+    "./src/packages/stylelint/dist/rules/atomic-class-enforcer/index.mjs"
   ],
   "overrides": [
     {
@@ -18,7 +18,7 @@
       "rules": {
         "selector-max-type": null,
         "habsum/require-spacing-function": null,
-        "habsum/no-direct-color": null,
+        "habsum/token-use-enforcer": null,
         "habsum/single-block-per-file": null
       }
     },
@@ -56,10 +56,16 @@
     "habsum/atomic-class-enforcer": true,
     "habsum/single-block-per-file": true,
     "habsum/require-spacing-function": true,
-    "habsum/no-direct-color": true,
+    "habsum/token-use-enforcer": [
+      true,
+      { "tokensFile": "src/packages/ui/src/styles/_tokens.scss" }
+    ],
     "habsum/bem-block-matches-filename": true,
-    "habsum/theme-token-parity": true,
-    "habsum/theme-token-order": true,
+    "habsum/theme-token-parity": [
+      true,
+      { "tokensFile": "src/packages/ui/src/styles/_tokens.scss" }
+    ],
+    "habsum/theme-token-order": [true, { "tokensFile": "src/packages/ui/src/styles/_tokens.scss" }],
     "selector-max-type": 0
   }
 }

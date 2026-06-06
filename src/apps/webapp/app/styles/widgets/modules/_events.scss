@@ -6,7 +6,7 @@
   padding: functions.spacing(2);
   border-radius: var(--border-radius-m);
   border: 1px solid var(--border-color-faint);
-  background: color-mix(in srgb, var(--background-secondary) 70%, transparent);
+  background: var(--background-tertiary);
 }
 
 .events__meta {
@@ -48,7 +48,7 @@
   gap: functions.spacing(2);
   padding-block: functions.spacing(1);
   padding-inline: 0;
-  border-top: 1px solid color-mix(in srgb, var(--text-color) 10%, transparent);
+  border-top: 1px solid var(--border-color-faint);
 }
 
 .events__event-actions {

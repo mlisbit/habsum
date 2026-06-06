@@ -21,18 +21,18 @@
     background 0.12s ease;
 
   &:hover {
-    background: color-mix(in srgb, var(--text-color) 7%, transparent);
+    background: var(--background-tertiary);
   }
 
   &:active {
     transform: translateY(1px);
-    background: color-mix(in srgb, var(--text-color) 10%, transparent);
+    background: var(--background-disabled);
     filter: brightness(0.98);
   }
 
   &:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--cta-base-background) 35%, transparent);
+    box-shadow: var(--box-shadow-focus);
   }
 }
 
@@ -110,18 +110,18 @@
   &:active {
     transform: none;
     filter: none;
-    background: color-mix(in srgb, var(--text-color) 5%, transparent);
+    background: var(--background-tertiary);
   }
 
   &:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-selected) 35%, transparent);
+    box-shadow: var(--box-shadow-focus);
   }
 }
 
 .pill--editing {
-  background: color-mix(in srgb, var(--text-color) 5%, transparent);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-selected) 20%, transparent);
+  background: var(--background-tertiary);
+  box-shadow: var(--box-shadow-focus);
 }
 
 .pill__label {
@@ -155,11 +155,11 @@
 
   &:hover {
     opacity: 1;
-    background: color-mix(in srgb, var(--text-color) 12%, transparent);
+    background: var(--background-tertiary);
   }
 
   &:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-selected) 35%, transparent);
+    box-shadow: var(--box-shadow-focus);
   }
 }

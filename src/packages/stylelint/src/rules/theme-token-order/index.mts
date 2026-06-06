@@ -6,10 +6,10 @@ import {
   countMapsEqual,
   findTopLevelThemeRule,
   isTokensStylesheet,
-  resolveTokensSubpath,
   themeRuleSelectorRange,
-  type ThemeTokenSecondaryOptions,
-} from './theme-token-blocks.mjs';
+  type TokensFileSecondaryOptions,
+} from '../../lib/theme-token-blocks.mjs';
+import { requireTokensFile } from '../../lib/tokens-config.mjs';
 
 const ruleName = 'habsum/theme-token-order';
 
@@ -22,7 +22,7 @@ const meta = {
   url: 'https://github.com/mlisbit/habsum#stylelint-rules',
 };
 
-const ruleFunction: Rule<boolean, ThemeTokenSecondaryOptions> =
+const ruleFunction: Rule<boolean, TokensFileSecondaryOptions> =
   (primary, secondaryOptions) => (root, result) => {
     const validOptions = stylelint.utils.validateOptions(result, ruleName, {
       actual: primary,
@@ -30,9 +30,12 @@ const ruleFunction: Rule<boolean, ThemeTokenSecondaryOptions> =
     });
     if (!validOptions || primary === false) return;
 
-    const tokensSubpath = resolveTokensSubpath(secondaryOptions);
+    const tokensContext = requireTokensFile(result, ruleName, root, secondaryOptions);
+    if (!tokensContext) return;
+
+    const { tokensFile, baseDir } = tokensContext;
     const from = root.source?.input?.from;
-    if (!isTokensStylesheet(from, tokensSubpath)) return;
+    if (!isTokensStylesheet(from, tokensFile, baseDir)) return;
 
     const darkRule = findTopLevelThemeRule(root, 'dark');
     const lightRule = findTopLevelThemeRule(root, 'light');

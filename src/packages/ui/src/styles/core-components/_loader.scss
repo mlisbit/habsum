@@ -25,7 +25,7 @@
 .loader__spinner {
   width: 1rem;
   height: 1rem;
-  border: 2px solid color-mix(in srgb, var(--text-color) 20%, transparent);
+  border: 2px solid var(--border-color-faint);
   border-top-color: var(--accent-selected);
   border-radius: var(--border-radius-full);
   animation: loader-spin 0.75s linear infinite;

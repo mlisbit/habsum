@@ -90,7 +90,7 @@
 
 .account-page__select:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-selected) 35%, transparent);
+  box-shadow: var(--box-shadow-focus);
 }
 
 .account-page__field-error {
@@ -115,7 +115,7 @@
 
 .account-page__rename-input:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-selected) 35%, transparent);
+  box-shadow: var(--box-shadow-focus);
 }
 
 .account-page__data {

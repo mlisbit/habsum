@@ -32,6 +32,6 @@
 
   &:focus-visible {
     outline: none;
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-selected) 35%, transparent);
+    box-shadow: var(--box-shadow-focus);
   }
 }

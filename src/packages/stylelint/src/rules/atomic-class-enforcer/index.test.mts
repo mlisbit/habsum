@@ -2,7 +2,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import stylelint from 'stylelint';
-import plugin from './atomic-class-enforcer.mjs';
+import plugin from './index.mjs';
 
 const ruleName = 'habsum/atomic-class-enforcer';
 

@@ -4,8 +4,7 @@
   margin-top: functions.spacing(2);
   padding: functions.spacing(2);
   border-radius: var(--border-radius-m);
-  border: 1px solid var(--border-color-faint);
-  background: color-mix(in srgb, var(--background-secondary) 70%, transparent);
+  background: var(--background-tertiary);
 }
 
 .history-display__meta {

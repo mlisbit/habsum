@@ -1,25 +1,28 @@
+import path from 'node:path';
+
 import type { Declaration, Root, Rule } from 'postcss';
 
-/** Default path suffix used to detect the design tokens stylesheet. */
-export const DEFAULT_TOKENS_SUBPATH = '_tokens.scss';
-
-export type ThemeTokenSecondaryOptions = {
-  /** Match stylesheets whose normalized path ends with this string (default `_tokens.scss`). */
-  tokensSubpath?: string;
+export type TokensFileSecondaryOptions = {
+  /** Absolute or cwd-relative path to the design tokens stylesheet. */
+  tokensFile?: string;
 };
 
-export function resolveTokensSubpath(
-  secondary: ThemeTokenSecondaryOptions | undefined,
+export function resolveConfiguredTokensFilePath(
+  tokensFile: string,
+  baseDir: string,
 ): string {
-  const sub = secondary?.tokensSubpath;
-  if (typeof sub === 'string' && sub.length > 0) return sub;
-  return DEFAULT_TOKENS_SUBPATH;
+  return path.isAbsolute(tokensFile) ? tokensFile : path.join(baseDir, tokensFile);
 }
 
-export function isTokensStylesheet(from: string | undefined, tokensSubpath: string): boolean {
+export function isTokensStylesheet(
+  from: string | undefined,
+  tokensFile: string,
+  baseDir: string,
+): boolean {
   if (!from || from.startsWith('<')) return false;
-  const normalized = from.replace(/\\/g, '/');
-  return normalized.endsWith(tokensSubpath);
+  const resolvedTokens = path.resolve(resolveConfiguredTokensFilePath(tokensFile, baseDir));
+  const resolvedFrom = path.resolve(from);
+  return resolvedFrom === resolvedTokens;
 }
 
 /** Top-level `html[data-theme='dark'|'light']` selectors only (quotes flexible). */
@@ -63,6 +66,33 @@ export function collectCustomPropDecls(rule: Rule): Declaration[] {
     }
   }
   return decls;
+}
+
+/** Top-level `:root { … }` only. */
+export function findTopLevelRootRule(root: Root): Rule | undefined {
+  let found: Rule | undefined;
+  root.walkRules((rule) => {
+    if (rule.parent?.type !== 'root') return;
+    if (rule.selector.trim() !== ':root') return;
+    found = rule;
+  });
+  return found;
+}
+
+/** Union of custom properties declared in dark, light, and `:root` theme blocks. */
+export function collectAllKnownTokenNames(tokensRoot: Root): Set<string> {
+  const names = new Set<string>();
+  for (const rule of [
+    findTopLevelThemeRule(tokensRoot, 'dark'),
+    findTopLevelThemeRule(tokensRoot, 'light'),
+    findTopLevelRootRule(tokensRoot),
+  ]) {
+    if (!rule) continue;
+    for (const decl of collectCustomPropDecls(rule)) {
+      names.add(decl.prop);
+    }
+  }
+  return names;
 }
 
 export function countMap(names: string[]): Map<string, number> {

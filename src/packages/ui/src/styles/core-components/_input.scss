@@ -1,27 +1,7 @@
 @use 'functions';
 
-@keyframes input-reject-flash {
-  0%,
-  100% {
-    border-color: var(--border-color-faint);
-    box-shadow: none;
-  }
-
-  30% {
-    border-color: var(--text-error);
-    box-shadow:
-      0 0 0 2px color-mix(in srgb, var(--text-error) 45%, transparent),
-      0 0 12px color-mix(in srgb, var(--text-error) 22%, transparent);
-  }
-
-  60% {
-    border-color: var(--text-error);
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--text-error) 35%, transparent);
-  }
-}
-
 .input--reject-flash {
-  animation: input-reject-flash 480ms ease;
+  box-shadow: var(--box-shadow-alert);
 }
 
 .input {
@@ -46,7 +26,7 @@
 
   &:focus-within {
     outline: none;
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--text-color) 25%, transparent);
+    box-shadow: var(--box-shadow-focus);
   }
 }
 

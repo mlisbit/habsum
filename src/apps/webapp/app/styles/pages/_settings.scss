@@ -78,12 +78,12 @@
   text-decoration: none;
 
   &:hover {
-    background: color-mix(in srgb, var(--text-color) 6%, transparent);
+    background: var(--background-disabled);
   }
 }
 
 .settings__link--active {
-  background: color-mix(in srgb, var(--accent-selected) 18%, transparent);
+  background: var(--background-tertiary);
 }
 
 .settings__logout {

@@ -54,27 +54,25 @@
 }
 
 .calendar__cell--clickable:hover {
-  border-color: color-mix(in srgb, var(--accent-selected) 45%, var(--border-color-faint));
+  border-color: var(--border-color);
 }
 
 .calendar__cell--selected {
-  outline: 2px solid color-mix(in srgb, var(--accent-selected) 70%, transparent);
+  outline: 2px solid var(--accent-selected);
   outline-offset: 2px;
 }
 
 .calendar__cell--future {
   opacity: 0.4;
-  background: color-mix(in srgb, var(--background-secondary) 75%, var(--background));
   background: var(--background-disabled) !important;
 }
 
 .calendar__cell--before {
   opacity: 0.35;
-  background: color-mix(in srgb, var(--background-secondary) 75%, var(--background));
+  background: var(--background-disabled);
 }
 
 .calendar__cell--before-first-data {
-  background: color-mix(in srgb, var(--background-secondary) 75%, var(--background));
   background: var(--background-disabled) !important;
 }
 

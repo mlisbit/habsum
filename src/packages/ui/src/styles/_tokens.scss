@@ -91,4 +91,6 @@ html[data-theme='light'] {
 
   // small buttons look off when using the 5px scale
   --cta-padding-small: 6px 13px;
+  --box-shadow-focus: 0 0 0 2px var(--accent-selected);
+  --box-shadow-alert: 0 0 0 2px var(--accent-red-1);
 }

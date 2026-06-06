@@ -30,7 +30,7 @@
   inline-size: 100%;
   flex-shrink: 0;
   box-sizing: border-box;
-  border-block-start: 1px dashed color-mix(in srgb, var(--text-color) 60%, transparent);
+  border-block-start: 1px dashed var(--border-color);
 }
 
 .bar-graph__track {
