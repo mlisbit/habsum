@@ -39,6 +39,17 @@ export function isEmpty(habit: Habit): boolean {
   return habit.total == null;
 }
 
+/** True when the habit has any logged data for the day (inverse of {@link isEmpty}). */
+export function hasHabitData(habit: Habit): boolean {
+  return !isEmpty(habit);
+}
+
+/** True when a summation habit with a positive goal has reached that goal. */
+export function isGoalHit(habit: Habit): boolean {
+  if (!hasPositiveGoal(habit)) return false;
+  return (habit.total ?? 0) >= habit.goal;
+}
+
 function isSummation(h: Habit): h is HabitRowSummation {
   return h.type === 'summation';
 }

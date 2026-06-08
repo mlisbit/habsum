@@ -16,21 +16,33 @@
   block-size: 100%;
 }
 
-.bar-graph__goal-line-layer {
+.bar-graph__lines-layer {
   position: absolute;
   inset: 0;
   z-index: 2;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
   pointer-events: none;
 }
 
-.bar-graph__goal-line {
-  inline-size: 100%;
-  flex-shrink: 0;
+.bar-graph__line {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
   box-sizing: border-box;
   border-block-start: 1px dashed var(--border-color);
+  pointer-events: none;
+}
+
+.bar-graph__line-dot {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  inline-size: 6px;
+  block-size: 6px;
+  border-radius: 50%;
+  background: var(--border-color);
+  transform: translate(-50%, -50%);
+  cursor: default;
+  pointer-events: auto;
 }
 
 .bar-graph__track {
@@ -41,17 +53,9 @@
   flex-direction: column;
   justify-content: flex-end;
   overflow: hidden;
-  background: var(--background-disabled);
+  background: var(--background-input);
   border-radius: var(--border-radius-s);
   cursor: default;
-}
-
-.bar-graph__track--no-data {
-  background: var(--background-warning);
-}
-
-.bar-graph__track--negative {
-  background: var(--accent-red-1);
 }
 
 .bar-graph__fill {
@@ -61,7 +65,7 @@
 }
 
 .bar-graph__hover.hover-layer__panel {
-  background: var(--background-tertiary);
+  background: var(--background);
 }
 
 .bar-graph__hover-body {

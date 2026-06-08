@@ -8,7 +8,6 @@
   min-width: 0;
   padding: functions.spacing(2, 3);
   background: var(--background-tertiary);
-  border: 1px solid var(--border-color-faint);
   border-radius: var(--border-radius-m);
   list-style: none;
   transition:
@@ -23,7 +22,7 @@
 
 .config-card--drag-preview {
   opacity: 0.75;
-  background: var(--background-primary);
+  background: var(--background);
   border: 1px solid var(--border-color-faint);
   border-radius: var(--border-radius-m);
   box-shadow: var(--elevation-shadow);

@@ -2,9 +2,9 @@
 
 .card {
   background: var(--background-secondary);
-  border: 1px solid var(--border-color-faint);
+  border: none;
   border-radius: var(--border-radius-m);
-  padding: functions.spacing(2, 3);
+  padding: functions.spacing(3);
 }
 
 .card--no-padding {

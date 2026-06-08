@@ -14,7 +14,8 @@
   transition:
     transform 0.05s ease,
     filter 0.12s ease,
-    box-shadow 0.12s ease;
+    box-shadow 0.12s ease,
+    background 0.12s ease;
 
   &:hover {
     filter: brightness(1.05);
@@ -46,6 +47,10 @@
       box-shadow: var(--box-shadow-alert);
     }
   }
+
+  // stylelint-disable-next-line block-no-empty -- placeholder until muted styles are defined
+  &.button--muted {
+  }
 }
 
 // ignoring this line because buttons are not cards, and shouldnt really be "locked" to the spacing of them.
@@ -55,7 +60,7 @@
 }
 
 .button--small {
-  padding: var(--cta-padding-small);
+  padding: functions.spacing(1, 3);
   // stylelint-disable-next-line
   font-size: var(--font-size-s);
 }
@@ -65,16 +70,18 @@
 }
 
 .button--secondary {
-  background: transparent;
+  background: var(--cta-secondary-fill);
   color: var(--text-color);
   border: 1px solid var(--cta-secondary-border);
 
   &:hover {
-    background: var(--background-tertiary);
+    background: var(--cta-secondary-fill-hover);
+    filter: none;
   }
 
   &:active {
     background: var(--background-disabled);
+    filter: none;
   }
 
   &.button--danger {
@@ -84,10 +91,12 @@
 
     &:hover {
       background: var(--background-warning);
+      filter: none;
     }
 
     &:active {
       background: var(--background-warning);
+      filter: none;
     }
 
     &:focus-visible {
@@ -103,10 +112,12 @@
 
   &:hover {
     background: var(--background-tertiary);
+    filter: none;
   }
 
   &:active {
     background: var(--background-disabled);
+    filter: none;
   }
 }
 

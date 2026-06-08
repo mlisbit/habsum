@@ -1,5 +1,5 @@
-// `margin-top: spacing(1);` → 5px. Steps 1–5 map to 5, 10, 15, 20, 25px.
-// Shorthand: `padding: spacing(2, 3);` → 10px 15px (same rules as CSS two-value padding).
+// `margin-top: spacing(1);` → 4px. Steps 1–5 map to 4, 8, 12, 16, 20px.
+// Shorthand: `padding: spacing(2, 3);` → 8px 12px (same rules as CSS two-value padding).
 // Up to four steps: `spacing(1, 2, 3, 4)` → top / right / bottom / left.
 @use 'sass:list';
 @use 'sass:math';
@@ -19,7 +19,7 @@
     @error "spacing(): each step must be between 1 and 5 (got #{$n}).";
   }
 
-  @return $n * 5px;
+  @return $n * 4px;
 }
 
 @function spacing($steps...) {

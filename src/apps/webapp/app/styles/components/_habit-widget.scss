@@ -2,8 +2,14 @@
 
 .habit-widget__heading {
   display: flex;
-  align-items: center;
+  align-items: start;
   gap: functions.spacing(1);
+}
+
+.habit-widget__heading-left {
+  display: flex;
+  gap: functions.spacing(1);
+  align-items: center;
 }
 
 .habit-widget__menu {
@@ -15,7 +21,6 @@
   margin-left: auto;
 }
 
-.habit-widget--complete {
-  outline: 2px solid var(--accent-selected);
-  outline-offset: 3px;
+.habit-widget__goal-hit-check {
+  flex-shrink: 0;
 }

@@ -27,7 +27,13 @@ export function History({
         <span>avg {avg == null ? '—' : avg}</span>
       </div>
       <div className="history-display__graph">
-        <BarGraph data={graphData} goalLine={goal} noDataHoverLabel="No data for this day" />
+        <BarGraph
+          data={graphData}
+          lines={
+            goal != null && goal > 0 ? [{ value: goal, label: `your set goal ${goal}` }] : undefined
+          }
+          noDataHoverLabel="No data for this day"
+        />
       </div>
     </div>
   );

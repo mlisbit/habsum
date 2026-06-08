@@ -2,6 +2,11 @@
 import type { BarGraphData } from '@habsum/types/common/bar-chart';
 import { Hoverable } from '@habsum/ui/components/Hoverable';
 
+export type BarGraphLine = {
+  value: number;
+  label: string;
+};
+
 type BarGraphProps = {
   data: BarGraphData;
   /** Fired when the pointer enters a bar (`value` is the datum total for that bucket, or `null` when empty). */
@@ -9,10 +14,10 @@ type BarGraphProps = {
   /** Shown in the hover value slot when `value` is `null`. */
   noDataHoverLabel?: string;
   /**
-   * When set, draws a horizontal reference line at this value (same scale as the bars).
-   * Shown only when at least one bar total exceeds the goal.
+   * Horizontal reference lines at the given values (same scale as the bars).
+   * Each line is shown only when at least one bar total exceeds its value.
    */
-  goalLine?: number | null;
+  lines?: BarGraphLine[];
 };
 
 const DEFAULT_NO_DATA_HOVER = 'No data';
@@ -32,7 +37,7 @@ export function BarGraph({
   data,
   onHover,
   noDataHoverLabel = DEFAULT_NO_DATA_HOVER,
-  goalLine,
+  lines = [],
 }: BarGraphProps) {
   const entries = Object.entries(data);
   if (entries.length === 0) return null;
@@ -40,8 +45,7 @@ export function BarGraph({
   const values = entries.map(([, d]) => d.value).filter((v): v is number => v != null);
   const datumTops = entries.map(([, d]) => d.top);
   const scaleTop = graphScaleTop(values, datumTops);
-  const showGoalLine = goalLine != null && goalLine > 0 && values.some((v) => v > goalLine);
-  const goalMarkerHeight = showGoalLine ? barHeightPercent(goalLine, scaleTop) : null;
+  const visibleLines = lines.filter((line) => line.value > 0 && values.some((v) => v > line.value));
 
   return (
     <div className="bar-graph" role="presentation">
@@ -49,13 +53,7 @@ export function BarGraph({
         {entries.map(([key, { value, hoverLabel, trackModifier }]) => (
           <Hoverable.Root key={key}>
             <Hoverable.Anchor
-              className={[
-                'bar-graph__track',
-                value == null && 'bar-graph__track--no-data',
-                trackModifier === 'negative' && 'bar-graph__track--negative',
-              ]
-                .filter(Boolean)
-                .join(' ')}
+              className="bar-graph__track"
               onMouseEnter={() => onHover?.({ key, value })}
             >
               <div
@@ -73,9 +71,22 @@ export function BarGraph({
             </Hoverable.Content>
           </Hoverable.Root>
         ))}
-        {goalMarkerHeight != null ? (
-          <div className="bar-graph__goal-line-layer" aria-hidden>
-            <div className="bar-graph__goal-line" style={{ height: `${goalMarkerHeight}%` }} />
+        {visibleLines.length > 0 ? (
+          <div className="bar-graph__lines-layer">
+            {visibleLines.map((line) => (
+              <div
+                key={`${line.value}-${line.label}`}
+                className="bar-graph__line"
+                style={{ height: `${barHeightPercent(line.value, scaleTop)}%` }}
+              >
+                <Hoverable.Root>
+                  <Hoverable.Anchor className="bar-graph__line-dot" />
+                  <Hoverable.Content className="bar-graph__hover" side="top">
+                    <span className="text-b-m">{line.label}</span>
+                  </Hoverable.Content>
+                </Hoverable.Root>
+              </div>
+            ))}
           </div>
         ) : null}
       </div>

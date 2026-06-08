@@ -4,40 +4,50 @@ html[data-theme='dark'] {
   color-scheme: dark;
 
   // borders
-  --border-color: #606676;
-  --border-color-faint: #272b36;
+  --border-color: #6b987f;
+  --border-color-faint: #44464c;
 
   // background colors
-  --background: #0f1115;
-  --background-primary: #0f1115;
-  --background-secondary: #161922;
-  --background-tertiary: #20242e;
-  --background-disabled: #272b36;
+  --background: #1c1d21;
+  --background-secondary: #212327;
+  --background-tertiary: #292b2f;
+  --background-disabled: #292b2f;
   --background-warning: #5b333a;
-  --background-input: #161922;
+  --background-input: #292b2f;
   --background-modal-backdrop: rgb(0 0 0 / 45%);
 
   // text colors
-  --text-color: #e8e8ea;
-  --text-muted: #9aa0a6;
+  --text-color: #e5e5e5;
+  --text-muted: #b8b8b8;
   --text-error: #f87171;
-  --text-success: #4ade80;
+  --text-success: #89ac96;
   --text-warning: #fbbf24;
-  --text-link: #6ea8ff;
+  --text-link: #89ac96;
 
-  // ctas
-  --cta-base-background: #6ea8ff;
+  // ctas primary
+  --cta-base-background: #292b2f;
   --cta-base-text-color: #fff;
   --cta-base-background-danger: var(--accent-red-1);
-  --cta-secondary-border: #4b5057;
+
+  // ctas secondary
+  --cta-secondary-border: var(--border-color-faint);
+  --cta-secondary-fill: transparent;
+  --cta-secondary-fill-hover: #3e3e3e;
+
+  // cta modifiers
   --cta-secondary-border-danger: var(--accent-red-1);
 
+  // pills
+  --pill-border: transparent;
+  --pill-fill: #36383e;
+  --pill-fill-hover: #3e3e3e;
+
   // accents
-  --accent-selected: #6ea8ff;
+  --accent-selected: #6b987f;
   --accent-red-1: #d64545;
 
   // other
-  --elevation-shadow: 0 1px 2px rgb(0 0 0 / 6%), 0 2px 8px rgb(0 0 0 / 8%);
+  --elevation-shadow: 0 1px 2px rgb(0 0 0 / 12%), 0 2px 8px rgb(0 0 0 / 16%);
 }
 
 html[data-theme='light'] {
@@ -49,7 +59,6 @@ html[data-theme='light'] {
 
   // background colors
   --background: #f7f8fa;
-  --background-primary: #f7f8fa;
   --background-secondary: #fff;
   --background-tertiary: #f7f8fa;
   --background-disabled: #a6acbd;
@@ -70,7 +79,14 @@ html[data-theme='light'] {
   --cta-base-text-color: #fff;
   --cta-base-background-danger: var(--accent-red-1);
   --cta-secondary-border: #4b5057;
+  --cta-secondary-fill: #fff;
+  --cta-secondary-fill-hover: #e8e8ea;
   --cta-secondary-border-danger: var(--accent-red-1);
+
+  // pills
+  --pill-border: #4b5057;
+  --pill-fill: #fff;
+  --pill-fill-hover: #e8e8ea;
 
   // accents
   --accent-selected: #2d6cdf;
@@ -88,9 +104,6 @@ html[data-theme='light'] {
   --font-size-s: 12px;
   --font-size-m: 14px;
   --font-size-l: 16px;
-
-  // small buttons look off when using the 5px scale
-  --cta-padding-small: 6px 13px;
   --box-shadow-focus: 0 0 0 2px var(--accent-selected);
   --box-shadow-alert: 0 0 0 2px var(--accent-red-1);
 }

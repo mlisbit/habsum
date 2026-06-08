@@ -113,7 +113,7 @@ export function Streak({ streak, viewDate }: StreakProps) {
   const todayEntry = entries.find(([dateKey]) => dateKey === todayKey);
 
   return (
-    <section className="card mt-3" aria-label={`Streak, ${streak.streakText}`}>
+    <section className="mt-3" aria-label={`Streak, ${streak.streakText}`}>
       <div className="streak__body">
         <div className="flex align-items-center gap-2">
           {todayEntry ? <StreakCell dateKey={todayEntry[0]} datum={todayEntry[1]} preview /> : null}

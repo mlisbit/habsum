@@ -9,6 +9,7 @@ import { InfoText } from '@habsum/ui/components/InfoText';
 import { ProgressBar } from '@habsum/ui/components/ProgressBar';
 import { useModal } from '@habsum/ui/contexts/modal';
 import { classBuilder } from '~/utils/class-builder';
+import { hasHabitData, isGoalHit } from '~/utils/habit-helpers';
 
 type SummationWidgetProps = {
   user: string;
@@ -23,13 +24,6 @@ type SummationWidgetProps = {
   onDeleteSummationEvent: (eventId: number) => Promise<void>;
 };
 
-function summationIsComplete(habit: HabitRowSummation): boolean {
-  const total = habit.total ?? 0;
-  const { goal } = habit;
-  if (goal != null && goal > 0) return total >= goal;
-  return total > 0;
-}
-
 export function SummationWidget({
   user,
   habit,
@@ -41,7 +35,8 @@ export function SummationWidget({
 }: SummationWidgetProps) {
   const total = habit.total;
   const goal = habit.goal;
-  const isComplete = summationIsComplete(habit);
+  const hasData = hasHabitData(habit);
+  const goalHit = isGoalHit(habit);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const { present, closeModal } = useModal();
@@ -82,7 +77,7 @@ export function SummationWidget({
           'habit-summation--step-sub-on-card-hover': habit.summationOptions?.increments.some(
             (n) => n < 0,
           ),
-          'habit-widget--complete': isComplete,
+          'habit-widget--has-data': hasData,
         },
         'card habit-summation',
       )}
@@ -92,6 +87,7 @@ export function SummationWidget({
           user={user}
           habitName={habit.name}
           pending={pending}
+          goalHit={goalHit}
           menuAriaLabel={`More options for ${habit.name}`}
           onMenuClick={openAdjustModal}
           actions={

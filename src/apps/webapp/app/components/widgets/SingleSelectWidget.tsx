@@ -9,6 +9,7 @@ import { TernaryCheckbox, type TernaryCheckboxValue } from '@habsum/ui/component
 import { useModal } from '@habsum/ui/contexts/modal';
 import { Streak } from '~/components/widgets/modules/Streak';
 import { classBuilder } from '~/utils/class-builder';
+import { hasHabitData, isGoalHit } from '~/utils/habit-helpers';
 
 type SingleSelectWidgetProps = {
   user: string;
@@ -19,10 +20,6 @@ type SingleSelectWidgetProps = {
   /** Clears the stored selection for today (`null` in the API). */
   onClearSelection: () => Promise<void>;
 };
-
-function singleSelectIsComplete(habit: HabitRowSingleSelect): boolean {
-  return habit.value != null;
-}
 
 function isCheckboxTheme(habit: HabitRowSingleSelect): boolean {
   return (
@@ -46,7 +43,8 @@ export function SingleSelectWidget({
 }: SingleSelectWidgetProps) {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-  const isComplete = singleSelectIsComplete(habit);
+  const hasData = hasHabitData(habit);
+  const goalHit = isGoalHit(habit);
   const checkboxTheme = isCheckboxTheme(habit);
   const { present, closeModal } = useModal();
 
@@ -78,76 +76,79 @@ export function SingleSelectWidget({
   }, [present, closeModal, onClearSelection, pending, user, habit.name]);
 
   return (
-    <div className={classBuilder({ 'habit-widget--complete': isComplete }, 'card')}>
-      <div className="habit-select__row">
-        <HabitWidgetHeading
-          user={user}
-          habitName={habit.name}
-          pending={pending}
-          menuAriaLabel={`More options for ${habit.name}`}
-          onMenuClick={openResetModal}
-        />
-        {checkboxTheme ? (
-          <TernaryCheckbox
-            value={toTernaryCheckboxValue(habit.value)}
-            aria-label={`${habit.name}: ${habit.value ?? 'not set'}`}
-            disabled={pending}
-            onChange={(nextValue) => {
-              void (async () => {
-                setPending(true);
-                setError(null);
-                try {
-                  if (nextValue == null) {
-                    await onClearSelection();
-                  } else {
-                    await onSelectOption(nextValue);
+    <div className={classBuilder({ 'habit-widget--has-data': hasData }, 'card')}>
+      <HabitWidgetHeading
+        user={user}
+        habitName={habit.name}
+        pending={pending}
+        goalHit={goalHit}
+        menuAriaLabel={`More options for ${habit.name}`}
+        onMenuClick={openResetModal}
+        actions={
+          checkboxTheme ? (
+            <TernaryCheckbox
+              value={toTernaryCheckboxValue(habit.value)}
+              aria-label={`${habit.name}: ${habit.value ?? 'not set'}`}
+              disabled={pending}
+              onChange={(nextValue) => {
+                void (async () => {
+                  setPending(true);
+                  setError(null);
+                  try {
+                    if (nextValue == null) {
+                      await onClearSelection();
+                    } else {
+                      await onSelectOption(nextValue);
+                    }
+                  } catch (err) {
+                    setError(err instanceof Error ? err.message : String(err));
+                  } finally {
+                    setPending(false);
                   }
-                } catch (err) {
-                  setError(err instanceof Error ? err.message : String(err));
-                } finally {
-                  setPending(false);
-                }
-              })();
-            }}
-          />
-        ) : (
-          <div className="habit-select__options">
-            {habit.options.map((opt) => {
-              const selected = habit.value === opt;
-              const dim = habit.value != null && !selected;
-              return (
-                <TogglePill
-                  key={opt}
-                  selected={selected}
-                  disabled={pending}
-                  className={
-                    dim ? 'habit-select__option habit-select__option--dim' : 'habit-select__option'
-                  }
-                  onToggle={(nextSelected) => {
-                    void (async () => {
-                      setPending(true);
-                      setError(null);
-                      try {
-                        if (nextSelected) {
-                          await onSelectOption(opt);
-                        } else {
-                          await onClearSelection();
+                })();
+              }}
+            />
+          ) : (
+            <div className="habit-select__options">
+              {habit.options.map((opt) => {
+                const selected = habit.value === opt;
+                const dim = habit.value != null && !selected;
+                return (
+                  <TogglePill
+                    key={opt}
+                    selected={selected}
+                    disabled={pending}
+                    className={
+                      dim
+                        ? 'habit-select__option habit-select__option--dim'
+                        : 'habit-select__option'
+                    }
+                    onToggle={(nextSelected) => {
+                      void (async () => {
+                        setPending(true);
+                        setError(null);
+                        try {
+                          if (nextSelected) {
+                            await onSelectOption(opt);
+                          } else {
+                            await onClearSelection();
+                          }
+                        } catch (e) {
+                          setError(e instanceof Error ? e.message : String(e));
+                        } finally {
+                          setPending(false);
                         }
-                      } catch (e) {
-                        setError(e instanceof Error ? e.message : String(e));
-                      } finally {
-                        setPending(false);
-                      }
-                    })();
-                  }}
-                >
-                  {opt}
-                </TogglePill>
-              );
-            })}
-          </div>
-        )}
-      </div>
+                      })();
+                    }}
+                  >
+                    {opt}
+                  </TogglePill>
+                );
+              })}
+            </div>
+          )
+        }
+      />
       {error ? (
         <InfoText variant="error" className="habit-select__error">
           {error}

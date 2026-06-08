@@ -1,13 +1,10 @@
 @use 'functions';
 
-// src/components/Hoverable.tsx — floating panel (.hover-layer__panel)
 .hover-layer__panel {
-  box-sizing: border-box;
   inline-size: max-content;
   max-inline-size: 100%;
   padding: functions.spacing(2, 3);
   border-radius: var(--border-radius-m);
-  border: 1px solid var(--border-color-faint);
   background: var(--background-secondary);
   box-shadow: var(--elevation-shadow);
   pointer-events: none;
