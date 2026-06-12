@@ -83,19 +83,12 @@ export function CountControl({
   const submitCustomAmount = async (raw: string) => {
     const delta = parseManualAdjustDelta(raw);
     if (delta == null) return;
-    await applyDelta(delta, { pulse: delta < 0 ? 'minus' : 'plus' });
+    await applyDelta(delta);
     closeAmountEditor();
   };
 
   const effectiveTotal = displayTotal ?? 0;
   const showMinus = !manualMode && effectiveTotal > 0;
-
-  const pulseClasses = [
-    pulseKind === 'plus' ? 'count-control__pulse-plus' : '',
-    pulseKind === 'minus' ? 'count-control__pulse-minus' : '',
-  ]
-    .filter(Boolean)
-    .join(' ');
 
   const onPulseEnd = (e: AnimationEvent<HTMLDivElement>) => {
     if (e.target !== e.currentTarget) return;
@@ -107,7 +100,7 @@ export function CountControl({
     return (
       <div className="count-control">
         <div
-          className={['count-control__manual-row', pulseClasses].filter(Boolean).join(' ')}
+          className={['count-control__manual-row'].filter(Boolean).join(' ')}
           onAnimationEnd={onPulseEnd}
         >
           <div className="count-control__manual-entry">
@@ -190,7 +183,7 @@ export function CountControl({
         />
       ) : null}
       <div
-        className={['count-control__amount-slot', pulseClasses].filter(Boolean).join(' ')}
+        className={['count-control__amount-slot'].filter(Boolean).join(' ')}
         onAnimationEnd={onPulseEnd}
       >
         {amountEditorOpen ? (

@@ -1,6 +1,6 @@
 @use 'functions';
 
-/* Compact panel — same chrome as `.history-display`, scoped to the events widget. */
+/* Compact panel for the summation event detail widget. */
 .events {
   margin-top: functions.spacing(3);
   padding: functions.spacing(2);

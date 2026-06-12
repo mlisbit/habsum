@@ -13,7 +13,7 @@ type EventsProps = {
   events: SummationEvent[] | undefined | null;
   /** Called when the bar graph hover opens for a bucket (`value` = sum of amounts logged in that hour). */
   onBarHover?: (detail: { key: string; value: number | null }) => void;
-  /** Deletes one summation event by id (API); errors surface via parent `runOp` when wrapped there. */
+  /** Deletes one summation event by id; parent supplies any pending/error handling. */
   onDeleteSummationEvent: (eventId: number) => Promise<void>;
 };
 

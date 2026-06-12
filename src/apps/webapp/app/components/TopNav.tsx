@@ -106,7 +106,6 @@ export function TopNav({
   const progressBarProps = useMemo(
     () => ({
       className: 'top-nav__day-progress',
-      size: 'small' as const,
       value: progress.total.done,
       max: progress.total.total,
       'aria-label':

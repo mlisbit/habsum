@@ -1,6 +1,6 @@
 // exclusive-bem-block: config-habit-type-picker
 import type { ReactNode } from 'react';
-import { SingleSelectWidget, SummationWidget } from '~/components/widgets';
+import HabitWidget from '~/components/widgets/HabitWidget';
 import { ModalBody, ModalHeader } from '@habsum/ui/contexts/modal';
 import {
   PREVIEW_SINGLE_SELECT_HABIT,
@@ -19,37 +19,33 @@ type ConfigHabitTypePickerModalProps = {
 
 function SummationTypePreview() {
   return (
-    <SummationWidget
+    <HabitWidget
       user={PREVIEW_USER}
       habit={PREVIEW_SUMMATION_HABIT}
-      dayKey={PREVIEW_VIEW_DATE}
-      onAddAmount={previewNoop}
-      onClearTotal={previewNoop}
-      onDeleteSummationEvent={previewNoop}
+      viewDate={PREVIEW_VIEW_DATE}
+      onUpdate={previewNoop}
     />
   );
 }
 
 function SingleSelectTypePreview() {
   return (
-    <SingleSelectWidget
+    <HabitWidget
       user={PREVIEW_USER}
       habit={PREVIEW_SINGLE_SELECT_HABIT}
-      dayKey={PREVIEW_VIEW_DATE}
-      onSelectOption={previewNoop}
-      onClearSelection={previewNoop}
+      viewDate={PREVIEW_VIEW_DATE}
+      onUpdate={previewNoop}
     />
   );
 }
 
 function CheckboxTypePreview() {
   return (
-    <SingleSelectWidget
+    <HabitWidget
       user={PREVIEW_USER}
       habit={PREVIEW_CHECKBOX_HABIT}
-      dayKey={PREVIEW_VIEW_DATE}
-      onSelectOption={previewNoop}
-      onClearSelection={previewNoop}
+      viewDate={PREVIEW_VIEW_DATE}
+      onUpdate={previewNoop}
     />
   );
 }

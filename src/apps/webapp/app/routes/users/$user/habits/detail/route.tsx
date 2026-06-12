@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from '@remix-run/react';
 import type { MetaFunction } from '@remix-run/node';
+import { dayFromString } from '@habsum/types/common/day';
 import { Calendar, type CalendarDataRender } from '~/components/Calendar';
 import { CellDataDisplay } from '~/components/CellDataDisplay';
 import { CellHoverDisplay } from '~/components/CellHoverDisplay';
@@ -9,7 +10,7 @@ import { Footer } from '~/components/Footer';
 import { Button } from '@habsum/ui/components/Button';
 import { InfoText } from '@habsum/ui/components/InfoText';
 import { TogglePill } from '@habsum/ui/components/Pill';
-import { SingleSelectWidget, SummationWidget } from '~/components/widgets';
+import HabitWidget from '~/components/widgets/HabitWidget';
 import { getHabitHistory, patchHabit, type Habit } from '~/api.client';
 import { useUser } from '~/context/user';
 import { ensureUserSessionForRoute } from '~/utils/user-session-guard';
@@ -75,6 +76,7 @@ export default function HabitDetailRoute() {
   const tzOffsetMinutes = useMemo(() => new Date().getTimezoneOffset(), []);
   const today = useMemo(() => toDateKey(new Date(), tzOffsetMinutes), [tzOffsetMinutes]);
   const effectiveDate = selectedDate && selectedDate.length > 0 ? selectedDate : today;
+  const viewDate = dayFromString(effectiveDate);
   const showJumpToToday = effectiveDate !== today;
 
   useEffect(() => {
@@ -265,67 +267,18 @@ export default function HabitDetailRoute() {
             </p>
           ) : null}
           {!habitError && !isLoading
-            ? widgets.map((habitForWidget) =>
-                habitForWidget.type === 'single_select' ? (
-                  <SingleSelectWidget
-                    key={habitForWidget.name}
-                    user={user}
-                    habit={habitForWidget}
-                    dayKey={effectiveDate}
-                    onSelectOption={async (opt) => {
-                      await patchHabit(
-                        user,
-                        { habit: habitForWidget.name, value: opt },
-                        { date: effectiveDate },
-                      );
-                      await fetchHistory({ mode: 'refresh' });
-                    }}
-                    onClearSelection={async () => {
-                      await patchHabit(
-                        user,
-                        { habit: habitForWidget.name, action: 'clear' },
-                        { date: effectiveDate },
-                      );
-                      await fetchHistory({ mode: 'refresh' });
-                    }}
-                  />
-                ) : (
-                  <SummationWidget
-                    key={habitForWidget.name}
-                    user={user}
-                    habit={habitForWidget}
-                    dayKey={effectiveDate}
-                    onAddAmount={async (delta) => {
-                      await patchHabit(
-                        user,
-                        { habit: habitForWidget.name, total: delta },
-                        { date: effectiveDate },
-                      );
-                      await fetchHistory({ mode: 'refresh' });
-                    }}
-                    onClearTotal={async () => {
-                      await patchHabit(
-                        user,
-                        { habit: habitForWidget.name, action: 'clear' },
-                        { date: effectiveDate },
-                      );
-                      await fetchHistory({ mode: 'refresh' });
-                    }}
-                    onDeleteSummationEvent={async (eventId) => {
-                      await patchHabit(
-                        user,
-                        {
-                          habit: habitForWidget.name,
-                          action: 'delete_event',
-                          eventId,
-                        },
-                        { date: effectiveDate },
-                      );
-                      await fetchHistory({ mode: 'refresh' });
-                    }}
-                  />
-                ),
-              )
+            ? widgets.map((habitForWidget) => (
+                <HabitWidget
+                  key={habitForWidget.name}
+                  user={user}
+                  habit={habitForWidget}
+                  viewDate={viewDate}
+                  onUpdate={async (patch) => {
+                    await patchHabit(user, patch, { date: effectiveDate });
+                    await fetchHistory({ mode: 'refresh' });
+                  }}
+                />
+              ))
             : null}
         </div>
       </div>

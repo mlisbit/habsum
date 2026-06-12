@@ -10,16 +10,20 @@ export type HabitHistory = {
   };
 };
 
+export type HabitRenderModelFields = {
+  history?: HabitHistory;
+  /** Present when the API wants the widget to render a streak module. */
+  streak?: StreakGraphData;
+};
+
 /** A single-select row from `GET /users/:user/habits` */
-export type HabitRowSingleSelect = {
+export type HabitRowSingleSelect = HabitRenderModelFields & {
   name: string;
   type: 'single_select';
   goal: number | null;
   options: string[];
   theme?: string;
   value: string | null;
-  /** Present when YAML defines `streak.options`; `data` spans 14 periods ending on the API `date`, plus `streakText`. */
-  streak?: StreakGraphData;
 };
 
 import type { SummationOptionInput, SummationOptions } from './summation-options.js';
@@ -44,7 +48,7 @@ export type SummationEvent = {
 };
 
 /** A summation row from `GET /users/:user/habits` */
-export type HabitRowSummation = {
+export type HabitRowSummation = HabitRenderModelFields & {
   name: string;
   type: 'summation';
   goal: number | null;
@@ -54,7 +58,6 @@ export type HabitRowSummation = {
   events?: SummationEvent[];
   /** Manual amount entry plus quick-add increments from config (`summation_options`). */
   summationOptions?: SummationOptions;
-  history?: HabitHistory;
 };
 
 /**

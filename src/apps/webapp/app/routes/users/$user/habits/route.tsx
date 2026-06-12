@@ -1,10 +1,11 @@
 import { Link, useNavigate } from '@remix-run/react';
 import type { MetaFunction } from '@remix-run/node';
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { dayFromString } from '@habsum/types/common/day';
 import { getHabits, logout, patchHabit, type Habit } from '~/api.client';
 import { Footer } from '~/components/Footer';
 import { TopNav } from '~/components/TopNav';
-import { SingleSelectWidget, SummationWidget } from '~/components/widgets';
+import HabitWidget from '~/components/widgets/HabitWidget';
 import { InfoText } from '@habsum/ui/components/InfoText';
 import { useToast } from '@habsum/ui/contexts/toast';
 import { useUser } from '~/context/user';
@@ -55,6 +56,7 @@ export default function HabitsPage() {
   const tzOffsetMinutes = useMemo(() => new Date().getTimezoneOffset(), []);
   const today = useTodayDateKey(tzOffsetMinutes);
   const effectiveDate = urlDate ?? today;
+  const viewDate = dayFromString(effectiveDate);
 
   useEffect(() => {
     let cancelled = false;
@@ -170,60 +172,14 @@ export default function HabitsPage() {
   const dayProgress = useMemo(() => getProgress(state?.habits ?? []), [state?.habits]);
 
   function renderHabit(h: Habit) {
-    if (h.type === 'single_select') {
-      return (
-        <SingleSelectWidget
-          key={h.name}
-          user={state!.user}
-          habit={h}
-          dayKey={effectiveDate}
-          onSelectOption={async (opt) => {
-            const updated = await patchHabit(
-              state!.user,
-              { habit: h.name, value: opt },
-              { date: effectiveDate },
-            );
-            onHabitUpdated({ ...h, ...updated, value: opt } as Habit);
-          }}
-          onClearSelection={async () => {
-            const updated = await patchHabit(
-              state!.user,
-              { habit: h.name, action: 'clear' },
-              { date: effectiveDate },
-            );
-            onHabitUpdated({ ...h, ...updated } as Habit);
-          }}
-        />
-      );
-    }
     return (
-      <SummationWidget
+      <HabitWidget
         key={h.name}
         user={state!.user}
         habit={h}
-        dayKey={effectiveDate}
-        onAddAmount={async (delta) => {
-          const updated = await patchHabit(
-            state!.user,
-            { habit: h.name, total: delta },
-            { date: effectiveDate },
-          );
-          onHabitUpdated({ ...h, ...updated } as Habit);
-        }}
-        onClearTotal={async () => {
-          const updated = await patchHabit(
-            state!.user,
-            { habit: h.name, action: 'clear' },
-            { date: effectiveDate },
-          );
-          onHabitUpdated({ ...h, ...updated } as Habit);
-        }}
-        onDeleteSummationEvent={async (eventId) => {
-          const updated = await patchHabit(
-            state!.user,
-            { habit: h.name, action: 'delete_event', eventId },
-            { date: effectiveDate },
-          );
+        viewDate={viewDate}
+        onUpdate={async (patch) => {
+          const updated = await patchHabit(state!.user, patch, { date: effectiveDate });
           onHabitUpdated({ ...h, ...updated } as Habit);
         }}
       />

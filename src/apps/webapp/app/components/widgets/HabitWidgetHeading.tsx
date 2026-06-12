@@ -3,10 +3,12 @@ import { Link } from '@remix-run/react';
 import { Button } from '@habsum/ui/components/Button';
 import { Icon } from '@habsum/ui/components/Icon';
 import { habitDetailUrl } from '~/utils/habit-id';
+import { classBuilder } from '~/utils/class-builder';
 
 type HabitWidgetHeadingProps = {
   user: string;
   habitName: string;
+  className?: string;
   pending?: boolean;
   goalHit?: boolean;
   menuAriaLabel: string;
@@ -18,6 +20,7 @@ type HabitWidgetHeadingProps = {
 export function HabitWidgetHeading({
   user,
   habitName,
+  className,
   pending = false,
   goalHit = false,
   menuAriaLabel,
@@ -31,7 +34,9 @@ export function HabitWidgetHeading({
   );
 
   return (
-    <div className="habit-widget__heading">
+    <div
+      className={classBuilder({}, ['habit-widget__heading', className].filter(Boolean).join(' '))}
+    >
       <div className="habit-widget__heading-left">
         {goalHit ? (
           <Icon name="check" size="medium" className="habit-widget__goal-hit-check text-success" />

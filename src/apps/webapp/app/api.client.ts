@@ -119,14 +119,13 @@ export function isServerConnectionFailure(error: unknown): boolean {
   return error instanceof TypeError;
 }
 
-function buildHabitPatchPayload(
-  body:
-    | { habit: string; total: number }
-    | { habit: string; value: string }
-    | { habit: string; action: 'clear' }
-    | { habit: string; action: 'delete_event'; eventId: number },
-  date: string,
-): Record<string, unknown> {
+export type HabitPatch =
+  | { habit: string; total: number }
+  | { habit: string; value: string }
+  | { habit: string; action: 'clear' }
+  | { habit: string; action: 'delete_event'; eventId: number };
+
+function buildHabitPatchPayload(body: HabitPatch, date: string): Record<string, unknown> {
   const d = new Date();
   const tzOffsetMinutes = d.getTimezoneOffset();
   const clientCreatedAt = toDateKeyWithTime(d, tzOffsetMinutes);
@@ -320,15 +319,7 @@ export async function getHabitHistory(user: string, filter: string[], date?: str
   return next;
 }
 
-export async function patchHabit(
-  user: string,
-  body:
-    | { habit: string; total: number }
-    | { habit: string; value: string }
-    | { habit: string; action: 'clear' }
-    | { habit: string; action: 'delete_event'; eventId: number },
-  opts: { date: string },
-) {
+export async function patchHabit(user: string, body: HabitPatch, opts: { date: string }) {
   const res = await request<PatchHabitResponse>(`/users/${encodeURIComponent(user)}/habits`, {
     method: 'PATCH',
     body: JSON.stringify(buildHabitPatchPayload(body, opts.date)),

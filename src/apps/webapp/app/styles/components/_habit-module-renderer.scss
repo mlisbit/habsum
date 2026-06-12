@@ -1,15 +1,15 @@
 @use 'functions';
 
-.history-display {
+.habit-module-renderer__history {
   margin-top: functions.spacing(2);
 }
 
-.history-display__meta {
+.habit-module-renderer__meta-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.history-display__graph {
+.habit-module-renderer__history-graph {
   margin-top: functions.spacing(2);
 }
