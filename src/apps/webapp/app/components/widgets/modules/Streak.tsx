@@ -1,9 +1,8 @@
 // exclusive-bem-block: streak
+import { useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import type { Day } from '@habsum/types/common/day';
 import type { StreakDatum, StreakGraphData } from '@habsum/types/common/streak';
-import { classBuilder } from '~/utils/class-builder';
 import { Hoverable } from '@habsum/ui/components/Hoverable';
-import { Icon, type IconName } from '@habsum/ui/components/Icon';
 
 function formatStreakDayLabel(dateKey: Day): string {
   const [ys, ms, ds] = dateKey.split('-');
@@ -16,78 +15,67 @@ function formatStreakDayLabel(dateKey: Day): string {
   return dt.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
-function streakCellModifier(datum: StreakDatum): 'empty' | 'miss' | 'hit' {
-  if (datum.value == null) return 'empty';
-  if (datum.include) return 'hit';
-  return 'miss';
+function streakFillValue(datum: StreakDatum): number {
+  const value = Number.isFinite(datum.fill) ? Math.trunc(datum.fill) : 0;
+  const fill = Math.max(0, Math.min(10, value));
+  return fill === 0 && datum.value != null ? 1 : fill;
 }
 
-function streakCellIcon(mod: ReturnType<typeof streakCellModifier>): IconName {
-  if (mod === 'empty') return 'circle-dashed';
-  if (mod === 'miss') return 'circle';
-  return 'party-popper';
+const STREAK_FILL_COLOR_BY_VALUE = [
+  'var(--streak-fill-0)',
+  'var(--streak-fill-1)',
+  'var(--streak-fill-2)',
+  'var(--streak-fill-3)',
+  'var(--streak-fill-4)',
+  'var(--streak-fill-5)',
+  'var(--streak-fill-6)',
+  'var(--streak-fill-7)',
+  'var(--streak-fill-8)',
+  'var(--streak-fill-9)',
+  'var(--streak-fill-10)',
+] as const;
+
+const MAX_STREAK_ROWS = 3;
+const INITIAL_VISIBLE_STREAK_CELLS = MAX_STREAK_ROWS;
+const STREAK_CELL_FALLBACK_WIDTH_PX = 12;
+
+function parseCssPx(value: string): number {
+  const n = Number.parseFloat(value);
+  return Number.isFinite(n) ? n : 0;
 }
 
-const STREAK_ROW_SIZE = 7;
-
-function chunkStreakEntries<T>(entries: T[], rowSize: number): T[][] {
-  const rows: T[][] = [];
-  for (let i = 0; i < entries.length; i += rowSize) {
-    rows.push(entries.slice(i, i + rowSize));
-  }
-  return rows;
-}
-
-function weekStartMonday(dateKey: Day): Day {
-  const [ys, ms, ds] = dateKey.split('-');
-  const y = Number(ys);
-  const m = Number(ms);
-  const d = Number(ds);
-  const dt = new Date(y, m - 1, d);
-  const daysFromMonday = (dt.getDay() + 6) % 7;
-  dt.setDate(dt.getDate() - daysFromMonday);
-  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}` as Day;
-}
-
-function streakTodayKey(entries: [Day, StreakDatum][], viewDate: Day): Day {
-  const isWeekly = entries.some(([, datum]) => datum.label != null);
-  return isWeekly ? weekStartMonday(viewDate) : viewDate;
+function visibleStreakCellsForRow(row: HTMLDivElement): number {
+  const rowStyle = window.getComputedStyle(row);
+  const gap = parseCssPx(rowStyle.columnGap || rowStyle.gap);
+  const firstCell = row.querySelector<HTMLElement>('.streak__cell');
+  const cellWidth = firstCell?.getBoundingClientRect().width ?? STREAK_CELL_FALLBACK_WIDTH_PX;
+  const rowWidth = row.getBoundingClientRect().width;
+  const cellsPerRow = Math.max(1, Math.floor((rowWidth + gap) / (cellWidth + gap)));
+  return cellsPerRow * MAX_STREAK_ROWS;
 }
 
 type StreakCellProps = {
   dateKey: Day;
   datum: StreakDatum;
-  isToday?: boolean;
-  /** Larger duplicate shown beside the streak grid for the view-date cell. */
-  preview?: boolean;
 };
 
-function StreakCell({ dateKey, datum, isToday = false, preview = false }: StreakCellProps) {
-  const mod = streakCellModifier(datum);
+function StreakCell({ dateKey, datum }: StreakCellProps) {
   const periodLabel = datum.label ?? formatStreakDayLabel(dateKey);
   const valueLabel =
     datum.value ?? (datum.label != null ? 'No streak days logged' : 'No selection logged');
+  const fill = streakFillValue(datum);
+  const cellStyle = {
+    backgroundColor: STREAK_FILL_COLOR_BY_VALUE[fill],
+  } satisfies CSSProperties;
 
   return (
     <Hoverable.Root>
       <Hoverable.Anchor
-        className={classBuilder({
-          'streak__cell--empty': mod === 'empty',
-          'streak__cell--miss': mod === 'miss',
-          'streak__cell--hit': mod === 'hit',
-          'streak__cell--today': isToday,
-          'streak__cell--preview': preview,
-        })}
-        role={preview ? undefined : 'listitem'}
-        aria-label={`${periodLabel}: ${valueLabel}`}
-      >
-        <Icon
-          className="streak__cell-icon"
-          name={streakCellIcon(mod)}
-          size={preview ? 'large' : 'medium'}
-          sizePx={preview ? 28 : undefined}
-        />
-      </Hoverable.Anchor>
+        className="streak__cell"
+        role="listitem"
+        aria-label={`${periodLabel}: ${valueLabel}, fill ${fill} of 10`}
+        style={cellStyle}
+      />
       <Hoverable.Content className="streak__tooltip" side="top">
         <div className="streak__tooltip-day text-light text-b-s">{periodLabel}</div>
         <div className="text-b-m">{datum.value ?? '—'}</div>
@@ -98,72 +86,77 @@ function StreakCell({ dateKey, datum, isToday = false, preview = false }: Streak
 
 type StreakProps = {
   streak: StreakGraphData;
-  /** API view date; marks the matching streak cell with `streak__cell--today`. */
-  viewDate: Day;
 };
 
-/** One icon per period in the streak window; hover shows the logged option (or empty). */
-export function Streak({ streak, viewDate }: StreakProps) {
-  const entries = (Object.entries(streak.data) as [Day, StreakDatum][]).sort(([a], [b]) =>
-    a.localeCompare(b),
-  );
-  if (entries.length === 0) return null;
+type StreakMetricPillProps = {
+  label: string;
+  value: string;
+};
 
-  const todayKey = streakTodayKey(entries, viewDate);
-  const todayEntry = entries.find(([dateKey]) => dateKey === todayKey);
+function StreakMetricPill({ label, value }: StreakMetricPillProps) {
+  return (
+    <span className="streak__pill text-b-s">
+      <span className="streak__pill-label text-bold">{label}</span>
+      <span>{value}</span>
+    </span>
+  );
+}
+
+/** One dot per period in the streak window; hover shows the logged option (or empty). */
+export function Streak({ streak }: StreakProps) {
+  const entries = useMemo(
+    () =>
+      (Object.entries(streak.data) as [Day, StreakDatum][]).sort(([a], [b]) => a.localeCompare(b)),
+    [streak.data],
+  );
+  const rowRef = useRef<HTMLDivElement | null>(null);
+  const [visibleCellCount, setVisibleCellCount] = useState(INITIAL_VISIBLE_STREAK_CELLS);
+  const visibleEntries = entries.slice(-visibleCellCount);
+
+  useLayoutEffect(() => {
+    const row = rowRef.current;
+    if (!row) return undefined;
+
+    const updateVisibleCellCount = () => {
+      const next = visibleStreakCellsForRow(row);
+      setVisibleCellCount((current) => (current === next ? current : next));
+    };
+
+    updateVisibleCellCount();
+    const observer = new ResizeObserver(updateVisibleCellCount);
+    observer.observe(row);
+    return () => observer.disconnect();
+  }, [entries.length]);
+
+  if (entries.length === 0) return null;
 
   return (
     <section className="mt-3" aria-label={`Streak, ${streak.streakText}`}>
-      <div className="streak__body">
-        <div className="flex align-items-center gap-2">
-          {todayEntry ? <StreakCell dateKey={todayEntry[0]} datum={todayEntry[1]} preview /> : null}
-
-          <div className="streak__meta-row">
-            <div className="streak__meta text-b-m">
-              <span className="text-light">Streak</span>
-              <span>
-                {' '}
-                <span>{streak.streakText}</span>
-              </span>
-            </div>
-            {streak.longestStreak ? (
-              <div className="streak__meta text-b-m">
-                <span className="text-light">Longest</span>
-                <span>
-                  {' '}
-                  <Hoverable.Root>
-                    <Hoverable.Anchor
-                      className="streak__longest"
-                      aria-label={streak.longestStreak.range}
-                    >
-                      <span>{streak.longestStreak.text}</span>
-                    </Hoverable.Anchor>
-                    <Hoverable.Content className="streak__tooltip" side="top">
-                      <div className="streak__tooltip-day text-light text-b-s">
-                        {streak.longestStreak.range}
-                      </div>
-                    </Hoverable.Content>
-                  </Hoverable.Root>
-                </span>
+      <div className="text-light text-b-m streak__header">
+        <span>Streak</span>
+      </div>
+      <div className="streak__metrics">
+        <StreakMetricPill label="Current streak" value={streak.streakText} />
+        {streak.longestStreak ? (
+          <Hoverable.Root>
+            <Hoverable.Anchor className="streak__longest" aria-label={streak.longestStreak.range}>
+              <StreakMetricPill
+                label={streak.longestStreak.label}
+                value={streak.longestStreak.text}
+              />
+            </Hoverable.Anchor>
+            <Hoverable.Content className="streak__tooltip" side="top">
+              <div className="streak__tooltip-day text-light text-b-s">
+                {streak.longestStreak.range}
               </div>
-            ) : null}
-          </div>
-        </div>
-
-        <div className="streak__rows" role="list">
-          {chunkStreakEntries(entries, STREAK_ROW_SIZE).map((row, rowIndex) => (
-            <div key={rowIndex} className="streak__row">
-              {row.map(([dateKey, datum]) => (
-                <StreakCell
-                  key={dateKey}
-                  dateKey={dateKey}
-                  datum={datum}
-                  isToday={dateKey === todayKey}
-                />
-              ))}
-            </div>
-          ))}
-        </div>
+            </Hoverable.Content>
+          </Hoverable.Root>
+        ) : null}
+      </div>
+      <div ref={rowRef} className="streak__row" role="list">
+        {visibleEntries.map(([dateKey, datum]) => (
+          <StreakCell key={dateKey} dateKey={dateKey} datum={datum} />
+        ))}
       </div>
     </section>
   );

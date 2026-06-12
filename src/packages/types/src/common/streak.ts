@@ -28,15 +28,17 @@ export function isDailyStreakFrequency(daysPerWeek: number): boolean {
 export type StreakDatum = {
   /** Day: logged option, or `null`. Week: progress label (e.g. `2/3`), or `null` if nothing logged. */
   value: string | null;
-  /** Day: streak-eligible selection. Week: week met the frequency target (`true`/`false`), or `null` while in progress. */
-  include: boolean | null;
+  /** Dot fill intensity from `0` to `10`. */
+  fill: number;
   /** Week buckets: inclusive calendar range for this cell (e.g. `Mon, Jan 6 – Sun, Jan 12`). */
   label?: string;
 };
 
 /** Longest historical streak when YAML sets `streak.show_longest`. */
 export type LongestStreak = {
-  /** e.g. `3 days` or `2 weeks (current)` when it matches the active streak. */
+  /** Display label for the longest streak row. */
+  label: string;
+  /** e.g. `3 days of good` or `2 weeks of 3+ per week: good (current)`. */
   text: string;
   range: string;
 };

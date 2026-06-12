@@ -193,7 +193,7 @@ export function habitHistoryIfConfigured(
 }
 
 /** Window length returned for `single_select.streak.data` in `GET .../habits` (inclusive end = API view date). */
-const STREAK_WINDOW_UNITS = 14;
+const STREAK_WINDOW_UNITS = 126;
 
 /** Max days to scan backward when computing `current` (handles multi-year streaks without an unbounded loop). */
 const MAX_STREAK_BACKTRACK_DAYS = 10 * 366;
@@ -232,6 +232,31 @@ function countEligibleDaysInRange(
     if (dayCountsTowardStreak(getSelect(user, habitName, d), eligible)) count++;
   }
   return count;
+}
+
+function countLoggedDaysInRange(
+  user: string,
+  habitName: string,
+  start: string,
+  end: string,
+): number {
+  let count = 0;
+  for (let d = start; d <= end; d = addDaysUtc(d, 1)) {
+    if (getSelect(user, habitName, d) != null) count++;
+  }
+  return count;
+}
+
+function dailyStreakFill(value: string | null, eligible: ReadonlySet<string>): number {
+  if (value == null) return 0;
+  return eligible.has(value) ? 10 : 1;
+}
+
+function weeklyStreakFill(hits: number, loggedDays: number, daysPerWeek: number): number {
+  if (loggedDays === 0) return 0;
+  if (hits >= daysPerWeek) return 10;
+  if (hits === 0) return 1;
+  return Math.max(1, Math.min(9, Math.round((hits / daysPerWeek) * 10)));
 }
 
 function weekMeetsFrequency(
@@ -337,6 +362,13 @@ function longestWeeklyStreakRun(
 
 function streakRunsEqual(a: StreakRun, b: StreakRun): boolean {
   return a.length === b.length && a.start === b.start && a.end === b.end;
+}
+
+function formatLongestStreakQualifier(eligible: ReadonlySet<string>, daysPerWeek: number): string {
+  const options = [...eligible].join(', ');
+  if (!options) return '';
+  if (isDailyStreakFrequency(daysPerWeek)) return options;
+  return `${daysPerWeek}+ per week: ${options}`;
 }
 
 /** Consecutive streak-eligible days ending on `viewDate` (may precede `STREAK_WINDOW_UNITS` chart window). */
@@ -467,8 +499,11 @@ function longestStreakForConfig(
 
   const isCurrent = activeRun != null && streakRunsEqual(run, activeRun);
   const text = formatSelectStreakText(run.length, weekly);
+  const qualifier = formatLongestStreakQualifier(eligible, daysPerWeek);
+  const qualifiedText = qualifier ? `${text} of ${qualifier}` : text;
   return {
-    text: isCurrent ? `${text} (current)` : text,
+    label: 'Longest streak',
+    text: isCurrent ? `${qualifiedText} (current)` : qualifiedText,
     range,
   };
 }
@@ -512,7 +547,7 @@ function streakGraphDailyWindow(
     const value = getSelect(user, habitName, d);
     data[dayFromString(d)] = {
       value,
-      include: value != null ? eligible.has(value) : null,
+      fill: dailyStreakFill(value, eligible),
     };
   }
   const current = currentSelectStreakLength(user, habitName, viewDate, eligible, omitEmptyViewDate);
@@ -536,19 +571,10 @@ function streakGraphWeeklyWindow(
     const weekStart = addDaysUtc(viewWeekStart, -i * 7);
     const weekEnd = addDaysUtc(weekStart, 6);
     const hits = countEligibleDaysInRange(user, habitName, weekStart, weekEnd, eligible);
-    const inViewWeek = weekStart === viewWeekStart;
-    const weekComplete = viewDate >= weekEnd;
-    let include: boolean | null;
-    if (hits >= daysPerWeek) {
-      include = true;
-    } else if (inViewWeek && !weekComplete && omitIncompleteViewWeek) {
-      include = null;
-    } else {
-      include = false;
-    }
+    const loggedDays = countLoggedDaysInRange(user, habitName, weekStart, weekEnd);
     data[dayFromString(weekStart)] = {
       value: formatWeekProgressLabel(hits, daysPerWeek),
-      include,
+      fill: weeklyStreakFill(hits, loggedDays, daysPerWeek),
       label: formatWeekRangeLabel(weekStart, weekEnd),
     };
   }

@@ -68,15 +68,15 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-    <ModalProvider>
-      <ToastProvider linkComponent={ToastLink}>
+    <ToastProvider linkComponent={ToastLink}>
+      <ModalProvider>
         <UserProvider>
           <OucPopupBootstrap />
           <Outlet />
           <OucIndicator />
         </UserProvider>
-      </ToastProvider>
-    </ModalProvider>
+      </ModalProvider>
+    </ToastProvider>
   );
 }
 

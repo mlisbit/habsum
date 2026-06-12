@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
+import { dayFromString } from '@habsum/types/common/day';
 
 vi.mock('./db.js', () => ({
   getSelect: vi.fn(),
@@ -46,7 +47,7 @@ describe('formatSelectStreakText', () => {
 describe('streakGraphForConfiguredWindow', () => {
   it('defaults to daily streak when frequency is omitted', () => {
     const at = new Date('2025-05-21T12:00:00.000Z');
-    const viewDate = '2025-05-21';
+    const viewDate = dayFromString('2025-05-21');
     vi.mocked(getSelect).mockImplementation((_u, _h, date) =>
       date === '2025-05-20' || date === '2025-05-19' ? 'good' : null,
     );
@@ -55,12 +56,12 @@ describe('streakGraphForConfiguredWindow', () => {
 
     expect(streak.streakText).toBe('2 days');
     expect(streak.data[viewDate]?.label).toBeUndefined();
-    expect(Object.keys(streak.data)).toHaveLength(14);
+    expect(Object.keys(streak.data)).toHaveLength(126);
   });
 
   it('omits an unlogged UTC today from current streak length', () => {
     const at = new Date('2025-05-21T12:00:00.000Z');
-    const viewDate = '2025-05-21';
+    const viewDate = dayFromString('2025-05-21');
     vi.mocked(getSelect).mockImplementation((_u, _h, date) => {
       if (date === '2025-05-20') return 'good';
       if (date === '2025-05-19') return 'good';
@@ -71,16 +72,30 @@ describe('streakGraphForConfiguredWindow', () => {
 
     expect(streak.streakText).toBe('2 days');
     expect(streak.data[viewDate]?.value).toBeNull();
+    expect(streak.data[viewDate]?.fill).toBe(0);
   });
 
   it('counts today when it has a streak-eligible selection', () => {
     const at = new Date('2025-05-21T12:00:00.000Z');
-    const viewDate = '2025-05-21';
+    const viewDate = dayFromString('2025-05-21');
     vi.mocked(getSelect).mockImplementation((_u, _h, date) => (date === viewDate ? 'good' : null));
 
     const streak = streakGraphForConfiguredWindow(user, habit, viewDate, eligible, at);
 
     expect(streak.streakText).toBe('1 day');
+    expect(streak.data[viewDate]?.fill).toBe(10);
+  });
+
+  it('uses a nonzero fill for logged selections outside the streak config', () => {
+    const at = new Date('2025-05-21T12:00:00.000Z');
+    const viewDate = dayFromString('2025-05-21');
+    vi.mocked(getSelect).mockImplementation((_u, _h, date) => (date === viewDate ? 'bad' : null));
+
+    const streak = streakGraphForConfiguredWindow(user, habit, viewDate, eligible, at);
+
+    expect(streak.streakText).toBe('0 days');
+    expect(streak.data[viewDate]?.value).toBe('bad');
+    expect(streak.data[viewDate]?.fill).toBe(1);
   });
 
   it('treats an unlogged past view date as breaking the streak', () => {
@@ -137,10 +152,10 @@ describe('streakGraphForConfiguredWindow (weekly frequency)', () => {
       '3d/1w',
     );
 
-    const viewWeekStart = '2025-05-19';
+    const viewWeekStart = dayFromString('2025-05-19');
     expect(streak.data[viewWeekStart]?.label).toMatch(/–/);
     expect(streak.data[viewWeekStart]?.value).toBe('3/3');
-    expect(streak.data[viewWeekStart]?.include).toBe(true);
+    expect(streak.data[viewWeekStart]?.fill).toBe(10);
     expect(streak.streakText).toBe('2 weeks');
   });
 
@@ -163,9 +178,33 @@ describe('streakGraphForConfiguredWindow (weekly frequency)', () => {
       '3d/1w',
     );
 
-    expect(streak.data['2025-05-19']?.value).toBe('1/3');
-    expect(streak.data['2025-05-19']?.include).toBeNull();
+    const viewWeekStart = dayFromString('2025-05-19');
+    expect(streak.data[viewWeekStart]?.value).toBe('1/3');
+    expect(streak.data[viewWeekStart]?.fill).toBe(3);
     expect(streak.streakText).toBe('1 week');
+  });
+
+  it('uses a nonzero weekly fill when the week has only non-eligible logs', () => {
+    const at = new Date('2025-05-21T12:00:00.000Z');
+    const viewDate = '2025-05-21';
+    vi.mocked(getSelect).mockImplementation((_u, _h, date) =>
+      date === '2025-05-20' ? 'bad' : null,
+    );
+
+    const streak = streakGraphForConfiguredWindow(
+      user,
+      habit,
+      viewDate,
+      eligible,
+      at,
+      undefined,
+      '3d/1w',
+    );
+
+    const viewWeekStart = dayFromString('2025-05-19');
+    expect(streak.data[viewWeekStart]?.value).toBeNull();
+    expect(streak.data[viewWeekStart]?.fill).toBe(1);
+    expect(streak.streakText).toBe('0 weeks');
   });
 });
 
@@ -191,7 +230,8 @@ describe('streakGraphForConfiguredWindow (show_longest)', () => {
     );
 
     expect(streak.longestStreak).toEqual({
-      text: '3 days (current)',
+      label: 'Longest streak',
+      text: '3 days of good (current)',
       range: expect.stringMatching(/–/),
     });
   });
@@ -222,8 +262,31 @@ describe('streakGraphForConfiguredWindow (show_longest)', () => {
       '2025-05-01',
     );
 
-    expect(streak.longestStreak?.text).toBe('4 days');
+    expect(streak.longestStreak?.text).toBe('4 days of good');
     expect(streak.streakText).toBe('1 day');
+  });
+
+  it('labels weekly longest streak with the configured frequency and options', () => {
+    const viewDate = '2025-05-21';
+    vi.mocked(getSelect).mockImplementation((_u, _h, date) => {
+      if (date === '2025-05-12' || date === '2025-05-13' || date === '2025-05-14') return 'good';
+      return null;
+    });
+
+    const streak = streakGraphForConfiguredWindow(
+      user,
+      habit,
+      viewDate,
+      eligible,
+      new Date(`${viewDate}T12:00:00.000Z`),
+      undefined,
+      '3d/1w',
+      true,
+      '2025-05-01',
+    );
+
+    expect(streak.longestStreak?.label).toBe('Longest streak');
+    expect(streak.longestStreak?.text).toBe('1 week of 3+ per week: good (current)');
   });
 
   it('omits longestStreak when show_longest is disabled', () => {

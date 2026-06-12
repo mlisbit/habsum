@@ -1,66 +1,61 @@
 @use 'functions';
 
-.streak__meta-row {
+.streak__header {
   display: flex;
-  flex-flow: column;
-  gap: functions.spacing(1);
+  align-items: center;
+  gap: functions.spacing(2);
+  margin-block-end: functions.spacing(1);
 }
 
-.streak__meta {
+.streak__metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: functions.spacing(1);
+  margin-top: functions.spacing(2);
+  margin-block-end: functions.spacing(1);
+}
+
+.streak__pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: functions.spacing(2);
   min-width: 0;
+  padding: functions.spacing(1, 3);
+  border-radius: var(--border-radius-full);
+  background: var(--pill-fill);
+}
+
+.streak__pill-label {
+  flex: 0 0 auto;
 }
 
 .streak__longest {
   cursor: default;
-  display: inline;
+  display: inline-flex;
   text-decoration: underline dotted;
   text-underline-offset: 0.15em;
 }
 
-.streak__body {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.streak__rows {
-  display: flex;
-  flex-direction: column;
-  gap: functions.spacing(1);
-  min-width: 0;
-}
-
 .streak__row {
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: functions.spacing(1);
+  min-width: 0;
+  margin-top: functions.spacing(4);
 }
 
-.streak__cell--hit {
-  // stylelint-disable-next-line
-  color: var(--accent-selected);
-}
-
-.streak__cell--empty {
-  // stylelint-disable-next-line
-  color: var(--background-warning);
-}
-
-.streak__cell-icon {
-  .streak__cell--miss & {
-    // stylelint-disable-next-line
-    color: var(--accent-red-1);
-  }
-}
-
-.streak__cell--preview.streak__cell--miss {
-  inline-size: 1.75rem;
-  block-size: 1.75rem;
-}
-
-.streak__cell--today {
-  outline: 1px solid var(--border-color-faint);
-  outline-offset: 2px;
-  border-radius: 50%;
+.streak__cell {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: var(--border-radius-s);
+  background: var(--streak-fill-0);
+  cursor: default;
 }
 
 .streak__tooltip.hover-layer__panel {

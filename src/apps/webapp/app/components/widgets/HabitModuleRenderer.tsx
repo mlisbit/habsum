@@ -91,7 +91,7 @@ export default function HabitModuleRenderer({
         </>
       ) : null}
       <HabitHistory habit={habit} />
-      {habit.streak ? <Streak streak={habit.streak} viewDate={viewDate} /> : null}
+      {habit.streak ? <Streak streak={habit.streak} /> : null}
     </div>
   );
 }
