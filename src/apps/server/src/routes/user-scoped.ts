@@ -68,13 +68,16 @@ import {
 import {
   emptyHabitForHistory,
   habitHistoryForConfiguredPeriod,
-  habitHistoryIfConfigured,
+  habitWidgets,
+  historyWidget,
   habitRowsForHistory,
   minDate,
   parseHabitFilter,
+  progressWidget,
   summationStreakGraphForConfiguredWindow,
   type PatchBody,
   streakGraphForConfiguredWindow,
+  streakWidget,
 } from '../habit-presentation.js';
 import { authenticatedSessionId, requireMatchingRouteUser } from '../middleware/auth.js';
 import {
@@ -678,6 +681,20 @@ userScopedRouter.get(
 
     const habits = config.habits.map((h) => {
       if (h.type === 'single_select') {
+        const streak = h.streak
+          ? streakGraphForConfiguredWindow(
+              user,
+              h.name,
+              date,
+              h.streak.options,
+              at,
+              tzOffsetMinutes,
+              h.streak.frequency,
+              h.streak.show_longest === true,
+              firstDate,
+            )
+          : null;
+        const widgets = habitWidgets([streak ? streakWidget(streak) : null]);
         return {
           name: h.name,
           goal: h.goal,
@@ -685,59 +702,41 @@ userScopedRouter.get(
           options: h.options ?? [],
           ...(h.theme ? { theme: h.theme } : {}),
           value: getSelect(user, h.name, date),
-          ...(h.streak
-            ? {
-                streak: streakGraphForConfiguredWindow(
-                  user,
-                  h.name,
-                  date,
-                  h.streak.options,
-                  at,
-                  tzOffsetMinutes,
-                  h.streak.frequency,
-                  h.streak.show_longest === true,
-                  firstDate,
-                ),
-              }
-            : {}),
+          ...(widgets.length > 0 ? { widgets } : {}),
         } satisfies Habit;
       }
+      const total = getSummationDayTotal(user, h.name, date);
+      const history = h.history
+        ? habitHistoryForConfiguredPeriod(user, h.name, date, firstDate, h.history.period, h.goal)
+        : null;
+      const streak = h.streak
+        ? summationStreakGraphForConfiguredWindow(
+            user,
+            h.name,
+            date,
+            h.streak.options,
+            at,
+            tzOffsetMinutes,
+            h.streak.frequency,
+            h.streak.show_longest === true,
+            firstDate,
+          )
+        : null;
+      const widgets = habitWidgets([
+        progressWidget(total, h.goal),
+        history ? historyWidget(history, h.goal) : null,
+        streak ? streakWidget(streak) : null,
+      ]);
       const base = {
         name: h.name,
         goal: h.goal,
-        ...(h.history
-          ? {
-              history: habitHistoryForConfiguredPeriod(
-                user,
-                h.name,
-                date,
-                firstDate,
-                h.history.period,
-                h.goal,
-              ),
-            }
-          : {}),
       };
       return {
         ...base,
         type: 'summation' as const,
-        total: getSummationDayTotal(user, h.name, date),
+        total,
         ...(h.summationOptions ? { summationOptions: h.summationOptions } : {}),
-        ...(h.streak
-          ? {
-              streak: summationStreakGraphForConfiguredWindow(
-                user,
-                h.name,
-                date,
-                h.streak.options,
-                at,
-                tzOffsetMinutes,
-                h.streak.frequency,
-                h.streak.show_longest === true,
-                firstDate,
-              ),
-            }
-          : {}),
+        ...(widgets.length > 0 ? { widgets } : {}),
       } satisfies Habit;
     });
     const body: HabitsResponse = {
@@ -797,6 +796,20 @@ userScopedRouter.patch(
       if (mode === 'clear') {
         deleteDailySelect(user, habit, date);
         const opts = known.options ?? [];
+        const streak = known.streak
+          ? streakGraphForConfiguredWindow(
+              user,
+              habit,
+              date,
+              known.streak.options,
+              at,
+              tzOffsetMinutes,
+              known.streak.frequency,
+              known.streak.show_longest === true,
+              getFirstDate(user),
+            )
+          : null;
+        const widgets = habitWidgets([streak ? streakWidget(streak) : null]);
         const out: PatchHabitResponse = {
           user,
           date,
@@ -805,21 +818,7 @@ userScopedRouter.patch(
           type: known.type,
           options: opts,
           ...(known.theme ? { theme: known.theme } : {}),
-          ...(known.streak
-            ? {
-                streak: streakGraphForConfiguredWindow(
-                  user,
-                  habit,
-                  date,
-                  known.streak.options,
-                  at,
-                  tzOffsetMinutes,
-                  known.streak.frequency,
-                  known.streak.show_longest === true,
-                  getFirstDate(user),
-                ),
-              }
-            : {}),
+          ...(widgets.length > 0 ? { widgets } : {}),
         };
         return res.json(out);
       }
@@ -832,6 +831,20 @@ userScopedRouter.patch(
         return res.status(400).json({ error: 'invalid option' });
       }
       const next = setSelect(user, habit, date, value);
+      const streak = known.streak
+        ? streakGraphForConfiguredWindow(
+            user,
+            habit,
+            date,
+            known.streak.options,
+            at,
+            tzOffsetMinutes,
+            known.streak.frequency,
+            known.streak.show_longest === true,
+            getFirstDate(user),
+          )
+        : null;
+      const widgets = habitWidgets([streak ? streakWidget(streak) : null]);
       const out: PatchHabitResponse = {
         user,
         date,
@@ -840,44 +853,43 @@ userScopedRouter.patch(
         type: known.type,
         options: opts,
         ...(known.theme ? { theme: known.theme } : {}),
-        ...(known.streak
-          ? {
-              streak: streakGraphForConfiguredWindow(
-                user,
-                habit,
-                date,
-                known.streak.options,
-                at,
-                tzOffsetMinutes,
-                known.streak.frequency,
-                known.streak.show_longest === true,
-                getFirstDate(user),
-              ),
-            }
-          : {}),
+        ...(widgets.length > 0 ? { widgets } : {}),
       };
       return res.json(out);
     }
 
     const mode = typeof action === 'string' ? action : 'add';
     const firstDate = getFirstDate(user);
-    const historyFieldsAfterMutation = () => habitHistoryIfConfigured(user, known, date, firstDate);
-    const summationStreakAfterMutation = () =>
-      known.streak
-        ? {
-            streak: summationStreakGraphForConfiguredWindow(
-              user,
-              habit,
-              date,
-              known.streak.options,
-              new Date(),
-              parseTzOffsetMinutes(body.tzOffsetMinutes),
-              known.streak.frequency,
-              known.streak.show_longest === true,
-              firstDate,
-            ),
-          }
-        : {};
+    const widgetsAfterMutation = (nextTotal: number | null) => {
+      const history = known.history
+        ? habitHistoryForConfiguredPeriod(
+            user,
+            known.name,
+            date,
+            firstDate,
+            known.history.period,
+            known.goal,
+          )
+        : null;
+      const streak = known.streak
+        ? summationStreakGraphForConfiguredWindow(
+            user,
+            habit,
+            date,
+            known.streak.options,
+            new Date(),
+            parseTzOffsetMinutes(body.tzOffsetMinutes),
+            known.streak.frequency,
+            known.streak.show_longest === true,
+            firstDate,
+          )
+        : null;
+      return habitWidgets([
+        progressWidget(nextTotal, known.goal),
+        history ? historyWidget(history, known.goal) : null,
+        streak ? streakWidget(streak) : null,
+      ]);
+    };
 
     if (mode === 'delete_event') {
       const rawId = body.eventId;
@@ -890,22 +902,24 @@ userScopedRouter.patch(
         return res.status(404).json({ error: 'summation event not found' });
       }
       const events = getSummationEvents(user, habit, date);
+      const nextTotal = getSummationDayTotal(user, habit, date);
+      const widgets = widgetsAfterMutation(nextTotal);
       const out: PatchHabitResponse = {
         user,
         date,
         habit,
-        total: getSummationDayTotal(user, habit, date),
+        total: nextTotal,
         events: mapSummationEventsToApi(events),
         type: known.type,
         goal: known.goal,
-        ...historyFieldsAfterMutation(),
-        ...summationStreakAfterMutation(),
+        ...(widgets.length > 0 ? { widgets } : {}),
       };
       return res.json(out);
     }
 
     if (mode === 'clear') {
       deleteSummationEventsForDay(user, habit, date);
+      const widgets = widgetsAfterMutation(null);
       const out: PatchHabitResponse = {
         user,
         date,
@@ -914,8 +928,7 @@ userScopedRouter.patch(
         events: [],
         type: known.type,
         goal: known.goal,
-        ...historyFieldsAfterMutation(),
-        ...summationStreakAfterMutation(),
+        ...(widgets.length > 0 ? { widgets } : {}),
       };
       return res.json(out);
     }
@@ -946,6 +959,7 @@ userScopedRouter.patch(
       return res.status(400).json({ error: `unknown action "${mode}"` });
     }
 
+    const widgets = widgetsAfterMutation(next);
     const out: PatchHabitResponse = {
       user,
       date,
@@ -954,8 +968,7 @@ userScopedRouter.patch(
       events: mapSummationEventsToApi(events),
       type: known.type,
       goal: known.goal,
-      ...historyFieldsAfterMutation(),
-      ...summationStreakAfterMutation(),
+      ...(widgets.length > 0 ? { widgets } : {}),
     };
     return res.json(out);
   },

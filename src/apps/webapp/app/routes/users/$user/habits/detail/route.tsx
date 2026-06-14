@@ -23,9 +23,15 @@ export const meta: MetaFunction = ({ params }) => [{ title: userPageTitle(params
 type HistoryGetPayload = Awaited<ReturnType<typeof getHabitHistory>>;
 
 function withoutHistory(habit: Habit): Habit {
-  if (habit.type === 'single_select') return habit;
-  const { history: _omit, ...rest } = habit;
-  return rest as Habit;
+  const widgets = habit.widgets?.filter(
+    (widget) => !widget.body.some((body) => body.kind === 'barGraph'),
+  );
+  if (widgets == null || widgets.length === habit.widgets?.length) return habit;
+  const { widgets: _omit, ...rest } = habit;
+  return {
+    ...rest,
+    ...(widgets.length > 0 ? { widgets } : {}),
+  } as Habit;
 }
 
 function blankHabitFrom(habit: Habit): Habit {

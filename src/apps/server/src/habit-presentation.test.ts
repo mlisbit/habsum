@@ -10,6 +10,7 @@ import { getSelect, getSummationDayTotal } from './db.js';
 import {
   formatSelectStreakText,
   historyGraphScaleTop,
+  streakWidget,
   summationStreakGraphForConfiguredWindow,
   streakGraphForConfiguredWindow,
 } from './habit-presentation.js';
@@ -56,7 +57,7 @@ describe('streakGraphForConfiguredWindow', () => {
 
     const streak = streakGraphForConfiguredWindow(user, habit, viewDate, eligible, at);
 
-    expect(streak.streakText).toBe('2 days');
+    expect(streak.currentText).toBe('2 days');
     expect(streak.data[viewDate]?.label).toBeUndefined();
     expect(Object.keys(streak.data)).toHaveLength(126);
   });
@@ -72,7 +73,7 @@ describe('streakGraphForConfiguredWindow', () => {
 
     const streak = streakGraphForConfiguredWindow(user, habit, viewDate, eligible, at);
 
-    expect(streak.streakText).toBe('2 days');
+    expect(streak.currentText).toBe('2 days');
     expect(streak.data[viewDate]?.value).toBeNull();
     expect(streak.data[viewDate]?.fill).toBe(0);
   });
@@ -84,7 +85,7 @@ describe('streakGraphForConfiguredWindow', () => {
 
     const streak = streakGraphForConfiguredWindow(user, habit, viewDate, eligible, at);
 
-    expect(streak.streakText).toBe('1 day');
+    expect(streak.currentText).toBe('1 day');
     expect(streak.data[viewDate]?.fill).toBe(10);
   });
 
@@ -95,7 +96,7 @@ describe('streakGraphForConfiguredWindow', () => {
 
     const streak = streakGraphForConfiguredWindow(user, habit, viewDate, eligible, at);
 
-    expect(streak.streakText).toBe('0 days');
+    expect(streak.currentText).toBe('0 days');
     expect(streak.data[viewDate]?.value).toBe('bad');
     expect(streak.data[viewDate]?.fill).toBe(1);
   });
@@ -109,7 +110,7 @@ describe('streakGraphForConfiguredWindow', () => {
 
     const streak = streakGraphForConfiguredWindow(user, habit, viewDate, eligible, at);
 
-    expect(streak.streakText).toBe('0 days');
+    expect(streak.currentText).toBe('0 days');
   });
 
   it('omits unlogged today when view date is ahead of UTC (client tz offset)', () => {
@@ -130,7 +131,7 @@ describe('streakGraphForConfiguredWindow', () => {
       tzOffsetMinutes,
     );
 
-    expect(streak.streakText).toBe('3 days');
+    expect(streak.currentText).toBe('3 days');
   });
 });
 
@@ -158,7 +159,7 @@ describe('streakGraphForConfiguredWindow (weekly frequency)', () => {
     expect(streak.data[viewWeekStart]?.label).toMatch(/–/);
     expect(streak.data[viewWeekStart]?.value).toBe('3/3');
     expect(streak.data[viewWeekStart]?.fill).toBe(10);
-    expect(streak.streakText).toBe('2 weeks');
+    expect(streak.currentText).toBe('2 weeks');
   });
 
   it('omits the in-progress view week from streak length when under target', () => {
@@ -183,7 +184,7 @@ describe('streakGraphForConfiguredWindow (weekly frequency)', () => {
     const viewWeekStart = dayFromString('2025-05-19');
     expect(streak.data[viewWeekStart]?.value).toBe('1/3');
     expect(streak.data[viewWeekStart]?.fill).toBe(3);
-    expect(streak.streakText).toBe('1 week');
+    expect(streak.currentText).toBe('1 week');
   });
 
   it('uses a nonzero weekly fill when the week has only non-eligible logs', () => {
@@ -206,7 +207,7 @@ describe('streakGraphForConfiguredWindow (weekly frequency)', () => {
     const viewWeekStart = dayFromString('2025-05-19');
     expect(streak.data[viewWeekStart]?.value).toBeNull();
     expect(streak.data[viewWeekStart]?.fill).toBe(1);
-    expect(streak.streakText).toBe('0 weeks');
+    expect(streak.currentText).toBe('0 weeks');
   });
 });
 
@@ -223,7 +224,7 @@ describe('summationStreakGraphForConfiguredWindow', () => {
 
     const streak = summationStreakGraphForConfiguredWindow(user, 'push ups', viewDate, ['10'], at);
 
-    expect(streak.streakText).toBe('1 day');
+    expect(streak.currentText).toBe('1 day');
     expect(streak.data[viewDate]?.value).toBe('12');
     expect(streak.data[viewDate]?.fill).toBe(10);
     expect(streak.data[dayFromString('2025-05-20')]?.fill).toBe(1);
@@ -285,7 +286,17 @@ describe('streakGraphForConfiguredWindow (show_longest)', () => {
     );
 
     expect(streak.longestStreak?.text).toBe('4 days of good');
-    expect(streak.streakText).toBe('1 day');
+    expect(streak.currentText).toBe('1 day');
+    expect(streakWidget(streak).body[0]).toEqual({
+      kind: 'pills',
+      pills: [
+        { label: 'Current streak: 1 day' },
+        {
+          label: 'Longest streak: 4 days of good',
+          hover: 'Thu, May 1 – Sun, May 4',
+        },
+      ],
+    });
   });
 
   it('labels weekly longest streak with the configured frequency and options', () => {

@@ -1,5 +1,4 @@
-import type { StreakGraphData } from '../common/streak.js';
-import type { HabitHistory, SummationEvent } from '../common/habit.js';
+import type { HabitWidget, SummationEvent } from '../common/habit.js';
 
 /** Response body for `PATCH /users/:user/habits` */
 export type PatchHabitResponse =
@@ -11,8 +10,7 @@ export type PatchHabitResponse =
       type: 'single_select';
       options: string[];
       theme?: string;
-      /** Same shape as `GET .../habits` when YAML defines `streak`. */
-      streak?: StreakGraphData;
+      widgets?: HabitWidget[];
     }
   | {
       user: string;
@@ -22,6 +20,5 @@ export type PatchHabitResponse =
       events?: SummationEvent[];
       type: 'summation';
       goal: number | null;
-      /** Same shape as `GET .../habits` when YAML defines `history`. */
-      history?: HabitHistory;
+      widgets?: HabitWidget[];
     };

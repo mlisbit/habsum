@@ -70,6 +70,7 @@ export type {
 export type {
   Habit,
   HabitHistory,
+  HabitWidget,
   HabitRowSingleSelect,
   HabitRowSummation,
   SummationEvent,
@@ -331,7 +332,7 @@ export async function patchHabit(user: string, body: HabitPatch, opts: { date: s
       options: res.options,
       value: res.value ?? null,
       goal: null,
-      ...(res.streak ? { streak: res.streak } : {}),
+      ...(res.widgets ? { widgets: res.widgets } : {}),
     } satisfies Habit;
   }
   return {
@@ -340,7 +341,7 @@ export async function patchHabit(user: string, body: HabitPatch, opts: { date: s
     type: res.type,
     goal: res.goal,
     ...(res.events ? { events: res.events } : {}),
-    ...(res.history ? { history: res.history } : {}),
+    ...(res.widgets ? { widgets: res.widgets } : {}),
   } satisfies Habit;
 }
 

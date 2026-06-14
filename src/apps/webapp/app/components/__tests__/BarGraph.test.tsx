@@ -1,6 +1,6 @@
 import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
-import { BarGraph, graphScaleTop } from '../BarGraph';
+import { BarGraph, graphScaleTop } from '../graphs/BarGraph';
 
 afterEach(() => {
   cleanup();

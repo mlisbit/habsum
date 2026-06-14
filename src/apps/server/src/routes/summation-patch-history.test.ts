@@ -49,7 +49,13 @@ describe('PATCH /users/:user/habits summation history', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.total).toBe(5);
-    expect(res.body.history?.data?.user?.graphData?.[date]?.value).toBe(5);
-    expect(res.body.history?.data?.user?.graphData?.[date]?.top).toBe(100);
+    const historyWidget = res.body.widgets?.find(
+      (widget: { title: string }) => widget.title === 'History',
+    );
+    const barGraph = historyWidget?.body?.find(
+      (body: { kind: string }) => body.kind === 'barGraph',
+    );
+    expect(barGraph?.data?.[date]?.value).toBe(5);
+    expect(barGraph?.data?.[date]?.top).toBe(100);
   });
 });

@@ -10,10 +10,56 @@ export type HabitHistory = {
   };
 };
 
+export type HabitWidgetBase = {
+  title: string;
+  titleValue: string;
+  body: HabitWidgetBody[];
+};
+
+export type HabitWidgetPill = {
+  /** HTML-safe display text rendered by the client. */
+  label: string;
+  /** Optional HTML-safe hover text rendered by the client. */
+  hover?: string;
+};
+
+export type HabitWidgetPillsBody = {
+  kind: 'pills';
+  pills: HabitWidgetPill[];
+};
+
+export type HabitWidgetProgressBody = {
+  kind: 'progress';
+  value: number | null;
+  max: number;
+};
+
+export type HabitWidgetBarGraphLine = {
+  value: number;
+  label: string;
+};
+
+export type HabitWidgetBarGraphBody = {
+  kind: 'barGraph';
+  data: BarGraphData;
+  lines?: HabitWidgetBarGraphLine[];
+};
+
+export type HabitWidgetStreakGraphBody = {
+  kind: 'streakGraph';
+  graph: StreakGraphData;
+};
+
+export type HabitWidgetBody =
+  | HabitWidgetPillsBody
+  | HabitWidgetProgressBody
+  | HabitWidgetBarGraphBody
+  | HabitWidgetStreakGraphBody;
+
+export type HabitWidget = HabitWidgetBase;
+
 export type HabitRenderModelFields = {
-  history?: HabitHistory;
-  /** Present when the API wants the widget to render a streak module. */
-  streak?: StreakGraphData;
+  widgets?: HabitWidget[];
 };
 
 /** A single-select row from `GET /users/:user/habits` */

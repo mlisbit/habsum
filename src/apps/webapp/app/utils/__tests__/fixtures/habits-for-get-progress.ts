@@ -1,5 +1,5 @@
 import type { BarGraphData } from '@habsum/types/common/bar-chart';
-import type { Habit, HabitHistory } from '@habsum/types/common/habit';
+import type { Habit, HabitHistory, HabitWidget } from '@habsum/types/common/habit';
 
 /** Build a 7-day `HabitHistory` for tests from per-day totals (oldest → newest). */
 function habitHistoryWeek(
@@ -33,12 +33,20 @@ function habitHistoryWeek(
   };
 }
 
+function habitHistoryWidget(history: HabitHistory): HabitWidget {
+  return {
+    title: 'History',
+    titleValue: 'avg —',
+    body: [{ kind: 'barGraph', data: history.data.user.graphData }],
+  };
+}
+
 /** Snapshot-ish `HabitsResponse.habits` samples for exercising `getProgress`. */
 export const habitsFixtureProgressMixed: readonly Habit[] = [
   {
     name: 'push ups',
     goal: 100,
-    history: habitHistoryWeek([null, null, null, null, null, null, 41], 100),
+    widgets: [habitHistoryWidget(habitHistoryWeek([null, null, null, null, null, null, 41], 100))],
     type: 'summation',
     total: 41,
   },
@@ -58,7 +66,7 @@ export const habitsFixtureProgressMixed: readonly Habit[] = [
   {
     name: 'water intake',
     goal: 5,
-    history: habitHistoryWeek([null, null, null, null, null, null, 0], 5),
+    widgets: [habitHistoryWidget(habitHistoryWeek([null, null, null, null, null, null, 0], 5))],
     type: 'summation',
     total: 0,
   },
@@ -68,7 +76,7 @@ export const habitsFixtureProgressSecond: readonly Habit[] = [
   {
     name: 'push ups',
     goal: 100,
-    history: habitHistoryWeek([null, null, null, 41, 0, 0, 0], 100),
+    widgets: [habitHistoryWidget(habitHistoryWeek([null, null, null, 41, 0, 0, 0], 100))],
     type: 'summation',
     total: 0,
   },
@@ -88,7 +96,7 @@ export const habitsFixtureProgressSecond: readonly Habit[] = [
   {
     name: 'water intake',
     goal: 5,
-    history: habitHistoryWeek([null, null, null, 0, 0, 0, 0], 5),
+    widgets: [habitHistoryWidget(habitHistoryWeek([null, null, null, 0, 0, 0, 0], 5))],
     type: 'summation',
     total: 0,
   },

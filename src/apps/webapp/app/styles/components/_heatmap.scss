@@ -1,0 +1,42 @@
+@use 'functions';
+
+.heatmap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: functions.spacing(1);
+  min-width: 0;
+}
+
+.heatmap__row {
+  display: flex;
+  justify-content: flex-end;
+  gap: functions.spacing(1);
+  min-width: 0;
+}
+
+.heatmap__cell {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: var(--border-radius-s);
+  background: var(--streak-fill-0);
+  cursor: default;
+}
+
+.heatmap__tooltip.hover-layer__panel {
+  display: flex;
+  flex-direction: column;
+  gap: functions.spacing(1);
+  align-items: center;
+  padding: functions.spacing(2);
+  background: var(--background-tertiary);
+}
+
+.heatmap__tooltip-label {
+  max-width: 16rem;
+  text-align: center;
+}

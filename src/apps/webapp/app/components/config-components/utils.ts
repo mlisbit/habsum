@@ -1,14 +1,18 @@
 import { dayFromString, type Day } from '@habsum/types/common/day';
-import type { HabitRowSingleSelect, HabitRowSummation } from '@habsum/types/common/habit';
-import type { StreakGraphData } from '@habsum/types/common/streak';
+import type {
+  HabitRowSingleSelect,
+  HabitRowSummation,
+  HabitWidget,
+} from '@habsum/types/common/habit';
 
 export const PREVIEW_USER = '_preview';
 
 export const PREVIEW_VIEW_DATE = dayFromString('2025-05-21');
 
-export const PREVIEW_SINGLE_SELECT_STREAK: StreakGraphData = {
-  streakText: '3 days',
-  data: {},
+export const PREVIEW_SINGLE_SELECT_STREAK: HabitWidget = {
+  title: 'Streak',
+  titleValue: '3 days',
+  body: [{ kind: 'streakGraph', graph: { data: {} } }],
 };
 
 export const PREVIEW_SUMMATION_HABIT: HabitRowSummation = {
@@ -24,7 +28,7 @@ export const PREVIEW_SINGLE_SELECT_HABIT: HabitRowSingleSelect = {
   goal: null,
   options: ['Good', 'Okay', 'Bad'],
   value: null,
-  streak: PREVIEW_SINGLE_SELECT_STREAK,
+  widgets: [PREVIEW_SINGLE_SELECT_STREAK],
 };
 
 export const PREVIEW_CHECKBOX_HABIT: HabitRowSingleSelect = {

@@ -7,7 +7,7 @@ import {
   type StreakDatum,
   type StreakGraphData,
 } from '@habsum/types/common/streak';
-import type { Habit, HabitHistory } from '@habsum/types/common/habit';
+import type { Habit, HabitHistory, HabitWidget } from '@habsum/types/common/habit';
 import { fromDateKey, toDateKey } from '@habsum/utils';
 import type { HabitDef } from './config.js';
 import {
@@ -20,6 +20,10 @@ import {
 } from './db.js';
 import { habitApiTodayKey } from './server-time.js';
 import { mapSummationEventsToApi } from './summation-event-api.js';
+
+type StreakGraphWithText = StreakGraphData & {
+  currentText: string;
+};
 
 export type PatchBody = {
   habit?: unknown;
@@ -179,24 +183,71 @@ export function habitHistoryForConfiguredPeriod(
   };
 }
 
-/** Optional history snapshot for summation PATCH responses (matches GET habits). */
-export function habitHistoryIfConfigured(
-  user: string,
-  habitDef: HabitDef,
-  viewDate: string,
-  firstDate: string | null,
-): { history: HabitHistory } | Record<string, never> {
-  if (!habitDef.history) return {};
+function historyAverage(history: HabitHistory): number | null {
+  const values = Object.values(history.data.user.graphData)
+    .map((datum) => datum.value)
+    .filter((value): value is number => value != null);
+  if (values.length === 0) return null;
+  return Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
+}
+
+export function progressWidget(total: number | null, goal: number | null): HabitWidget | null {
+  if (goal == null) return null;
   return {
-    history: habitHistoryForConfiguredPeriod(
-      user,
-      habitDef.name,
-      viewDate,
-      firstDate,
-      habitDef.history.period,
-      habitDef.goal,
-    ),
+    title: 'Progress',
+    titleValue: `${total == null ? '—' : total} of ${goal}`,
+    body: [{ kind: 'progress', value: total, max: goal }],
   };
+}
+
+export function historyWidget(history: HabitHistory, goal: number | null | undefined): HabitWidget {
+  const average = historyAverage(history);
+  return {
+    title: 'History',
+    titleValue: `avg ${average == null ? '—' : average}`,
+    body: [
+      {
+        kind: 'barGraph',
+        data: history.data.user.graphData,
+        ...(goal != null && goal > 0
+          ? { lines: [{ value: goal, label: `your set goal ${goal}` }] }
+          : {}),
+      },
+    ],
+  };
+}
+
+function streakGraphData(streak: StreakGraphWithText): StreakGraphData {
+  const { currentText: _omit, ...graph } = streak;
+  return graph;
+}
+
+export function streakWidget(streak: StreakGraphWithText): HabitWidget {
+  return {
+    title: 'Streak',
+    titleValue: streak.currentText,
+    body: [
+      {
+        kind: 'pills',
+        pills: [
+          { label: `Current streak: ${streak.currentText}` },
+          ...(streak.longestStreak
+            ? [
+                {
+                  label: `${streak.longestStreak.label}: ${streak.longestStreak.text}`,
+                  hover: streak.longestStreak.range,
+                },
+              ]
+            : []),
+        ],
+      },
+      { kind: 'streakGraph', graph: streakGraphData(streak) },
+    ],
+  };
+}
+
+export function habitWidgets(widgets: Array<HabitWidget | null | undefined>): HabitWidget[] {
+  return widgets.filter((widget): widget is HabitWidget => widget != null);
 }
 
 /** Window length returned for `single_select.streak.data` in `GET .../habits` (inclusive end = API view date). */
@@ -782,7 +833,7 @@ function longestSummationStreakForConfig(
 }
 
 function attachLongestStreak(
-  graph: StreakGraphData,
+  graph: StreakGraphWithText,
   user: string,
   habitName: string,
   viewDate: string,
@@ -791,7 +842,7 @@ function attachLongestStreak(
   showLongest: boolean,
   firstDate: string | null,
   omitEmptyViewPeriod: boolean,
-): StreakGraphData {
+): StreakGraphWithText {
   if (!showLongest) return graph;
   const longestStreak = longestStreakForConfig(
     user,
@@ -807,7 +858,7 @@ function attachLongestStreak(
 }
 
 function attachLongestSummationStreak(
-  graph: StreakGraphData,
+  graph: StreakGraphWithText,
   user: string,
   habitName: string,
   viewDate: string,
@@ -816,7 +867,7 @@ function attachLongestSummationStreak(
   showLongest: boolean,
   firstDate: string | null,
   omitEmptyViewPeriod: boolean,
-): StreakGraphData {
+): StreakGraphWithText {
   if (!showLongest) return graph;
   const longestStreak = longestSummationStreakForConfig(
     user,
@@ -837,7 +888,7 @@ function streakGraphDailyWindow(
   viewDate: string,
   eligible: ReadonlySet<string>,
   omitEmptyViewDate: boolean,
-): StreakGraphData {
+): StreakGraphWithText {
   const start = addDaysUtc(viewDate, -(STREAK_WINDOW_UNITS - 1));
   const data = {} as Record<Day, StreakDatum>;
   for (let i = 0; i < STREAK_WINDOW_UNITS; i++) {
@@ -851,7 +902,7 @@ function streakGraphDailyWindow(
   const current = currentSelectStreakLength(user, habitName, viewDate, eligible, omitEmptyViewDate);
   return {
     data,
-    streakText: formatSelectStreakText(current),
+    currentText: formatSelectStreakText(current),
   };
 }
 
@@ -862,7 +913,7 @@ function streakGraphWeeklyWindow(
   daysPerWeek: number,
   eligible: ReadonlySet<string>,
   omitIncompleteViewWeek: boolean,
-): StreakGraphData {
+): StreakGraphWithText {
   const viewWeekStart = weekStartMonday(viewDate);
   const data = {} as Record<Day, StreakDatum>;
   for (let i = STREAK_WINDOW_UNITS - 1; i >= 0; i--) {
@@ -886,7 +937,7 @@ function streakGraphWeeklyWindow(
   );
   return {
     data,
-    streakText: formatSelectStreakText(current, true),
+    currentText: formatSelectStreakText(current, true),
   };
 }
 
@@ -896,7 +947,7 @@ function summationStreakGraphDailyWindow(
   viewDate: string,
   eligible: ReadonlySet<string>,
   omitEmptyViewDate: boolean,
-): StreakGraphData {
+): StreakGraphWithText {
   const start = addDaysUtc(viewDate, -(STREAK_WINDOW_UNITS - 1));
   const data = {} as Record<Day, StreakDatum>;
   for (let i = 0; i < STREAK_WINDOW_UNITS; i++) {
@@ -916,7 +967,7 @@ function summationStreakGraphDailyWindow(
   );
   return {
     data,
-    streakText: formatSelectStreakText(current),
+    currentText: formatSelectStreakText(current),
   };
 }
 
@@ -927,7 +978,7 @@ function summationStreakGraphWeeklyWindow(
   daysPerWeek: number,
   eligible: ReadonlySet<string>,
   omitIncompleteViewWeek: boolean,
-): StreakGraphData {
+): StreakGraphWithText {
   const viewWeekStart = weekStartMonday(viewDate);
   const data = {} as Record<Day, StreakDatum>;
   for (let i = STREAK_WINDOW_UNITS - 1; i >= 0; i--) {
@@ -951,7 +1002,7 @@ function summationStreakGraphWeeklyWindow(
   );
   return {
     data,
-    streakText: formatSelectStreakText(current, true),
+    currentText: formatSelectStreakText(current, true),
   };
 }
 
@@ -965,7 +1016,7 @@ export function streakGraphForConfiguredWindow(
   streakFrequency?: string,
   showLongest = false,
   firstDate: string | null = null,
-): StreakGraphData {
+): StreakGraphWithText {
   const eligible = new Set(streakEligibleOptions);
   const omitEmptyViewPeriod = viewDate === habitApiTodayKey(at, tzOffsetMinutes);
   const daysPerWeek = parseStreakFrequencyDays(streakFrequency);
@@ -1002,7 +1053,7 @@ export function summationStreakGraphForConfiguredWindow(
   streakFrequency?: string,
   showLongest = false,
   firstDate: string | null = null,
-): StreakGraphData {
+): StreakGraphWithText {
   const eligible = new Set(streakEligibleOptions);
   const omitEmptyViewPeriod = viewDate === habitApiTodayKey(at, tzOffsetMinutes);
   const daysPerWeek = parseStreakFrequencyDays(streakFrequency);

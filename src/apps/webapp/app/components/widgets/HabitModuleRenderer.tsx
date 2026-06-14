@@ -1,11 +1,20 @@
 // exclusive-bem-block: habit-module-renderer
-import type { BarGraphData } from '@habsum/types/common/bar-chart';
-import type { Habit, HabitRowSummation } from '@habsum/types/common/habit';
+import type {
+  Habit,
+  HabitRowSummation,
+  HabitWidget,
+  HabitWidgetBody,
+  HabitWidgetBarGraphBody,
+  HabitWidgetPill,
+  HabitWidgetProgressBody,
+} from '@habsum/types/common/habit';
 import type { Day } from '@habsum/types/common/day';
-import { BarGraph } from '~/components/BarGraph';
+import type { ReactNode } from 'react';
+import { BarGraph } from '~/components/graphs/BarGraph';
 import { Events } from '~/components/widgets/modules/Events';
 import { Streak } from '~/components/widgets/modules/Streak';
 import { ProgressBar } from '@habsum/ui/components/ProgressBar';
+import { Hoverable } from '@habsum/ui/components/Hoverable';
 
 type HabitModuleRendererProps = {
   habit: Habit;
@@ -13,60 +22,97 @@ type HabitModuleRendererProps = {
   onDeleteSummationEvent?: (eventId: number) => Promise<void>;
 };
 
-function historyAverage(graphData: BarGraphData): number | null {
-  const nums = Object.values(graphData)
-    .map((b) => b.value)
-    .filter((v): v is number => v != null);
-
-  return nums.length === 0 ? null : Math.round(nums.reduce((a, b) => a + b, 0) / nums.length);
-}
-
-function HabitHistory({ habit }: { habit: Habit }) {
-  const historyGraphData = habit.history?.data.user.graphData;
-  if (historyGraphData == null || Object.keys(historyGraphData).length === 0) return null;
-
-  const goal = habit.goal;
-  const historyAvg = historyAverage(historyGraphData);
+function WidgetPills({ pills }: { pills: HabitWidgetPill[] | undefined }) {
+  if (pills == null || pills.length === 0) return null;
 
   return (
-    <div className="habit-module-renderer__history">
-      <div className="text-light text-b-m habit-module-renderer__meta-row">
-        <span>History</span>
-        <span>avg {historyAvg == null ? '—' : historyAvg}</span>
-      </div>
-      <div className="habit-module-renderer__history-graph">
-        <BarGraph
-          data={historyGraphData}
-          lines={
-            goal != null && goal > 0 ? [{ value: goal, label: `your set goal ${goal}` }] : undefined
-          }
-          noDataHoverLabel="No data for this day"
-        />
-      </div>
+    <div className="habit-module-renderer__widget-pills">
+      {pills.map((pill) =>
+        pill.hover ? (
+          <Hoverable.Root key={`${pill.label}-${pill.hover}`}>
+            <Hoverable.Anchor className="habit-module-renderer__widget-pill text-b-s">
+              {pill.label}
+            </Hoverable.Anchor>
+            <Hoverable.Content className="habit-module-renderer__widget-pill-tooltip" side="top">
+              <span className="text-b-m">{pill.hover}</span>
+            </Hoverable.Content>
+          </Hoverable.Root>
+        ) : (
+          <span key={pill.label} className="habit-module-renderer__widget-pill text-b-s">
+            {pill.label}
+          </span>
+        ),
+      )}
     </div>
   );
 }
 
-function SummationProgress({ habit }: { habit: HabitRowSummation }) {
-  const goal = habit.goal;
-  if (goal == null) return null;
-
-  const total = habit.total;
+function WidgetBarGraph({ body }: { body: HabitWidgetBarGraphBody }) {
+  if (Object.keys(body.data).length === 0) return null;
 
   return (
-    <>
-      <div className="text-light text-b-m habit-module-renderer__meta-row">
-        <span>Progress</span>
-        <span>
-          {total == null ? '—' : total} of {goal}
-        </span>
+    <div className="habit-module-renderer__history-graph">
+      <BarGraph data={body.data} lines={body.lines} />
+    </div>
+  );
+}
+
+function SummationProgress({
+  habit,
+  body,
+}: {
+  habit: HabitRowSummation;
+  body: HabitWidgetProgressBody;
+}) {
+  return (
+    <ProgressBar
+      value={body.value ?? 0}
+      max={body.max}
+      aria-label={`${habit.name}: ${body.value ?? 0} of ${body.max}`}
+    />
+  );
+}
+
+function renderHabitWidgetBody(habit: Habit, body: HabitWidgetBody): ReactNode {
+  switch (body.kind) {
+    case 'pills':
+      return <WidgetPills pills={body.pills} />;
+    case 'progress':
+      return habit.type === 'summation' ? <SummationProgress habit={habit} body={body} /> : null;
+    case 'barGraph':
+      return <WidgetBarGraph body={body} />;
+    case 'streakGraph':
+      return <Streak streak={body.graph} />;
+  }
+}
+
+function HabitWidgetItem({ habit, widget }: { habit: Habit; widget: HabitWidget }) {
+  const body = widget.body
+    .map((item, index) => ({
+      key: `${item.kind}-${index}`,
+      node: renderHabitWidgetBody(habit, item),
+    }))
+    .filter((item) => item.node != null);
+  if (body.length === 0) return null;
+
+  return (
+    <section
+      className="habit-module-renderer__widget"
+      role="listitem"
+      aria-label={`${widget.title}, ${widget.titleValue}`}
+    >
+      <div className="habit-module-renderer__widget-header text-light text-b-m">
+        <span className="habit-module-renderer__widget-title">{widget.title}</span>
+        <span className="habit-module-renderer__widget-title-value">{widget.titleValue}</span>
       </div>
-      <ProgressBar
-        value={total ?? 0}
-        max={goal}
-        aria-label={`${habit.name}: ${total ?? 0} of ${goal}`}
-      />
-    </>
+      <div className="habit-module-renderer__widget-body">
+        {body.map(({ key, node }) => (
+          <div key={key} className="habit-module-renderer__widget-body-item">
+            {node}
+          </div>
+        ))}
+      </div>
+    </section>
   );
 }
 
@@ -75,23 +121,31 @@ export default function HabitModuleRenderer({
   viewDate,
   onDeleteSummationEvent,
 }: HabitModuleRendererProps) {
+  const widgets = habit.widgets ?? [];
+
   return (
     <div className="habit-module-renderer">
       {habit.type === 'summation' ? (
-        <>
-          <SummationProgress habit={habit} />
-          <Events
-            habitName={habit.name}
-            dayKey={viewDate}
-            events={habit.events}
-            onDeleteSummationEvent={(eventId) =>
-              onDeleteSummationEvent?.(eventId) ?? Promise.resolve()
-            }
-          />
-        </>
+        <Events
+          habitName={habit.name}
+          dayKey={viewDate}
+          events={habit.events}
+          onDeleteSummationEvent={(eventId) =>
+            onDeleteSummationEvent?.(eventId) ?? Promise.resolve()
+          }
+        />
       ) : null}
-      <HabitHistory habit={habit} />
-      {habit.streak ? <Streak streak={habit.streak} /> : null}
+      {widgets.length > 0 ? (
+        <div className="habit-module-renderer__widgets" role="list">
+          {widgets.map((widget, index) => (
+            <HabitWidgetItem
+              key={`${widget.title}-${widget.titleValue}-${index}`}
+              habit={habit}
+              widget={widget}
+            />
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }

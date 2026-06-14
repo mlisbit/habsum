@@ -46,8 +46,6 @@ export type LongestStreak = {
 /** Streak window ending on the API view date. Keys are `YYYY-MM-DD` (day or week-start Monday). */
 export type StreakGraphData = {
   data: Record<Day, StreakDatum>;
-  /** Consecutive periods ending on the view date (e.g. `3 days` or `2 weeks`). */
-  streakText: string;
   /** Present when `streak.show_longest` is enabled and a longest run exists. */
   longestStreak?: LongestStreak;
 };

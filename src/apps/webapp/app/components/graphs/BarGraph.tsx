@@ -11,8 +11,6 @@ type BarGraphProps = {
   data: BarGraphData;
   /** Fired when the pointer enters a bar (`value` is the datum total for that bucket, or `null` when empty). */
   onHover?: (detail: { key: string; value: number | null }) => void;
-  /** Shown in the hover value slot when `value` is `null`. */
-  noDataHoverLabel?: string;
   /**
    * Horizontal reference lines at the given values (same scale as the bars).
    * Each line is shown only when at least one bar total exceeds its value.
@@ -33,12 +31,7 @@ function barHeightPercent(value: number | null, scaleTop: number): number {
   return Math.max(0, Math.min(100, (value / scaleTop) * 100));
 }
 
-export function BarGraph({
-  data,
-  onHover,
-  noDataHoverLabel = DEFAULT_NO_DATA_HOVER,
-  lines = [],
-}: BarGraphProps) {
+export function BarGraph({ data, onHover, lines = [] }: BarGraphProps) {
   const entries = Object.entries(data);
   if (entries.length === 0) return null;
 
@@ -65,7 +58,7 @@ export function BarGraph({
               <div className="bar-graph__hover-body">
                 <span className="bar-graph__hover-range">{hoverLabel}</span>
                 <span className="bar-graph__hover-value text-h-m">
-                  {value == null ? noDataHoverLabel : value}
+                  {value == null ? DEFAULT_NO_DATA_HOVER : value}
                 </span>
               </div>
             </Hoverable.Content>
