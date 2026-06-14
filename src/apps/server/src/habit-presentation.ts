@@ -10,7 +10,14 @@ import {
 import type { Habit, HabitHistory } from '@habsum/types/common/habit';
 import { fromDateKey, toDateKey } from '@habsum/utils';
 import type { HabitDef } from './config.js';
-import { getAllSelects, getAllTotals, getSelect, getSeries, getSummationEvents } from './db.js';
+import {
+  getAllSelects,
+  getAllTotals,
+  getSelect,
+  getSeries,
+  getSummationDayTotal,
+  getSummationEvents,
+} from './db.js';
 import { habitApiTodayKey } from './server-time.js';
 import { mapSummationEventsToApi } from './summation-event-api.js';
 
@@ -202,6 +209,15 @@ function dayCountsTowardStreak(value: string | null, eligible: ReadonlySet<strin
   return value != null && eligible.has(value);
 }
 
+function totalCountsTowardStreak(total: number | null, eligible: ReadonlySet<string>): boolean {
+  if (total == null) return false;
+  for (const option of eligible) {
+    const goal = Number(option);
+    if (Number.isFinite(goal) && total >= goal) return true;
+  }
+  return false;
+}
+
 export function formatSelectStreakText(current: number, weekly = false): string {
   if (weekly) {
     return current === 1 ? '1 week' : `${current} weeks`;
@@ -247,9 +263,41 @@ function countLoggedDaysInRange(
   return count;
 }
 
+function countEligibleSummationDaysInRange(
+  user: string,
+  habitName: string,
+  start: string,
+  end: string,
+  eligible: ReadonlySet<string>,
+): number {
+  let count = 0;
+  for (let d = start; d <= end; d = addDaysUtc(d, 1)) {
+    if (totalCountsTowardStreak(getSummationDayTotal(user, habitName, d), eligible)) count++;
+  }
+  return count;
+}
+
+function countLoggedSummationDaysInRange(
+  user: string,
+  habitName: string,
+  start: string,
+  end: string,
+): number {
+  let count = 0;
+  for (let d = start; d <= end; d = addDaysUtc(d, 1)) {
+    if (getSummationDayTotal(user, habitName, d) != null) count++;
+  }
+  return count;
+}
+
 function dailyStreakFill(value: string | null, eligible: ReadonlySet<string>): number {
   if (value == null) return 0;
   return eligible.has(value) ? 10 : 1;
+}
+
+function dailySummationStreakFill(total: number | null, eligible: ReadonlySet<string>): number {
+  if (total == null) return 0;
+  return totalCountsTowardStreak(total, eligible) ? 10 : 1;
 }
 
 function weeklyStreakFill(hits: number, loggedDays: number, daysPerWeek: number): number {
@@ -268,6 +316,19 @@ function weekMeetsFrequency(
 ): boolean {
   const weekEnd = addDaysUtc(weekStart, 6);
   return countEligibleDaysInRange(user, habitName, weekStart, weekEnd, eligible) >= daysPerWeek;
+}
+
+function summationWeekMeetsFrequency(
+  user: string,
+  habitName: string,
+  weekStart: string,
+  daysPerWeek: number,
+  eligible: ReadonlySet<string>,
+): boolean {
+  const weekEnd = addDaysUtc(weekStart, 6);
+  return (
+    countEligibleSummationDaysInRange(user, habitName, weekStart, weekEnd, eligible) >= daysPerWeek
+  );
 }
 
 function formatWeekProgressLabel(hits: number, daysPerWeek: number): string | null {
@@ -342,6 +403,70 @@ function longestWeeklyStreakRun(
 
   for (let weekStart = firstWeek; weekStart <= viewWeek; weekStart = addDaysUtc(weekStart, 7)) {
     if (weekMeetsFrequency(user, habitName, weekStart, daysPerWeek, eligible)) {
+      const weekEnd = addDaysUtc(weekStart, 6);
+      if (current.length === 0) {
+        current.start = weekStart;
+        current.end = weekEnd;
+      } else {
+        current.end = weekEnd;
+      }
+      current.length++;
+    } else if (current.length > 0) {
+      best = finalizeLongestRun(current, best);
+      current = { length: 0, start: '', end: '' };
+    }
+  }
+
+  best = finalizeLongestRun(current, best);
+  return best.length > 0 ? best : null;
+}
+
+function longestDailySummationStreakRun(
+  user: string,
+  habitName: string,
+  viewDate: string,
+  eligible: ReadonlySet<string>,
+  firstDate: string | null,
+): StreakRun | null {
+  const scanStart = earliestStreakScanDate(user, habitName, firstDate);
+  if (scanStart == null || scanStart > viewDate) return null;
+
+  let best: StreakRun = { length: 0, start: '', end: '' };
+  let current: StreakRun = { length: 0, start: '', end: '' };
+
+  for (let d = scanStart; d <= viewDate; d = addDaysUtc(d, 1)) {
+    if (totalCountsTowardStreak(getSummationDayTotal(user, habitName, d), eligible)) {
+      if (current.length === 0) current.start = d;
+      current.length++;
+      current.end = d;
+    } else if (current.length > 0) {
+      best = finalizeLongestRun(current, best);
+      current = { length: 0, start: '', end: '' };
+    }
+  }
+
+  best = finalizeLongestRun(current, best);
+  return best.length > 0 ? best : null;
+}
+
+function longestWeeklySummationStreakRun(
+  user: string,
+  habitName: string,
+  viewDate: string,
+  daysPerWeek: number,
+  eligible: ReadonlySet<string>,
+  firstDate: string | null,
+): StreakRun | null {
+  const scanStart = earliestStreakScanDate(user, habitName, firstDate);
+  if (scanStart == null || scanStart > viewDate) return null;
+
+  const firstWeek = weekStartMonday(scanStart);
+  const viewWeek = weekStartMonday(viewDate);
+  let best: StreakRun = { length: 0, start: '', end: '' };
+  let current: StreakRun = { length: 0, start: '', end: '' };
+
+  for (let weekStart = firstWeek; weekStart <= viewWeek; weekStart = addDaysUtc(weekStart, 7)) {
+    if (summationWeekMeetsFrequency(user, habitName, weekStart, daysPerWeek, eligible)) {
       const weekEnd = addDaysUtc(weekStart, 6);
       if (current.length === 0) {
         current.start = weekStart;
@@ -474,6 +599,113 @@ function currentWeeklyStreakRun(
   };
 }
 
+function currentSummationStreakLength(
+  user: string,
+  habitName: string,
+  viewDate: string,
+  eligible: ReadonlySet<string>,
+  omitEmptyViewDate: boolean,
+): number {
+  let n = 0;
+  let d = viewDate;
+  if (omitEmptyViewDate && getSummationDayTotal(user, habitName, d) == null) {
+    d = addDaysUtc(d, -1);
+  }
+  for (let steps = 0; steps < MAX_STREAK_BACKTRACK_DAYS; steps++, d = addDaysUtc(d, -1)) {
+    if (!totalCountsTowardStreak(getSummationDayTotal(user, habitName, d), eligible)) break;
+    n++;
+  }
+  return n;
+}
+
+function currentDailySummationStreakRun(
+  user: string,
+  habitName: string,
+  viewDate: string,
+  eligible: ReadonlySet<string>,
+  omitEmptyViewDate: boolean,
+): StreakRun | null {
+  const length = currentSummationStreakLength(
+    user,
+    habitName,
+    viewDate,
+    eligible,
+    omitEmptyViewDate,
+  );
+  if (length === 0) return null;
+
+  let end = viewDate;
+  if (omitEmptyViewDate && getSummationDayTotal(user, habitName, end) == null) {
+    end = addDaysUtc(end, -1);
+  }
+  return {
+    length,
+    start: addDaysUtc(end, -(length - 1)),
+    end,
+  };
+}
+
+function currentSummationStreakWeeks(
+  user: string,
+  habitName: string,
+  viewDate: string,
+  daysPerWeek: number,
+  eligible: ReadonlySet<string>,
+  omitIncompleteViewWeek: boolean,
+): number {
+  let n = 0;
+  let weekStart = weekStartMonday(viewDate);
+  if (
+    omitIncompleteViewWeek &&
+    !summationWeekMeetsFrequency(user, habitName, weekStart, daysPerWeek, eligible)
+  ) {
+    weekStart = addDaysUtc(weekStart, -7);
+  }
+  for (
+    let steps = 0;
+    steps < MAX_STREAK_BACKTRACK_DAYS / 7;
+    steps++, weekStart = addDaysUtc(weekStart, -7)
+  ) {
+    if (!summationWeekMeetsFrequency(user, habitName, weekStart, daysPerWeek, eligible)) break;
+    n++;
+  }
+  return n;
+}
+
+function currentWeeklySummationStreakRun(
+  user: string,
+  habitName: string,
+  viewDate: string,
+  daysPerWeek: number,
+  eligible: ReadonlySet<string>,
+  omitIncompleteViewWeek: boolean,
+): StreakRun | null {
+  const length = currentSummationStreakWeeks(
+    user,
+    habitName,
+    viewDate,
+    daysPerWeek,
+    eligible,
+    omitIncompleteViewWeek,
+  );
+  if (length === 0) return null;
+
+  let endWeekStart = weekStartMonday(viewDate);
+  if (
+    omitIncompleteViewWeek &&
+    !summationWeekMeetsFrequency(user, habitName, endWeekStart, daysPerWeek, eligible)
+  ) {
+    endWeekStart = addDaysUtc(endWeekStart, -7);
+  }
+
+  const startWeekStart = addDaysUtc(endWeekStart, -(length - 1) * 7);
+  return {
+    length,
+    start: startWeekStart,
+    end: addDaysUtc(endWeekStart, 6),
+  };
+}
+
 function longestStreakForConfig(
   user: string,
   habitName: string,
@@ -508,6 +740,47 @@ function longestStreakForConfig(
   };
 }
 
+function longestSummationStreakForConfig(
+  user: string,
+  habitName: string,
+  viewDate: string,
+  eligible: ReadonlySet<string>,
+  daysPerWeek: number,
+  firstDate: string | null,
+  omitEmptyViewPeriod: boolean,
+): LongestStreak | undefined {
+  const weekly = !isDailyStreakFrequency(daysPerWeek);
+  const run = weekly
+    ? longestWeeklySummationStreakRun(user, habitName, viewDate, daysPerWeek, eligible, firstDate)
+    : longestDailySummationStreakRun(user, habitName, viewDate, eligible, firstDate);
+  if (!run) return undefined;
+
+  const activeRun = weekly
+    ? currentWeeklySummationStreakRun(
+        user,
+        habitName,
+        viewDate,
+        daysPerWeek,
+        eligible,
+        omitEmptyViewPeriod,
+      )
+    : currentDailySummationStreakRun(user, habitName, viewDate, eligible, omitEmptyViewPeriod);
+
+  const range = weekly
+    ? formatWeekRangeLabel(run.start, run.end)
+    : formatDayRangeLabel(run.start, run.end);
+
+  const isCurrent = activeRun != null && streakRunsEqual(run, activeRun);
+  const text = formatSelectStreakText(run.length, weekly);
+  const qualifier = formatLongestStreakQualifier(eligible, daysPerWeek);
+  const qualifiedText = qualifier ? `${text} of ${qualifier}` : text;
+  return {
+    label: 'Longest streak',
+    text: isCurrent ? `${qualifiedText} (current)` : qualifiedText,
+    range,
+  };
+}
+
 function attachLongestStreak(
   graph: StreakGraphData,
   user: string,
@@ -521,6 +794,31 @@ function attachLongestStreak(
 ): StreakGraphData {
   if (!showLongest) return graph;
   const longestStreak = longestStreakForConfig(
+    user,
+    habitName,
+    viewDate,
+    eligible,
+    daysPerWeek,
+    firstDate,
+    omitEmptyViewPeriod,
+  );
+  if (!longestStreak) return graph;
+  return { ...graph, longestStreak };
+}
+
+function attachLongestSummationStreak(
+  graph: StreakGraphData,
+  user: string,
+  habitName: string,
+  viewDate: string,
+  eligible: ReadonlySet<string>,
+  daysPerWeek: number,
+  showLongest: boolean,
+  firstDate: string | null,
+  omitEmptyViewPeriod: boolean,
+): StreakGraphData {
+  if (!showLongest) return graph;
+  const longestStreak = longestSummationStreakForConfig(
     user,
     habitName,
     viewDate,
@@ -592,6 +890,71 @@ function streakGraphWeeklyWindow(
   };
 }
 
+function summationStreakGraphDailyWindow(
+  user: string,
+  habitName: string,
+  viewDate: string,
+  eligible: ReadonlySet<string>,
+  omitEmptyViewDate: boolean,
+): StreakGraphData {
+  const start = addDaysUtc(viewDate, -(STREAK_WINDOW_UNITS - 1));
+  const data = {} as Record<Day, StreakDatum>;
+  for (let i = 0; i < STREAK_WINDOW_UNITS; i++) {
+    const d = addDaysUtc(start, i);
+    const total = getSummationDayTotal(user, habitName, d);
+    data[dayFromString(d)] = {
+      value: total == null ? null : String(total),
+      fill: dailySummationStreakFill(total, eligible),
+    };
+  }
+  const current = currentSummationStreakLength(
+    user,
+    habitName,
+    viewDate,
+    eligible,
+    omitEmptyViewDate,
+  );
+  return {
+    data,
+    streakText: formatSelectStreakText(current),
+  };
+}
+
+function summationStreakGraphWeeklyWindow(
+  user: string,
+  habitName: string,
+  viewDate: string,
+  daysPerWeek: number,
+  eligible: ReadonlySet<string>,
+  omitIncompleteViewWeek: boolean,
+): StreakGraphData {
+  const viewWeekStart = weekStartMonday(viewDate);
+  const data = {} as Record<Day, StreakDatum>;
+  for (let i = STREAK_WINDOW_UNITS - 1; i >= 0; i--) {
+    const weekStart = addDaysUtc(viewWeekStart, -i * 7);
+    const weekEnd = addDaysUtc(weekStart, 6);
+    const hits = countEligibleSummationDaysInRange(user, habitName, weekStart, weekEnd, eligible);
+    const loggedDays = countLoggedSummationDaysInRange(user, habitName, weekStart, weekEnd);
+    data[dayFromString(weekStart)] = {
+      value: formatWeekProgressLabel(hits, daysPerWeek),
+      fill: weeklyStreakFill(hits, loggedDays, daysPerWeek),
+      label: formatWeekRangeLabel(weekStart, weekEnd),
+    };
+  }
+  const current = currentSummationStreakWeeks(
+    user,
+    habitName,
+    viewDate,
+    daysPerWeek,
+    eligible,
+    omitIncompleteViewWeek,
+  );
+  return {
+    data,
+    streakText: formatSelectStreakText(current, true),
+  };
+}
+
 export function streakGraphForConfiguredWindow(
   user: string,
   habitName: string,
@@ -617,6 +980,43 @@ export function streakGraphForConfiguredWindow(
         omitEmptyViewPeriod,
       );
   return attachLongestStreak(
+    graph,
+    user,
+    habitName,
+    viewDate,
+    eligible,
+    daysPerWeek,
+    showLongest,
+    firstDate,
+    omitEmptyViewPeriod,
+  );
+}
+
+export function summationStreakGraphForConfiguredWindow(
+  user: string,
+  habitName: string,
+  viewDate: string,
+  streakEligibleOptions: readonly string[],
+  at: Date = new Date(),
+  tzOffsetMinutes?: number,
+  streakFrequency?: string,
+  showLongest = false,
+  firstDate: string | null = null,
+): StreakGraphData {
+  const eligible = new Set(streakEligibleOptions);
+  const omitEmptyViewPeriod = viewDate === habitApiTodayKey(at, tzOffsetMinutes);
+  const daysPerWeek = parseStreakFrequencyDays(streakFrequency);
+  const graph = isDailyStreakFrequency(daysPerWeek)
+    ? summationStreakGraphDailyWindow(user, habitName, viewDate, eligible, omitEmptyViewPeriod)
+    : summationStreakGraphWeeklyWindow(
+        user,
+        habitName,
+        viewDate,
+        daysPerWeek,
+        eligible,
+        omitEmptyViewPeriod,
+      );
+  return attachLongestSummationStreak(
     graph,
     user,
     habitName,

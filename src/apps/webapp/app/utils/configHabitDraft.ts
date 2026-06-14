@@ -95,10 +95,13 @@ function readHabitStreakYaml(def: Record<string, unknown>): unknown {
   return def[HABIT_STREAK_YAML_KEY];
 }
 
-function writeHabitStreakYaml(
-  def: Record<string, unknown>,
-  value: { options: string[]; frequency?: string; show_longest?: boolean },
-): void {
+type HabitStreakYaml = {
+  options: Array<string | number>;
+  frequency?: string;
+  show_longest?: boolean;
+};
+
+function writeHabitStreakYaml(def: Record<string, unknown>, value: HabitStreakYaml): void {
   def[HABIT_STREAK_YAML_KEY] = value;
 }
 
@@ -191,9 +194,13 @@ export function parseHabitDraftFromDef(name: string, def: unknown): ConfigHabitD
   let streakFrequencyPerWeek = '7';
   let streakShowLongest = false;
   const streakBlock = readHabitStreakYaml(def);
-  if (type === 'single_select' && isRecord(streakBlock) && Array.isArray(streakBlock.options)) {
-    const streakOpts = streakBlock.options.filter((x): x is string => typeof x === 'string');
-    if (streakOpts.length > 0) {
+  if (isRecord(streakBlock)) {
+    const streakOpts = Array.isArray(streakBlock.options)
+      ? streakBlock.options
+          .map((x) => (typeof x === 'number' && Number.isFinite(x) ? String(x) : x))
+          .filter((x): x is string => typeof x === 'string')
+      : [];
+    if (streakOpts.length > 0 || type === 'summation') {
       streakEnabled = true;
       streakOptionsText = streakOpts.join('\n');
       const frequencyRaw =
@@ -258,6 +265,24 @@ function draftToRawHabit(draft: ConfigHabitDraft): Record<string, unknown> {
     if (draft.quickAddItems.length > 0) {
       def.summation_options = summationQuickAddItemsToYaml(draft.quickAddItems);
     }
+
+    if (draft.streakEnabled) {
+      if (goal == null) {
+        throw new Error('summation streak tracking requires a goal');
+      }
+      const streakYaml: HabitStreakYaml = {
+        options: [goal],
+      };
+      const daysPerWeek = parseOptionalPositiveInt(draft.streakFrequencyPerWeek) ?? 7;
+      const frequency = formatStreakFrequency(daysPerWeek);
+      if (frequency !== DEFAULT_STREAK_FREQUENCY) {
+        streakYaml.frequency = frequency;
+      }
+      if (draft.streakShowLongest) {
+        streakYaml.show_longest = true;
+      }
+      writeHabitStreakYaml(def, streakYaml);
+    }
   } else {
     const options = parseLines(draft.optionsText);
     if (options.length === 0) {
@@ -274,7 +299,7 @@ function draftToRawHabit(draft: ConfigHabitDraft): Record<string, unknown> {
       if (streakOptions.length === 0) {
         throw new Error('tracking options must list at least one habit option');
       }
-      const streakYaml: { options: string[]; frequency?: string; show_longest?: boolean } = {
+      const streakYaml: HabitStreakYaml = {
         options: streakOptions,
       };
       const daysPerWeek = parseOptionalPositiveInt(draft.streakFrequencyPerWeek) ?? 7;

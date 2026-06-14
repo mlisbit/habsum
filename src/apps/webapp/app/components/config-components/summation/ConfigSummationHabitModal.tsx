@@ -1,4 +1,6 @@
+import { useState } from 'react';
 import { ModalBody, ModalHeader } from '@habsum/ui/contexts/modal';
+import { CollapsibleCard } from '@habsum/ui/components/CollapsibleCard';
 import { InfoText } from '@habsum/ui/components/InfoText';
 import { Input } from '@habsum/ui/components/Input';
 import { ConfigHabitFieldLabel } from '../ConfigHabitFieldLabel';
@@ -23,6 +25,7 @@ export function ConfigSummationHabitModal(props: ConfigHabitModalProps) {
     saving,
   } = useConfigHabitModalDraft(props);
   const { onCancel } = props;
+  const [streakExpanded, setStreakExpanded] = useState(() => draft.streakEnabled);
   const goalEnabled = draft.goal.trim() !== '';
   const quickAddEnabled = draft.quickAddItems.length > 0;
 
@@ -122,6 +125,82 @@ export function ConfigSummationHabitModal(props: ConfigHabitModalProps) {
             ) : null}
           </div>
         </div>
+
+        <CollapsibleCard
+          expanded={streakExpanded}
+          collapsible={draft.streakEnabled}
+          onExpandedChange={setStreakExpanded}
+          className="config-habit-modal__collpasable-card"
+        >
+          <CollapsibleCard.Header>
+            <div className="collapsible-card__header-main">
+              <input
+                id="habit-tracking-enabled"
+                className="config-habit-modal__checkbox"
+                type="checkbox"
+                checked={draft.streakEnabled}
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => {
+                  const streakEnabled = e.target.checked;
+                  patch({
+                    streakEnabled,
+                    ...(streakEnabled && draft.goal.trim() === '' ? { goal: '1' } : {}),
+                  });
+                  setStreakExpanded(streakEnabled);
+                }}
+              />
+              <div
+                className="config-habit-modal__collapsible-header-label"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <ConfigHabitFieldLabel
+                  htmlFor="habit-tracking-enabled"
+                  label="Streak tracking"
+                  tooltip="Track consecutive successful days for this habit. Disable this if you only want to record entries without streaks."
+                />
+              </div>
+            </div>
+            <CollapsibleCard.Toggle ariaLabel="Toggle tracking options" />
+          </CollapsibleCard.Header>
+          <CollapsibleCard.Content className="flex flex-flow-col gap-3">
+            <ConfigHabitModalField
+              label="Frequency"
+              info="Reach the goal at least this many days each week to continue your streak."
+              htmlFor="habit-streak-frequency"
+            >
+              <select
+                id="habit-streak-frequency"
+                className="config-habit-modal__select text-b-m"
+                value={draft.streakFrequencyPerWeek}
+                onChange={(e) => patch({ streakFrequencyPerWeek: e.target.value })}
+              >
+                {Array.from({ length: 7 }, (_, i) => {
+                  const n = i + 1;
+                  const value = String(n);
+                  const label = n === 1 ? '1 day per week' : `${n} days per week`;
+                  return (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  );
+                })}
+              </select>
+            </ConfigHabitModalField>
+            <div className="config-habit-modal__checkbox-field">
+              <input
+                id="habit-streak-show-longest"
+                className="config-habit-modal__checkbox"
+                type="checkbox"
+                checked={draft.streakShowLongest}
+                onChange={(e) => patch({ streakShowLongest: e.target.checked })}
+              />
+              <ConfigHabitFieldLabel
+                htmlFor="habit-streak-show-longest"
+                label="Show longest streak"
+              />
+            </div>
+          </CollapsibleCard.Content>
+        </CollapsibleCard>
 
         <div className="config-habit-modal__field">
           <div className="config-habit-modal__label config-habit-modal__checkbox-field">

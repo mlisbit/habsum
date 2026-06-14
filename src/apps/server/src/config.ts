@@ -43,7 +43,7 @@ export type HabitDef = {
   history?: {
     period: string;
   };
-  /** Subset of `options` whose selections count toward the streak (single_select only). */
+  /** Subset of selectable values or summation totals that count toward the streak. */
   streak?: {
     options: string[];
     /** Target streak days per week, e.g. `3d/1w`. Omitted when daily (`7d/1w`). */
@@ -198,7 +198,15 @@ function parseUserConfig(user: string, parsed: unknown): UserConfig {
             : undefined,
         history: normalizeHistory(rawHabit.history, name),
         streak:
-          type === 'single_select' ? normalizeStreak(rawHabit.streak, name, opts ?? []) : undefined,
+          type === 'single_select'
+            ? normalizeStreak(rawHabit.streak, name, opts ?? [])
+            : normalizeStreak(
+                rawHabit.streak,
+                name,
+                rawHabit.goal != null ? [String(rawHabit.goal)] : [],
+                false,
+                true,
+              ),
       };
     }),
   };
@@ -229,6 +237,8 @@ function normalizeStreak(
   raw: unknown,
   habitName: string,
   mainOptions: readonly string[],
+  optionsRequired = true,
+  useMainOptionsOnly = false,
 ): HabitDef['streak'] | undefined {
   if (raw == null) return undefined;
 
@@ -237,27 +247,34 @@ function normalizeStreak(
   }
 
   const optsRaw = raw.options;
-  if (!Array.isArray(optsRaw) || optsRaw.length === 0) {
+  if ((!Array.isArray(optsRaw) || optsRaw.length === 0) && optionsRequired) {
     throw new ConfigValidationError(
       `habit "${habitName}" streak.options must be a non-empty array`,
     );
   }
 
+  if (mainOptions.length === 0) {
+    throw new ConfigValidationError(`habit "${habitName}" streak requires a configured goal`);
+  }
+
+  const rawOptions =
+    useMainOptionsOnly || !Array.isArray(optsRaw) || optsRaw.length === 0 ? mainOptions : optsRaw;
   const allowed = new Set(mainOptions);
   const options: string[] = [];
   const seen = new Set<string>();
-  for (const item of optsRaw) {
-    if (typeof item !== 'string' || item.length === 0) {
+  for (const item of rawOptions) {
+    const normalized = typeof item === 'number' && Number.isFinite(item) ? String(item) : item;
+    if (typeof normalized !== 'string' || normalized.length === 0) {
       throw new ConfigValidationError(`habit "${habitName}" streak.options must be strings`);
     }
-    if (!allowed.has(item)) {
+    if (!allowed.has(normalized)) {
       throw new ConfigValidationError(
-        `habit "${habitName}" streak.options entry "${item}" is not listed in habits options`,
+        `habit "${habitName}" streak.options entry "${normalized}" is not listed in habits options`,
       );
     }
-    if (seen.has(item)) continue;
-    seen.add(item);
-    options.push(item);
+    if (seen.has(normalized)) continue;
+    seen.add(normalized);
+    options.push(normalized);
   }
 
   if (options.length === 0) {

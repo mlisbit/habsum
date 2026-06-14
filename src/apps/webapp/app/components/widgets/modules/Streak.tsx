@@ -36,7 +36,7 @@ const STREAK_FILL_COLOR_BY_VALUE = [
 ] as const;
 
 const MAX_STREAK_ROWS = 3;
-const INITIAL_VISIBLE_STREAK_CELLS = MAX_STREAK_ROWS;
+const INITIAL_STREAK_CELLS_PER_ROW = 1;
 const STREAK_CELL_FALLBACK_WIDTH_PX = 12;
 
 function parseCssPx(value: string): number {
@@ -44,14 +44,24 @@ function parseCssPx(value: string): number {
   return Number.isFinite(n) ? n : 0;
 }
 
-function visibleStreakCellsForRow(row: HTMLDivElement): number {
+function streakCellsPerRow(row: HTMLDivElement): number {
   const rowStyle = window.getComputedStyle(row);
   const gap = parseCssPx(rowStyle.columnGap || rowStyle.gap);
   const firstCell = row.querySelector<HTMLElement>('.streak__cell');
   const cellWidth = firstCell?.getBoundingClientRect().width ?? STREAK_CELL_FALLBACK_WIDTH_PX;
   const rowWidth = row.getBoundingClientRect().width;
-  const cellsPerRow = Math.max(1, Math.floor((rowWidth + gap) / (cellWidth + gap)));
-  return cellsPerRow * MAX_STREAK_ROWS;
+  return Math.max(1, Math.floor((rowWidth + gap) / (cellWidth + gap)));
+}
+
+function distributeStreakEntriesByColumn<T>(entries: T[], rowCount: number): T[][] {
+  const rows = Array.from({ length: rowCount }, () => [] as T[]);
+  entries.forEach((entry, index) => {
+    rows[index % rowCount]!.push(entry);
+  });
+  while (rows.length > 0 && rows[rows.length - 1]!.length === 0) {
+    rows.pop();
+  }
+  return rows;
 }
 
 type StreakCellProps = {
@@ -110,20 +120,21 @@ export function Streak({ streak }: StreakProps) {
     [streak.data],
   );
   const rowRef = useRef<HTMLDivElement | null>(null);
-  const [visibleCellCount, setVisibleCellCount] = useState(INITIAL_VISIBLE_STREAK_CELLS);
-  const visibleEntries = entries.slice(-visibleCellCount);
+  const [cellsPerRow, setCellsPerRow] = useState(INITIAL_STREAK_CELLS_PER_ROW);
+  const visibleEntries = entries.slice(-(cellsPerRow * MAX_STREAK_ROWS));
+  const visibleRows = distributeStreakEntriesByColumn(visibleEntries, MAX_STREAK_ROWS);
 
   useLayoutEffect(() => {
     const row = rowRef.current;
     if (!row) return undefined;
 
-    const updateVisibleCellCount = () => {
-      const next = visibleStreakCellsForRow(row);
-      setVisibleCellCount((current) => (current === next ? current : next));
+    const updateCellsPerRow = () => {
+      const next = streakCellsPerRow(row);
+      setCellsPerRow((current) => (current === next ? current : next));
     };
 
-    updateVisibleCellCount();
-    const observer = new ResizeObserver(updateVisibleCellCount);
+    updateCellsPerRow();
+    const observer = new ResizeObserver(updateCellsPerRow);
     observer.observe(row);
     return () => observer.disconnect();
   }, [entries.length]);
@@ -153,9 +164,13 @@ export function Streak({ streak }: StreakProps) {
           </Hoverable.Root>
         ) : null}
       </div>
-      <div ref={rowRef} className="streak__row" role="list">
-        {visibleEntries.map(([dateKey, datum]) => (
-          <StreakCell key={dateKey} dateKey={dateKey} datum={datum} />
+      <div ref={rowRef} className="streak__rows" role="list">
+        {visibleRows.map((row, rowIndex) => (
+          <div key={rowIndex} className="streak__row">
+            {row.map(([dateKey, datum]) => (
+              <StreakCell key={dateKey} dateKey={dateKey} datum={datum} />
+            ))}
+          </div>
         ))}
       </div>
     </section>

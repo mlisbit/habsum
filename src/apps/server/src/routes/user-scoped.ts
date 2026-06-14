@@ -72,6 +72,7 @@ import {
   habitRowsForHistory,
   minDate,
   parseHabitFilter,
+  summationStreakGraphForConfiguredWindow,
   type PatchBody,
   streakGraphForConfiguredWindow,
 } from '../habit-presentation.js';
@@ -722,6 +723,21 @@ userScopedRouter.get(
         type: 'summation' as const,
         total: getSummationDayTotal(user, h.name, date),
         ...(h.summationOptions ? { summationOptions: h.summationOptions } : {}),
+        ...(h.streak
+          ? {
+              streak: summationStreakGraphForConfiguredWindow(
+                user,
+                h.name,
+                date,
+                h.streak.options,
+                at,
+                tzOffsetMinutes,
+                h.streak.frequency,
+                h.streak.show_longest === true,
+                firstDate,
+              ),
+            }
+          : {}),
       } satisfies Habit;
     });
     const body: HabitsResponse = {
@@ -846,6 +862,22 @@ userScopedRouter.patch(
     const mode = typeof action === 'string' ? action : 'add';
     const firstDate = getFirstDate(user);
     const historyFieldsAfterMutation = () => habitHistoryIfConfigured(user, known, date, firstDate);
+    const summationStreakAfterMutation = () =>
+      known.streak
+        ? {
+            streak: summationStreakGraphForConfiguredWindow(
+              user,
+              habit,
+              date,
+              known.streak.options,
+              new Date(),
+              parseTzOffsetMinutes(body.tzOffsetMinutes),
+              known.streak.frequency,
+              known.streak.show_longest === true,
+              firstDate,
+            ),
+          }
+        : {};
 
     if (mode === 'delete_event') {
       const rawId = body.eventId;
@@ -867,6 +899,7 @@ userScopedRouter.patch(
         type: known.type,
         goal: known.goal,
         ...historyFieldsAfterMutation(),
+        ...summationStreakAfterMutation(),
       };
       return res.json(out);
     }
@@ -882,6 +915,7 @@ userScopedRouter.patch(
         type: known.type,
         goal: known.goal,
         ...historyFieldsAfterMutation(),
+        ...summationStreakAfterMutation(),
       };
       return res.json(out);
     }
@@ -921,6 +955,7 @@ userScopedRouter.patch(
       type: known.type,
       goal: known.goal,
       ...historyFieldsAfterMutation(),
+      ...summationStreakAfterMutation(),
     };
     return res.json(out);
   },

@@ -3,12 +3,14 @@ import { dayFromString } from '@habsum/types/common/day';
 
 vi.mock('./db.js', () => ({
   getSelect: vi.fn(),
+  getSummationDayTotal: vi.fn(),
 }));
 
-import { getSelect } from './db.js';
+import { getSelect, getSummationDayTotal } from './db.js';
 import {
   formatSelectStreakText,
   historyGraphScaleTop,
+  summationStreakGraphForConfiguredWindow,
   streakGraphForConfiguredWindow,
 } from './habit-presentation.js';
 
@@ -205,6 +207,26 @@ describe('streakGraphForConfiguredWindow (weekly frequency)', () => {
     expect(streak.data[viewWeekStart]?.value).toBeNull();
     expect(streak.data[viewWeekStart]?.fill).toBe(1);
     expect(streak.streakText).toBe('0 weeks');
+  });
+});
+
+describe('summationStreakGraphForConfiguredWindow', () => {
+  it('counts summation days that hit the configured goal', () => {
+    const at = new Date('2025-05-21T12:00:00.000Z');
+    const viewDate = dayFromString('2025-05-21');
+    vi.mocked(getSummationDayTotal).mockImplementation((_u, _h, date) => {
+      if (date === '2025-05-21') return 12;
+      if (date === '2025-05-20') return 5;
+      if (date === '2025-05-19') return 10;
+      return null;
+    });
+
+    const streak = summationStreakGraphForConfiguredWindow(user, 'push ups', viewDate, ['10'], at);
+
+    expect(streak.streakText).toBe('1 day');
+    expect(streak.data[viewDate]?.value).toBe('12');
+    expect(streak.data[viewDate]?.fill).toBe(10);
+    expect(streak.data[dayFromString('2025-05-20')]?.fill).toBe(1);
   });
 });
 

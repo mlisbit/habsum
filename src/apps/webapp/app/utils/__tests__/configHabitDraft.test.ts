@@ -115,6 +115,26 @@ describe('parseHabitDraftFromText', () => {
     });
   });
 
+  it('parses summation streak fields', () => {
+    const yamlText = `habits:
+  push ups:
+    type: summation
+    goal: 10
+    summation_options: [1, 10]
+    streak:
+      frequency: 3d/1w
+`;
+    const draft = parseHabitDraftFromText(yamlText, 'push ups');
+    expect(draft).toMatchObject({
+      type: 'summation',
+      goal: '10',
+      quickAddItems: ['1', '10'],
+      streakEnabled: true,
+      streakOptionsText: '',
+      streakFrequencyPerWeek: '3',
+    });
+  });
+
   it('parses single_select fields', () => {
     const draft = parseHabitDraftFromText(SAMPLE, 'soda');
     expect(draft).toMatchObject({
@@ -181,6 +201,21 @@ describe('applyHabitDraftToConfigYaml', () => {
     const habits = (yaml.load(out) as { habits: Record<string, unknown> }).habits;
     expect(habits.soda).toMatchObject({
       streak: { options: ['none'], frequency: '3d/1w' },
+    });
+  });
+
+  it('writes summation streak options from the goal', () => {
+    const base = parseHabitDraftFromText(SAMPLE, 'push ups');
+    const draft: ConfigHabitDraft = {
+      ...base,
+      streakEnabled: true,
+      streakFrequencyPerWeek: '3',
+      streakShowLongest: true,
+    };
+    const out = applyHabitDraftToConfigYaml(SAMPLE, draft, 'push ups');
+    const habits = (yaml.load(out) as { habits: Record<string, unknown> }).habits;
+    expect(habits['push ups']).toMatchObject({
+      streak: { options: [100], frequency: '3d/1w', show_longest: true },
     });
   });
 
