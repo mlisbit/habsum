@@ -4,7 +4,51 @@
 .config-page {
   display: flex;
   flex-direction: column;
+  gap: functions.spacing(3);
   min-width: 0;
+}
+
+.config-page__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: functions.spacing(2);
+}
+
+.config-page__statistics {
+  display: flex;
+  flex-direction: column;
+  gap: functions.spacing(2);
+}
+
+.config-page__statistics-row {
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: functions.spacing(2);
+  min-width: 0;
+}
+
+.config-page__statistics-label {
+  min-width: 0;
+}
+
+.config-page__statistics-select {
+  max-width: 100%;
+  min-width: 0;
+  background: var(--background-input);
+  border: 1px solid var(--border-color-faint);
+  border-radius: var(--border-radius-m);
+  padding: functions.spacing(1, 2);
+}
+
+.config-page__statistics-select:focus-visible {
+  outline: none;
+  box-shadow: var(--box-shadow-focus);
+}
+
+.config-page__statistics-copy {
+  margin: 0;
 }
 
 .config-page__view-toggle {

@@ -724,7 +724,7 @@ userScopedRouter.get(
         : null;
       const widgets = habitWidgets([
         progressWidget(total, h.goal),
-        history ? historyWidget(history, h.goal) : null,
+        history ? historyWidget(history, h.goal, config.includeAbsentDaysInAverage) : null,
         streak ? streakWidget(streak) : null,
       ]);
       const base = {
@@ -886,7 +886,7 @@ userScopedRouter.patch(
         : null;
       return habitWidgets([
         progressWidget(nextTotal, known.goal),
-        history ? historyWidget(history, known.goal) : null,
+        history ? historyWidget(history, known.goal, config.includeAbsentDaysInAverage) : null,
         streak ? streakWidget(streak) : null,
       ]);
     };

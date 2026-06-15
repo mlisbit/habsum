@@ -5,6 +5,7 @@ import { getUserSession, logout } from '~/api.client';
 import { useUser } from '~/context/user';
 import { ensureUserSessionForRoute } from '~/utils/user-session-guard';
 import { Button } from '@habsum/ui/components/Button';
+import { Icon } from '@habsum/ui/components/Icon';
 import { Footer } from '~/components/Footer';
 import { getMediaQuerySnapshot, subscribeToMediaQuery } from '~/utils/media-query-store';
 import { userPageTitle } from '~/utils/page-title';
@@ -23,7 +24,7 @@ function useWideSettingsLayout(): boolean {
 
 function activeSettingsSectionLabel(path: string): string | null {
   if (path.endsWith('/account')) return 'Account';
-  if (path.endsWith('/security')) return 'Security';
+  if (path.includes('/settings/security')) return 'Security';
   if (path.endsWith('/config')) return 'Habits';
   if (path.endsWith('/developer')) return 'Developer';
   return null;
@@ -92,17 +93,15 @@ export default function UserSettingsLayout() {
         .join(' ')}
     >
       <aside className="settings__sidebar">
-        <div className="settings__header">
-          <Button
-            type="tertiary"
-            icon="chevronBack"
-            circle
-            title="Back to habits"
-            aria-label="Back to habits"
-            className="settings__back"
-            onClick={() => navigate(`/users/${encodeURIComponent(user ?? '')}/habits`)}
-          />
+        <Link
+          to={`/users/${encodeURIComponent(user ?? '')}/habits`}
+          className="settings__dashboard-link link--fancy text-b-m"
+        >
+          <Icon name="chevronBack" size="small" />
+          <span>Back to dashboard</span>
+        </Link>
 
+        <div className="settings__header">
           <div className="settings__header-text">
             <h1 className="settings__title text-h-l">Settings</h1>
             {!isWide && !navOpen && activeSection ? (
@@ -133,19 +132,19 @@ export default function UserSettingsLayout() {
           </Link>
           <Link
             className={`settings__link text-b-l${
-              path.endsWith('/security') ? ' settings__link--active' : ''
-            }`}
-            to={`${base}/security`}
-          >
-            Security
-          </Link>
-          <Link
-            className={`settings__link text-b-l${
               path.endsWith('/config') ? ' settings__link--active' : ''
             }`}
             to={`${base}/config`}
           >
             Habits
+          </Link>
+          <Link
+            className={`settings__link text-b-l${
+              path.includes('/settings/security') ? ' settings__link--active' : ''
+            }`}
+            to={`${base}/security`}
+          >
+            Security
           </Link>
           {isAdmin === true ? (
             <Link

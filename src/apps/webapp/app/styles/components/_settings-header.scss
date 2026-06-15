@@ -20,6 +20,10 @@
   flex: 1 1 auto;
 }
 
+.settings-header__back {
+  flex-shrink: 0;
+}
+
 .settings-header__title {
   margin: 0;
   min-width: 0;

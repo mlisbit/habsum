@@ -64,6 +64,32 @@ export function parseConfigHabitCards(text: string): ConfigHabitCard[] {
   return Object.entries(habits).map(([name, def]) => parseHabitCard(name, def));
 }
 
+function parseConfigRoot(text: string): Record<string, unknown> {
+  let parsed: unknown;
+  try {
+    parsed = yaml.load(text);
+  } catch {
+    throw new Error('invalid yaml');
+  }
+  if (parsed == null) return {};
+  if (!isRecord(parsed)) {
+    throw new Error('config must be a yaml mapping');
+  }
+  return parsed;
+}
+
+export function readIncludeAbsentDaysInAverage(text: string): boolean {
+  const parsed = parseConfigRoot(text);
+  return parsed.include_absent_days_in_average === true;
+}
+
+export function setIncludeAbsentDaysInAverage(text: string, value: boolean): string {
+  const parsed = parseConfigRoot(text);
+  parsed.include_absent_days_in_average = value;
+  const order = parseConfigHabitCards(text).map((habit) => habit.name);
+  return dumpConfigYaml(parsed, order);
+}
+
 export function habitOrderKey(names: string[]): string {
   return names.join('\0');
 }

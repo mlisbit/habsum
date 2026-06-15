@@ -12,7 +12,7 @@ import {
   type DeveloperGetResponse,
 } from '~/api.client';
 import { openOucWindow } from '~/ouc.client';
-import { SettingsHeader } from '~/components/SettingsHeader';
+import { SettingsPageCard } from '~/components/SettingsPageCard';
 import { Button } from '@habsum/ui/components/Button';
 import { Hoverable } from '@habsum/ui/components/Hoverable';
 import type { IconName } from '@habsum/ui/components/Icon';
@@ -596,54 +596,54 @@ export default function UserSettingsDeveloper() {
 
   return (
     <div className="developer-page">
-      <div className="card card--no-padding developer-page__users">
-        <SettingsHeader
-          title="Users"
-          actions={
-            <Button
-              type="secondary"
-              text="Invite user"
-              onClick={() => {
-                present({
-                  content: (
-                    <InviteUserModal
-                      onCreated={(credentials) => {
-                        closeModal();
-                        void loadUsers();
-                        if (credentials.inviteEmailSent && credentials.displayName) {
-                          showToast({
-                            type: 'success',
-                            message: `Invite sent to ${credentials.email}.`,
-                          });
-                          present({
-                            content: (
-                              <UserInvitedModal
-                                email={credentials.email}
-                                displayName={credentials.displayName}
-                                onClose={closeModal}
-                              />
-                            ),
-                          });
-                          return;
-                        }
+      <SettingsPageCard
+        headerText="Users"
+        className="developer-page__users"
+        actions={
+          <Button
+            type="secondary"
+            text="Invite user"
+            onClick={() => {
+              present({
+                content: (
+                  <InviteUserModal
+                    onCreated={(credentials) => {
+                      closeModal();
+                      void loadUsers();
+                      if (credentials.inviteEmailSent && credentials.displayName) {
                         showToast({
                           type: 'success',
-                          message: `Created user "${credentials.user}".`,
+                          message: `Invite sent to ${credentials.email}.`,
                         });
                         present({
                           content: (
-                            <UserCreatedCredentialsModal {...credentials} onClose={closeModal} />
+                            <UserInvitedModal
+                              email={credentials.email}
+                              displayName={credentials.displayName}
+                              onClose={closeModal}
+                            />
                           ),
                         });
-                      }}
-                      onClose={closeModal}
-                    />
-                  ),
-                });
-              }}
-            />
-          }
-        />
+                        return;
+                      }
+                      showToast({
+                        type: 'success',
+                        message: `Created user "${credentials.user}".`,
+                      });
+                      present({
+                        content: (
+                          <UserCreatedCredentialsModal {...credentials} onClose={closeModal} />
+                        ),
+                      });
+                    }}
+                    onClose={closeModal}
+                  />
+                ),
+              });
+            }}
+          />
+        }
+      >
         <div className="card-padding">
           {usersError ? (
             <p className="text-light text-b-m">Could not load users: {usersError}</p>
@@ -761,10 +761,9 @@ export default function UserSettingsDeveloper() {
             </ul>
           )}
         </div>
-      </div>
+      </SettingsPageCard>
 
-      <div className="card card--no-padding developer-page__clocks">
-        <SettingsHeader title="Time" titleAs="h3" />
+      <SettingsPageCard headerText="Time" headerAs="h3" className="developer-page__clocks">
         <div className="card-padding">
           <dl className="developer-page__clock-list">
             <div className="developer-page__clock-row">
@@ -791,10 +790,9 @@ export default function UserSettingsDeveloper() {
             </div>
           </dl>
         </div>
-      </div>
+      </SettingsPageCard>
 
-      <div className="card card--no-padding developer-page__version">
-        <SettingsHeader title="Version" titleAs="h3" />
+      <SettingsPageCard headerText="Version" headerAs="h3" className="developer-page__version">
         <div className="card-padding">
           {developerError ? (
             <p className="text-light text-b-m">Could not load: {developerError}</p>
@@ -809,7 +807,7 @@ export default function UserSettingsDeveloper() {
             <p className="text-light text-b-m">Loading…</p>
           )}
         </div>
-      </div>
+      </SettingsPageCard>
     </div>
   );
 }

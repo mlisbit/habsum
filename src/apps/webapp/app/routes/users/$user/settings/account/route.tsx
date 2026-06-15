@@ -12,7 +12,7 @@ import {
   patchUser,
   type UsersPatchRequest,
 } from '~/api.client';
-import { SettingsHeader } from '~/components/SettingsHeader';
+import { SettingsPageCard } from '~/components/SettingsPageCard';
 import { Button } from '@habsum/ui/components/Button';
 import { InfoText } from '@habsum/ui/components/InfoText';
 import { Input } from '@habsum/ui/components/Input';
@@ -347,9 +347,7 @@ export default function UserSettingsAccount() {
         </div>
       ) : null}
 
-      <div className="card card--no-padding">
-        <SettingsHeader title="Profile information" />
-
+      <SettingsPageCard headerText="Profile information">
         <div className="card-padding">
           {!loaded ? (
             <p className="text-light text-b-m">Loading…</p>
@@ -453,12 +451,10 @@ export default function UserSettingsAccount() {
             </div>
           )}
         </div>
-      </div>
+      </SettingsPageCard>
 
       {loaded ? (
-        <div className="card card--no-padding">
-          <SettingsHeader title="Display" />
-
+        <SettingsPageCard headerText="Display">
           <div className="card-padding">
             <div className="account-page__basic">
               <div className="account-page__field">
@@ -496,17 +492,14 @@ export default function UserSettingsAccount() {
               </div>
             </div>
           </div>
-        </div>
+        </SettingsPageCard>
       ) : null}
 
       {loaded ? (
-        <div className="card card--no-padding">
-          <SettingsHeader title="Export your habit data" />
-
-          <div className="card-padding">
-            <p className="text-light text-b-m">
-              Download a CSV of habit daily selections and summation events.
-            </p>
+        <SettingsPageCard
+          headerText="Export your habit data"
+          subtitle="Download a CSV of habit daily selections and summation events."
+          actions={
             <Button
               type="secondary"
               icon="download"
@@ -514,14 +507,12 @@ export default function UserSettingsAccount() {
               disabled={!routeUser || downloadBusy}
               onClick={() => void handleDownloadData()}
             />
-          </div>
-        </div>
+          }
+        />
       ) : null}
 
       {loaded ? (
-        <div className="card card--no-padding">
-          <SettingsHeader title="Account" />
-
+        <SettingsPageCard headerText="Account">
           <div className="card-padding">
             <div className="account-page__meta-rows">
               <div className="account-page__meta-row">
@@ -538,19 +529,16 @@ export default function UserSettingsAccount() {
               </div>
             </div>
           </div>
-        </div>
+        </SettingsPageCard>
       ) : null}
 
       {loaded ? (
-        <div className="card card--no-padding account-page__danger">
-          <SettingsHeader title="Danger zone" titleClassName="text-error" />
-
-          <div className="card-padding account-page__danger-body">
-            <p className="text-light text-b-m">
-              Delete this user. This removes their config and all stored data. This action cannot be
-              undone.
-            </p>
-
+        <SettingsPageCard
+          headerText="Danger zone"
+          subtitle="Delete your account and all associated data. This action cannot be undone."
+          headerClassName="text-error"
+          className="account-page__danger"
+          actions={
             <Button
               type="secondary"
               text={deleteBusy ? 'Deleting…' : 'Delete user'}
@@ -579,8 +567,8 @@ export default function UserSettingsAccount() {
                 }
               }}
             />
-          </div>
-        </div>
+          }
+        />
       ) : null}
     </div>
   );

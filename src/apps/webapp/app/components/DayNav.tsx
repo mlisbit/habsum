@@ -64,7 +64,7 @@ export function DayNav({
         {showJumpToToday ? (
           <button
             type="button"
-            className="day-nav__jump text-b-s text-light ml-1"
+            className="day-nav__jump text-b-s link--fancy ml-1"
             onClick={() => onChangeDate(today)}
           >
             Jump to today.

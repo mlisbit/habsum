@@ -55,6 +55,7 @@ export type HabitDef = {
 
 export type UserConfig = {
   user: string;
+  includeAbsentDaysInAverage: boolean;
   habits: HabitDef[];
 };
 
@@ -71,6 +72,7 @@ type RawHabit = {
 };
 
 type RawConfig = {
+  include_absent_days_in_average?: unknown;
   habits?: Record<string, RawHabit>;
 };
 
@@ -173,6 +175,7 @@ function parseUserConfig(user: string, parsed: unknown): UserConfig {
 
   return {
     user,
+    includeAbsentDaysInAverage: rawConfig.include_absent_days_in_average === true,
     habits: Object.entries(habits).map(([name, def]) => {
       if (!isRecord(def)) {
         throw new ConfigValidationError(`habit "${name}" must be a yaml mapping`);

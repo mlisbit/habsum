@@ -1,12 +1,12 @@
 // exclusive-bem-block: config-page
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useBlocker, useLocation, useNavigate } from '@remix-run/react';
 import { getUserConfig, putUserConfig, type UserConfigInsights } from '~/api.client';
 import { ConfigGuiEditor } from './ConfigGuiEditor';
 import { ConfigYamlEditor } from './ConfigYamlEditor';
-import { SettingsHeader } from '~/components/SettingsHeader';
 import { UnsavedChangesModal } from '~/components/UnsavedChangesModal';
 import { Button } from '@habsum/ui/components/Button';
+import { InfoText } from '@habsum/ui/components/InfoText';
 import { useModal } from '@habsum/ui/contexts/modal';
 import { useToast } from '@habsum/ui/contexts/toast';
 import {
@@ -14,16 +14,29 @@ import {
   buildConfigMigrations,
   habitOrderKey,
   parseConfigHabitCards,
+  readIncludeAbsentDaysInAverage,
   reorderHabitsInConfigYaml,
+  setIncludeAbsentDaysInAverage,
 } from '~/utils/configYaml';
 
-type ConfigSettingsProps = { user: string };
+type ConfigSettingsCardProps = {
+  headerText: string;
+  children?: ReactNode;
+  actions?: ReactNode;
+  subtitle?: ReactNode;
+  error?: string | null;
+};
+
+type ConfigSettingsProps = {
+  user: string;
+  renderCard: (props: ConfigSettingsCardProps) => ReactNode;
+};
 
 function isYamlView(search: string): boolean {
   return new URLSearchParams(search).has('yaml');
 }
 
-export function ConfigSettings({ user }: ConfigSettingsProps) {
+export function ConfigSettings({ user, renderCard }: ConfigSettingsProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const yamlView = isYamlView(location.search);
@@ -71,6 +84,13 @@ export function ConfigSettings({ user }: ConfigSettingsProps) {
       return parseConfigHabitCards(text);
     } catch {
       return [];
+    }
+  }, [text]);
+  const includeAbsentDaysInAverage = useMemo(() => {
+    try {
+      return readIncludeAbsentDaysInAverage(text);
+    } catch {
+      return false;
     }
   }, [text]);
 
@@ -186,13 +206,29 @@ export function ConfigSettings({ user }: ConfigSettingsProps) {
     }
   }, [dirty, habitOrder, initialText, showToast, text, user, yamlView]);
 
+  const onIncludeAbsentDaysInAverageChange = useCallback(
+    (next: boolean) => {
+      try {
+        setText(setIncludeAbsentDaysInAverage(text, next));
+        if (saveError != null) setSaveError(null);
+      } catch (e) {
+        setSaveError(e instanceof Error ? e.message : String(e));
+      }
+    },
+    [saveError, text],
+  );
+
   if (loading) {
     return (
       <div className="config-page">
-        <SettingsHeader title="Config" />
-        <p className="text-light text-b-m card-padding" aria-busy>
-          Loading config…
-        </p>
+        {renderCard({
+          headerText: 'Config',
+          children: (
+            <p className="text-light text-b-m card-padding" aria-busy>
+              Loading config…
+            </p>
+          ),
+        })}
       </div>
     );
   }
@@ -200,16 +236,64 @@ export function ConfigSettings({ user }: ConfigSettingsProps) {
   if (loadError) {
     return (
       <div className="config-page">
-        <SettingsHeader title="Config" error={loadError} />
+        {renderCard({
+          headerText: 'Config',
+          error: loadError,
+        })}
       </div>
     );
   }
 
   return (
     <div className="config-page">
-      <SettingsHeader
-        title="Config"
-        subtitle={
+      {dirty ? (
+        <div className="flex justify-space-between">
+          <InfoText size="medium" variant="warning" className="config-page__info">
+            You have unsaved changes.
+          </InfoText>
+          <div className="config-page__actions">
+            <Button type="tertiary" text="Cancel" disabled={saving} onClick={onCancel} />
+            <Button
+              type="primary"
+              text={saving ? 'Saving…' : 'Save'}
+              disabled={saving}
+              onClick={onSave}
+            />
+          </div>
+        </div>
+      ) : null}
+
+      {renderCard({
+        headerText: 'Statistics',
+        children: (
+          <div className="card-padding config-page__statistics">
+            <div className="config-page__statistics-row">
+              <label
+                htmlFor="config-include-absent-days-average"
+                className="config-page__statistics-label text-b-m"
+              >
+                Missing days in averages
+              </label>
+              <select
+                id="config-include-absent-days-average"
+                className="config-page__statistics-select text-b-m"
+                value={includeAbsentDaysInAverage ? 'include' : 'ignore'}
+                onChange={(e) => onIncludeAbsentDaysInAverageChange(e.target.value === 'include')}
+              >
+                <option value="ignore">Ignore missing days</option>
+                <option value="include">Include missing days</option>
+              </select>
+            </div>
+            <p className="config-page__statistics-copy text-light text-b-m">
+              Controls how averages are calculated when a habit has no entry for a day.
+            </p>
+          </div>
+        ),
+      })}
+
+      {renderCard({
+        headerText: 'Config',
+        subtitle: (
           <button
             type="button"
             className="config-page__view-toggle text-b-s text-link"
@@ -218,53 +302,42 @@ export function ConfigSettings({ user }: ConfigSettingsProps) {
           >
             {yamlView ? 'Show GUI' : 'View YAML'}
           </button>
-        }
-        error={saveError}
-        actions={
-          <>
-            {!yamlView ? (
-              <Button
-                type="secondary"
-                icon="plus"
-                text="Add"
-                disabled={saving}
-                onClick={() => addHabitRef.current?.()}
-              />
-            ) : null}
-            <Button
-              type="primary"
-              text={saving ? 'Saving…' : 'Save'}
-              disabled={!dirty || saving}
-              onClick={onSave}
-            />
-            <Button type="secondary" text="Cancel" disabled={!dirty || saving} onClick={onCancel} />
-          </>
-        }
-      />
-      {yamlView ? (
-        <ConfigYamlEditor
-          text={text}
-          onChange={(next) => {
-            setText(next);
-            if (saveError != null) setSaveError(null);
-          }}
-        />
-      ) : (
-        <ConfigGuiEditor
-          configText={text}
-          habits={habitCards}
-          insights={insights}
-          order={habitOrder}
-          onOrderChange={setHabitOrder}
-          onConfigTextChange={(next) => {
-            setText(next);
-            if (saveError != null) setSaveError(null);
-          }}
-          registerAddHabit={(fn) => {
-            addHabitRef.current = fn;
-          }}
-        />
-      )}
+        ),
+        error: saveError,
+        actions: !yamlView ? (
+          <Button
+            type="secondary"
+            icon="plus"
+            text="Add"
+            disabled={saving}
+            onClick={() => addHabitRef.current?.()}
+          />
+        ) : null,
+        children: yamlView ? (
+          <ConfigYamlEditor
+            text={text}
+            onChange={(next) => {
+              setText(next);
+              if (saveError != null) setSaveError(null);
+            }}
+          />
+        ) : (
+          <ConfigGuiEditor
+            configText={text}
+            habits={habitCards}
+            insights={insights}
+            order={habitOrder}
+            onOrderChange={setHabitOrder}
+            onConfigTextChange={(next) => {
+              setText(next);
+              if (saveError != null) setSaveError(null);
+            }}
+            registerAddHabit={(fn) => {
+              addHabitRef.current = fn;
+            }}
+          />
+        ),
+      })}
     </div>
   );
 }

@@ -68,6 +68,10 @@
   color: var(--text-link);
 }
 
+.link--fancy {
+  color: var(--accent-selected);
+}
+
 .text--hoverable {
   text-decoration: underline dotted;
   text-underline-offset: 0.15em;

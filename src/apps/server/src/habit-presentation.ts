@@ -183,12 +183,13 @@ export function habitHistoryForConfiguredPeriod(
   };
 }
 
-function historyAverage(history: HabitHistory): number | null {
-  const values = Object.values(history.data.user.graphData)
-    .map((datum) => datum.value)
-    .filter((value): value is number => value != null);
+function historyAverage(history: HabitHistory, includeAbsentDays: boolean): number | null {
+  const allValues = Object.values(history.data.user.graphData).map((datum) => datum.value);
+  const values = includeAbsentDays
+    ? allValues
+    : allValues.filter((value): value is number => value != null);
   if (values.length === 0) return null;
-  return Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
+  return Math.round(values.reduce<number>((sum, value) => sum + (value ?? 0), 0) / values.length);
 }
 
 function historyPeriodText(history: HabitHistory): string {
@@ -200,10 +201,15 @@ function historyPeriodText(history: HabitHistory): string {
   return `${days} ${days === 1 ? 'day' : 'days'}`;
 }
 
-function historyAverageHoverText(history: HabitHistory): string {
+function historyAverageHoverText(history: HabitHistory, includeAbsentDays: boolean): string {
   const values = Object.values(history.data.user.graphData);
   const daysWithData = values.filter((datum) => datum.value != null).length;
   const daysWithoutData = values.length - daysWithData;
+  if (includeAbsentDays) {
+    return daysWithoutData === 0
+      ? `Average includes all ${values.length} ${values.length === 1 ? 'day' : 'days'} in this history window.`
+      : `Average includes ${daysWithoutData} ${daysWithoutData === 1 ? 'day' : 'days'} with no data as zero and ${daysWithData} ${daysWithData === 1 ? 'day' : 'days'} with logged data.`;
+  }
   return daysWithoutData === 0
     ? `Average includes all ${values.length} ${values.length === 1 ? 'day' : 'days'} in this history window.`
     : `Average excludes ${daysWithoutData} ${daysWithoutData === 1 ? 'day' : 'days'} with no data and uses ${daysWithData} ${daysWithData === 1 ? 'day' : 'days'} with logged data.`;
@@ -218,13 +224,17 @@ export function progressWidget(total: number | null, goal: number | null): Habit
   };
 }
 
-export function historyWidget(history: HabitHistory, goal: number | null | undefined): HabitWidget {
-  const average = historyAverage(history);
+export function historyWidget(
+  history: HabitHistory,
+  goal: number | null | undefined,
+  includeAbsentDaysInAverage = false,
+): HabitWidget {
+  const average = historyAverage(history, includeAbsentDaysInAverage);
   const averageText = average == null ? '—' : String(average);
   return {
     title: 'History',
     titleValue: `${averageText}/day average over last ${historyPeriodText(history)}`,
-    titleValueHoverText: historyAverageHoverText(history),
+    titleValueHoverText: historyAverageHoverText(history, includeAbsentDaysInAverage),
     body: [
       {
         kind: 'barGraph',

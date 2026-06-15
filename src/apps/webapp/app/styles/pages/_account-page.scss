@@ -108,10 +108,3 @@
   outline: none;
   box-shadow: var(--box-shadow-focus);
 }
-
-.account-page__danger-body {
-  display: flex;
-  justify-content: space-between;
-  gap: functions.spacing(2);
-  align-items: center;
-}

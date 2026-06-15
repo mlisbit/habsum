@@ -40,8 +40,24 @@
   display: flex;
   align-items: center;
   gap: functions.spacing(1);
+  margin-top: functions.spacing(2);
   margin-bottom: functions.spacing(3);
   min-width: 0;
+}
+
+.settings__dashboard-link {
+  display: inline-flex;
+  align-items: center;
+  gap: functions.spacing(1);
+  width: fit-content;
+  border-block-end: 1px solid transparent;
+  text-decoration: none;
+
+  &:hover,
+  &:focus-visible {
+    border-block-end-color: currentcolor;
+    text-decoration: none;
+  }
 }
 
 .settings__header-text {
