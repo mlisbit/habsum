@@ -27,6 +27,12 @@
   text-align: end;
 }
 
+.habit-module-renderer__widget-title-value-tooltip.hover-layer__panel {
+  max-inline-size: 18rem;
+  background: var(--background-tertiary);
+  text-align: center;
+}
+
 .habit-module-renderer__widget-body {
   display: flex;
   flex-direction: column;

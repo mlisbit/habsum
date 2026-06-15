@@ -10,6 +10,8 @@ import { getSelect, getSummationDayTotal } from './db.js';
 import {
   formatSelectStreakText,
   historyGraphScaleTop,
+  historyWidget,
+  progressWidget,
   streakWidget,
   summationStreakGraphForConfiguredWindow,
   streakGraphForConfiguredWindow,
@@ -30,6 +32,47 @@ describe('historyGraphScaleTop', () => {
 
   it('falls back to 1 when there is no data and no goal', () => {
     expect(historyGraphScaleTop([], null)).toBe(1);
+  });
+});
+
+describe('historyWidget', () => {
+  it('shows average per day for the graph window and explains missing days', () => {
+    const widget = historyWidget(
+      {
+        data: {
+          user: {
+            graphData: {
+              '2025-05-15': { value: null, top: 5, hoverLabel: 'Thu' },
+              '2025-05-16': { value: 2, top: 5, hoverLabel: 'Fri' },
+              '2025-05-17': { value: null, top: 5, hoverLabel: 'Sat' },
+              '2025-05-18': { value: 4, top: 5, hoverLabel: 'Sun' },
+              '2025-05-19': { value: null, top: 5, hoverLabel: 'Mon' },
+              '2025-05-20': { value: null, top: 5, hoverLabel: 'Tue' },
+              '2025-05-21': { value: null, top: 5, hoverLabel: 'Wed' },
+            },
+          },
+        },
+      },
+      5,
+    );
+
+    expect(widget.titleValue).toBe('3/day average over last 1 week');
+    expect(widget.titleValueHoverText).toBe(
+      'Average excludes 5 days with no data and uses 2 days with logged data.',
+    );
+    expect(widget.body[0]).toMatchObject({
+      kind: 'barGraph',
+      lines: [{ value: 5, label: 'Daily goal: 5' }],
+    });
+  });
+});
+
+describe('progressWidget', () => {
+  it('labels summation goals with compact current over goal text', () => {
+    expect(progressWidget(2, 5)).toMatchObject({
+      title: 'Goal',
+      titleValue: '2 / 5',
+    });
   });
 });
 
@@ -287,6 +330,7 @@ describe('streakGraphForConfiguredWindow (show_longest)', () => {
 
     expect(streak.longestStreak?.text).toBe('4 days of good');
     expect(streak.currentText).toBe('1 day');
+    expect(streakWidget(streak).titleValue).toBeUndefined();
     expect(streakWidget(streak).body[0]).toEqual({
       kind: 'pills',
       pills: [

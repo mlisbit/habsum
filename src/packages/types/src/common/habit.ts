@@ -12,7 +12,8 @@ export type HabitHistory = {
 
 export type HabitWidgetBase = {
   title: string;
-  titleValue: string;
+  titleValue?: string;
+  titleValueHoverText?: string;
   body: HabitWidgetBody[];
 };
 

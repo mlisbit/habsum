@@ -191,26 +191,46 @@ function historyAverage(history: HabitHistory): number | null {
   return Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
 }
 
+function historyPeriodText(history: HabitHistory): string {
+  const days = Object.keys(history.data.user.graphData).length;
+  if (days > 0 && days % 7 === 0) {
+    const weeks = days / 7;
+    return `${weeks} ${weeks === 1 ? 'week' : 'weeks'}`;
+  }
+  return `${days} ${days === 1 ? 'day' : 'days'}`;
+}
+
+function historyAverageHoverText(history: HabitHistory): string {
+  const values = Object.values(history.data.user.graphData);
+  const daysWithData = values.filter((datum) => datum.value != null).length;
+  const daysWithoutData = values.length - daysWithData;
+  return daysWithoutData === 0
+    ? `Average includes all ${values.length} ${values.length === 1 ? 'day' : 'days'} in this history window.`
+    : `Average excludes ${daysWithoutData} ${daysWithoutData === 1 ? 'day' : 'days'} with no data and uses ${daysWithData} ${daysWithData === 1 ? 'day' : 'days'} with logged data.`;
+}
+
 export function progressWidget(total: number | null, goal: number | null): HabitWidget | null {
   if (goal == null) return null;
   return {
-    title: 'Progress',
-    titleValue: `${total == null ? '—' : total} of ${goal}`,
+    title: 'Goal',
+    titleValue: `${total == null ? '—' : total} / ${goal}`,
     body: [{ kind: 'progress', value: total, max: goal }],
   };
 }
 
 export function historyWidget(history: HabitHistory, goal: number | null | undefined): HabitWidget {
   const average = historyAverage(history);
+  const averageText = average == null ? '—' : String(average);
   return {
     title: 'History',
-    titleValue: `avg ${average == null ? '—' : average}`,
+    titleValue: `${averageText}/day average over last ${historyPeriodText(history)}`,
+    titleValueHoverText: historyAverageHoverText(history),
     body: [
       {
         kind: 'barGraph',
         data: history.data.user.graphData,
         ...(goal != null && goal > 0
-          ? { lines: [{ value: goal, label: `your set goal ${goal}` }] }
+          ? { lines: [{ value: goal, label: `Daily goal: ${goal}` }] }
           : {}),
       },
     ],
@@ -225,7 +245,6 @@ function streakGraphData(streak: StreakGraphWithText): StreakGraphData {
 export function streakWidget(streak: StreakGraphWithText): HabitWidget {
   return {
     title: 'Streak',
-    titleValue: streak.currentText,
     body: [
       {
         kind: 'pills',

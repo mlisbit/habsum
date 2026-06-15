@@ -1,0 +1,8 @@
+// stylelint-disable-next-line scss/no-global-function-names
+@function lighten($color) {
+  @return color-mix(in srgb, #{$color} 90%, white 20%);
+}
+
+@function dim($color) {
+  @return color-mix(in srgb, #{$color} 90%, var(--background) 20%);
+}

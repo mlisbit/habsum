@@ -36,7 +36,8 @@ function habitHistoryWeek(
 function habitHistoryWidget(history: HabitHistory): HabitWidget {
   return {
     title: 'History',
-    titleValue: 'avg —',
+    titleValue: '—/day average over last 1 week',
+    titleValueHoverText: 'Average excludes days with no data and uses days with logged data.',
     body: [{ kind: 'barGraph', data: history.data.user.graphData }],
   };
 }

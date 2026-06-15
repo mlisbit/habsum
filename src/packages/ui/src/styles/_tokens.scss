@@ -32,7 +32,6 @@ html[data-theme='dark'] {
   // ctas secondary
   --cta-secondary-border: var(--border-color-faint);
   --cta-secondary-fill: transparent;
-  --cta-secondary-fill-hover: #3e3e3e;
 
   // cta modifiers
   --cta-secondary-border-danger: var(--accent-red-1);
@@ -40,7 +39,7 @@ html[data-theme='dark'] {
   // pills
   --pill-border: transparent;
   --pill-fill: #36383e;
-  --pill-fill-hover: #3e3e3e;
+  --pill-fill-selected: var(--accent-selected);
 
   // accents
   --accent-selected: #6b987f;
@@ -91,13 +90,12 @@ html[data-theme='light'] {
   --cta-base-background-danger: var(--accent-red-1);
   --cta-secondary-border: #4b5057;
   --cta-secondary-fill: #fff;
-  --cta-secondary-fill-hover: #e8e8ea;
   --cta-secondary-border-danger: var(--accent-red-1);
 
   // pills
   --pill-border: #4b5057;
   --pill-fill: #fff;
-  --pill-fill-hover: #e8e8ea;
+  --pill-fill-selected: var(--accent-selected);
 
   // accents
   --accent-selected: #2d6cdf;

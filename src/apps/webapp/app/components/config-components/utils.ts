@@ -11,7 +11,6 @@ export const PREVIEW_VIEW_DATE = dayFromString('2025-05-21');
 
 export const PREVIEW_SINGLE_SELECT_STREAK: HabitWidget = {
   title: 'Streak',
-  titleValue: '3 days',
   body: [{ kind: 'streakGraph', graph: { data: {} } }],
 };
 

@@ -68,6 +68,12 @@
   color: var(--text-link);
 }
 
+.text--hoverable {
+  text-decoration: underline dotted;
+  text-underline-offset: 0.15em;
+  cursor: default;
+}
+
 .text-error {
   color: var(--text-error);
 }

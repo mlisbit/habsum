@@ -30,7 +30,7 @@ function WidgetPills({ pills }: { pills: HabitWidgetPill[] | undefined }) {
       {pills.map((pill) =>
         pill.hover ? (
           <Hoverable.Root key={`${pill.label}-${pill.hover}`}>
-            <Hoverable.Anchor className="habit-module-renderer__widget-pill text-b-s">
+            <Hoverable.Anchor className="habit-module-renderer__widget-pill text-b-s text--hoverable">
               {pill.label}
             </Hoverable.Anchor>
             <Hoverable.Content className="habit-module-renderer__widget-pill-tooltip" side="top">
@@ -44,6 +44,25 @@ function WidgetPills({ pills }: { pills: HabitWidgetPill[] | undefined }) {
         ),
       )}
     </div>
+  );
+}
+
+function WidgetTitleValue({ widget }: { widget: HabitWidget }) {
+  if (!widget.titleValue) return null;
+
+  if (!widget.titleValueHoverText) {
+    return <span className="habit-module-renderer__widget-title-value">{widget.titleValue}</span>;
+  }
+
+  return (
+    <Hoverable.Root>
+      <Hoverable.Anchor className="habit-module-renderer__widget-title-value text--hoverable">
+        {widget.titleValue}
+      </Hoverable.Anchor>
+      <Hoverable.Content className="habit-module-renderer__widget-title-value-tooltip" side="top">
+        <span className="text-b-m">{widget.titleValueHoverText}</span>
+      </Hoverable.Content>
+    </Hoverable.Root>
   );
 }
 
@@ -99,11 +118,11 @@ function HabitWidgetItem({ habit, widget }: { habit: Habit; widget: HabitWidget 
     <section
       className="habit-module-renderer__widget"
       role="listitem"
-      aria-label={`${widget.title}, ${widget.titleValue}`}
+      aria-label={widget.titleValue ? `${widget.title}, ${widget.titleValue}` : widget.title}
     >
       <div className="habit-module-renderer__widget-header text-light text-b-m">
         <span className="habit-module-renderer__widget-title">{widget.title}</span>
-        <span className="habit-module-renderer__widget-title-value">{widget.titleValue}</span>
+        <WidgetTitleValue widget={widget} />
       </div>
       <div className="habit-module-renderer__widget-body">
         {body.map(({ key, node }) => (
@@ -139,7 +158,7 @@ export default function HabitModuleRenderer({
         <div className="habit-module-renderer__widgets" role="list">
           {widgets.map((widget, index) => (
             <HabitWidgetItem
-              key={`${widget.title}-${widget.titleValue}-${index}`}
+              key={`${widget.title}-${widget.titleValue ?? 'widget'}-${index}`}
               habit={habit}
               widget={widget}
             />

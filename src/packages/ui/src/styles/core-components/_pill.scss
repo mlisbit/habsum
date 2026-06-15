@@ -21,7 +21,7 @@
     background 0.12s ease;
 
   &:hover {
-    background: var(--pill-fill-hover);
+    background: functions.lighten(var(--pill-fill));
     filter: none;
   }
 
@@ -48,12 +48,12 @@
 }
 
 .pill--selected {
-  background: var(--cta-base-background);
+  background: var(--pill-fill-selected);
   border-color: transparent;
 
   &:hover {
-    background: var(--cta-base-background);
-    filter: brightness(1.05);
+    background: functions.dim(var(--pill-fill-selected));
+    filter: none;
   }
 }
 
@@ -111,7 +111,7 @@
   &:active {
     transform: none;
     filter: none;
-    background: var(--pill-fill-hover);
+    background: functions.lighten(var(--pill-fill));
   }
 
   &:focus-visible {
@@ -121,7 +121,7 @@
 }
 
 .pill--editing {
-  background: var(--pill-fill-hover);
+  background: functions.lighten(var(--pill-fill));
   box-shadow: var(--box-shadow-focus);
 }
 
@@ -155,7 +155,7 @@
 
   &:hover {
     opacity: 1;
-    background: var(--pill-fill-hover);
+    background: functions.lighten(var(--pill-fill));
   }
 
   &:focus-visible {

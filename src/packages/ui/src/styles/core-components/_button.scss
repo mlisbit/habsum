@@ -75,7 +75,7 @@
   border: 1px solid var(--cta-secondary-border);
 
   &:hover {
-    background: var(--cta-secondary-fill-hover);
+    background: functions.lighten(var(--cta-secondary-fill));
     filter: none;
   }
 
@@ -90,7 +90,7 @@
     border-color: var(--cta-secondary-border-danger);
 
     &:hover {
-      background: var(--background-warning);
+      background: functions.lighten(var(--cta-secondary-border-danger));
       filter: none;
     }
 
@@ -111,7 +111,7 @@
   border: none;
 
   &:hover {
-    background: var(--background-tertiary);
+    background: functions.lighten(var(--background-tertiary));
     filter: none;
   }
 
