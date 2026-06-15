@@ -16,9 +16,10 @@ import { SettingsHeader } from '~/components/SettingsHeader';
 import { Button } from '@habsum/ui/components/Button';
 import { InfoText } from '@habsum/ui/components/InfoText';
 import { Input } from '@habsum/ui/components/Input';
-import { AlertModal, useModal } from '@habsum/ui/contexts/modal';
+import { useModal } from '@habsum/ui/contexts/modal';
 import { useToast } from '@habsum/ui/contexts/toast';
 import { useUser } from '~/context/user';
+import { UnsavedChangesModal } from '~/components/UnsavedChangesModal';
 import {
   accountServerErrorToFieldMap,
   type AccountErrorMap,
@@ -44,10 +45,27 @@ type AccountSnapshot = {
   entitlements: ProductEntitlement[];
 };
 
-function formatAccountCreatedAt(value: DayWithTime): string {
+function formatMemberSince(value: DayWithTime): string {
   const d = dateFromDayWithTimeUtc(value);
   if (Number.isNaN(d.getTime())) return String(value);
-  return new Intl.DateTimeFormat(undefined, { dateStyle: 'long', timeStyle: 'short' }).format(d);
+  return new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(d);
+}
+
+function formatEntitlement(entitlement: ProductEntitlement): string {
+  switch (entitlement) {
+    case 'BETA_TESTER':
+      return 'Beta Tester';
+    case 'DEVELOPER':
+      return 'Developer';
+    case 'NEW_USER':
+      return 'New User';
+    default:
+      return entitlement;
+  }
+}
+
+function formatAccountType(entitlements: ProductEntitlement[]): string {
+  return entitlements.length > 0 ? entitlements.map(formatEntitlement).join(', ') : 'Standard';
 }
 
 function normDisplay(s: string): string {
@@ -69,7 +87,7 @@ function SaveFieldErrors({
 }) {
   if (!messages?.length) return null;
   return (
-    <InfoText variant="error" className={className} id={id} aria-live="polite">
+    <InfoText size="small" variant="error" className={className} id={id} aria-live="polite">
       {messages.join(' ')}
     </InfoText>
   );
@@ -196,11 +214,9 @@ export default function UserSettingsAccount() {
         if (b.state === 'blocked') b.reset();
       },
       content: (
-        <AlertModal
-          title="Unsaved changes"
-          message="You have unsaved changes on this page. Leave now and they will be discarded."
-          onCancel={() => closeModalRef.current()}
-          onContinueWithoutSaving={() => {
+        <UnsavedChangesModal
+          onKeepEditing={() => closeModalRef.current()}
+          onDiscardChanges={() => {
             dismiss();
             revertDraftsRef.current();
             const b = blockerRef.current;
@@ -309,48 +325,30 @@ export default function UserSettingsAccount() {
 
   return (
     <div className="account-page">
-      {loaded ? (
-        <div className="card account-page__meta">
-          <h3 className="account-page__meta-heading text-h-s" id="account-meta">
-            Account
-          </h3>
-          <div className="account-page__meta-rows">
-            <div className="account-page__meta-row">
-              <div className="account-page__meta-label text-b-m text-light">Created</div>
-              <div className="account-page__meta-value text-b-m">
-                {formatAccountCreatedAt(saved.createdAt)}
-              </div>
-            </div>
-            <div className="account-page__meta-row">
-              <div className="account-page__meta-label text-b-m text-light">Entitlements</div>
-              <div className="account-page__meta-value text-b-m">
-                {saved.entitlements.length > 0 ? saved.entitlements.join(', ') : '—'}
-              </div>
-            </div>
+      {hasDirty ? (
+        <div className="flex justify-space-between">
+          <InfoText size="medium" variant="warning" className="account-page__info">
+            You have unsaved changes.
+          </InfoText>
+          <div className="account-page__actions">
+            <Button
+              type="tertiary"
+              text="Cancel"
+              disabled={!loaded || saveBusy}
+              onClick={revertDrafts}
+            />
+            <Button
+              type="primary"
+              text={saveBusy ? 'Saving…' : 'Save'}
+              disabled={!loaded || saveBusy || !normDisplay(draftUsername)}
+              onClick={() => void handleSave()}
+            />
           </div>
         </div>
       ) : null}
 
       <div className="card card--no-padding">
-        <SettingsHeader
-          title="Edit account"
-          actions={
-            <>
-              <Button
-                type="primary"
-                text={saveBusy ? 'Saving…' : 'Save'}
-                disabled={!loaded || !hasDirty || saveBusy || !normDisplay(draftUsername)}
-                onClick={() => void handleSave()}
-              />
-              <Button
-                type="secondary"
-                text="Cancel"
-                disabled={!loaded || !hasDirty || saveBusy}
-                onClick={revertDrafts}
-              />
-            </>
-          }
-        />
+        <SettingsHeader title="Profile information" />
 
         <div className="card-padding">
           {!loaded ? (
@@ -452,6 +450,17 @@ export default function UserSettingsAccount() {
                   />
                 </div>
               </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {loaded ? (
+        <div className="card card--no-padding">
+          <SettingsHeader title="Display" />
+
+          <div className="card-padding">
+            <div className="account-page__basic">
               <div className="account-page__field">
                 <label htmlFor="account-theme" className="account-page__label text-b-m">
                   Theme
@@ -486,67 +495,91 @@ export default function UserSettingsAccount() {
                 </div>
               </div>
             </div>
-          )}
-        </div>
-      </div>
-
-      {loaded ? (
-        <div className="card account-page__data">
-          <div>
-            <h3 className="account-page__data-title text-h-s">Data</h3>
-            <p className="text-light text-b-m">
-              Download a CSV of habit daily selections and summation events.
-            </p>
           </div>
-
-          <Button
-            type="secondary"
-            icon="download"
-            text={downloadBusy ? 'Downloading…' : 'Download CSV'}
-            disabled={!routeUser || downloadBusy}
-            onClick={() => void handleDownloadData()}
-          />
         </div>
       ) : null}
 
       {loaded ? (
-        <div className="card account-page__danger">
-          <div>
-            <h3 className="account-page__danger-title text-h-s">Danger zone</h3>
+        <div className="card card--no-padding">
+          <SettingsHeader title="Export your habit data" />
+
+          <div className="card-padding">
+            <p className="text-light text-b-m">
+              Download a CSV of habit daily selections and summation events.
+            </p>
+            <Button
+              type="secondary"
+              icon="download"
+              text={downloadBusy ? 'Downloading…' : 'Download'}
+              disabled={!routeUser || downloadBusy}
+              onClick={() => void handleDownloadData()}
+            />
+          </div>
+        </div>
+      ) : null}
+
+      {loaded ? (
+        <div className="card card--no-padding">
+          <SettingsHeader title="Account" />
+
+          <div className="card-padding">
+            <div className="account-page__meta-rows">
+              <div className="account-page__meta-row">
+                <div className="account-page__meta-label text-b-m text-light">Member since</div>
+                <div className="account-page__meta-value text-b-m">
+                  {formatMemberSince(saved.createdAt)}
+                </div>
+              </div>
+              <div className="account-page__meta-row">
+                <div className="account-page__meta-label text-b-m text-light">Account type</div>
+                <div className="account-page__meta-value text-b-m">
+                  {formatAccountType(saved.entitlements)}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {loaded ? (
+        <div className="card card--no-padding account-page__danger">
+          <SettingsHeader title="Danger zone" titleClassName="text-error" />
+
+          <div className="card-padding account-page__danger-body">
             <p className="text-light text-b-m">
               Delete this user. This removes their config and all stored data. This action cannot be
               undone.
             </p>
-          </div>
 
-          <Button
-            type="secondary"
-            text={deleteBusy ? 'Deleting…' : 'Delete user'}
-            disabled={!routeUser || deleteBusy}
-            onClick={async () => {
-              if (!routeUser) return;
-              if (
-                !window.confirm(
-                  `Delete user "${routeUser}"? This removes the YAML config and all stored habit data. This cannot be undone.`,
-                )
-              ) {
-                return;
-              }
-              setDeleteBusy(true);
-              try {
-                await deleteUser(routeUser);
-                await logout().catch(() => {});
-                window.location.assign('/login');
-              } catch (e) {
-                showToast({
-                  type: 'error',
-                  message: e instanceof Error ? e.message : String(e),
-                });
-              } finally {
-                setDeleteBusy(false);
-              }
-            }}
-          />
+            <Button
+              type="secondary"
+              text={deleteBusy ? 'Deleting…' : 'Delete user'}
+              disabled={!routeUser || deleteBusy}
+              onClick={async () => {
+                if (!routeUser) return;
+                if (
+                  !window.confirm(
+                    `Delete user "${routeUser}"? This removes the YAML config and all stored habit data. This cannot be undone.`,
+                  )
+                ) {
+                  return;
+                }
+                setDeleteBusy(true);
+                try {
+                  await deleteUser(routeUser);
+                  await logout().catch(() => {});
+                  window.location.assign('/login');
+                } catch (e) {
+                  showToast({
+                    type: 'error',
+                    message: e instanceof Error ? e.message : String(e),
+                  });
+                } finally {
+                  setDeleteBusy(false);
+                }
+              }}
+            />
+          </div>
         </div>
       ) : null}
     </div>

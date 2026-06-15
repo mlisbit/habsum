@@ -7,40 +7,31 @@
   gap: functions.spacing(3);
 }
 
-.account-page__meta {
+.account-page__actions {
   display: flex;
-  flex-direction: column;
+  justify-content: flex-end;
   gap: functions.spacing(2);
-}
-
-.account-page__meta-heading {
-  margin-block: 0;
 }
 
 .account-page__meta-rows {
   display: flex;
   flex-direction: column;
-  gap: functions.spacing(2);
+  gap: functions.spacing(3);
 }
 
 .account-page__meta-row {
   display: flex;
-  flex-flow: row nowrap;
-  align-items: flex-start;
-  gap: functions.spacing(2);
+  flex-direction: column;
+  gap: functions.spacing(1);
   min-width: 0;
 }
 
 .account-page__meta-label {
-  flex: 1 1 0;
   min-width: 0;
 }
 
 .account-page__meta-value {
-  flex: 0 0 50%;
-  max-width: 50%;
   min-width: 0;
-  text-align: end;
   overflow-wrap: break-word;
 }
 
@@ -118,25 +109,9 @@
   box-shadow: var(--box-shadow-focus);
 }
 
-.account-page__data {
+.account-page__danger-body {
   display: flex;
   justify-content: space-between;
   gap: functions.spacing(2);
   align-items: center;
-}
-
-.account-page__data-title {
-  margin-top: 0;
-}
-
-.account-page__danger {
-  background: var(--background-warning);
-  display: flex;
-  justify-content: space-between;
-  gap: functions.spacing(2);
-  align-items: center;
-}
-
-.account-page__danger-title {
-  margin-top: 0;
 }

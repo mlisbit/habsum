@@ -25,7 +25,7 @@ html[data-theme='dark'] {
   --text-link: #89ac96;
 
   // ctas primary
-  --cta-base-background: #292b2f;
+  --cta-base-background: var(--accent-selected);
   --cta-base-text-color: #fff;
   --cta-base-background-danger: var(--accent-red-1);
 

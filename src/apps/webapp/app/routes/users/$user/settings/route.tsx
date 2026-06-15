@@ -1,6 +1,6 @@
 import { Link, Outlet, useLocation, useNavigate, useParams } from '@remix-run/react';
 import type { MetaFunction } from '@remix-run/node';
-import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { getUserSession, logout } from '~/api.client';
 import { useUser } from '~/context/user';
 import { ensureUserSessionForRoute } from '~/utils/user-session-guard';
@@ -24,7 +24,7 @@ function useWideSettingsLayout(): boolean {
 function activeSettingsSectionLabel(path: string): string | null {
   if (path.endsWith('/account')) return 'Account';
   if (path.endsWith('/security')) return 'Security';
-  if (path.endsWith('/config')) return 'Config';
+  if (path.endsWith('/config')) return 'Habits';
   if (path.endsWith('/developer')) return 'Developer';
   return null;
 }
@@ -40,6 +40,7 @@ export default function UserSettingsLayout() {
   const isWide = useWideSettingsLayout();
   const [navOpen, setNavOpen] = useState(false);
   const activeSection = useMemo(() => activeSettingsSectionLabel(path), [path]);
+  const mainRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     if (!user || userLoading) return;
@@ -75,6 +76,10 @@ export default function UserSettingsLayout() {
   useEffect(() => {
     if (!isWide) setNavOpen(false);
   }, [path, isWide]);
+
+  useEffect(() => {
+    mainRef.current?.focus({ preventScroll: true });
+  }, [path]);
 
   return (
     <div
@@ -140,7 +145,7 @@ export default function UserSettingsLayout() {
             }`}
             to={`${base}/config`}
           >
-            Config
+            Habits
           </Link>
           {isAdmin === true ? (
             <Link
@@ -166,7 +171,7 @@ export default function UserSettingsLayout() {
           <Footer className="settings__footer" />
         </div>
       </aside>
-      <main className="settings__main">
+      <main ref={mainRef} className="settings__main" tabIndex={-1}>
         <Outlet />
       </main>
       <div hidden={isWide} className="settings__footer-slot settings__footer-slot--page">

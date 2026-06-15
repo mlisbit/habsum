@@ -37,11 +37,11 @@
   align-items: center;
   gap: functions.spacing(1);
   padding: functions.spacing(2, 3);
-  border-bottom: 1px solid var(--border-color-faint);
+  border-bottom: 1px solid var(--background);
 }
 
 .modal__footer {
-  border-top: 1px solid var(--border-color-faint);
+  border-top: 1px solid var(--background);
 }
 
 .modal__header-title {

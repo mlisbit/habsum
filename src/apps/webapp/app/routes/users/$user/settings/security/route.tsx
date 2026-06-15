@@ -15,8 +15,9 @@ import { Button } from '@habsum/ui/components/Button';
 import { Hoverable } from '@habsum/ui/components/Hoverable';
 import { InfoText } from '@habsum/ui/components/InfoText';
 import { Input } from '@habsum/ui/components/Input';
-import { AlertModal, useModal } from '@habsum/ui/contexts/modal';
+import { useModal } from '@habsum/ui/contexts/modal';
 import { useToast } from '@habsum/ui/contexts/toast';
+import { UnsavedChangesModal } from '~/components/UnsavedChangesModal';
 import {
   securityServerErrorToFieldMap,
   type SecurityErrorMap,
@@ -68,7 +69,7 @@ function SaveFieldErrors({
 }) {
   if (!messages?.length) return null;
   return (
-    <InfoText variant="error" className={className} id={id} aria-live="polite">
+    <InfoText size="small" variant="error" className={className} id={id} aria-live="polite">
       {messages.join(' ')}
     </InfoText>
   );
@@ -229,11 +230,9 @@ export default function UserSettingsSecurity() {
         if (b.state === 'blocked') b.reset();
       },
       content: (
-        <AlertModal
-          title="Unsaved changes"
-          message="You have unsaved changes on this page. Leave now and they will be discarded."
-          onCancel={() => closeModalRef.current()}
-          onContinueWithoutSaving={() => {
+        <UnsavedChangesModal
+          onKeepEditing={() => closeModalRef.current()}
+          onDiscardChanges={() => {
             dismiss();
             revertDraftsRef.current();
             const b = blockerRef.current;
@@ -377,6 +376,7 @@ export default function UserSettingsSecurity() {
                 />
                 {newPasswordMatchFeedback === 'success' ? (
                   <InfoText
+                    size="small"
                     variant="success"
                     className="security-page__password-match-info"
                     id="security-password-match-hint"
@@ -386,6 +386,7 @@ export default function UserSettingsSecurity() {
                   </InfoText>
                 ) : newPasswordMatchFeedback === 'error' ? (
                   <InfoText
+                    size="small"
                     variant="error"
                     className="security-page__password-match-info"
                     id="security-password-match-hint"

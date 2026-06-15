@@ -296,7 +296,11 @@ function InviteUserModal({ onCreated, onClose }: InviteUserModalProps) {
           inputMode="email"
           onChange={setEmail}
         />
-        {error ? <InfoText variant="error">{error}</InfoText> : null}
+        {error ? (
+          <InfoText size="small" variant="error">
+            {error}
+          </InfoText>
+        ) : null}
       </ModalBody>
       <ModalFooter>
         <Button
@@ -357,7 +361,9 @@ function ResetPasswordModal({ targetUsername, onDone, onClose }: ManageUserModal
       <>
         <ModalHeader>Change password</ModalHeader>
         <ModalBody className="developer-page__add-user-modal">
-          <InfoText variant="error">{error}</InfoText>
+          <InfoText size="small" variant="error">
+            {error}
+          </InfoText>
         </ModalBody>
         <ModalFooter>
           <Button
@@ -453,7 +459,11 @@ function DeleteUserModal({ targetUsername, onDone, onClose }: ManageUserModalPro
         <p className="text-light text-b-m">
           This removes their YAML config and all stored habit data. This cannot be undone.
         </p>
-        {error ? <InfoText variant="error">{error}</InfoText> : null}
+        {error ? (
+          <InfoText size="small" variant="error">
+            {error}
+          </InfoText>
+        ) : null}
       </ModalBody>
       <ModalFooter>
         <Button

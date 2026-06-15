@@ -90,7 +90,7 @@ function LoginForm({
         <button type="submit" style={{ display: 'none' }} aria-hidden />
 
         {error ? (
-          <InfoText className="mt-1 mb-1" variant="error">
+          <InfoText size="small" className="mt-1 mb-1" variant="error">
             {error}
           </InfoText>
         ) : null}

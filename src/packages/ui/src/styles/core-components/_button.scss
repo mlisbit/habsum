@@ -2,8 +2,6 @@
 
 .button {
   font: inherit;
-  background: var(--cta-base-background);
-  color: var(--cta-base-text-color);
   border: none;
   border-radius: var(--border-radius-m);
   padding: functions.spacing(2, 3);
@@ -18,13 +16,11 @@
     background 0.12s ease;
 
   &:hover {
-    filter: brightness(1.05);
     text-decoration: none;
   }
 
   &:active {
     transform: translateY(1px);
-    filter: brightness(0.98);
   }
 
   &:focus-visible {
@@ -40,16 +36,29 @@
     filter: none;
   }
 
+  // stylelint-disable-next-line block-no-empty -- placeholder until muted styles are defined
+  &.button--muted {
+  }
+}
+
+.button--primary {
+  background: var(--cta-base-background);
+  color: var(--cta-base-text-color);
+
+  &:hover {
+    filter: brightness(1.05);
+  }
+
+  &:active {
+    filter: brightness(0.98);
+  }
+
   &.button--danger {
     background: var(--cta-base-background-danger);
 
     &:focus-visible {
       box-shadow: var(--box-shadow-alert);
     }
-  }
-
-  // stylelint-disable-next-line block-no-empty -- placeholder until muted styles are defined
-  &.button--muted {
   }
 }
 
@@ -118,6 +127,14 @@
   &:active {
     background: var(--background-disabled);
     filter: none;
+  }
+
+  &.button--danger {
+    color: var(--cta-base-background-danger);
+
+    &:focus-visible {
+      box-shadow: var(--box-shadow-alert);
+    }
   }
 }
 

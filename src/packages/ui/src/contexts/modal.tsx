@@ -114,8 +114,14 @@ export function AlertModal({
         <p className="text-b-m text-light">{message}</p>
       </ModalBody>
       <ModalFooter>
+        <Button
+          type="tertiary"
+          color="danger"
+          className="mr-1"
+          text={continueLabel}
+          onClick={onContinueWithoutSaving}
+        />
         <Button type="secondary" text={cancelLabel} onClick={onCancel} />
-        <Button type="primary" text={continueLabel} onClick={onContinueWithoutSaving} />
       </ModalFooter>
     </>
   );

@@ -26,7 +26,7 @@ function SaveFieldErrors({
 }) {
   if (!messages?.length) return null;
   return (
-    <InfoText variant="error" className={className} id={id} aria-live="polite">
+    <InfoText size="small" variant="error" className={className} id={id} aria-live="polite">
       {messages.join(' ')}
     </InfoText>
   );
@@ -144,7 +144,7 @@ export default function ResetPasswordRoute() {
 
           {tokenState === 'invalid' ? (
             <>
-              <InfoText className="mt-1 mb-1" variant="error">
+              <InfoText size="small" className="mt-1 mb-1" variant="error">
                 {invalidMessage}
               </InfoText>
               {!isInvite ? (
@@ -224,6 +224,7 @@ export default function ResetPasswordRoute() {
                     />
                     {newPasswordMatchFeedback === 'success' ? (
                       <InfoText
+                        size="small"
                         variant="success"
                         className="reset-password-page__password-match-info"
                       >
@@ -231,6 +232,7 @@ export default function ResetPasswordRoute() {
                       </InfoText>
                     ) : newPasswordMatchFeedback === 'error' ? (
                       <InfoText
+                        size="small"
                         variant="error"
                         className="reset-password-page__password-match-info"
                       >

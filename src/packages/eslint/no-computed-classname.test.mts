@@ -29,9 +29,14 @@ describe('no-computed-classname', () => {
         `<div className={\`\${selected ? 'class-a' : 'class-b'}\`} />`,
         `<div className={\`\${className}\`} />`,
         `<div className={\`\${styles.active}\`} />`,
+        `<div className={\`heatmap \${className}\`} />`,
+        `<div className={\`\${className} heatmap\`} />`,
+        `<div className={\`heatmap \${styles.extra} text-b-m\`} />`,
         `<div className={['input__input', inputClassName].filter(Boolean).join(' ')} />`,
         `<div className={['foo', bar].filter(Boolean).join(' ')} />`,
         `<div className={['toast__message', isError ? 'text-error' : null].filter(Boolean).join(' ')} />`,
+        `const classes = ['toast__message', isError ? 'text-error' : null].filter(Boolean).join(' '); <div className={classes} />`,
+        `const rootClassName = className == null ? 'heatmap' : \`heatmap \${className}\`; <div className={rootClassName} />`,
         `<Input inputClassName="input__input" />`,
         `<Input inputClassName={classBuilder({ 'text-error': isError }, 'text-b-m')} />`,
         `<Input titleClassName={\`title\${active ? ' title--active' : ''}\`} />`,
@@ -43,6 +48,14 @@ describe('no-computed-classname', () => {
         },
         {
           code: `<div className={\`toast toast--\${active.type}\`} />`,
+          errors: [{ messageId: 'template' }],
+        },
+        {
+          code: `<div className={\`heatmap--\${className}\`} />`,
+          errors: [{ messageId: 'template' }],
+        },
+        {
+          code: `<div className={\`heatmap \${className}--dense\`} />`,
           errors: [{ messageId: 'template' }],
         },
         {
@@ -64,6 +77,20 @@ describe('no-computed-classname', () => {
         {
           code: `<Input inputClassName={'pickle--' + suffix} />`,
           errors: [{ messageId: 'concat' }],
+        },
+        {
+          code: `
+            const classes = [
+              'info-text',
+              \`info-text--\${variant}\`,
+              'text-b-s',
+              TEXT_CLASS_BY_VARIANT[variant],
+              className,
+            ].filter(Boolean).join(' ');
+
+            <p className={classes} />;
+          `,
+          errors: [{ messageId: 'template' }],
         },
       ],
     });

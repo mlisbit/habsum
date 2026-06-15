@@ -81,6 +81,7 @@ export function Input({
   revertAriaLabel,
   allowNegative = false,
   placeholder,
+  autoFocus = false,
   autoComplete,
   inputMode,
   pattern,
@@ -114,8 +115,9 @@ export function Input({
   const showDismissButton = alwaysDismissable || (dismissable && canSubmit);
 
   useLayoutEffect(() => {
+    if (!autoFocus) return;
     queueMicrotask(() => inputRef.current?.focus());
-  }, []);
+  }, [autoFocus]);
 
   useEffect(
     () => () => {

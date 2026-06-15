@@ -84,13 +84,17 @@ export default function ForgotPasswordRoute() {
             <button type="submit" style={{ display: 'none' }} aria-hidden />
 
             {error ? (
-              <InfoText className="mt-1 mb-1" variant="error">
+              <InfoText size="small" className="mt-1 mb-1" variant="error">
                 {error}
               </InfoText>
             ) : null}
 
             {successMessage ? (
-              <InfoText className="mt-1 mb-1" variant={isRateLimited ? 'info' : 'success'}>
+              <InfoText
+                size="small"
+                className="mt-1 mb-1"
+                variant={isRateLimited ? 'info' : 'success'}
+              >
                 {successMessage}
                 {retryAfterSeconds > 0 ? ` Try again in ${retryAfterSeconds}s.` : null}
               </InfoText>

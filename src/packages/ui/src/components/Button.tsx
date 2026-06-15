@@ -25,6 +25,7 @@ export function Button({
   const isIconOnly = icon != null && !text;
   const classes = [
     'button',
+    visual === 'primary' && 'button--primary',
     visual === 'secondary' && 'button--secondary',
     visual === 'tertiary' && 'button--tertiary',
     color === 'danger' && 'button--danger',

@@ -1,16 +1,7 @@
 @use 'functions';
 
-// Block: settings-header
 .settings-header {
-  border-bottom: 1px solid var(--border-color-faint);
-}
-
-.settings-header--sticky {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  min-height: 57px;
-  background-color: var(--background-secondary);
+  border-bottom: 1px solid var(--background);
 }
 
 .settings-header__row {

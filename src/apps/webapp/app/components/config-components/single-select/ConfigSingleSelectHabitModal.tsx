@@ -120,7 +120,7 @@ export function ConfigSingleSelectHabitModal(props: ConfigSingleSelectHabitModal
               </div>
             ) : null}
             {removedOptionsWithData.length > 0 ? (
-              <InfoText variant="warning" className="config-habit-modal__error">
+              <InfoText size="small" variant="warning" className="config-habit-modal__error">
                 Your existing entries that use {removedOptionsWithDataLabel} value will also be
                 removed.
               </InfoText>
@@ -214,7 +214,7 @@ export function ConfigSingleSelectHabitModal(props: ConfigSingleSelectHabitModal
         </CollapsibleCard>
 
         {error != null ? (
-          <InfoText variant="error" className="config-habit-modal__error">
+          <InfoText size="small" variant="error" className="config-habit-modal__error">
             {error}
           </InfoText>
         ) : null}

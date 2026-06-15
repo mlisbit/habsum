@@ -1,10 +1,13 @@
 import type { HTMLAttributes, ReactNode } from 'react';
 import { Icon, type IconName } from './Icon';
+import { classBuilder } from '../utils/class-builder';
 
 type InfoTextVariant = 'info' | 'error' | 'success' | 'warning';
+type InfoTextSize = 'small' | 'medium';
 
 type InfoTextProps = {
   variant: InfoTextVariant;
+  size?: InfoTextSize;
   children: ReactNode;
 } & HTMLAttributes<HTMLParagraphElement>;
 
@@ -22,16 +25,23 @@ const TEXT_CLASS_BY_VARIANT = {
   warning: 'text-warning',
 } as const satisfies Record<InfoTextVariant, string>;
 
-export function InfoText({ variant, children, className, ...rest }: InfoTextProps) {
-  const classes = [
-    'info-text',
-    `info-text--${variant}`,
-    'text-b-s',
-    TEXT_CLASS_BY_VARIANT[variant],
-    className,
-  ]
-    .filter(Boolean)
-    .join(' ');
+const ROOT_CLASS_BY_VARIANT = {
+  info: 'info-text--info',
+  error: 'info-text--error',
+  success: 'info-text--success',
+  warning: 'info-text--warning',
+} as const satisfies Record<InfoTextVariant, string>;
+
+const TEXT_CLASS_BY_SIZE = {
+  small: 'text-b-s',
+  medium: 'text-b-m',
+} as const satisfies Record<InfoTextSize, string>;
+
+export function InfoText({ variant, size = 'small', children, className, ...rest }: InfoTextProps) {
+  const classes = classBuilder(
+    { [className ?? '']: Boolean(className) },
+    `info-text ${ROOT_CLASS_BY_VARIANT[variant]} ${TEXT_CLASS_BY_SIZE[size]} ${TEXT_CLASS_BY_VARIANT[variant]}`,
+  );
 
   return (
     <p className={classes} {...rest}>

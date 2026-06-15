@@ -202,7 +202,11 @@ export default function HabitsPage() {
         progress={dayProgress}
       />
 
-      {error ? <InfoText variant="error">{error}</InfoText> : null}
+      {error ? (
+        <InfoText size="small" variant="error">
+          {error}
+        </InfoText>
+      ) : null}
 
       {!state ? (
         <p className="text-light text-b-m" aria-busy>

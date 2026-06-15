@@ -10,6 +10,7 @@ export type SettingsHeaderProps = {
   /** Primary actions (e.g. Save / Cancel) aligned to the right of the title row. */
   actions?: ReactNode;
   titleAs?: 'h2' | 'h3';
+  titleClassName?: string;
   className?: string;
 };
 
@@ -19,26 +20,30 @@ export function SettingsHeader({
   error,
   actions,
   titleAs,
+  titleClassName,
   className,
 }: SettingsHeaderProps) {
   const headingLevel = titleAs ?? 'h2';
   const Heading = headingLevel as ElementType;
-  const titleClassName = 'settings-header__title text-h-s';
+  const resolvedTitleClassName = ['settings-header__title text-h-s', titleClassName]
+    .filter(Boolean)
+    .join(' ');
 
   return (
-    <header
-      className={['settings-header', 'card-padding', 'settings-header--sticky', className]
-        .filter(Boolean)
-        .join(' ')}
-    >
+    <header className={['settings-header', 'card-padding', className].filter(Boolean).join(' ')}>
       <div className="settings-header__row">
         <div className="settings-header__text">
-          <Heading className={titleClassName}>{title}</Heading>
+          <Heading className={resolvedTitleClassName}>{title}</Heading>
           {subtitle != null ? (
             <div className="settings-header__subtitle text-light text-b-m">{subtitle}</div>
           ) : null}
           {error != null && error !== '' ? (
-            <InfoText variant="error" className="settings-header__error" id="settings-header-error">
+            <InfoText
+              size="small"
+              variant="error"
+              className="settings-header__error"
+              id="settings-header-error"
+            >
               {error}
             </InfoText>
           ) : null}

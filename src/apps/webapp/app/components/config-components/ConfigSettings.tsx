@@ -5,8 +5,9 @@ import { getUserConfig, putUserConfig, type UserConfigInsights } from '~/api.cli
 import { ConfigGuiEditor } from './ConfigGuiEditor';
 import { ConfigYamlEditor } from './ConfigYamlEditor';
 import { SettingsHeader } from '~/components/SettingsHeader';
+import { UnsavedChangesModal } from '~/components/UnsavedChangesModal';
 import { Button } from '@habsum/ui/components/Button';
-import { AlertModal, useModal } from '@habsum/ui/contexts/modal';
+import { useModal } from '@habsum/ui/contexts/modal';
 import { useToast } from '@habsum/ui/contexts/toast';
 import {
   buildConfigDeletions,
@@ -95,11 +96,9 @@ export function ConfigSettings({ user }: ConfigSettingsProps) {
         if (b.state === 'blocked') b.reset();
       },
       content: (
-        <AlertModal
-          title="Unsaved changes"
-          message="You have unsaved changes on this page. Leave now and they will be discarded."
-          onCancel={() => closeModalRef.current()}
-          onContinueWithoutSaving={() => {
+        <UnsavedChangesModal
+          onKeepEditing={() => closeModalRef.current()}
+          onDiscardChanges={() => {
             dismiss();
             const b = blockerRef.current;
             if (b.state === 'blocked') b.proceed();

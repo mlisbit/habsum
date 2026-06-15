@@ -263,7 +263,11 @@ export default function HabitDetailRoute() {
         </div>
 
         <div className="habit-history__widget">
-          {habitError ? <InfoText variant="error">{habitError}</InfoText> : null}
+          {habitError ? (
+            <InfoText size="small" variant="error">
+              {habitError}
+            </InfoText>
+          ) : null}
           {!habitError && habitIds.length === 0 ? (
             <p className="text-light text-b-m">Choose a habit to view details.</p>
           ) : null}

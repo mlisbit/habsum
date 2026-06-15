@@ -236,7 +236,7 @@ export function ConfigSummationHabitModal(props: ConfigHabitModalProps) {
         </div>
 
         {error != null ? (
-          <InfoText variant="error" className="config-habit-modal__error">
+          <InfoText size="small" variant="error" className="config-habit-modal__error">
             {error}
           </InfoText>
         ) : null}

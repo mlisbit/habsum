@@ -12,6 +12,10 @@
   align-items: center;
 }
 
+.justify-space-between {
+  justify-content: space-between;
+}
+
 .card-padding {
   padding: functions.spacing(3);
 }

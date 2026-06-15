@@ -16,6 +16,7 @@ import type {
   BinaryExpression,
   CallExpression,
   Expression,
+  Identifier,
   MemberExpression,
   TemplateLiteral,
 } from 'estree';
@@ -81,6 +82,7 @@ function isAllowedExpression(node: Expression | null | undefined): boolean {
 type TemplateInterpContext = {
   passThrough?: boolean;
   hasLeadingQuasi?: boolean;
+  isWholeClassChunk?: boolean;
 };
 
 /** Static string appended after a template prefix must be a full class token. */
@@ -107,7 +109,11 @@ function isAllowedTemplateInterpolation(
   node: Expression,
   context: TemplateInterpContext = {},
 ): boolean {
-  const { passThrough = false, hasLeadingQuasi = false } = context;
+  const {
+    passThrough = false,
+    hasLeadingQuasi = false,
+    isWholeClassChunk = false,
+  } = context;
   node = unwrapExpression(node);
 
   switch (node.type) {
@@ -118,7 +124,7 @@ function isAllowedTemplateInterpolation(
       );
     case 'Identifier':
     case 'MemberExpression':
-      return passThrough;
+      return passThrough || isWholeClassChunk;
     case 'ConditionalExpression':
       return (
         isAllowedTemplateConditionalBranch(node.consequent, context) &&
@@ -155,10 +161,17 @@ function isAllowedTemplateLiteral(node: TemplateLiteral): boolean {
 
   const passThrough = isPassThroughTemplate(node);
   return node.expressions.every((expr, index) => {
-    const hasLeadingQuasi = (node.quasis[index]?.value.raw ?? '').trim().length > 0;
+    const leadingQuasi = node.quasis[index]?.value.raw ?? '';
+    const trailingQuasi = node.quasis[index + 1]?.value.raw ?? '';
+    const hasLeadingQuasi = leadingQuasi.trim().length > 0;
+    const isWholeClassChunk =
+      (leadingQuasi === '' || /\s$/.test(leadingQuasi)) &&
+      (trailingQuasi === '' || /^\s/.test(trailingQuasi));
+
     return isAllowedTemplateInterpolation(expr as Expression, {
       passThrough,
       hasLeadingQuasi: passThrough ? false : hasLeadingQuasi,
+      isWholeClassChunk: passThrough ? false : isWholeClassChunk,
     });
   });
 }
@@ -324,6 +337,59 @@ function findDisallowedExpression(node: Expression): Expression | null {
   return node;
 }
 
+function getConstVariableInit(
+  context: Rule.RuleContext,
+  node: Identifier,
+): Expression | null {
+  let scope: ReturnType<typeof context.sourceCode.getScope> | null =
+    context.sourceCode.getScope(node);
+
+  while (scope) {
+    const variable = scope.variables.find((item) => item.name === node.name);
+    if (!variable) {
+      scope = scope.upper;
+      continue;
+    }
+
+    const [definition] = variable.defs;
+    if (!definition || variable.defs.length !== 1) return null;
+    if (definition.type !== 'Variable') return null;
+
+    const declaration = definition.parent;
+    if (!declaration || declaration.type !== 'VariableDeclaration') return null;
+    if (declaration.kind !== 'const') return null;
+
+    const declarator = definition.node;
+    if (
+      declarator.type !== 'VariableDeclarator' ||
+      declarator.id.type !== 'Identifier' ||
+      declarator.id.name !== node.name ||
+      !declarator.init
+    ) {
+      return null;
+    }
+
+    return declarator.init as Expression;
+  }
+
+  return null;
+}
+
+function findDisallowedClassExpression(
+  context: Rule.RuleContext,
+  node: Expression,
+): Expression | null {
+  const unwrapped = unwrapExpression(node);
+
+  if (unwrapped.type === 'Identifier') {
+    const init = getConstVariableInit(context, unwrapped);
+    if (!init) return null;
+    return findDisallowedExpression(init);
+  }
+
+  return findDisallowedExpression(unwrapped);
+}
+
 const rule: Rule.RuleModule = {
   meta: {
     type: 'problem',
@@ -355,7 +421,7 @@ const rule: Rule.RuleModule = {
         const expr = node.value.expression;
         if (expr.type === 'JSXEmptyExpression') return;
 
-        const disallowed = findDisallowedExpression(expr);
+        const disallowed = findDisallowedClassExpression(context, expr);
         if (!disallowed) return;
 
         context.report({
