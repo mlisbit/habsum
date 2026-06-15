@@ -1,11 +1,11 @@
 @use 'functions';
 
-.habit-widget-menu-modal__body {
+.habit-menu-modal__body {
   display: flex;
   flex-direction: column;
   gap: functions.spacing(1);
 }
 
-.habit-widget-menu-modal__action {
+.habit-menu-modal__action {
   width: 100%;
 }

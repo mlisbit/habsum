@@ -1,12 +1,13 @@
+// exclusive-bem-block: habit
 import { useCallback, useState } from 'react';
 import type { Habit } from '@habsum/types/common/habit';
 import type { Day } from '@habsum/types/common/day';
 import type { HabitPatch } from '~/api.client';
-import HabitHeaderAndActionRenderer from '~/components/widgets/HabitHeaderAndActionRenderer';
-import HabitModuleRenderer from '~/components/widgets/HabitModuleRenderer';
+import HabitHeaderAndActionRenderer from '~/components/habit-renderer/_private/HabitHeaderAndActionRenderer';
+import HabitWidgetRenderer from '~/components/habit-renderer/_private/HabitWidgetRenderer';
 import { useToast } from '@habsum/ui/contexts/toast';
 
-type HabitWidgetProps = {
+type HabitRendererProps = {
   user: string;
   /** Selected calendar day for this widget. */
   viewDate: Day;
@@ -34,7 +35,7 @@ function usePendingOp({ onError }: { onError: (message: string) => void }) {
   return { pending, runOp };
 }
 
-export default function HabitWidget(props: HabitWidgetProps) {
+export default function HabitRenderer(props: HabitRendererProps) {
   const { user, habit, viewDate, onUpdate } = props;
   const { showToast } = useToast();
   const showUpdateError = useCallback(
@@ -50,14 +51,14 @@ export default function HabitWidget(props: HabitWidgetProps) {
   );
 
   return (
-    <div className="card habit-widget">
+    <div className="card habit">
       <HabitHeaderAndActionRenderer
         user={user}
         habit={habit}
         pending={pending}
         onUpdate={updateHabit}
       />
-      <HabitModuleRenderer
+      <HabitWidgetRenderer
         habit={habit}
         viewDate={viewDate}
         onDeleteSummationEvent={(eventId) =>

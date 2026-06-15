@@ -1,0 +1,26 @@
+@use 'functions';
+
+.habit-heading {
+  display: flex;
+  align-items: start;
+  gap: functions.spacing(1);
+}
+
+.habit-heading__left {
+  display: flex;
+  gap: functions.spacing(1);
+  align-items: center;
+}
+
+.habit-heading__menu {
+  flex-shrink: 0;
+}
+
+.habit-heading__actions {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.habit-heading__goal-hit-check {
+  flex-shrink: 0;
+}

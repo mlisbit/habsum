@@ -1,6 +1,6 @@
 // exclusive-bem-block: config-habit-type-picker
 import type { ReactNode } from 'react';
-import HabitWidget from '~/components/widgets/HabitWidget';
+import HabitRenderer from '~/components/habit-renderer/HabitRenderer';
 import { ModalBody, ModalHeader } from '@habsum/ui/contexts/modal';
 import {
   PREVIEW_SINGLE_SELECT_HABIT,
@@ -19,7 +19,7 @@ type ConfigHabitTypePickerModalProps = {
 
 function SummationTypePreview() {
   return (
-    <HabitWidget
+    <HabitRenderer
       user={PREVIEW_USER}
       habit={PREVIEW_SUMMATION_HABIT}
       viewDate={PREVIEW_VIEW_DATE}
@@ -30,7 +30,7 @@ function SummationTypePreview() {
 
 function SingleSelectTypePreview() {
   return (
-    <HabitWidget
+    <HabitRenderer
       user={PREVIEW_USER}
       habit={PREVIEW_SINGLE_SELECT_HABIT}
       viewDate={PREVIEW_VIEW_DATE}
@@ -41,7 +41,7 @@ function SingleSelectTypePreview() {
 
 function CheckboxTypePreview() {
   return (
-    <HabitWidget
+    <HabitRenderer
       user={PREVIEW_USER}
       habit={PREVIEW_CHECKBOX_HABIT}
       viewDate={PREVIEW_VIEW_DATE}

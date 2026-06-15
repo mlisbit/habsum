@@ -1,3 +1,4 @@
+// exclusive-bem-block: habit-heading
 import type { ReactNode } from 'react';
 import { Link } from '@remix-run/react';
 import { Button } from '@habsum/ui/components/Button';
@@ -5,7 +6,7 @@ import { Icon } from '@habsum/ui/components/Icon';
 import { habitDetailUrl } from '~/utils/habit-id';
 import { classBuilder } from '~/utils/class-builder';
 
-type HabitWidgetHeadingProps = {
+type HabitHeadingRenderProps = {
   user: string;
   habitName: string;
   className?: string;
@@ -17,7 +18,7 @@ type HabitWidgetHeadingProps = {
   actions?: ReactNode;
 };
 
-export function HabitWidgetHeading({
+export function HabitHeadingRender({
   user,
   habitName,
   className,
@@ -26,7 +27,7 @@ export function HabitWidgetHeading({
   menuAriaLabel,
   onMenuClick,
   actions,
-}: HabitWidgetHeadingProps) {
+}: HabitHeadingRenderProps) {
   const to = habitDetailUrl(
     user,
     habitName,
@@ -34,12 +35,10 @@ export function HabitWidgetHeading({
   );
 
   return (
-    <div
-      className={classBuilder({}, ['habit-widget__heading', className].filter(Boolean).join(' '))}
-    >
-      <div className="habit-widget__heading-left">
+    <div className={classBuilder({}, ['habit-heading', className].filter(Boolean).join(' '))}>
+      <div className="habit-heading__left">
         {goalHit ? (
-          <Icon name="check" size="medium" className="habit-widget__goal-hit-check text-success" />
+          <Icon name="check" size="medium" className="habit-heading__goal-hit-check text-success" />
         ) : null}
         <Link className="text-color-link text-h-m" to={to}>
           {habitName}
@@ -53,11 +52,11 @@ export function HabitWidgetHeading({
           disabled={pending}
           onClick={onMenuClick}
           aria-label={menuAriaLabel}
-          className="habit-widget__menu"
+          className="habit-heading__menu"
         />
       </div>
 
-      {actions ? <div className="habit-widget__heading-actions">{actions}</div> : null}
+      {actions ? <div className="habit-heading__actions">{actions}</div> : null}
     </div>
   );
 }

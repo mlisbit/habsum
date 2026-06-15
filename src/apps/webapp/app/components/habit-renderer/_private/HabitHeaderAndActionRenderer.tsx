@@ -1,9 +1,9 @@
 import { useCallback } from 'react';
 import type { Habit, HabitRowSingleSelect, HabitRowSummation } from '@habsum/types/common/habit';
 import type { HabitPatch } from '~/api.client';
-import { CountControl } from './CountControl';
-import { HabitWidgetHeading } from './HabitWidgetHeading';
-import { HabitWidgetMenuModal } from '~/components/widgets/modules/HabitWidgetMenuModal';
+import { CountControl } from './heading-renderer-helpers/CountControl';
+import { HabitHeadingRender } from './heading-renderer-helpers/HabitHeadingRender';
+import { HabitMenuModal } from './heading-renderer-helpers/HabitMenuModal';
 import { TogglePill } from '@habsum/ui/components/Pill';
 import { TernaryCheckbox, type TernaryCheckboxValue } from '@habsum/ui/components/TernaryCheckbox';
 import { useModal } from '@habsum/ui/contexts/modal';
@@ -45,7 +45,7 @@ function useHabitResetMenu({
   return useCallback(() => {
     present({
       content: (
-        <HabitWidgetMenuModal
+        <HabitMenuModal
           user={user}
           habitName={habit.name}
           pending={pending}
@@ -140,7 +140,7 @@ function SingleSelectHabitHeader({
   onUpdate: (patch: HabitPatch) => Promise<void>;
 }) {
   return (
-    <HabitWidgetHeading
+    <HabitHeadingRender
       user={user}
       habitName={habit.name}
       pending={pending}
@@ -167,7 +167,7 @@ function SummationHabitHeader({
   onUpdate: (patch: HabitPatch) => Promise<void>;
 }) {
   return (
-    <HabitWidgetHeading
+    <HabitHeadingRender
       user={user}
       habitName={habit.name}
       pending={pending}

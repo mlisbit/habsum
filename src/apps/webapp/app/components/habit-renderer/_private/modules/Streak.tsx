@@ -1,4 +1,4 @@
-// exclusive-bem-block: streak
+// exclusive-bem-block: habit-module-streak
 import { useMemo } from 'react';
 import type { Day } from '@habsum/types/common/day';
 import type { StreakDatum, StreakGraphData } from '@habsum/types/common/streak';
@@ -22,17 +22,17 @@ function streakFillValue(datum: StreakDatum): number {
 }
 
 const STREAK_FILL_COLOR_BY_VALUE = [
-  'var(--streak-fill-0)',
-  'var(--streak-fill-1)',
-  'var(--streak-fill-2)',
-  'var(--streak-fill-3)',
-  'var(--streak-fill-4)',
-  'var(--streak-fill-5)',
-  'var(--streak-fill-6)',
-  'var(--streak-fill-7)',
-  'var(--streak-fill-8)',
-  'var(--streak-fill-9)',
-  'var(--streak-fill-10)',
+  'var(--heatmap-fill-0)',
+  'var(--heatmap-fill-1)',
+  'var(--heatmap-fill-2)',
+  'var(--heatmap-fill-3)',
+  'var(--heatmap-fill-4)',
+  'var(--heatmap-fill-5)',
+  'var(--heatmap-fill-6)',
+  'var(--heatmap-fill-7)',
+  'var(--heatmap-fill-8)',
+  'var(--heatmap-fill-9)',
+  'var(--heatmap-fill-10)',
 ] as const;
 
 function streakHeatmapEntry(dateKey: Day, datum: StreakDatum): HeatmapEntry {
@@ -72,5 +72,5 @@ export function Streak({ streak }: StreakProps) {
 
   if (entries.length === 0) return null;
 
-  return <Heatmap entries={heatmapEntries} className="streak__heatmap" />;
+  return <Heatmap entries={heatmapEntries} className="habit-module-streak__heatmap" />;
 }

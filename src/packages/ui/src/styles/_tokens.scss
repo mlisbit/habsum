@@ -49,17 +49,17 @@ html[data-theme='dark'] {
   --accent-orange-1: #fb8e27;
   --accent-graph-line: #ababab;
   --graph-previous-day-color: var(--accent-selected);
-  --streak-fill-0: var(--background-input);
-  --streak-fill-1: var(--accent-red-1);
-  --streak-fill-2: color-mix(in srgb, var(--background-tertiary) 80%, var(--accent-selected) 20%);
-  --streak-fill-3: color-mix(in srgb, var(--background-tertiary) 70%, var(--accent-selected) 30%);
-  --streak-fill-4: color-mix(in srgb, var(--background-tertiary) 60%, var(--accent-selected) 40%);
-  --streak-fill-5: color-mix(in srgb, var(--background-tertiary) 50%, var(--accent-selected) 50%);
-  --streak-fill-6: color-mix(in srgb, var(--background-tertiary) 40%, var(--accent-selected) 60%);
-  --streak-fill-7: color-mix(in srgb, var(--background-tertiary) 30%, var(--accent-selected) 70%);
-  --streak-fill-8: color-mix(in srgb, var(--background-tertiary) 20%, var(--accent-selected) 80%);
-  --streak-fill-9: color-mix(in srgb, var(--background-tertiary) 10%, var(--accent-selected) 90%);
-  --streak-fill-10: var(--accent-selected);
+  --heatmap-fill-0: var(--background-input);
+  --heatmap-fill-1: var(--accent-red-1);
+  --heatmap-fill-2: color-mix(in srgb, var(--background-tertiary) 80%, var(--accent-selected) 20%);
+  --heatmap-fill-3: color-mix(in srgb, var(--background-tertiary) 70%, var(--accent-selected) 30%);
+  --heatmap-fill-4: color-mix(in srgb, var(--background-tertiary) 60%, var(--accent-selected) 40%);
+  --heatmap-fill-5: color-mix(in srgb, var(--background-tertiary) 50%, var(--accent-selected) 50%);
+  --heatmap-fill-6: color-mix(in srgb, var(--background-tertiary) 40%, var(--accent-selected) 60%);
+  --heatmap-fill-7: color-mix(in srgb, var(--background-tertiary) 30%, var(--accent-selected) 70%);
+  --heatmap-fill-8: color-mix(in srgb, var(--background-tertiary) 20%, var(--accent-selected) 80%);
+  --heatmap-fill-9: color-mix(in srgb, var(--background-tertiary) 10%, var(--accent-selected) 90%);
+  --heatmap-fill-10: var(--accent-selected);
 
   // other
   --elevation-shadow: 0 1px 2px rgb(0 0 0 / 12%), 0 2px 8px rgb(0 0 0 / 16%);
@@ -108,17 +108,17 @@ html[data-theme='light'] {
   --accent-orange-1: #e07b1a;
   --accent-graph-line: #8b919a;
   --graph-previous-day-color: var(--accent-selected);
-  --streak-fill-0: var(--background-tertiary);
-  --streak-fill-1: color-mix(in srgb, var(--background-tertiary) 90%, var(--accent-selected) 10%);
-  --streak-fill-2: color-mix(in srgb, var(--background-tertiary) 80%, var(--accent-selected) 20%);
-  --streak-fill-3: color-mix(in srgb, var(--background-tertiary) 70%, var(--accent-selected) 30%);
-  --streak-fill-4: color-mix(in srgb, var(--background-tertiary) 60%, var(--accent-selected) 40%);
-  --streak-fill-5: color-mix(in srgb, var(--background-tertiary) 50%, var(--accent-selected) 50%);
-  --streak-fill-6: color-mix(in srgb, var(--background-tertiary) 40%, var(--accent-selected) 60%);
-  --streak-fill-7: color-mix(in srgb, var(--background-tertiary) 30%, var(--accent-selected) 70%);
-  --streak-fill-8: color-mix(in srgb, var(--background-tertiary) 20%, var(--accent-selected) 80%);
-  --streak-fill-9: color-mix(in srgb, var(--background-tertiary) 10%, var(--accent-selected) 90%);
-  --streak-fill-10: var(--accent-selected);
+  --heatmap-fill-0: var(--background-tertiary);
+  --heatmap-fill-1: color-mix(in srgb, var(--background-tertiary) 90%, var(--accent-selected) 10%);
+  --heatmap-fill-2: color-mix(in srgb, var(--background-tertiary) 80%, var(--accent-selected) 20%);
+  --heatmap-fill-3: color-mix(in srgb, var(--background-tertiary) 70%, var(--accent-selected) 30%);
+  --heatmap-fill-4: color-mix(in srgb, var(--background-tertiary) 60%, var(--accent-selected) 40%);
+  --heatmap-fill-5: color-mix(in srgb, var(--background-tertiary) 50%, var(--accent-selected) 50%);
+  --heatmap-fill-6: color-mix(in srgb, var(--background-tertiary) 40%, var(--accent-selected) 60%);
+  --heatmap-fill-7: color-mix(in srgb, var(--background-tertiary) 30%, var(--accent-selected) 70%);
+  --heatmap-fill-8: color-mix(in srgb, var(--background-tertiary) 20%, var(--accent-selected) 80%);
+  --heatmap-fill-9: color-mix(in srgb, var(--background-tertiary) 10%, var(--accent-selected) 90%);
+  --heatmap-fill-10: var(--accent-selected);
 
   // other
   --elevation-shadow: 0 1px 2px rgb(0 0 0 / 4%), 0 2px 8px rgb(0 0 0 / 6%);

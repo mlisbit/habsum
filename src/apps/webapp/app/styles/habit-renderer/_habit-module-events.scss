@@ -1,7 +1,7 @@
 @use 'functions';
 
 /* Compact panel for the summation event detail widget. */
-.events {
+.habit-module-events {
   margin-top: functions.spacing(3);
   padding: functions.spacing(2);
   border-radius: var(--border-radius-m);
@@ -9,23 +9,23 @@
   background: var(--background-tertiary);
 }
 
-.events__meta {
+.habit-module-events__meta {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.events__summary {
+.habit-module-events__summary {
   display: inline-flex;
   align-items: center;
   gap: functions.spacing(1);
 }
 
-.events__empty {
+.habit-module-events__empty {
   margin: 0;
 }
 
-.events__modal-body {
+.habit-module-events__modal-body {
   display: flex;
   flex-direction: column;
   gap: functions.spacing(2);
@@ -33,7 +33,7 @@
   overflow-y: auto;
 }
 
-.events__list {
+.habit-module-events__list {
   display: grid;
   gap: functions.spacing(1);
   padding: 0;
@@ -41,7 +41,7 @@
   list-style: none;
 }
 
-.events__event {
+.habit-module-events__event {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -51,7 +51,7 @@
   border-top: 1px solid var(--border-color-faint);
 }
 
-.events__event-actions {
+.habit-module-events__event-actions {
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
@@ -59,7 +59,7 @@
   flex-shrink: 0;
 }
 
-.events__datetime {
+.habit-module-events__datetime {
   display: inline-flex;
   align-items: baseline;
   justify-content: flex-end;

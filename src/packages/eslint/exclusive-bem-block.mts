@@ -109,13 +109,14 @@ function blockUsagePatterns(block: string): string[] {
   const esc = block.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const quoteClass = '["\'`]';
   const notQuoteClass = '[^"\'`]';
+  const notBraceOrQuoteClass = '[^}"\'`]';
   return [
-    `${esc}(__|--)`,
-    `(?<![\\w$])\\.${esc}\\b`,
+    `(?<![\\w-])${esc}(__|--)`,
+    `(?<![\\w$-])\\.${esc}(?![\\w-])`,
     // Bare block as a class token (not prose like `'streak options must…'`).
     `(?:['"])${esc}(?:['"])`,
-    `(?:className|class)\\s*=\\s*${quoteClass}${notQuoteClass}\\b${esc}\\b`,
-    `(?:className|class)\\s*=\\s*\\{[^}]*${quoteClass}${notQuoteClass}\\b${esc}\\b`,
+    `(?:className|class)\\s*=\\s*${quoteClass}${notQuoteClass}*(?<![\\w-])${esc}(?![\\w-])${notQuoteClass}*${quoteClass}`,
+    `(?:className|class)\\s*=\\s*\\{(?:${notBraceOrQuoteClass}*${quoteClass}${notQuoteClass}*${quoteClass})*${notBraceOrQuoteClass}*${quoteClass}${notQuoteClass}*(?<![\\w-])${esc}(?![\\w-])${notQuoteClass}*${quoteClass}`,
   ];
 }
 

@@ -5,7 +5,7 @@ import { dayFromString } from '@habsum/types/common/day';
 import { getHabits, logout, patchHabit, type Habit } from '~/api.client';
 import { Footer } from '~/components/Footer';
 import { TopNav } from '~/components/TopNav';
-import HabitWidget from '~/components/widgets/HabitWidget';
+import HabitRenderer from '~/components/habit-renderer/HabitRenderer';
 import { InfoText } from '@habsum/ui/components/InfoText';
 import { useToast } from '@habsum/ui/contexts/toast';
 import { useUser } from '~/context/user';
@@ -173,7 +173,7 @@ export default function HabitsPage() {
 
   function renderHabit(h: Habit) {
     return (
-      <HabitWidget
+      <HabitRenderer
         key={h.name}
         user={state!.user}
         habit={h}

@@ -1,9 +1,10 @@
+// exclusive-bem-block: habit-menu-modal
 import { useNavigate } from '@remix-run/react';
 import { Button } from '@habsum/ui/components/Button';
 import { ModalBody, ModalHeader } from '@habsum/ui/contexts/modal';
 import { configEditHabitUrl } from '~/utils/habit-id';
 
-type HabitWidgetMenuModalProps = {
+type HabitMenuModalProps = {
   user: string;
   habitName: string;
   pending?: boolean;
@@ -11,13 +12,13 @@ type HabitWidgetMenuModalProps = {
   onReset: () => void | Promise<void>;
 };
 
-export function HabitWidgetMenuModal({
+export function HabitMenuModal({
   user,
   habitName,
   pending = false,
   closeModal,
   onReset,
-}: HabitWidgetMenuModalProps) {
+}: HabitMenuModalProps) {
   const navigate = useNavigate();
 
   const onEdit = () => {
@@ -28,12 +29,12 @@ export function HabitWidgetMenuModal({
   return (
     <>
       <ModalHeader dismissDisabled={pending}>{habitName} options</ModalHeader>
-      <ModalBody className="habit-widget-menu-modal__body">
+      <ModalBody className="habit-menu-modal__body">
         <Button
           type="secondary"
           size="medium"
           text="Reset data for day"
-          className="habit-widget-menu-modal__action"
+          className="habit-menu-modal__action"
           disabled={pending}
           onClick={() => {
             void onReset();
@@ -43,7 +44,7 @@ export function HabitWidgetMenuModal({
           type="secondary"
           size="medium"
           text="Edit widget"
-          className="habit-widget-menu-modal__action"
+          className="habit-menu-modal__action"
           disabled={pending}
           onClick={onEdit}
         />

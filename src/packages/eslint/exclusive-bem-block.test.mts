@@ -17,6 +17,7 @@ const webappRoot = path.resolve(
   '../../apps/webapp',
 );
 const barGraphTestFile = path.join(webappRoot, 'app/components/__tests__/BarGraph.test.tsx');
+const habitRendererFile = path.join(webappRoot, 'app/components/habit-renderer/HabitRenderer.tsx');
 
 describe('exclusive-bem-block', () => {
   it('passes eslint RuleTester cases', () => {
@@ -29,6 +30,24 @@ describe('exclusive-bem-block', () => {
         {
           filename: barGraphTestFile,
           code: `const fills = container.querySelectorAll('.bar-graph__fill');`,
+        },
+        {
+          filename: habitRendererFile,
+          code: `// exclusive-bem-block: habit\nexport function HabitRenderer() { return <div className="card habit" />; }`,
+        },
+        {
+          filename: path.join(
+            webappRoot,
+            'app/components/habit-renderer/_private/heading-renderer-helpers/HabitHeadingRender.tsx',
+          ),
+          code: `// exclusive-bem-block: habit-heading\nexport function HabitHeadingRender() { return <div className="habit-heading"><div className="habit-heading__left" /></div>; }`,
+        },
+        {
+          filename: path.join(
+            webappRoot,
+            'app/components/habit-renderer/_private/HabitHeaderAndActionRenderer.tsx',
+          ),
+          code: `function Header() { return <TogglePill className={dim ? 'habit-select__option habit-select__option--dim' : 'habit-select__option'} onToggle={() => onUpdate({ habit: habit.name, value: opt })} />; }`,
         },
       ],
       invalid: [

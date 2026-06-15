@@ -1,4 +1,4 @@
-// exclusive-bem-block: events
+// exclusive-bem-block: habit-module-events
 import { useCallback, useMemo, useState } from 'react';
 import type { SummationEvent, SummationEventCreatedAt } from '@habsum/types/common/habit';
 import { BarGraph } from '~/components/graphs/BarGraph';
@@ -77,14 +77,14 @@ function EventsModalContent({
   return (
     <>
       <ModalHeader>Events — {habitName}</ModalHeader>
-      <ModalBody className="events__modal-body">
+      <ModalBody className="habit-module-events__modal-body">
         {rows.length > 0 ? (
-          <ul className="events__list">
+          <ul className="habit-module-events__list">
             {rows.map((event) => (
-              <li key={event.id} className="events__event">
+              <li key={event.id} className="habit-module-events__event">
                 <span className="text-h-m">{formatEventAmount(event.amount)}</span>
-                <div className="events__event-actions">
-                  <span className="events__datetime text-light text-b-m">
+                <div className="habit-module-events__event-actions">
+                  <span className="habit-module-events__datetime text-light text-b-m">
                     <span>{formatEventClockDisplay(event.createdAt)}</span>
                     <span>{formatEventDay(event.createdAt.day)}</span>
                   </span>
@@ -141,17 +141,17 @@ export function Events({
 
   if (events.length === 0) {
     return (
-      <div className="events">
-        <p className="text-light text-b-m events__empty">No data</p>
+      <div className="habit-module-events">
+        <p className="text-light text-b-m habit-module-events__empty">No data</p>
       </div>
     );
   }
 
   return (
-    <div className="events">
-      <div className="text-light text-b-m events__meta">
+    <div className="habit-module-events">
+      <div className="text-light text-b-m habit-module-events__meta">
         <span>Today's events</span>
-        <span className="events__summary">
+        <span className="habit-module-events__summary">
           <span>{events.length}</span>
           <Button
             type="tertiary"

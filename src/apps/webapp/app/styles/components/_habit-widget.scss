@@ -1,26 +1,46 @@
 @use 'functions';
 
-.habit-widget__heading {
+.habit-widget__widgets {
   display: flex;
-  align-items: start;
-  gap: functions.spacing(1);
+  flex-direction: column;
+  gap: functions.spacing(4);
+  margin-top: functions.spacing(2);
 }
 
-.habit-widget__heading-left {
+.habit-widget__widget {
+  min-width: 0;
+}
+
+.habit-widget__widget-header {
   display: flex;
-  gap: functions.spacing(1);
+  justify-content: space-between;
   align-items: center;
+  gap: functions.spacing(2);
 }
 
-.habit-widget__menu {
-  flex-shrink: 0;
+.habit-widget__widget-title,
+.habit-widget__widget-title-value {
+  min-width: 0;
 }
 
-.habit-widget__heading-actions {
-  flex-shrink: 0;
-  margin-left: auto;
+.habit-widget__widget-title-value {
+  text-align: end;
 }
 
-.habit-widget__goal-hit-check {
-  flex-shrink: 0;
+.habit-widget__widget-title-value-tooltip.hover-layer__panel {
+  max-inline-size: 18rem;
+  background: var(--background-tertiary);
+  text-align: center;
+}
+
+.habit-widget__widget-body {
+  display: flex;
+  flex-direction: column;
+  gap: functions.spacing(2);
+  min-width: 0;
+  margin-top: functions.spacing(2);
+}
+
+.habit-widget__widget-body-item {
+  min-width: 0;
 }

@@ -10,7 +10,7 @@ import { Footer } from '~/components/Footer';
 import { Button } from '@habsum/ui/components/Button';
 import { InfoText } from '@habsum/ui/components/InfoText';
 import { TogglePill } from '@habsum/ui/components/Pill';
-import HabitWidget from '~/components/widgets/HabitWidget';
+import HabitRenderer from '~/components/habit-renderer/HabitRenderer';
 import { getHabitHistory, patchHabit, type Habit } from '~/api.client';
 import { useUser } from '~/context/user';
 import { ensureUserSessionForRoute } from '~/utils/user-session-guard';
@@ -278,7 +278,7 @@ export default function HabitDetailRoute() {
           ) : null}
           {!habitError && !isLoading
             ? widgets.map((habitForWidget) => (
-                <HabitWidget
+                <HabitRenderer
                   key={habitForWidget.name}
                   user={user}
                   habit={habitForWidget}

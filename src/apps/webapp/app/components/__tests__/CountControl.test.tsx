@@ -3,7 +3,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ModalProvider } from '@habsum/ui/contexts/modal';
-import { CountControl } from '../widgets/CountControl';
+import { CountControl } from '../habit-renderer/_private/heading-renderer-helpers/CountControl';
 
 const habitName = 'Squats';
 
