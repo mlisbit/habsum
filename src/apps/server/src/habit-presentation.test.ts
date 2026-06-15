@@ -2,13 +2,15 @@ import { describe, expect, it, vi } from 'vitest';
 import { dayFromString } from '@habsum/types/common/day';
 
 vi.mock('./db.js', () => ({
+  getSeries: vi.fn(),
   getSelect: vi.fn(),
   getSummationDayTotal: vi.fn(),
 }));
 
-import { getSelect, getSummationDayTotal } from './db.js';
+import { getSelect, getSeries, getSummationDayTotal } from './db.js';
 import {
   formatSelectStreakText,
+  habitHistoryForConfiguredPeriod,
   historyGraphScaleTop,
   historyWidget,
   progressWidget,
@@ -35,6 +37,36 @@ describe('historyGraphScaleTop', () => {
   });
 });
 
+describe('habitHistoryForConfiguredPeriod', () => {
+  it('pads up to three days after a past view date and outlines the view date', () => {
+    const at = new Date('2025-05-21T12:00:00.000Z');
+    const viewDate = '2025-05-18';
+    vi.mocked(getSeries).mockReturnValue([
+      { date: '2025-05-18', total: 2 },
+      { date: '2025-05-20', total: 5 },
+    ]);
+
+    const history = habitHistoryForConfiguredPeriod(user, habit, viewDate, null, '1w', null, at);
+
+    expect(getSeries).toHaveBeenCalledWith(user, habit, '2025-05-15', '2025-05-21');
+    expect(Object.keys(history.data.user.graphData)).toEqual([
+      '2025-05-15',
+      '2025-05-16',
+      '2025-05-17',
+      '2025-05-18',
+      '2025-05-19',
+      '2025-05-20',
+      '2025-05-21',
+    ]);
+    expect(history.data.user.graphData[viewDate]?.outline).toBe(true);
+    expect(history.data.user.graphData[viewDate]?.dimmed).toBeUndefined();
+    expect(history.data.user.graphData['2025-05-19']?.dimmed).toBe(true);
+    expect(history.data.user.graphData['2025-05-20']?.dimmed).toBe(true);
+    expect(history.data.user.graphData['2025-05-21']?.dimmed).toBe(true);
+    expect(history.data.user.graphData['2025-05-21']?.outline).toBeUndefined();
+  });
+});
+
 describe('historyWidget', () => {
   it('shows average per day for the graph window and explains missing days', () => {
     const history = {
@@ -55,7 +87,7 @@ describe('historyWidget', () => {
 
     const widget = historyWidget(history, 5);
 
-    expect(widget.titleValue).toBe('3/day average over last 1 week');
+    expect(widget.titleValue).toBe('3/day average since May 15');
     expect(widget.titleValueHoverText).toBe(
       'Average excludes 5 days with no data and uses 2 days with logged data.',
     );
@@ -86,7 +118,7 @@ describe('historyWidget', () => {
       true,
     );
 
-    expect(widget.titleValue).toBe('1/day average over last 1 week');
+    expect(widget.titleValue).toBe('1/day average since May 15');
     expect(widget.titleValueHoverText).toBe(
       'Average includes 5 days with no data as zero and 2 days with logged data.',
     );
@@ -95,6 +127,29 @@ describe('historyWidget', () => {
       lines: [{ value: 5, label: 'Daily goal: 5' }],
     });
   });
+
+  it('labels average range through the outlined view date for past windows', () => {
+    const widget = historyWidget(
+      {
+        data: {
+          user: {
+            graphData: {
+              '2025-05-15': { value: null, top: 5, hoverLabel: 'Thu' },
+              '2025-05-16': { value: 2, top: 5, hoverLabel: 'Fri' },
+              '2025-05-17': { value: null, top: 5, hoverLabel: 'Sat' },
+              '2025-05-18': { value: 4, top: 5, hoverLabel: 'Sun', outline: true },
+              '2025-05-19': { value: null, top: 5, hoverLabel: 'Mon', dimmed: true },
+              '2025-05-20': { value: null, top: 5, hoverLabel: 'Tue', dimmed: true },
+              '2025-05-21': { value: null, top: 5, hoverLabel: 'Wed', dimmed: true },
+            },
+          },
+        },
+      },
+      5,
+    );
+
+    expect(widget.titleValue).toBe('3/day average from May 15 to May 18');
+  });
 });
 
 describe('progressWidget', () => {
@@ -102,6 +157,22 @@ describe('progressWidget', () => {
     expect(progressWidget(2, 5)).toMatchObject({
       title: 'Goal',
       titleValue: '2 / 5',
+    });
+  });
+
+  it('labels goal-less summation totals as progress', () => {
+    expect(progressWidget(null, null)).toEqual({
+      title: 'Progress',
+      titleValue: 'No data',
+      body: [],
+    });
+    expect(progressWidget(0, null)).toMatchObject({
+      title: 'Progress',
+      titleValue: '0',
+    });
+    expect(progressWidget(4, null)).toMatchObject({
+      title: 'Progress',
+      titleValue: '4',
     });
   });
 });
@@ -132,7 +203,27 @@ describe('streakGraphForConfiguredWindow', () => {
 
     expect(streak.currentText).toBe('2 days');
     expect(streak.data[viewDate]?.label).toBeUndefined();
+    expect(streak.data[viewDate]?.outline).toBeUndefined();
     expect(Object.keys(streak.data)).toHaveLength(126);
+  });
+
+  it('pads up to three days after a past view date and outlines the view date', () => {
+    const at = new Date('2025-05-21T12:00:00.000Z');
+    const viewDate = '2025-05-18';
+    vi.mocked(getSelect).mockImplementation((_u, _h, date) =>
+      date === '2025-05-18' ? 'good' : null,
+    );
+
+    const streak = streakGraphForConfiguredWindow(user, habit, viewDate, eligible, at);
+    const keys = Object.keys(streak.data);
+
+    expect(keys.at(-1)).toBe('2025-05-21');
+    expect(streak.data[dayFromString(viewDate)]?.outline).toBe(true);
+    expect(streak.data[dayFromString(viewDate)]?.dimmed).toBeUndefined();
+    expect(streak.data[dayFromString('2025-05-19')]?.dimmed).toBe(true);
+    expect(streak.data[dayFromString('2025-05-20')]?.dimmed).toBe(true);
+    expect(streak.data[dayFromString('2025-05-21')]?.dimmed).toBe(true);
+    expect(streak.data[dayFromString('2025-05-21')]?.outline).toBeUndefined();
   });
 
   it('omits an unlogged UTC today from current streak length', () => {

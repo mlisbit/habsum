@@ -707,7 +707,16 @@ userScopedRouter.get(
       }
       const total = getSummationDayTotal(user, h.name, date);
       const history = h.history
-        ? habitHistoryForConfiguredPeriod(user, h.name, date, firstDate, h.history.period, h.goal)
+        ? habitHistoryForConfiguredPeriod(
+            user,
+            h.name,
+            date,
+            firstDate,
+            h.history.period,
+            h.goal,
+            at,
+            tzOffsetMinutes,
+          )
         : null;
       const streak = h.streak
         ? summationStreakGraphForConfiguredWindow(
@@ -860,6 +869,8 @@ userScopedRouter.patch(
 
     const mode = typeof action === 'string' ? action : 'add';
     const firstDate = getFirstDate(user);
+    const at = new Date();
+    const tzOffsetMinutes = parseTzOffsetMinutes(body.tzOffsetMinutes);
     const widgetsAfterMutation = (nextTotal: number | null) => {
       const history = known.history
         ? habitHistoryForConfiguredPeriod(
@@ -869,6 +880,8 @@ userScopedRouter.patch(
             firstDate,
             known.history.period,
             known.goal,
+            at,
+            tzOffsetMinutes,
           )
         : null;
       const streak = known.streak
@@ -877,8 +890,8 @@ userScopedRouter.patch(
             habit,
             date,
             known.streak.options,
-            new Date(),
-            parseTzOffsetMinutes(body.tzOffsetMinutes),
+            at,
+            tzOffsetMinutes,
             known.streak.frequency,
             known.streak.show_longest === true,
             firstDate,

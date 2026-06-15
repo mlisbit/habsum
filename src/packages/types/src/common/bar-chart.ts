@@ -6,6 +6,10 @@ export type BarGraphDatum = {
   top: number;
   /** Shown in the hover panel (e.g. localized time range for this bucket). */
   hoverLabel: string;
+  /** When true, highlight this bucket with an accent outline. */
+  outline?: boolean;
+  /** When true, visually de-emphasize this bucket. */
+  dimmed?: boolean;
   /** When set, the track uses a negative/deficit style (e.g. no donor column to absorb into). */
   trackModifier?: 'negative';
 };

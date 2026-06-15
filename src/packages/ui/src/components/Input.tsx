@@ -54,6 +54,8 @@ export type InputProps = Omit<
   revertAriaLabel?: string;
   /** When `type` is `number`, allow a leading minus for signed integers (e.g. manual delta). */
   allowNegative?: boolean;
+  /** When `type` is `number`, called after invalid characters are rejected. */
+  onTypingRejected?: () => void;
 };
 
 /**
@@ -80,6 +82,7 @@ export function Input({
   applyAriaLabel,
   revertAriaLabel,
   allowNegative = false,
+  onTypingRejected,
   placeholder,
   autoFocus = false,
   autoComplete,
@@ -174,10 +177,12 @@ export function Input({
 
   const handleDraftChange = (raw: string) => {
     if (isNumberField) {
-      if (allowNegative) {
-        if (signedIntegerTypingInvalid(raw)) pulseRejectFlash();
-      } else if (sanitizeDigitsOnly(raw) !== raw) {
+      const rejected = allowNegative
+        ? signedIntegerTypingInvalid(raw)
+        : sanitizeDigitsOnly(raw) !== raw;
+      if (rejected) {
         pulseRejectFlash();
+        onTypingRejected?.();
       }
     }
     const nextDraft = isNumberField

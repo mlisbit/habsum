@@ -148,6 +148,21 @@ export function historyGraphScaleTop(
   return Math.max(1, maxValue, goalFloor);
 }
 
+const GRAPH_RIGHT_PADDING_DAYS = 3;
+
+function graphRightPaddingDays(viewDate: string, today: string): number {
+  if (viewDate >= today) return 0;
+  const diff = Math.round(
+    (fromDateKey(today, 0).getTime() - fromDateKey(viewDate, 0).getTime()) / 86_400_000,
+  );
+  if (!Number.isFinite(diff) || diff <= 0) return 0;
+  return Math.min(GRAPH_RIGHT_PADDING_DAYS, diff);
+}
+
+function shouldOutlineViewDate(viewDate: string, today: string): boolean {
+  return viewDate !== today;
+}
+
 /** Builds `HabitHistory` for the view date window (`period` from config, e.g. `1w` → 7 daily bars). */
 export function habitHistoryForConfiguredPeriod(
   user: string,
@@ -156,10 +171,16 @@ export function habitHistoryForConfiguredPeriod(
   firstDate: string | null,
   periodSpec: string,
   goal: number | null | undefined = null,
+  at: Date = new Date(),
+  tzOffsetMinutes?: number,
 ): HabitHistory {
   const days = parsePeriodDays(periodSpec) ?? 7;
-  const start = addDaysUtc(viewDate, -(days - 1));
-  const rows = getSeries(user, habitName, start, viewDate);
+  const today = habitApiTodayKey(at, tzOffsetMinutes);
+  const rightPaddingDays = graphRightPaddingDays(viewDate, today);
+  const end = addDaysUtc(viewDate, rightPaddingDays);
+  const start = addDaysUtc(end, -(days - 1));
+  const outlineViewDate = shouldOutlineViewDate(viewDate, today);
+  const rows = getSeries(user, habitName, start, end);
   const byDate = new Map(rows.map((r) => [r.date, r.total]));
   const series = Array.from({ length: days }, (_, i) => {
     const d = addDaysUtc(start, i);
@@ -176,6 +197,8 @@ export function habitHistoryForConfiguredPeriod(
       value: series[i]!,
       top,
       hoverLabel: formatHistoryDayHoverLabel(d),
+      ...(outlineViewDate && d === viewDate ? { outline: true } : {}),
+      ...(outlineViewDate && d > viewDate ? { dimmed: true } : {}),
     };
   }
   return {
@@ -192,13 +215,24 @@ function historyAverage(history: HabitHistory, includeAbsentDays: boolean): numb
   return Math.round(values.reduce<number>((sum, value) => sum + (value ?? 0), 0) / values.length);
 }
 
-function historyPeriodText(history: HabitHistory): string {
-  const days = Object.keys(history.data.user.graphData).length;
-  if (days > 0 && days % 7 === 0) {
-    const weeks = days / 7;
-    return `${weeks} ${weeks === 1 ? 'week' : 'weeks'}`;
-  }
-  return `${days} ${days === 1 ? 'day' : 'days'}`;
+function formatShortHistoryDate(dateKey: string): string {
+  const [ys, ms, ds] = dateKey.split('-');
+  const y = Number(ys);
+  const m = Number(ms);
+  const d = Number(ds);
+  if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return dateKey;
+  const dt = new Date(y, m - 1, d);
+  if (Number.isNaN(dt.getTime())) return dateKey;
+  return dt.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+function historyAverageRangeText(history: HabitHistory): string {
+  const entries = Object.entries(history.data.user.graphData);
+  const first = entries.at(0)?.[0];
+  if (first == null) return 'since now';
+  const outlined = entries.find(([, datum]) => datum.outline === true)?.[0];
+  if (outlined == null) return `since ${formatShortHistoryDate(first)}`;
+  return `from ${formatShortHistoryDate(first)} to ${formatShortHistoryDate(outlined)}`;
 }
 
 function historyAverageHoverText(history: HabitHistory, includeAbsentDays: boolean): string {
@@ -216,7 +250,14 @@ function historyAverageHoverText(history: HabitHistory, includeAbsentDays: boole
 }
 
 export function progressWidget(total: number | null, goal: number | null): HabitWidget | null {
-  if (goal == null) return null;
+  if (goal == null) {
+    return {
+      title: 'Progress',
+      titleValue: total == null ? 'No data' : String(total),
+      body: [],
+    };
+  }
+
   return {
     title: 'Goal',
     titleValue: `${total == null ? '—' : total} / ${goal}`,
@@ -233,7 +274,7 @@ export function historyWidget(
   const averageText = average == null ? '—' : String(average);
   return {
     title: 'History',
-    titleValue: `${averageText}/day average over last ${historyPeriodText(history)}`,
+    titleValue: `${averageText}/day average ${historyAverageRangeText(history)}`,
     titleValueHoverText: historyAverageHoverText(history, includeAbsentDaysInAverage),
     body: [
       {
@@ -915,10 +956,14 @@ function streakGraphDailyWindow(
   user: string,
   habitName: string,
   viewDate: string,
+  today: string,
   eligible: ReadonlySet<string>,
   omitEmptyViewDate: boolean,
 ): StreakGraphWithText {
-  const start = addDaysUtc(viewDate, -(STREAK_WINDOW_UNITS - 1));
+  const rightPaddingDays = graphRightPaddingDays(viewDate, today);
+  const end = addDaysUtc(viewDate, rightPaddingDays);
+  const start = addDaysUtc(end, -(STREAK_WINDOW_UNITS - 1));
+  const outlineViewDate = shouldOutlineViewDate(viewDate, today);
   const data = {} as Record<Day, StreakDatum>;
   for (let i = 0; i < STREAK_WINDOW_UNITS; i++) {
     const d = addDaysUtc(start, i);
@@ -926,6 +971,8 @@ function streakGraphDailyWindow(
     data[dayFromString(d)] = {
       value,
       fill: dailyStreakFill(value, eligible),
+      ...(outlineViewDate && d === viewDate ? { outline: true } : {}),
+      ...(outlineViewDate && d > viewDate ? { dimmed: true } : {}),
     };
   }
   const current = currentSelectStreakLength(user, habitName, viewDate, eligible, omitEmptyViewDate);
@@ -939,14 +986,18 @@ function streakGraphWeeklyWindow(
   user: string,
   habitName: string,
   viewDate: string,
+  today: string,
   daysPerWeek: number,
   eligible: ReadonlySet<string>,
   omitIncompleteViewWeek: boolean,
 ): StreakGraphWithText {
   const viewWeekStart = weekStartMonday(viewDate);
+  const rightPaddingDays = graphRightPaddingDays(viewDate, today);
+  const endWeekStart = weekStartMonday(addDaysUtc(viewDate, rightPaddingDays));
+  const outlineViewDate = shouldOutlineViewDate(viewDate, today);
   const data = {} as Record<Day, StreakDatum>;
   for (let i = STREAK_WINDOW_UNITS - 1; i >= 0; i--) {
-    const weekStart = addDaysUtc(viewWeekStart, -i * 7);
+    const weekStart = addDaysUtc(endWeekStart, -i * 7);
     const weekEnd = addDaysUtc(weekStart, 6);
     const hits = countEligibleDaysInRange(user, habitName, weekStart, weekEnd, eligible);
     const loggedDays = countLoggedDaysInRange(user, habitName, weekStart, weekEnd);
@@ -954,6 +1005,8 @@ function streakGraphWeeklyWindow(
       value: formatWeekProgressLabel(hits, daysPerWeek),
       fill: weeklyStreakFill(hits, loggedDays, daysPerWeek),
       label: formatWeekRangeLabel(weekStart, weekEnd),
+      ...(outlineViewDate && weekStart === viewWeekStart ? { outline: true } : {}),
+      ...(outlineViewDate && weekStart > viewWeekStart ? { dimmed: true } : {}),
     };
   }
   const current = currentSelectStreakWeeks(
@@ -974,10 +1027,14 @@ function summationStreakGraphDailyWindow(
   user: string,
   habitName: string,
   viewDate: string,
+  today: string,
   eligible: ReadonlySet<string>,
   omitEmptyViewDate: boolean,
 ): StreakGraphWithText {
-  const start = addDaysUtc(viewDate, -(STREAK_WINDOW_UNITS - 1));
+  const rightPaddingDays = graphRightPaddingDays(viewDate, today);
+  const end = addDaysUtc(viewDate, rightPaddingDays);
+  const start = addDaysUtc(end, -(STREAK_WINDOW_UNITS - 1));
+  const outlineViewDate = shouldOutlineViewDate(viewDate, today);
   const data = {} as Record<Day, StreakDatum>;
   for (let i = 0; i < STREAK_WINDOW_UNITS; i++) {
     const d = addDaysUtc(start, i);
@@ -985,6 +1042,8 @@ function summationStreakGraphDailyWindow(
     data[dayFromString(d)] = {
       value: total == null ? null : String(total),
       fill: dailySummationStreakFill(total, eligible),
+      ...(outlineViewDate && d === viewDate ? { outline: true } : {}),
+      ...(outlineViewDate && d > viewDate ? { dimmed: true } : {}),
     };
   }
   const current = currentSummationStreakLength(
@@ -1004,14 +1063,18 @@ function summationStreakGraphWeeklyWindow(
   user: string,
   habitName: string,
   viewDate: string,
+  today: string,
   daysPerWeek: number,
   eligible: ReadonlySet<string>,
   omitIncompleteViewWeek: boolean,
 ): StreakGraphWithText {
   const viewWeekStart = weekStartMonday(viewDate);
+  const rightPaddingDays = graphRightPaddingDays(viewDate, today);
+  const endWeekStart = weekStartMonday(addDaysUtc(viewDate, rightPaddingDays));
+  const outlineViewDate = shouldOutlineViewDate(viewDate, today);
   const data = {} as Record<Day, StreakDatum>;
   for (let i = STREAK_WINDOW_UNITS - 1; i >= 0; i--) {
-    const weekStart = addDaysUtc(viewWeekStart, -i * 7);
+    const weekStart = addDaysUtc(endWeekStart, -i * 7);
     const weekEnd = addDaysUtc(weekStart, 6);
     const hits = countEligibleSummationDaysInRange(user, habitName, weekStart, weekEnd, eligible);
     const loggedDays = countLoggedSummationDaysInRange(user, habitName, weekStart, weekEnd);
@@ -1019,6 +1082,8 @@ function summationStreakGraphWeeklyWindow(
       value: formatWeekProgressLabel(hits, daysPerWeek),
       fill: weeklyStreakFill(hits, loggedDays, daysPerWeek),
       label: formatWeekRangeLabel(weekStart, weekEnd),
+      ...(outlineViewDate && weekStart === viewWeekStart ? { outline: true } : {}),
+      ...(outlineViewDate && weekStart > viewWeekStart ? { dimmed: true } : {}),
     };
   }
   const current = currentSummationStreakWeeks(
@@ -1047,14 +1112,16 @@ export function streakGraphForConfiguredWindow(
   firstDate: string | null = null,
 ): StreakGraphWithText {
   const eligible = new Set(streakEligibleOptions);
-  const omitEmptyViewPeriod = viewDate === habitApiTodayKey(at, tzOffsetMinutes);
+  const today = habitApiTodayKey(at, tzOffsetMinutes);
+  const omitEmptyViewPeriod = viewDate === today;
   const daysPerWeek = parseStreakFrequencyDays(streakFrequency);
   const graph = isDailyStreakFrequency(daysPerWeek)
-    ? streakGraphDailyWindow(user, habitName, viewDate, eligible, omitEmptyViewPeriod)
+    ? streakGraphDailyWindow(user, habitName, viewDate, today, eligible, omitEmptyViewPeriod)
     : streakGraphWeeklyWindow(
         user,
         habitName,
         viewDate,
+        today,
         daysPerWeek,
         eligible,
         omitEmptyViewPeriod,
@@ -1084,14 +1151,23 @@ export function summationStreakGraphForConfiguredWindow(
   firstDate: string | null = null,
 ): StreakGraphWithText {
   const eligible = new Set(streakEligibleOptions);
-  const omitEmptyViewPeriod = viewDate === habitApiTodayKey(at, tzOffsetMinutes);
+  const today = habitApiTodayKey(at, tzOffsetMinutes);
+  const omitEmptyViewPeriod = viewDate === today;
   const daysPerWeek = parseStreakFrequencyDays(streakFrequency);
   const graph = isDailyStreakFrequency(daysPerWeek)
-    ? summationStreakGraphDailyWindow(user, habitName, viewDate, eligible, omitEmptyViewPeriod)
+    ? summationStreakGraphDailyWindow(
+        user,
+        habitName,
+        viewDate,
+        today,
+        eligible,
+        omitEmptyViewPeriod,
+      )
     : summationStreakGraphWeeklyWindow(
         user,
         habitName,
         viewDate,
+        today,
         daysPerWeek,
         eligible,
         omitEmptyViewPeriod,

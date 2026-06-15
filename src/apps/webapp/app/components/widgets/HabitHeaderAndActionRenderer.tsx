@@ -1,8 +1,8 @@
 import { useCallback } from 'react';
 import type { Habit, HabitRowSingleSelect, HabitRowSummation } from '@habsum/types/common/habit';
 import type { HabitPatch } from '~/api.client';
-import { CountControl } from '~/components/CountControl';
-import { HabitWidgetHeading } from '~/components/widgets/HabitWidgetHeading';
+import { CountControl } from './CountControl';
+import { HabitWidgetHeading } from './HabitWidgetHeading';
 import { HabitWidgetMenuModal } from '~/components/widgets/modules/HabitWidgetMenuModal';
 import { TogglePill } from '@habsum/ui/components/Pill';
 import { TernaryCheckbox, type TernaryCheckboxValue } from '@habsum/ui/components/TernaryCheckbox';
@@ -166,34 +166,25 @@ function SummationHabitHeader({
   openResetModal: () => void;
   onUpdate: (patch: HabitPatch) => Promise<void>;
 }) {
-  const total = habit.total;
-  const goal = habit.goal;
-
   return (
-    <>
-      <HabitWidgetHeading
-        user={user}
-        habitName={habit.name}
-        pending={pending}
-        goalHit={isGoalHit(habit)}
-        menuAriaLabel={`More options for ${habit.name}`}
-        onMenuClick={openResetModal}
-        className="mb-4"
-        actions={
-          <CountControl
-            interval={1}
-            summationSteps={habit.summationOptions}
-            displayTotal={total}
-            habitName={habit.name}
-            pending={pending}
-            onAddDelta={(delta) => onUpdate({ habit: habit.name, total: delta })}
-          />
-        }
-      />
-      {goal == null ? (
-        <div className="text-light text-b-m">{total == null ? 'No data' : total}</div>
-      ) : null}
-    </>
+    <HabitWidgetHeading
+      user={user}
+      habitName={habit.name}
+      pending={pending}
+      goalHit={isGoalHit(habit)}
+      menuAriaLabel={`More options for ${habit.name}`}
+      onMenuClick={openResetModal}
+      className="mb-4"
+      actions={
+        <CountControl
+          summationSteps={habit.summationOptions}
+          displayTotal={habit.total}
+          habitName={habit.name}
+          pending={pending}
+          onAddDelta={(delta) => onUpdate({ habit: habit.name, total: delta })}
+        />
+      }
+    />
   );
 }
 

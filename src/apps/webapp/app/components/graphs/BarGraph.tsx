@@ -1,6 +1,7 @@
 // exclusive-bem-block: bar-graph
 import type { BarGraphData } from '@habsum/types/common/bar-chart';
 import { Hoverable } from '@habsum/ui/components/Hoverable';
+import { classBuilder } from '~/utils/class-builder';
 
 export type BarGraphLine = {
   value: number;
@@ -43,27 +44,38 @@ export function BarGraph({ data, onHover, lines = [] }: BarGraphProps) {
   return (
     <div className="bar-graph" role="presentation">
       <div className="bar-graph__wrap">
-        {entries.map(([key, { value, hoverLabel, trackModifier }]) => (
-          <Hoverable.Root key={key}>
-            <Hoverable.Anchor
-              className="bar-graph__track"
-              onMouseEnter={() => onHover?.({ key, value })}
-            >
-              <div
-                className="bar-graph__fill"
-                style={{ height: `${barHeightPercent(value, scaleTop)}%` }}
-              />
-            </Hoverable.Anchor>
-            <Hoverable.Content className="bar-graph__hover" side="top">
-              <div className="bar-graph__hover-body">
-                <span className="bar-graph__hover-range">{hoverLabel}</span>
-                <span className="bar-graph__hover-value text-h-m">
-                  {value == null ? DEFAULT_NO_DATA_HOVER : value}
-                </span>
-              </div>
-            </Hoverable.Content>
-          </Hoverable.Root>
-        ))}
+        {entries.map(([key, { value, hoverLabel, outline, dimmed, trackModifier }]) => {
+          const trackClassName = classBuilder(
+            {
+              'bar-graph__track--negative': trackModifier === 'negative',
+              'bar-graph__track--outlined': outline,
+              'bar-graph__track--dimmed': dimmed,
+            },
+            'bar-graph__track',
+          );
+
+          return (
+            <Hoverable.Root key={key}>
+              <Hoverable.Anchor
+                className={trackClassName}
+                onMouseEnter={() => onHover?.({ key, value })}
+              >
+                <div
+                  className="bar-graph__fill"
+                  style={{ height: `${barHeightPercent(value, scaleTop)}%` }}
+                />
+              </Hoverable.Anchor>
+              <Hoverable.Content className="bar-graph__hover" side="top">
+                <div className="bar-graph__hover-body">
+                  <span className="bar-graph__hover-range">{hoverLabel}</span>
+                  <span className="bar-graph__hover-value text-h-m">
+                    {value == null ? DEFAULT_NO_DATA_HOVER : value}
+                  </span>
+                </div>
+              </Hoverable.Content>
+            </Hoverable.Root>
+          );
+        })}
         {visibleLines.length > 0 ? (
           <div className="bar-graph__lines-layer">
             {visibleLines.map((line) => (

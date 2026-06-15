@@ -1,12 +1,15 @@
 // exclusive-bem-block: heatmap
 import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { Hoverable } from '@habsum/ui/components/Hoverable';
+import { classBuilder } from '~/utils/class-builder';
 
 export type HeatmapDatum = {
   label: string;
   value: string | number;
   ariaLabel: string;
   color: string;
+  outline?: boolean;
+  dimmed?: boolean;
 };
 
 export type HeatmapEntry = readonly [string, HeatmapDatum];
@@ -52,6 +55,13 @@ function normalizeRowCount(rows: number): number {
 }
 
 function HeatmapCell({ datum }: { datum: HeatmapDatum }) {
+  const cellClassName = classBuilder(
+    {
+      'heatmap__cell--outlined': datum.outline,
+      'heatmap__cell--dimmed': datum.dimmed,
+    },
+    'heatmap__cell',
+  );
   const cellStyle = {
     backgroundColor: datum.color,
   } satisfies CSSProperties;
@@ -59,7 +69,7 @@ function HeatmapCell({ datum }: { datum: HeatmapDatum }) {
   return (
     <Hoverable.Root>
       <Hoverable.Anchor
-        className="heatmap__cell"
+        className={cellClassName}
         role="listitem"
         aria-label={datum.ariaLabel}
         style={cellStyle}

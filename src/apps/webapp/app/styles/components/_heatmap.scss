@@ -20,11 +20,21 @@
   flex: 0 0 auto;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
   width: 0.75rem;
   height: 0.75rem;
   border-radius: var(--border-radius-s);
   background: var(--streak-fill-0);
   cursor: default;
+}
+
+.heatmap__cell--outlined {
+  outline: 2px solid var(--accent-graph-line);
+  outline-offset: -2px;
+}
+
+.heatmap__cell--dimmed {
+  opacity: 0.45;
 }
 
 .heatmap__tooltip.hover-layer__panel {

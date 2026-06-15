@@ -28,7 +28,7 @@
   inset-inline: 0;
   inset-block-end: 0;
   box-sizing: border-box;
-  border-block-start: 1px dashed var(--border-color);
+  border-block-start: 1px dashed var(--accent-graph-line);
   pointer-events: none;
 }
 
@@ -39,7 +39,7 @@
   inline-size: 6px;
   block-size: 6px;
   border-radius: 50%;
-  background: var(--border-color);
+  background: var(--accent-graph-line);
   transform: translate(-50%, -50%);
   cursor: default;
   pointer-events: auto;
@@ -49,6 +49,7 @@
   flex: 1;
   min-inline-size: 0;
   display: flex;
+  box-sizing: border-box;
   height: 100%;
   flex-direction: column;
   justify-content: flex-end;
@@ -56,6 +57,15 @@
   background: var(--background-input);
   border-radius: var(--border-radius-s);
   cursor: default;
+}
+
+.bar-graph__track--outlined {
+  outline: 2px solid var(--accent-graph-line);
+  outline-offset: -2px;
+}
+
+.bar-graph__track--dimmed {
+  opacity: 0.45;
 }
 
 .bar-graph__fill {

@@ -30,6 +30,10 @@ export type StreakDatum = {
   value: string | null;
   /** Dot fill intensity from `0` to `10`. */
   fill: number;
+  /** When true, highlight this period with an accent outline. */
+  outline?: boolean;
+  /** When true, visually de-emphasize this period. */
+  dimmed?: boolean;
   /** Week buckets: inclusive calendar range for this cell (e.g. `Mon, Jan 6 – Sun, Jan 12`). */
   label?: string;
 };

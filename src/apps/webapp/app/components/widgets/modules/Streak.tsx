@@ -48,6 +48,8 @@ function streakHeatmapEntry(dateKey: Day, datum: StreakDatum): HeatmapEntry {
       value: datum.value ?? '—',
       ariaLabel: `${periodLabel}: ${valueLabel}, fill ${fill} of 10`,
       color: STREAK_FILL_COLOR_BY_VALUE[fill],
+      outline: datum.outline,
+      dimmed: datum.dimmed,
     },
   ];
 }

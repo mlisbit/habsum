@@ -1,10 +1,12 @@
+@use 'functions';
+
 // Theme tokens on `html` so `document.body` portals (e.g. hover panels) inherit the same variables.
 // Toggle with `document.documentElement.dataset.theme = "light" | "dark"`.
 html[data-theme='dark'] {
   color-scheme: dark;
 
   // borders
-  --border-color: #6b987f;
+  --border-color: #565656;
   --border-color-faint: #44464c;
 
   // background colors
@@ -44,6 +46,9 @@ html[data-theme='dark'] {
   // accents
   --accent-selected: #6b987f;
   --accent-red-1: #d64545;
+  --accent-orange-1: #fb8e27;
+  --accent-graph-line: #ababab;
+  --graph-previous-day-color: var(--accent-selected);
   --streak-fill-0: var(--background-input);
   --streak-fill-1: var(--accent-red-1);
   --streak-fill-2: color-mix(in srgb, var(--background-tertiary) 80%, var(--accent-selected) 20%);
@@ -100,6 +105,9 @@ html[data-theme='light'] {
   // accents
   --accent-selected: #2d6cdf;
   --accent-red-1: #d98f8f;
+  --accent-orange-1: #e07b1a;
+  --accent-graph-line: #8b919a;
+  --graph-previous-day-color: var(--accent-selected);
   --streak-fill-0: var(--background-tertiary);
   --streak-fill-1: color-mix(in srgb, var(--background-tertiary) 90%, var(--accent-selected) 10%);
   --streak-fill-2: color-mix(in srgb, var(--background-tertiary) 80%, var(--accent-selected) 20%);

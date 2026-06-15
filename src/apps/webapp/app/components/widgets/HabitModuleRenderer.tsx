@@ -112,7 +112,7 @@ function HabitWidgetItem({ habit, widget }: { habit: Habit; widget: HabitWidget 
       node: renderHabitWidgetBody(habit, item),
     }))
     .filter((item) => item.node != null);
-  if (body.length === 0) return null;
+  if (body.length === 0 && !widget.titleValue) return null;
 
   return (
     <section
@@ -124,13 +124,15 @@ function HabitWidgetItem({ habit, widget }: { habit: Habit; widget: HabitWidget 
         <span className="habit-module-renderer__widget-title">{widget.title}</span>
         <WidgetTitleValue widget={widget} />
       </div>
-      <div className="habit-module-renderer__widget-body">
-        {body.map(({ key, node }) => (
-          <div key={key} className="habit-module-renderer__widget-body-item">
-            {node}
-          </div>
-        ))}
-      </div>
+      {body.length > 0 ? (
+        <div className="habit-module-renderer__widget-body">
+          {body.map(({ key, node }) => (
+            <div key={key} className="habit-module-renderer__widget-body-item">
+              {node}
+            </div>
+          ))}
+        </div>
+      ) : null}
     </section>
   );
 }

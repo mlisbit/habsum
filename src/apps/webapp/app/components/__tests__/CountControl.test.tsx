@@ -3,7 +3,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ModalProvider } from '@habsum/ui/contexts/modal';
-import { CountControl } from '../CountControl';
+import { CountControl } from '../widgets/CountControl';
 
 const habitName = 'Squats';
 
@@ -21,12 +21,15 @@ function renderWithModal(ui: ReactElement) {
   return render(<ModalProvider>{ui}</ModalProvider>);
 }
 
+function amountInput() {
+  return screen.getByRole('spinbutton', { name: /Amount for/ }) as HTMLInputElement;
+}
+
 describe('CountControl', () => {
-  it('free-form: shows + trigger; spinbutton after click', async () => {
+  it('free-form: + opens add modal', async () => {
     const user = userEvent.setup();
     renderWithModal(
       <CountControl
-        interval={3}
         displayTotal={null}
         habitName={habitName}
         pending={false}
@@ -35,26 +38,13 @@ describe('CountControl', () => {
     );
     const trigger = screen.getByRole('button', { name: /Enter custom amount for/ });
     expect(trigger.textContent?.trim()).toBe('+');
-    expect(screen.queryByRole('spinbutton')).toBeNull();
+    expect(screen.queryByRole('spinbutton', { name: /Amount for/ })).toBeNull();
     await user.click(trigger);
-    const input = screen.getByRole('spinbutton') as HTMLInputElement;
+    expect(screen.getByRole('heading', { name: `Add to "${habitName}"` })).toBeTruthy();
+    const input = amountInput();
     expect(input.value).toBe('');
-    expect(input.getAttribute('placeholder')).toBe('3');
-    expect(screen.getByRole('button', { name: /Apply amount for/ })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: /Subtract amount from/ })).toBeNull();
-  });
-
-  it('free-form: minus appears when total > 0', () => {
-    renderWithModal(
-      <CountControl
-        interval={2}
-        displayTotal={10}
-        habitName={habitName}
-        pending={false}
-        onAddDelta={vi.fn(async () => {})}
-      />,
-    );
-    expect(screen.getByRole('button', { name: /Subtract amount from/ })).toBeTruthy();
+    expect(input.getAttribute('placeholder')).toBe('Enter value');
+    expect(screen.getByRole('button', { name: 'Add' })).toBeTruthy();
   });
 
   it('free-form: typed amount submits delta', async () => {
@@ -62,7 +52,6 @@ describe('CountControl', () => {
     const onAddDelta = vi.fn(async () => {});
     renderWithModal(
       <CountControl
-        interval={3}
         displayTotal={null}
         habitName={habitName}
         pending={false}
@@ -70,10 +59,29 @@ describe('CountControl', () => {
       />,
     );
     await user.click(screen.getByRole('button', { name: /Enter custom amount for/ }));
-    const input = screen.getByRole('spinbutton', { name: /Amount for/ });
+    const input = amountInput();
     await user.type(input, '3');
-    await user.click(screen.getByRole('button', { name: /Apply amount for/ }));
+    await user.click(screen.getByRole('button', { name: 'Add' }));
     expect(onAddDelta).toHaveBeenCalledWith(3);
+  });
+
+  it('free-form: negative value uses Subtract CTA', async () => {
+    const user = userEvent.setup();
+    const onAddDelta = vi.fn(async () => {});
+    renderWithModal(
+      <CountControl
+        displayTotal={null}
+        habitName={habitName}
+        pending={false}
+        onAddDelta={onAddDelta}
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: /Enter custom amount for/ }));
+    const input = amountInput();
+    await user.type(input, '-2');
+    expect(screen.getByRole('button', { name: 'Subtract' })).toBeTruthy();
+    await user.click(screen.getByRole('button', { name: 'Subtract' }));
+    expect(onAddDelta).toHaveBeenCalledWith(-2);
   });
 
   it('free-form: typed zero submits delta of 0', async () => {
@@ -81,7 +89,6 @@ describe('CountControl', () => {
     const onAddDelta = vi.fn(async () => {});
     renderWithModal(
       <CountControl
-        interval={3}
         displayTotal={null}
         habitName={habitName}
         pending={false}
@@ -89,16 +96,15 @@ describe('CountControl', () => {
       />,
     );
     await user.click(screen.getByRole('button', { name: /Enter custom amount for/ }));
-    const input = screen.getByRole('spinbutton', { name: /Amount for/ });
+    const input = amountInput();
     await user.type(input, '0');
-    await user.click(screen.getByRole('button', { name: /Apply amount for/ }));
+    await user.click(screen.getByRole('button', { name: 'Add' }));
     expect(onAddDelta).toHaveBeenCalledWith(0);
   });
 
   it('manual increments: shows + trigger and quick-add buttons', () => {
     renderWithModal(
       <CountControl
-        interval={1}
         summationSteps={manualSteps}
         displayTotal={null}
         habitName={habitName}
@@ -118,9 +124,8 @@ describe('CountControl', () => {
     const onAddDelta = vi.fn(async () => {});
     renderWithModal(
       <CountControl
-        interval={1}
         summationSteps={manualSteps}
-        displayTotal={7}
+        displayTotal={null}
         habitName={habitName}
         pending={false}
         onAddDelta={onAddDelta}
@@ -132,12 +137,50 @@ describe('CountControl', () => {
     expect(onAddDelta).toHaveBeenCalledWith(-1);
   });
 
-  it('manual increments: typed amount submits delta', async () => {
+  it('add modal: shows new total while typing', async () => {
+    const user = userEvent.setup();
+    renderWithModal(
+      <CountControl
+        displayTotal={10}
+        habitName={habitName}
+        pending={false}
+        onAddDelta={vi.fn(async () => {})}
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: /Enter custom amount for/ }));
+    expect(screen.queryByText(/New total:/)).toBeNull();
+    await user.type(amountInput(), '5');
+    expect(screen.getByText('New total: 15')).toBeTruthy();
+    await user.clear(amountInput());
+    await user.type(amountInput(), '-3');
+    expect(screen.getByText('New total: 7')).toBeTruthy();
+  });
+
+  it('add modal: rejected letter shows error and is not entered', async () => {
+    const user = userEvent.setup();
+    renderWithModal(
+      <CountControl
+        displayTotal={null}
+        habitName={habitName}
+        pending={false}
+        onAddDelta={vi.fn(async () => {})}
+      />,
+    );
+    await user.click(screen.getByRole('button', { name: /Enter custom amount for/ }));
+    const input = amountInput();
+    await user.type(input, 'a');
+    expect(input.value).toBe('');
+    expect(screen.getByText('Value must be a number')).toBeTruthy();
+    await user.type(input, '5');
+    expect(input.value).toBe('5');
+    expect(screen.queryByText('Value must be a number')).toBeNull();
+  });
+
+  it('manual increments: typed amount in modal submits delta', async () => {
     const user = userEvent.setup();
     const onAddDelta = vi.fn(async () => {});
     renderWithModal(
       <CountControl
-        interval={1}
         summationSteps={manualSteps}
         displayTotal={null}
         habitName={habitName}
@@ -146,9 +189,9 @@ describe('CountControl', () => {
       />,
     );
     await user.click(screen.getByRole('button', { name: /Enter custom amount for/ }));
-    const input = screen.getByRole('spinbutton', { name: /Amount for/ });
+    const input = amountInput();
     await user.type(input, '12');
-    await user.click(screen.getByRole('button', { name: /Apply amount for/ }));
+    await user.click(screen.getByRole('button', { name: 'Add' }));
     expect(onAddDelta).toHaveBeenCalledWith(12);
   });
 });
