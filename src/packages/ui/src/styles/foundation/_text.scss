@@ -1,3 +1,4 @@
+/* stylelint-disable habsum/bem-block-matches-filename, habsum/single-block-per-file -- Foundation text utilities intentionally define multiple typography helper classes. */
 @use 'functions';
 
 // Atomic typography scale.
@@ -69,7 +70,7 @@
 }
 
 .link--fancy {
-  color: var(--accent-selected);
+  color: var(--text-accent);
 }
 
 .text--hoverable {

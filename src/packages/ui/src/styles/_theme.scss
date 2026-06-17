@@ -1,3 +1,4 @@
+/* stylelint-disable selector-max-type, habsum/bem-block-matches-filename, habsum/single-block-per-file -- Global theme base styles intentionally target elements instead of a BEM block. */
 // Border-box globally: every element and generated pseudo-elements. `*` does not hit
 // `::backdrop` (top-layer pseudo for `<dialog>`), so declare it separately.
 *,

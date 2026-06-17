@@ -94,12 +94,12 @@
   text-decoration: none;
 
   &:hover {
-    background: var(--background-disabled);
+    background: functions.darken(var(--background));
   }
 }
 
 .settings__link--active {
-  background: var(--background-tertiary);
+  background: var(--background-secondary);
 }
 
 .settings__logout {

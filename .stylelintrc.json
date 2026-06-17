@@ -9,38 +9,6 @@
     "./src/packages/stylelint/dist/rules/theme-token-order/index.mjs",
     "./src/packages/stylelint/dist/rules/atomic-class-enforcer/index.mjs"
   ],
-  "overrides": [
-    {
-      "files": [
-        "src/packages/ui/src/styles/_reset.scss",
-        "src/packages/ui/src/styles/_tokens.scss"
-      ],
-      "rules": {
-        "selector-max-type": null,
-        "habsum/require-spacing-function": null,
-        "habsum/token-use-enforcer": null,
-        "habsum/single-block-per-file": null
-      }
-    },
-    {
-      "files": [
-        "src/packages/ui/src/styles/foundation/_text.scss",
-        "src/packages/ui/src/styles/foundation/_atomic.scss"
-      ],
-      "rules": {
-        "habsum/bem-block-matches-filename": null,
-        "habsum/single-block-per-file": null
-      }
-    },
-    {
-      "files": ["src/packages/ui/src/styles/_theme.scss"],
-      "rules": {
-        "selector-max-type": null,
-        "habsum/bem-block-matches-filename": null,
-        "habsum/single-block-per-file": null
-      }
-    }
-  ],
   "rules": {
     "selector-class-pattern": [
       "^[a-z][a-z0-9]*(-[a-z0-9]+)*(__[a-z0-9]+(-[a-z0-9]+)*)?(--[a-z0-9]+(-[a-z0-9]+)*)?$",

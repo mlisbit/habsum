@@ -1,3 +1,4 @@
+/* stylelint-disable selector-max-type, habsum/require-spacing-function, habsum/token-use-enforcer, habsum/single-block-per-file -- Theme token definitions intentionally use raw values on theme root selectors. */
 @use 'functions';
 
 // Theme tokens on `html` so `document.body` portals (e.g. hover panels) inherit the same variables.
@@ -12,7 +13,6 @@ html[data-theme='dark'] {
   // background colors
   --background: #1c1d21;
   --background-secondary: #212327;
-  --background-tertiary: #292b2f;
   --background-disabled: #292b2f;
   --background-warning: #5b333a;
   --background-input: #292b2f;
@@ -25,6 +25,7 @@ html[data-theme='dark'] {
   --text-success: #89ac96;
   --text-warning: #fbbf24;
   --text-link: #89ac96;
+  --text-accent: var(--accent-selected);
 
   // ctas primary
   --cta-base-background: var(--accent-selected);
@@ -51,14 +52,14 @@ html[data-theme='dark'] {
   --graph-previous-day-color: var(--accent-selected);
   --heatmap-fill-0: var(--background-input);
   --heatmap-fill-1: var(--accent-red-1);
-  --heatmap-fill-2: color-mix(in srgb, var(--background-tertiary) 80%, var(--accent-selected) 20%);
-  --heatmap-fill-3: color-mix(in srgb, var(--background-tertiary) 70%, var(--accent-selected) 30%);
-  --heatmap-fill-4: color-mix(in srgb, var(--background-tertiary) 60%, var(--accent-selected) 40%);
-  --heatmap-fill-5: color-mix(in srgb, var(--background-tertiary) 50%, var(--accent-selected) 50%);
-  --heatmap-fill-6: color-mix(in srgb, var(--background-tertiary) 40%, var(--accent-selected) 60%);
-  --heatmap-fill-7: color-mix(in srgb, var(--background-tertiary) 30%, var(--accent-selected) 70%);
-  --heatmap-fill-8: color-mix(in srgb, var(--background-tertiary) 20%, var(--accent-selected) 80%);
-  --heatmap-fill-9: color-mix(in srgb, var(--background-tertiary) 10%, var(--accent-selected) 90%);
+  --heatmap-fill-2: color-mix(in srgb, var(--background-input) 80%, var(--accent-selected) 20%);
+  --heatmap-fill-3: color-mix(in srgb, var(--background-input) 70%, var(--accent-selected) 30%);
+  --heatmap-fill-4: color-mix(in srgb, var(--background-input) 60%, var(--accent-selected) 40%);
+  --heatmap-fill-5: color-mix(in srgb, var(--background-input) 50%, var(--accent-selected) 50%);
+  --heatmap-fill-6: color-mix(in srgb, var(--background-input) 40%, var(--accent-selected) 60%);
+  --heatmap-fill-7: color-mix(in srgb, var(--background-input) 30%, var(--accent-selected) 70%);
+  --heatmap-fill-8: color-mix(in srgb, var(--background-input) 20%, var(--accent-selected) 80%);
+  --heatmap-fill-9: color-mix(in srgb, var(--background-input) 10%, var(--accent-selected) 90%);
   --heatmap-fill-10: var(--accent-selected);
 
   // other
@@ -73,51 +74,51 @@ html[data-theme='light'] {
   --border-color-faint: #e8e8ea;
 
   // background colors
-  --background: #f7f8fa;
-  --background-secondary: #fff;
-  --background-tertiary: #f7f8fa;
+  --background: #ccc;
+  --background-secondary: #d8d8d8;
   --background-disabled: #a6acbd;
   --background-warning: var(--accent-red-1);
-  --background-input: color-mix(in srgb, var(--background-secondary) 94%, var(--background) 6%);
+  --background-input: #e4e4e4;
   --background-modal-backdrop: rgb(0 0 0 / 45%);
 
   // text colors
-  --text-color: #14161a;
+  --text-color: #222;
   --text-muted: #5f6368;
   --text-error: #c62828;
   --text-success: #2e7d32;
   --text-warning: #9a6700;
   --text-link: #2d6cdf;
+  --text-accent: #355c4b;
 
   // ctas
   --cta-base-background: #2d6cdf;
   --cta-base-text-color: #fff;
   --cta-base-background-danger: var(--accent-red-1);
-  --cta-secondary-border: #4b5057;
-  --cta-secondary-fill: #fff;
+  --cta-secondary-border: #616161;
+  --cta-secondary-fill: transparent;
   --cta-secondary-border-danger: var(--accent-red-1);
 
   // pills
-  --pill-border: #4b5057;
-  --pill-fill: #fff;
+  --pill-border: #c1bfbf;
+  --pill-fill: #c6c6c6;
   --pill-fill-selected: var(--accent-selected);
 
   // accents
-  --accent-selected: #2d6cdf;
-  --accent-red-1: #d98f8f;
+  --accent-selected: #6b987f;
+  --accent-red-1: #d64545;
   --accent-orange-1: #e07b1a;
   --accent-graph-line: #8b919a;
   --graph-previous-day-color: var(--accent-selected);
-  --heatmap-fill-0: var(--background-tertiary);
-  --heatmap-fill-1: color-mix(in srgb, var(--background-tertiary) 90%, var(--accent-selected) 10%);
-  --heatmap-fill-2: color-mix(in srgb, var(--background-tertiary) 80%, var(--accent-selected) 20%);
-  --heatmap-fill-3: color-mix(in srgb, var(--background-tertiary) 70%, var(--accent-selected) 30%);
-  --heatmap-fill-4: color-mix(in srgb, var(--background-tertiary) 60%, var(--accent-selected) 40%);
-  --heatmap-fill-5: color-mix(in srgb, var(--background-tertiary) 50%, var(--accent-selected) 50%);
-  --heatmap-fill-6: color-mix(in srgb, var(--background-tertiary) 40%, var(--accent-selected) 60%);
-  --heatmap-fill-7: color-mix(in srgb, var(--background-tertiary) 30%, var(--accent-selected) 70%);
-  --heatmap-fill-8: color-mix(in srgb, var(--background-tertiary) 20%, var(--accent-selected) 80%);
-  --heatmap-fill-9: color-mix(in srgb, var(--background-tertiary) 10%, var(--accent-selected) 90%);
+  --heatmap-fill-0: var(--background-input);
+  --heatmap-fill-1: var(--accent-red-1);
+  --heatmap-fill-2: color-mix(in srgb, var(--background-input) 80%, var(--accent-selected) 20%);
+  --heatmap-fill-3: color-mix(in srgb, var(--background-input) 70%, var(--accent-selected) 30%);
+  --heatmap-fill-4: color-mix(in srgb, var(--background-input) 60%, var(--accent-selected) 40%);
+  --heatmap-fill-5: color-mix(in srgb, var(--background-input) 50%, var(--accent-selected) 50%);
+  --heatmap-fill-6: color-mix(in srgb, var(--background-input) 40%, var(--accent-selected) 60%);
+  --heatmap-fill-7: color-mix(in srgb, var(--background-input) 30%, var(--accent-selected) 70%);
+  --heatmap-fill-8: color-mix(in srgb, var(--background-input) 20%, var(--accent-selected) 80%);
+  --heatmap-fill-9: color-mix(in srgb, var(--background-input) 10%, var(--accent-selected) 90%);
   --heatmap-fill-10: var(--accent-selected);
 
   // other

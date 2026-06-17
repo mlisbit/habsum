@@ -3,6 +3,11 @@
   @return color-mix(in srgb, #{$color} 90%, white 20%);
 }
 
+// stylelint-disable-next-line scss/no-global-function-names
+@function darken($color) {
+  @return color-mix(in srgb, #{$color} 90%, #666 10%);
+}
+
 @function dim($color) {
   @return color-mix(in srgb, #{$color} 90%, var(--background) 20%);
 }

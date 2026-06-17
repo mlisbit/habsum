@@ -296,7 +296,7 @@ export function ConfigSettings({ user, renderCard }: ConfigSettingsProps) {
         subtitle: (
           <button
             type="button"
-            className="config-page__view-toggle text-b-s text-link"
+            className="config-page__view-toggle text-b-s link--fancy"
             disabled={saving}
             onClick={toggleView}
           >
