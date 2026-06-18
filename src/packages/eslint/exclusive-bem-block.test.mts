@@ -18,6 +18,11 @@ const webappRoot = path.resolve(
 );
 const barGraphTestFile = path.join(webappRoot, 'app/components/__tests__/BarGraph.test.tsx');
 const habitRendererFile = path.join(webappRoot, 'app/components/habit-renderer/HabitRenderer.tsx');
+const developerRouteFile = path.join(
+  webappRoot,
+  'app/routes/users/$user/settings/developer/route.tsx',
+);
+const habitIdFile = path.join(webappRoot, 'app/utils/habit-id.ts');
 
 describe('exclusive-bem-block', () => {
   it('passes eslint RuleTester cases', () => {
@@ -48,6 +53,14 @@ describe('exclusive-bem-block', () => {
             'app/components/habit-renderer/_private/HabitHeaderAndActionRenderer.tsx',
           ),
           code: `function Header() { return <TogglePill className={dim ? 'habit-select__option habit-select__option--dim' : 'habit-select__option'} onToggle={() => onUpdate({ habit: habit.name, value: opt })} />; }`,
+        },
+        {
+          filename: developerRouteFile,
+          code: `const summaryParts = [formatCount(userRow.habitCount, 'habit')];`,
+        },
+        {
+          filename: habitIdFile,
+          code: `export const CONFIG_EDIT_HABIT_QUERY_PARAM = 'habit';`,
         },
       ],
       invalid: [

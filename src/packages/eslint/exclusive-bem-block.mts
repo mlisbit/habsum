@@ -113,8 +113,6 @@ function blockUsagePatterns(block: string): string[] {
   return [
     `(?<![\\w-])${esc}(__|--)`,
     `(?<![\\w$-])\\.${esc}(?![\\w-])`,
-    // Bare block as a class token (not prose like `'streak options must…'`).
-    `(?:['"])${esc}(?:['"])`,
     `(?:className|class)\\s*=\\s*${quoteClass}${notQuoteClass}*(?<![\\w-])${esc}(?![\\w-])${notQuoteClass}*${quoteClass}`,
     `(?:className|class)\\s*=\\s*\\{(?:${notBraceOrQuoteClass}*${quoteClass}${notQuoteClass}*${quoteClass})*${notBraceOrQuoteClass}*${quoteClass}${notQuoteClass}*(?<![\\w-])${esc}(?![\\w-])${notQuoteClass}*${quoteClass}`,
   ];
