@@ -2,7 +2,7 @@ import type { Habit } from '@habsum/types/common/habit';
 import type { DeveloperGetResponse } from '@habsum/types/api-responses/developer-get';
 import type { MeGetResponse } from '@habsum/types/api-responses/me-get';
 import type { HabitsResponse } from '@habsum/types/api-responses/habits-get';
-import type { PatchHabitResponse } from '@habsum/types/api-responses/habit-patch';
+import type { HabitPatch, PatchHabitResponse } from '@habsum/types/api-responses/habit-patch';
 import type { HistoryGetResponse } from '@habsum/types/api-responses/history-get';
 import type { UsersPatchRequest } from '@habsum/types/api-responses/users-patch';
 import type {
@@ -81,7 +81,7 @@ export type { BarGraphData, BarGraphDatum } from '@habsum/types/common/bar-chart
 export type { Day } from '@habsum/types/common/day';
 export type { LongestStreak, StreakDatum, StreakGraphData } from '@habsum/types/common/streak';
 export type { HabitsResponse } from '@habsum/types/api-responses/habits-get';
-export type { PatchHabitResponse } from '@habsum/types/api-responses/habit-patch';
+export type { HabitPatch, PatchHabitResponse } from '@habsum/types/api-responses/habit-patch';
 export type { HistoryGetResponse } from '@habsum/types/api-responses/history-get';
 export type {
   SecurityGetResponse,
@@ -119,12 +119,6 @@ export function isServerConnectionFailure(error: unknown): boolean {
   if (error instanceof ApiRequestError) return error.status >= 500;
   return error instanceof TypeError;
 }
-
-export type HabitPatch =
-  | { habit: string; total: number }
-  | { habit: string; value: string }
-  | { habit: string; action: 'clear' }
-  | { habit: string; action: 'delete_event'; eventId: number };
 
 function buildHabitPatchPayload(body: HabitPatch, date: string): Record<string, unknown> {
   const d = new Date();

@@ -1,10 +1,10 @@
 // exclusive-bem-block: habit
-import { useCallback, useState } from 'react';
+import { useCallback, useState, type ComponentType, type ReactNode } from 'react';
 import type { Habit } from '@habsum/types/common/habit';
 import type { Day } from '@habsum/types/common/day';
-import type { HabitPatch } from '~/api.client';
-import HabitHeaderAndActionRenderer from '~/components/habit-renderer/_private/HabitHeaderAndActionRenderer';
-import HabitWidgetRenderer from '~/components/habit-renderer/_private/HabitWidgetRenderer';
+import type { HabitPatch } from '@habsum/types/api-responses/habit-patch';
+import HabitHeaderAndActionRenderer from './_private/HabitHeaderAndActionRenderer';
+import HabitWidgetRenderer from './_private/HabitWidgetRenderer';
 import { useToast } from '@habsum/ui/contexts/toast';
 
 type HabitRendererProps = {
@@ -13,6 +13,9 @@ type HabitRendererProps = {
   viewDate: Day;
   habit: Habit;
   onUpdate: (patch: HabitPatch) => Promise<void>;
+  currentSearch?: string;
+  LinkComponent?: ComponentType<{ to: string; className?: string; children: ReactNode }>;
+  onNavigate?: (url: string) => void;
 };
 
 function usePendingOp({ onError }: { onError: (message: string) => void }) {
@@ -36,7 +39,7 @@ function usePendingOp({ onError }: { onError: (message: string) => void }) {
 }
 
 export default function HabitRenderer(props: HabitRendererProps) {
-  const { user, habit, viewDate, onUpdate } = props;
+  const { user, habit, viewDate, onUpdate, currentSearch, LinkComponent, onNavigate } = props;
   const { showToast } = useToast();
   const showUpdateError = useCallback(
     (message: string) => {
@@ -56,6 +59,9 @@ export default function HabitRenderer(props: HabitRendererProps) {
         user={user}
         habit={habit}
         pending={pending}
+        currentSearch={currentSearch}
+        LinkComponent={LinkComponent}
+        onNavigate={onNavigate}
         onUpdate={updateHabit}
       />
       <HabitWidgetRenderer

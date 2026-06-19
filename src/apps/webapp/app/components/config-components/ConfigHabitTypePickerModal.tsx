@@ -1,6 +1,6 @@
 // exclusive-bem-block: config-habit-type-picker
 import type { ReactNode } from 'react';
-import HabitRenderer from '~/components/habit-renderer/HabitRenderer';
+import HabitRenderer from '@habsum/habit-render';
 import { ModalBody, ModalHeader } from '@habsum/ui/contexts/modal';
 import {
   PREVIEW_SINGLE_SELECT_HABIT,

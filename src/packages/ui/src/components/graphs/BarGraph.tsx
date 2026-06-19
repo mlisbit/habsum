@@ -1,7 +1,7 @@
 // exclusive-bem-block: bar-graph
 import type { BarGraphData } from '@habsum/types/common/bar-chart';
 import { Hoverable } from '@habsum/ui/components/Hoverable';
-import { classBuilder } from '~/utils/class-builder';
+import { classBuilder } from '@habsum/utils';
 
 export type BarGraphLine = {
   value: number;

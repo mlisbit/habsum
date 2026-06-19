@@ -16,6 +16,15 @@ const componentLibraryStylesDir = path.resolve(
   'src',
   'styles',
 );
+const habitRenderStylesDir = path.resolve(
+  __dirname,
+  '..',
+  '..',
+  'packages',
+  'habit-render',
+  'src',
+  'styles',
+);
 
 export default defineConfig({
   resolve: {
@@ -66,7 +75,7 @@ export default defineConfig({
     preprocessorOptions: {
       scss: {
         api: 'modern',
-        loadPaths: [stylesDir, componentLibraryStylesDir],
+        loadPaths: [stylesDir, componentLibraryStylesDir, habitRenderStylesDir],
       },
     },
   },

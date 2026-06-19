@@ -1,10 +1,10 @@
 // exclusive-bem-block: habit-module-events
 import { useCallback, useMemo, useState } from 'react';
 import type { SummationEvent, SummationEventCreatedAt } from '@habsum/types/common/habit';
-import { BarGraph } from '~/components/graphs/BarGraph';
+import { BarGraph } from '@habsum/ui/components/graphs/BarGraph';
 import { Button } from '@habsum/ui/components/Button';
 import { ModalBody, ModalHeader, useModal } from '@habsum/ui/contexts/modal';
-import { summationHourlyBarGraphData } from '~/utils/formatters/summation-hourly-bar-data';
+import { summationHourlyBarGraphData } from '@habsum/utils';
 
 type EventsProps = {
   habitName: string;

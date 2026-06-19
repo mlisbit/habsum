@@ -1,6 +1,6 @@
 // exclusive-bem-block: habit-module-graph
 import type { HabitWidgetBarGraphBody } from '@habsum/types/common/habit';
-import { BarGraph } from '~/components/graphs/BarGraph';
+import { BarGraph } from '@habsum/ui/components/graphs/BarGraph';
 
 type GraphProps = {
   body: HabitWidgetBarGraphBody;

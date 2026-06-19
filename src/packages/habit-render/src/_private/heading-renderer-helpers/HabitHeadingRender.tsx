@@ -1,10 +1,8 @@
 // exclusive-bem-block: habit-heading
-import type { ReactNode } from 'react';
-import { Link } from '@remix-run/react';
+import type { ComponentType, ReactNode } from 'react';
 import { Button } from '@habsum/ui/components/Button';
 import { Icon } from '@habsum/ui/components/Icon';
-import { habitDetailUrl } from '~/utils/habit-id';
-import { classBuilder } from '~/utils/class-builder';
+import { classBuilder, habitDetailUrl } from '@habsum/utils';
 
 type HabitHeadingRenderProps = {
   user: string;
@@ -12,6 +10,8 @@ type HabitHeadingRenderProps = {
   className?: string;
   pending?: boolean;
   goalHit?: boolean;
+  currentSearch?: string;
+  LinkComponent?: ComponentType<{ to: string; className?: string; children: ReactNode }>;
   menuAriaLabel: string;
   onMenuClick: () => void;
   /** Right-side controls (e.g. summation count buttons). */
@@ -24,6 +24,8 @@ export function HabitHeadingRender({
   className,
   pending = false,
   goalHit = false,
+  currentSearch,
+  LinkComponent,
   menuAriaLabel,
   onMenuClick,
   actions,
@@ -31,7 +33,7 @@ export function HabitHeadingRender({
   const to = habitDetailUrl(
     user,
     habitName,
-    typeof window !== 'undefined' ? window.location.search : '',
+    currentSearch ?? (typeof window !== 'undefined' ? window.location.search : ''),
   );
 
   return (
@@ -40,9 +42,15 @@ export function HabitHeadingRender({
         {goalHit ? (
           <Icon name="check" size="medium" className="habit-heading__goal-hit-check text-success" />
         ) : null}
-        <Link className="text-color-link text-h-m" to={to}>
-          {habitName}
-        </Link>
+        {LinkComponent ? (
+          <LinkComponent className="text-color-link text-h-m" to={to}>
+            {habitName}
+          </LinkComponent>
+        ) : (
+          <a className="text-color-link text-h-m" href={to}>
+            {habitName}
+          </a>
+        )}
         <Button
           type="tertiary"
           size="small"

@@ -1,13 +1,13 @@
 // exclusive-bem-block: habit-menu-modal
-import { useNavigate } from '@remix-run/react';
 import { Button } from '@habsum/ui/components/Button';
 import { ModalBody, ModalHeader } from '@habsum/ui/contexts/modal';
-import { configEditHabitUrl } from '~/utils/habit-id';
+import { configEditHabitUrl } from '@habsum/utils';
 
 type HabitMenuModalProps = {
   user: string;
   habitName: string;
   pending?: boolean;
+  onNavigate?: (url: string) => void;
   closeModal: () => void;
   onReset: () => void | Promise<void>;
 };
@@ -16,14 +16,18 @@ export function HabitMenuModal({
   user,
   habitName,
   pending = false,
+  onNavigate,
   closeModal,
   onReset,
 }: HabitMenuModalProps) {
-  const navigate = useNavigate();
-
   const onEdit = () => {
+    const url = configEditHabitUrl(user, habitName);
     closeModal();
-    navigate(configEditHabitUrl(user, habitName));
+    if (onNavigate) {
+      onNavigate(url);
+    } else {
+      window.location.href = url;
+    }
   };
 
   return (

@@ -2,7 +2,7 @@
 import { useMemo } from 'react';
 import type { Day } from '@habsum/types/common/day';
 import type { StreakDatum, StreakGraphData } from '@habsum/types/common/streak';
-import { Heatmap, type HeatmapEntry } from '~/components/graphs/Heatmap';
+import { Heatmap, type HeatmapEntry } from '@habsum/ui/components/graphs/Heatmap';
 
 function formatStreakDayLabel(dateKey: Day): string {
   const [ys, ms, ds] = dateKey.split('-');

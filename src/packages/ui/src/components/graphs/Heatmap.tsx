@@ -1,7 +1,7 @@
 // exclusive-bem-block: heatmap
 import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
 import { Hoverable } from '@habsum/ui/components/Hoverable';
-import { classBuilder } from '~/utils/class-builder';
+import { classBuilder } from '@habsum/utils';
 
 export type HeatmapDatum = {
   label: string;

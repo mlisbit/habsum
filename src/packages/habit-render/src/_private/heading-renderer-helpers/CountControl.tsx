@@ -3,7 +3,7 @@ import type { SummationOptions } from '@habsum/types/common/habit';
 import { Button } from '@habsum/ui/components/Button';
 import { useModal } from '@habsum/ui/contexts/modal';
 import { CountControlAddModal } from './CountControlAddModal';
-import { formatIncrementLabel, hasSummationOptions } from '~/utils/summationOptions';
+import { formatIncrementLabel, hasSummationOptions } from '@habsum/utils';
 
 export type CountControlProps = {
   /** Manual entry + quick-add increments from habit config. */

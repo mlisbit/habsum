@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useLocation, useNavigate, useParams } from '@remix-run/react';
+import { Link, useLocation, useNavigate, useParams } from '@remix-run/react';
 import type { MetaFunction } from '@remix-run/node';
 import { dayFromString } from '@habsum/types/common/day';
 import { Calendar, type CalendarDataRender } from '~/components/Calendar';
@@ -10,7 +10,7 @@ import { Footer } from '~/components/Footer';
 import { Button } from '@habsum/ui/components/Button';
 import { InfoText } from '@habsum/ui/components/InfoText';
 import { TogglePill } from '@habsum/ui/components/Pill';
-import HabitRenderer from '~/components/habit-renderer/HabitRenderer';
+import HabitRenderer from '@habsum/habit-render';
 import { getHabitHistory, patchHabit, type Habit } from '~/api.client';
 import { useUser } from '~/context/user';
 import { ensureUserSessionForRoute } from '~/utils/user-session-guard';
@@ -283,6 +283,13 @@ export default function HabitDetailRoute() {
                   user={user}
                   habit={habitForWidget}
                   viewDate={viewDate}
+                  currentSearch={location.search}
+                  LinkComponent={({ to, className, children }) => (
+                    <Link className={className} to={to}>
+                      {children}
+                    </Link>
+                  )}
+                  onNavigate={navigate}
                   onUpdate={async (patch) => {
                     await patchHabit(user, patch, { date: effectiveDate });
                     await fetchHistory({ mode: 'refresh' });

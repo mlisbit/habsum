@@ -5,7 +5,7 @@ import { dayFromString } from '@habsum/types/common/day';
 import { getHabits, logout, patchHabit, type Habit } from '~/api.client';
 import { Footer } from '~/components/Footer';
 import { TopNav } from '~/components/TopNav';
-import HabitRenderer from '~/components/habit-renderer/HabitRenderer';
+import HabitRenderer from '@habsum/habit-render';
 import { InfoText } from '@habsum/ui/components/InfoText';
 import { useToast } from '@habsum/ui/contexts/toast';
 import { useUser } from '~/context/user';
@@ -178,6 +178,12 @@ export default function HabitsPage() {
         user={state!.user}
         habit={h}
         viewDate={viewDate}
+        LinkComponent={({ to, className, children }) => (
+          <Link className={className} to={to}>
+            {children}
+          </Link>
+        )}
+        onNavigate={navigate}
         onUpdate={async (patch) => {
           const updated = await patchHabit(state!.user, patch, { date: effectiveDate });
           onHabitUpdated({ ...h, ...updated } as Habit);

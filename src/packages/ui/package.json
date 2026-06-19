@@ -12,6 +12,7 @@
   },
   "exports": {
     "./components/*": "./src/components/*.tsx",
+    "./components/graphs/*": "./src/components/graphs/*.tsx",
     "./contexts/*": "./src/contexts/*.tsx",
     "./styles": "./src/styles/index.scss",
     "./theme": "./src/theme.ts"

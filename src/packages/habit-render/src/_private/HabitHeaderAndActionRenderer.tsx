@@ -1,18 +1,21 @@
-import { useCallback } from 'react';
+import { useCallback, type ComponentType, type ReactNode } from 'react';
 import type { Habit, HabitRowSingleSelect, HabitRowSummation } from '@habsum/types/common/habit';
-import type { HabitPatch } from '~/api.client';
+import type { HabitPatch } from '@habsum/types/api-responses/habit-patch';
 import { CountControl } from './heading-renderer-helpers/CountControl';
 import { HabitHeadingRender } from './heading-renderer-helpers/HabitHeadingRender';
 import { HabitMenuModal } from './heading-renderer-helpers/HabitMenuModal';
 import { TogglePill } from '@habsum/ui/components/Pill';
 import { TernaryCheckbox, type TernaryCheckboxValue } from '@habsum/ui/components/TernaryCheckbox';
 import { useModal } from '@habsum/ui/contexts/modal';
-import { isGoalHit } from '~/utils/habit-helpers';
+import { isGoalHit } from '@habsum/utils';
 
 type HabitHeaderAndActionRendererProps = {
   user: string;
   habit: Habit;
   pending: boolean;
+  currentSearch?: string;
+  LinkComponent?: ComponentType<{ to: string; className?: string; children: ReactNode }>;
+  onNavigate?: (url: string) => void;
   onUpdate: (patch: HabitPatch) => Promise<void>;
 };
 
@@ -33,11 +36,13 @@ function useHabitResetMenu({
   user,
   habit,
   pending,
+  onNavigate,
   onUpdate,
 }: {
   user: string;
   habit: Habit;
   pending: boolean;
+  onNavigate?: (url: string) => void;
   onUpdate: (patch: HabitPatch) => Promise<void>;
 }) {
   const { present, closeModal } = useModal();
@@ -49,6 +54,7 @@ function useHabitResetMenu({
           user={user}
           habitName={habit.name}
           pending={pending}
+          onNavigate={onNavigate}
           closeModal={closeModal}
           onReset={async () => {
             await onUpdate({ habit: habit.name, action: 'clear' });
@@ -57,7 +63,7 @@ function useHabitResetMenu({
         />
       ),
     });
-  }, [present, closeModal, habit.name, onUpdate, pending, user]);
+  }, [present, closeModal, habit.name, onNavigate, onUpdate, pending, user]);
 }
 
 function SingleSelectActions({
@@ -130,12 +136,16 @@ function SingleSelectHabitHeader({
   user,
   habit,
   pending,
+  currentSearch,
+  LinkComponent,
   openResetModal,
   onUpdate,
 }: {
   user: string;
   habit: HabitRowSingleSelect;
   pending: boolean;
+  currentSearch?: string;
+  LinkComponent?: ComponentType<{ to: string; className?: string; children: ReactNode }>;
   openResetModal: () => void;
   onUpdate: (patch: HabitPatch) => Promise<void>;
 }) {
@@ -145,6 +155,8 @@ function SingleSelectHabitHeader({
       habitName={habit.name}
       pending={pending}
       goalHit={isGoalHit(habit)}
+      currentSearch={currentSearch}
+      LinkComponent={LinkComponent}
       menuAriaLabel={`More options for ${habit.name}`}
       onMenuClick={openResetModal}
       className="mb-4"
@@ -157,12 +169,16 @@ function SummationHabitHeader({
   user,
   habit,
   pending,
+  currentSearch,
+  LinkComponent,
   openResetModal,
   onUpdate,
 }: {
   user: string;
   habit: HabitRowSummation;
   pending: boolean;
+  currentSearch?: string;
+  LinkComponent?: ComponentType<{ to: string; className?: string; children: ReactNode }>;
   openResetModal: () => void;
   onUpdate: (patch: HabitPatch) => Promise<void>;
 }) {
@@ -172,6 +188,8 @@ function SummationHabitHeader({
       habitName={habit.name}
       pending={pending}
       goalHit={isGoalHit(habit)}
+      currentSearch={currentSearch}
+      LinkComponent={LinkComponent}
       menuAriaLabel={`More options for ${habit.name}`}
       onMenuClick={openResetModal}
       className="mb-4"
@@ -192,12 +210,16 @@ export default function HabitHeaderAndActionRenderer({
   user,
   habit,
   pending,
+  currentSearch,
+  LinkComponent,
+  onNavigate,
   onUpdate,
 }: HabitHeaderAndActionRendererProps) {
   const openResetModal = useHabitResetMenu({
     user,
     habit,
     pending,
+    onNavigate,
     onUpdate,
   });
 
@@ -207,6 +229,8 @@ export default function HabitHeaderAndActionRenderer({
         user={user}
         habit={habit}
         pending={pending}
+        currentSearch={currentSearch}
+        LinkComponent={LinkComponent}
         openResetModal={openResetModal}
         onUpdate={onUpdate}
       />
@@ -218,6 +242,8 @@ export default function HabitHeaderAndActionRenderer({
       user={user}
       habit={habit}
       pending={pending}
+      currentSearch={currentSearch}
+      LinkComponent={LinkComponent}
       openResetModal={openResetModal}
       onUpdate={onUpdate}
     />

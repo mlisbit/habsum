@@ -9,6 +9,7 @@
   padding: functions.spacing(2, 3);
   background: var(--background-secondary);
   border-radius: var(--border-radius-m);
+  border: 1px solid var(--background);
   list-style: none;
   transition:
     border-color 0.12s ease,
