@@ -30,3 +30,5 @@ export {
   redistributeNegativeSlices,
   summationHourlyBarGraphData,
 } from './summation-hourly-bar-data.js';
+export { build } from './model-builders/habit.js';
+export { build as buildWidget } from './model-builders/widget.js';
