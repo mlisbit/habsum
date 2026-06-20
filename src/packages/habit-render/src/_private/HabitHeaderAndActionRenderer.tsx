@@ -16,6 +16,7 @@ type HabitHeaderAndActionRendererProps = {
   currentSearch?: string;
   LinkComponent?: ComponentType<{ to: string; className?: string; children: ReactNode }>;
   onNavigate?: (url: string) => void;
+  demo?: boolean;
   onUpdate: (patch: HabitPatch) => Promise<void>;
 };
 
@@ -138,6 +139,7 @@ function SingleSelectHabitHeader({
   pending,
   currentSearch,
   LinkComponent,
+  demo,
   openResetModal,
   onUpdate,
 }: {
@@ -146,6 +148,7 @@ function SingleSelectHabitHeader({
   pending: boolean;
   currentSearch?: string;
   LinkComponent?: ComponentType<{ to: string; className?: string; children: ReactNode }>;
+  demo?: boolean;
   openResetModal: () => void;
   onUpdate: (patch: HabitPatch) => Promise<void>;
 }) {
@@ -157,6 +160,7 @@ function SingleSelectHabitHeader({
       goalHit={isGoalHit(habit)}
       currentSearch={currentSearch}
       LinkComponent={LinkComponent}
+      demo={demo}
       menuAriaLabel={`More options for ${habit.name}`}
       onMenuClick={openResetModal}
       className="mb-4"
@@ -171,6 +175,7 @@ function SummationHabitHeader({
   pending,
   currentSearch,
   LinkComponent,
+  demo,
   openResetModal,
   onUpdate,
 }: {
@@ -179,6 +184,7 @@ function SummationHabitHeader({
   pending: boolean;
   currentSearch?: string;
   LinkComponent?: ComponentType<{ to: string; className?: string; children: ReactNode }>;
+  demo?: boolean;
   openResetModal: () => void;
   onUpdate: (patch: HabitPatch) => Promise<void>;
 }) {
@@ -190,6 +196,7 @@ function SummationHabitHeader({
       goalHit={isGoalHit(habit)}
       currentSearch={currentSearch}
       LinkComponent={LinkComponent}
+      demo={demo}
       menuAriaLabel={`More options for ${habit.name}`}
       onMenuClick={openResetModal}
       className="mb-4"
@@ -213,6 +220,7 @@ export default function HabitHeaderAndActionRenderer({
   currentSearch,
   LinkComponent,
   onNavigate,
+  demo = false,
   onUpdate,
 }: HabitHeaderAndActionRendererProps) {
   const openResetModal = useHabitResetMenu({
@@ -231,6 +239,7 @@ export default function HabitHeaderAndActionRenderer({
         pending={pending}
         currentSearch={currentSearch}
         LinkComponent={LinkComponent}
+        demo={demo}
         openResetModal={openResetModal}
         onUpdate={onUpdate}
       />
@@ -244,6 +253,7 @@ export default function HabitHeaderAndActionRenderer({
       pending={pending}
       currentSearch={currentSearch}
       LinkComponent={LinkComponent}
+      demo={demo}
       openResetModal={openResetModal}
       onUpdate={onUpdate}
     />

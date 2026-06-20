@@ -91,7 +91,7 @@ html[data-theme='light'] {
   --text-accent: #355c4b;
 
   // ctas
-  --cta-base-background: #2d6cdf;
+  --cta-base-background: var(--accent-selected);
   --cta-base-text-color: #fff;
   --cta-base-background-danger: var(--accent-red-1);
   --cta-secondary-border: #616161;

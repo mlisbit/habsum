@@ -16,6 +16,7 @@ type HabitRendererProps = {
   currentSearch?: string;
   LinkComponent?: ComponentType<{ to: string; className?: string; children: ReactNode }>;
   onNavigate?: (url: string) => void;
+  demo?: boolean;
 };
 
 function usePendingOp({ onError }: { onError: (message: string) => void }) {
@@ -39,7 +40,7 @@ function usePendingOp({ onError }: { onError: (message: string) => void }) {
 }
 
 export default function HabitRenderer(props: HabitRendererProps) {
-  const { user, habit, viewDate, onUpdate, currentSearch, LinkComponent, onNavigate } = props;
+  const { user, habit, viewDate, onUpdate, currentSearch, LinkComponent, onNavigate, demo } = props;
   const { showToast } = useToast();
   const showUpdateError = useCallback(
     (message: string) => {
@@ -62,6 +63,7 @@ export default function HabitRenderer(props: HabitRendererProps) {
         currentSearch={currentSearch}
         LinkComponent={LinkComponent}
         onNavigate={onNavigate}
+        demo={demo}
         onUpdate={updateHabit}
       />
       <HabitWidgetRenderer

@@ -38,6 +38,7 @@ export default defineConfig({
     preprocessorOptions: {
       scss: {
         api: 'modern',
+        includePaths: [componentLibraryStylesDir, habitRenderStylesDir],
         loadPaths: [componentLibraryStylesDir, habitRenderStylesDir],
       },
     },
