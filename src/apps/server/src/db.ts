@@ -84,6 +84,22 @@ if (!usersTableHasColumn('last_login_at')) {
 if (!usersTableHasColumn('web_and_api_version')) {
   db.exec('ALTER TABLE users ADD COLUMN web_and_api_version TEXT');
 }
+if (!usersTableHasColumn('active_habit_config_version')) {
+  db.exec('ALTER TABLE users ADD COLUMN active_habit_config_version INTEGER');
+}
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS habit_configs (
+    user TEXT NOT NULL,
+    version INTEGER NOT NULL,
+    text TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (user, version)
+  );
+
+  CREATE INDEX IF NOT EXISTS habit_configs_latest_idx
+    ON habit_configs (user, version DESC);
+`);
 
 function usersThemeColumnIsNotNull(): boolean {
   const cols = db.prepare("PRAGMA table_info('users')").all() as Array<{
@@ -393,6 +409,29 @@ const countUserEventsStmt = db.prepare<[string, string], { event_count: number }
     (SELECT COUNT(*) FROM habit_daily_selects WHERE user = ?) AS event_count
 `);
 
+const getLatestHabitConfigVersionStmt = db.prepare<[string], { version: number }>(`
+  SELECT version
+  FROM habit_configs
+  WHERE user = ?
+  ORDER BY version DESC
+  LIMIT 1
+`);
+
+const backfillActiveHabitConfigVersionStmt = db.prepare<{
+  username: string;
+  version: number;
+}>(`
+  UPDATE users
+  SET active_habit_config_version = @version
+  WHERE username = @username AND active_habit_config_version IS NULL
+`);
+
+function backfillActiveHabitConfigVersion(username: string): void {
+  const latest = getLatestHabitConfigVersionStmt.get(username);
+  if (!latest) return;
+  backfillActiveHabitConfigVersionStmt.run({ username, version: latest.version });
+}
+
 export function ensureUserPins(usernames: string[], defaultPin = '0'): void {
   const createdAt = new Date().toISOString();
   const storedPin = hashPassword(defaultPin);
@@ -403,6 +442,7 @@ export function ensureUserPins(usernames: string[], defaultPin = '0'): void {
       admin: 0,
       createdAt,
     });
+    backfillActiveHabitConfigVersion(username);
   }
 }
 
@@ -414,6 +454,7 @@ export function setUserPin(username: string, pin: string): void {
     admin: existing?.admin ?? 0,
     createdAt: new Date().toISOString(),
   });
+  backfillActiveHabitConfigVersion(username);
 }
 
 export function countAdmins(): number {
@@ -435,6 +476,7 @@ export function createInitialAdminUser(username: string, pin: string): void {
     pin: hashPassword(pin),
     createdAt: new Date().toISOString(),
   });
+  backfillActiveHabitConfigVersion(username);
 }
 
 /** Updates stored login PIN only; preserves `admin`. Returns whether a row existed. */

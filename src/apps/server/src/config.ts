@@ -1,14 +1,7 @@
-import {
-  readdirSync,
-  readFileSync,
-  writeFileSync,
-  existsSync,
-  renameSync,
-  unlinkSync,
-  mkdirSync,
-} from 'node:fs';
+import { readdirSync, readFileSync, existsSync, mkdirSync, unlinkSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import Database from 'better-sqlite3';
 import { parseSummationOptionsFromRaw, type SummationOptions } from '@habsum/types/common/habit';
 import {
   DEFAULT_STREAK_FREQUENCY,
@@ -24,11 +17,29 @@ if (!rawDir) {
 
 const DATA_DIR = resolve(rawDir);
 const USERS_DIR = join(DATA_DIR, 'users');
+const DB_PATH = join(DATA_DIR, 'habsum.db');
 const SAMPLE_CONFIG_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
   'utils',
   'sample-config.yaml',
 );
+const PREVIOUS_HABIT_CONFIG_VERSIONS_TO_KEEP = 2;
+
+mkdirSync(DATA_DIR, { recursive: true });
+const configDb = new Database(DB_PATH);
+configDb.pragma('journal_mode = WAL');
+configDb.exec(`
+  CREATE TABLE IF NOT EXISTS habit_configs (
+    user TEXT NOT NULL,
+    version INTEGER NOT NULL,
+    text TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (user, version)
+  );
+
+  CREATE INDEX IF NOT EXISTS habit_configs_latest_idx
+    ON habit_configs (user, version DESC);
+`);
 
 export type HabitType = 'summation' | 'single_select';
 
@@ -92,17 +103,182 @@ export function ensureConfigLayout(): void {
   mkdirSync(USERS_DIR, { recursive: true });
 }
 
-export function listUsers(): string[] {
-  if (!existsSync(USERS_DIR)) {
-    throw new Error(
-      `[habsum] missing users directory: ${USERS_DIR}\n` +
-        'Expected user config files at <HABSUM_CONFIG_DIR>/users/<user>.yaml',
-    );
-  }
+type HabitConfigRow = {
+  user: string;
+  version: number;
+  text: string;
+};
+
+const listHabitConfigUsersStmt = configDb.prepare<[], { user: string }>(`
+  SELECT DISTINCT user FROM habit_configs
+`);
+
+const getLatestHabitConfigStmt = configDb.prepare<[string], HabitConfigRow>(`
+  SELECT user, version, text
+  FROM habit_configs
+  WHERE user = ?
+  ORDER BY version DESC
+  LIMIT 1
+`);
+
+const getHabitConfigVersionStmt = configDb.prepare<[string, number], HabitConfigRow>(`
+  SELECT user, version, text
+  FROM habit_configs
+  WHERE user = ? AND version = ?
+`);
+
+const getNextHabitConfigVersionStmt = configDb.prepare<[string], { version: number }>(`
+  SELECT coalesce(max(version), 0) + 1 AS version
+  FROM habit_configs
+  WHERE user = ?
+`);
+
+const insertHabitConfigStmt = configDb.prepare<{
+  user: string;
+  version: number;
+  text: string;
+}>(`
+  INSERT INTO habit_configs (user, version, text)
+  VALUES (@user, @version, @text)
+`);
+
+const pruneHabitConfigVersionsStmt = configDb.prepare<{
+  user: string;
+  oldestVersionToKeep: number;
+}>(`
+  DELETE FROM habit_configs
+  WHERE user = @user AND version < @oldestVersionToKeep
+`);
+
+const renameHabitConfigsStmt = configDb.prepare<{ fromUser: string; toUser: string }>(`
+  UPDATE habit_configs
+  SET user = @toUser
+  WHERE user = @fromUser
+`);
+
+const deleteHabitConfigsStmt = configDb.prepare<[string], unknown>(`
+  DELETE FROM habit_configs WHERE user = ?
+`);
+
+function listLegacyConfigFileUsers(): string[] {
+  if (!existsSync(USERS_DIR)) return [];
   return readdirSync(USERS_DIR)
     .filter((f) => f.endsWith('.yaml') || f.endsWith('.yml'))
-    .map((f) => f.replace(/\.ya?ml$/, ''))
-    .sort();
+    .map((f) => f.replace(/\.ya?ml$/, ''));
+}
+
+function getLatestStoredConfig(user: string): HabitConfigRow | null {
+  return getLatestHabitConfigStmt.get(user) ?? null;
+}
+
+function usersTableExists(): boolean {
+  const row = configDb
+    .prepare<
+      [string],
+      { name: string }
+    >("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?")
+    .get('users');
+  return row != null;
+}
+
+function usersTableHasColumn(column: string): boolean {
+  if (!usersTableExists()) return false;
+  const cols = configDb.prepare("PRAGMA table_info('users')").all() as Array<{ name: string }>;
+  return cols.some((c) => c.name === column);
+}
+
+function ensureActiveHabitConfigVersionColumn(): boolean {
+  if (!usersTableExists()) return false;
+  if (!usersTableHasColumn('active_habit_config_version')) {
+    configDb.exec('ALTER TABLE users ADD COLUMN active_habit_config_version INTEGER');
+  }
+  return true;
+}
+
+function getActiveHabitConfigVersion(user: string): number | null {
+  if (!ensureActiveHabitConfigVersionColumn()) return null;
+  const row = configDb
+    .prepare<
+      [string],
+      { active_habit_config_version: number | null }
+    >('SELECT active_habit_config_version FROM users WHERE username = ?')
+    .get(user);
+  return row?.active_habit_config_version ?? null;
+}
+
+function setActiveHabitConfigVersion(user: string, version: number | null): void {
+  if (!ensureActiveHabitConfigVersionColumn()) return;
+  configDb
+    .prepare<{
+      user: string;
+      version: number | null;
+    }>('UPDATE users SET active_habit_config_version = @version WHERE username = @user')
+    .run({ user, version });
+}
+
+function getActiveStoredConfig(user: string): HabitConfigRow | null {
+  const activeVersion = getActiveHabitConfigVersion(user);
+  if (activeVersion != null) {
+    const active = getHabitConfigVersionStmt.get(user, activeVersion);
+    if (active) return active;
+  }
+
+  const latest = getLatestStoredConfig(user);
+  if (latest) setActiveHabitConfigVersion(user, latest.version);
+  return latest;
+}
+
+function deleteLegacyUserConfigFile(user: string): void {
+  const path = getUserConfigFilePath(user);
+  if (!path) return;
+  try {
+    unlinkSync(path);
+  } catch {
+    // Best-effort cleanup for legacy disk-backed configs.
+  }
+}
+
+function importLegacyUserConfigIfNeeded(user: string): HabitConfigRow | null {
+  const existing = getActiveStoredConfig(user);
+  if (existing) {
+    deleteLegacyUserConfigFile(user);
+    return existing;
+  }
+
+  const path = getUserConfigFilePath(user);
+  if (!path) return null;
+  const text = readFileSync(path, 'utf8');
+  const out = appendUserConfigVersion(user, text);
+  if (!out.ok) {
+    throw new ConfigValidationError(out.error);
+  }
+  deleteLegacyUserConfigFile(user);
+  return getActiveStoredConfig(user);
+}
+
+const appendUserConfigVersion = configDb.transaction(
+  (user: string, content: string): { ok: true } | { ok: false; error: string } => {
+    const validation = validateUserConfigText(user, content);
+    if (!validation.ok) return validation;
+
+    const version = getNextHabitConfigVersionStmt.get(user)?.version ?? 1;
+    insertHabitConfigStmt.run({ user, version, text: content });
+    setActiveHabitConfigVersion(user, version);
+    pruneHabitConfigVersionsStmt.run({
+      user,
+      oldestVersionToKeep: version - PREVIOUS_HABIT_CONFIG_VERSIONS_TO_KEEP,
+    });
+    return { ok: true };
+  },
+);
+
+export function listUsers(): string[] {
+  return Array.from(
+    new Set([
+      ...listHabitConfigUsersStmt.all().map((row) => row.user),
+      ...listLegacyConfigFileUsers(),
+    ]),
+  ).sort();
 }
 
 /** Resolved path to the user's YAML on disk, or null if the file is missing. */
@@ -112,19 +288,23 @@ export function getUserConfigFilePath(user: string): string | null {
 }
 
 export function readUserConfigFileText(user: string): string | null {
-  const path = getUserConfigFilePath(user);
-  if (!path) return null;
-  return readFileSync(path, 'utf8');
+  return importLegacyUserConfigIfNeeded(user)?.text ?? null;
 }
 
 export function writeUserConfigFileText(
   user: string,
   content: string,
 ): { ok: true } | { ok: false; error: string } {
-  const path = getUserConfigFilePath(user);
-  if (!path) {
+  if (!importLegacyUserConfigIfNeeded(user)) {
     return { ok: false, error: 'config file not found' };
   }
+  return appendUserConfigVersion(user, content);
+}
+
+export function validateUserConfigText(
+  user: string,
+  content: string,
+): { ok: true; config: UserConfig } | { ok: false; error: string } {
   if (!content.trim()) {
     return { ok: false, error: 'config cannot be empty' };
   }
@@ -138,28 +318,20 @@ export function writeUserConfigFileText(
     return { ok: false, error: 'config must be a yaml mapping' };
   }
   try {
-    parseUserConfig(user, parsed);
+    return { ok: true, config: parseUserConfig(user, parsed) };
   } catch (e) {
     if (e instanceof ConfigValidationError) {
       return { ok: false, error: e.message };
     }
     return { ok: false, error: e instanceof Error ? e.message : 'invalid config' };
   }
-  try {
-    writeFileSync(path, content, 'utf8');
-  } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : 'write failed' };
-  }
-  return { ok: true };
 }
 
 export function loadUserConfig(user: string): UserConfig | null {
-  const path = getUserConfigFilePath(user);
-  if (!path) return null;
+  const row = importLegacyUserConfigIfNeeded(user);
+  if (!row) return null;
 
-  const raw = readFileSync(path, 'utf8');
-  const parsed = yaml.load(raw);
-
+  const parsed = yaml.load(row.text);
   return parseUserConfig(user, parsed);
 }
 
@@ -339,7 +511,7 @@ export function createUserFromSampleConfig(
 ): { ok: true; user: string } | { ok: false; error: string } {
   ensureConfigLayout();
 
-  const existing = getUserConfigFilePath(user);
+  const existing = importLegacyUserConfigIfNeeded(user);
   if (existing) {
     return { ok: false, error: `user "${user}" already exists` };
   }
@@ -358,15 +530,8 @@ export function createUserFromSampleConfig(
     return { ok: false, error: 'sample config is empty' };
   }
 
-  const target = join(USERS_DIR, `${user}.yaml`);
-  try {
-    writeFileSync(target, sample, 'utf8');
-  } catch (e) {
-    return {
-      ok: false,
-      error: e instanceof Error ? e.message : 'write failed',
-    };
-  }
+  const out = appendUserConfigVersion(user, sample);
+  if (!out.ok) return out;
 
   return { ok: true, user };
 }
@@ -375,23 +540,15 @@ export function renameUserConfigFile(
   fromUser: string,
   toUser: string,
 ): { ok: true; user: string } | { ok: false; error: string } {
-  const fromPath = getUserConfigFilePath(fromUser);
-  if (!fromPath) return { ok: false, error: 'user not found' };
+  if (!importLegacyUserConfigIfNeeded(fromUser)) return { ok: false, error: 'user not found' };
 
-  const existingTarget = getUserConfigFilePath(toUser);
+  const existingTarget = importLegacyUserConfigIfNeeded(toUser);
   if (existingTarget) {
     return { ok: false, error: `user "${toUser}" already exists` };
   }
 
-  const toPath = join(USERS_DIR, `${toUser}.yaml`);
-  try {
-    renameSync(fromPath, toPath);
-  } catch (e) {
-    return {
-      ok: false,
-      error: e instanceof Error ? e.message : 'rename failed',
-    };
-  }
+  renameHabitConfigsStmt.run({ fromUser, toUser });
+  deleteLegacyUserConfigFile(fromUser);
 
   return { ok: true, user: toUser };
 }
@@ -399,15 +556,9 @@ export function renameUserConfigFile(
 export function deleteUserConfigFile(
   user: string,
 ): { ok: true; user: string } | { ok: false; error: string } {
-  const path = getUserConfigFilePath(user);
-  if (!path) return { ok: false, error: 'user not found' };
-  try {
-    unlinkSync(path);
-  } catch (e) {
-    return {
-      ok: false,
-      error: e instanceof Error ? e.message : 'delete failed',
-    };
-  }
+  if (!importLegacyUserConfigIfNeeded(user)) return { ok: false, error: 'user not found' };
+  deleteHabitConfigsStmt.run(user);
+  setActiveHabitConfigVersion(user, null);
+  deleteLegacyUserConfigFile(user);
   return { ok: true, user };
 }
