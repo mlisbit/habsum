@@ -235,15 +235,10 @@ function historyAverageRangeText(history: HabitHistory): string {
   return `from ${formatShortHistoryDate(first)} to ${formatShortHistoryDate(outlined)}`;
 }
 
-function historyAverageHoverText(history: HabitHistory, includeAbsentDays: boolean): string {
+function historyAverageHoverText(history: HabitHistory): string {
   const values = Object.values(history.data.user.graphData);
   const daysWithData = values.filter((datum) => datum.value != null).length;
   const daysWithoutData = values.length - daysWithData;
-  if (includeAbsentDays) {
-    return daysWithoutData === 0
-      ? `Average includes all ${values.length} ${values.length === 1 ? 'day' : 'days'} in this history window.`
-      : `Average includes ${daysWithoutData} ${daysWithoutData === 1 ? 'day' : 'days'} with no data as zero and ${daysWithData} ${daysWithData === 1 ? 'day' : 'days'} with logged data.`;
-  }
   return daysWithoutData === 0
     ? `Average includes all ${values.length} ${values.length === 1 ? 'day' : 'days'} in this history window.`
     : `Average excludes ${daysWithoutData} ${daysWithoutData === 1 ? 'day' : 'days'} with no data and uses ${daysWithData} ${daysWithData === 1 ? 'day' : 'days'} with logged data.`;
@@ -275,7 +270,9 @@ export function historyWidget(
   return {
     title: 'History',
     titleValue: `${averageText}/day average ${historyAverageRangeText(history)}`,
-    titleValueHoverText: historyAverageHoverText(history, includeAbsentDaysInAverage),
+    ...(!includeAbsentDaysInAverage
+      ? { titleValueHoverText: historyAverageHoverText(history) }
+      : {}),
     body: [
       {
         kind: 'barGraph',

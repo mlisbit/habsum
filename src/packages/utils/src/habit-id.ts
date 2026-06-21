@@ -1,9 +1,9 @@
 import { dasherize } from './strings.js';
 
-/** Query param on `/users/:user/settings/config` for deep-linking the habit edit modal. */
+/** Query param on `/users/:user/settings/habits` for deep-linking the habit edit modal. */
 export const CONFIG_EDIT_HABIT_QUERY_PARAM = 'habit';
 
-/** Query param on `/users/:user/settings/config` for deep-linking the add-habit type picker. */
+/** Query param on `/users/:user/settings/habits` for deep-linking the add-habit type picker. */
 export const CONFIG_SHOW_ADD_MODAL_QUERY_PARAM = 'showAddModal';
 
 export function habitIdPathSegment(name: string): string {
@@ -54,7 +54,7 @@ export function findHabitNameByConfigEditId(
 
 export function configEditHabitUrl(user: string, habitName: string): string {
   const search = withConfigEditHabitId('', configEditHabitQueryValue(habitName));
-  return `/users/${encodeURIComponent(user)}/settings/config${search}`;
+  return `/users/${encodeURIComponent(user)}/settings/habits${search}`;
 }
 
 export function habitDetailUrl(user: string, habitName: string, search = ''): string {

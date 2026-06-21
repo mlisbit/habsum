@@ -63,6 +63,7 @@ export default defineConfig({
               route('security', 'routes/users/$user/settings/security/route.tsx');
               route('security/password', 'routes/users/$user/settings/security/password/route.tsx');
               route('developer', 'routes/users/$user/settings/developer/route.tsx');
+              route('habits', 'routes/users/$user/settings/habits/route.tsx');
               route('config', 'routes/users/$user/settings/config/route.tsx');
             });
           });

@@ -10,6 +10,7 @@ export default function UserSettingsConfig() {
   return (
     <ConfigSettings
       user={decodeURIComponent(user)}
+      mode="yaml"
       renderCard={(card) => <SettingsPageCard {...card} />}
     />
   );

@@ -1,6 +1,6 @@
 // exclusive-bem-block: config-page
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { useBlocker, useLocation, useNavigate } from '@remix-run/react';
+import { Link, useBlocker } from '@remix-run/react';
 import { getUserConfig, putUserConfig, type UserConfigInsights } from '~/api.client';
 import { ConfigGuiEditor } from './ConfigGuiEditor';
 import { ConfigYamlEditor } from './ConfigYamlEditor';
@@ -29,18 +29,11 @@ type ConfigSettingsCardProps = {
 
 type ConfigSettingsProps = {
   user: string;
+  mode: 'habits' | 'yaml';
   renderCard: (props: ConfigSettingsCardProps) => ReactNode;
 };
 
-function isYamlView(search: string): boolean {
-  return new URLSearchParams(search).has('yaml');
-}
-
-export function ConfigSettings({ user, renderCard }: ConfigSettingsProps) {
-  const location = useLocation();
-  const navigate = useNavigate();
-  const yamlView = isYamlView(location.search);
-
+export function ConfigSettings({ user, mode, renderCard }: ConfigSettingsProps) {
   const [text, setText] = useState('');
   const [initialText, setInitialText] = useState('');
   const [habitOrder, setHabitOrder] = useState<string[]>([]);
@@ -53,6 +46,7 @@ export function ConfigSettings({ user, renderCard }: ConfigSettingsProps) {
   const addHabitRef = useRef<(() => void) | null>(null);
   const { showToast } = useToast();
   const { present, closeModal } = useModal();
+  const configCardHeader = mode === 'habits' ? 'Habits' : 'Config';
 
   useEffect(() => {
     if (!user) return;
@@ -96,7 +90,7 @@ export function ConfigSettings({ user, renderCard }: ConfigSettingsProps) {
 
   const yamlDirty = text !== initialText;
   const orderDirty = habitOrderKey(habitOrder) !== initialHabitOrderKey;
-  const dirty = yamlDirty || orderDirty;
+  const dirty = yamlDirty || (mode === 'habits' && orderDirty);
   const blocker = useBlocker(
     ({ currentLocation, nextLocation }) =>
       dirty && currentLocation.pathname !== nextLocation.pathname,
@@ -129,38 +123,15 @@ export function ConfigSettings({ user, renderCard }: ConfigSettingsProps) {
     return dismiss;
   }, [blocker.state]);
 
-  const toggleView = useCallback(() => {
-    if (!yamlView && orderDirty) {
-      try {
-        setText(reorderHabitsInConfigYaml(text, habitOrder));
-      } catch (e) {
-        setSaveError(e instanceof Error ? e.message : String(e));
-        return;
-      }
-    }
-
-    const qs = new URLSearchParams(location.search);
-    if (yamlView) {
-      qs.delete('yaml');
-    } else {
-      qs.set('yaml', '1');
-    }
-    const search = qs.toString();
-    navigate({
-      pathname: location.pathname,
-      search: search ? `?${search}` : '',
-    });
-  }, [habitOrder, location.pathname, location.search, navigate, orderDirty, text, yamlView]);
-
   useEffect(() => {
-    if (yamlView || loading) return;
+    if (mode !== 'habits' || loading) return;
     try {
       const order = parseConfigHabitCards(text).map((h) => h.name);
       setHabitOrder(order);
     } catch {
       // Keep the last known order when yaml is temporarily invalid in the editor.
     }
-  }, [loading, text, yamlView]);
+  }, [loading, mode, text]);
 
   const onCancel = useCallback(() => {
     setText(initialText);
@@ -178,7 +149,7 @@ export function ConfigSettings({ user, renderCard }: ConfigSettingsProps) {
     setSaving(true);
     setSaveError(null);
     try {
-      const payload = yamlView ? text : reorderHabitsInConfigYaml(text, habitOrder);
+      const payload = mode === 'yaml' ? text : reorderHabitsInConfigYaml(text, habitOrder);
       const migrations = buildConfigMigrations(initialText, payload);
       const deletions = buildConfigDeletions(initialText, payload);
       await putUserConfig(user, payload, migrations, deletions);
@@ -204,7 +175,7 @@ export function ConfigSettings({ user, renderCard }: ConfigSettingsProps) {
     } finally {
       setSaving(false);
     }
-  }, [dirty, habitOrder, initialText, showToast, text, user, yamlView]);
+  }, [dirty, habitOrder, initialText, mode, showToast, text, user]);
 
   const onIncludeAbsentDaysInAverageChange = useCallback(
     (next: boolean) => {
@@ -222,7 +193,7 @@ export function ConfigSettings({ user, renderCard }: ConfigSettingsProps) {
     return (
       <div className="config-page">
         {renderCard({
-          headerText: 'Config',
+          headerText: configCardHeader,
           children: (
             <p className="text-light text-b-m card-padding" aria-busy>
               Loading config…
@@ -237,7 +208,7 @@ export function ConfigSettings({ user, renderCard }: ConfigSettingsProps) {
     return (
       <div className="config-page">
         {renderCard({
-          headerText: 'Config',
+          headerText: configCardHeader,
           error: loadError,
         })}
       </div>
@@ -264,80 +235,91 @@ export function ConfigSettings({ user, renderCard }: ConfigSettingsProps) {
       ) : null}
 
       {renderCard({
-        headerText: 'Statistics',
-        children: (
-          <div className="card-padding config-page__statistics">
-            <div className="config-page__statistics-row">
-              <label
-                htmlFor="config-include-absent-days-average"
-                className="config-page__statistics-label text-b-m"
-              >
-                Missing days in averages
-              </label>
-              <select
-                id="config-include-absent-days-average"
-                className="config-page__statistics-select text-b-m"
-                value={includeAbsentDaysInAverage ? 'include' : 'ignore'}
-                onChange={(e) => onIncludeAbsentDaysInAverageChange(e.target.value === 'include')}
-              >
-                <option value="ignore">Ignore missing days</option>
-                <option value="include">Include missing days</option>
-              </select>
-            </div>
-            <p className="config-page__statistics-copy text-light text-b-m">
-              Controls how averages are calculated when a habit has no entry for a day.
-            </p>
-          </div>
-        ),
+        headerText: configCardHeader,
+        error: saveError,
+        actions:
+          mode === 'habits' ? (
+            <Button
+              type="secondary"
+              icon="plus"
+              text="Add"
+              disabled={saving}
+              onClick={() => addHabitRef.current?.()}
+            />
+          ) : null,
+        children:
+          mode === 'yaml' ? (
+            <ConfigYamlEditor
+              text={text}
+              onChange={(next) => {
+                setText(next);
+                if (saveError != null) setSaveError(null);
+              }}
+            />
+          ) : (
+            <ConfigGuiEditor
+              configText={text}
+              habits={habitCards}
+              insights={insights}
+              order={habitOrder}
+              onOrderChange={setHabitOrder}
+              onConfigTextChange={(next) => {
+                setText(next);
+                if (saveError != null) setSaveError(null);
+              }}
+              registerAddHabit={(fn) => {
+                addHabitRef.current = fn;
+              }}
+            />
+          ),
       })}
 
-      {renderCard({
-        headerText: 'Config',
-        subtitle: (
-          <button
-            type="button"
-            className="config-page__view-toggle text-b-s link--fancy"
-            disabled={saving}
-            onClick={toggleView}
-          >
-            {yamlView ? 'Show GUI' : 'View YAML'}
-          </button>
-        ),
-        error: saveError,
-        actions: !yamlView ? (
-          <Button
-            type="secondary"
-            icon="plus"
-            text="Add"
-            disabled={saving}
-            onClick={() => addHabitRef.current?.()}
-          />
-        ) : null,
-        children: yamlView ? (
-          <ConfigYamlEditor
-            text={text}
-            onChange={(next) => {
-              setText(next);
-              if (saveError != null) setSaveError(null);
-            }}
-          />
-        ) : (
-          <ConfigGuiEditor
-            configText={text}
-            habits={habitCards}
-            insights={insights}
-            order={habitOrder}
-            onOrderChange={setHabitOrder}
-            onConfigTextChange={(next) => {
-              setText(next);
-              if (saveError != null) setSaveError(null);
-            }}
-            registerAddHabit={(fn) => {
-              addHabitRef.current = fn;
-            }}
-          />
-        ),
-      })}
+      {mode === 'habits'
+        ? renderCard({
+            headerText: 'Statistics',
+            children: (
+              <div className="card-padding config-page__statistics">
+                <div className="config-page__statistics-row">
+                  <label
+                    htmlFor="config-include-absent-days-average"
+                    className="config-page__statistics-label text-b-m"
+                  >
+                    Missing days in averages
+                  </label>
+                  <select
+                    id="config-include-absent-days-average"
+                    className="config-page__statistics-select text-b-m"
+                    value={includeAbsentDaysInAverage ? 'include' : 'ignore'}
+                    onChange={(e) =>
+                      onIncludeAbsentDaysInAverageChange(e.target.value === 'include')
+                    }
+                  >
+                    <option value="ignore">Ignore missing days</option>
+                    <option value="include">Include missing days</option>
+                  </select>
+                </div>
+                <p className="config-page__statistics-copy text-light text-b-m">
+                  Controls how averages are calculated when a habit has no entry for a day.
+                </p>
+              </div>
+            ),
+          })
+        : null}
+
+      {mode === 'habits'
+        ? renderCard({
+            headerText: 'YAML config',
+            subtitle: 'View and edit the raw YAML file associated with this user.',
+            actions: (
+              <Link
+                to={`/users/${encodeURIComponent(user)}/settings/config`}
+                className="button button--secondary button--medium"
+              >
+                View YAML
+              </Link>
+            ),
+          })
+        : null}
     </div>
   );
 }

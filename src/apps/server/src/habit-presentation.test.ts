@@ -119,9 +119,7 @@ describe('historyWidget', () => {
     );
 
     expect(widget.titleValue).toBe('1/day average since May 15');
-    expect(widget.titleValueHoverText).toBe(
-      'Average includes 5 days with no data as zero and 2 days with logged data.',
-    );
+    expect(widget.titleValueHoverText).toBeUndefined();
     expect(widget.body[0]).toMatchObject({
       kind: 'barGraph',
       lines: [{ value: 5, label: 'Daily goal: 5' }],

@@ -26,7 +26,7 @@ export type ShowToastOptions = {
   persistent?: boolean;
   /** Inline link label shown immediately after `message`. */
   ctaTitle?: string;
-  /** Route path for the inline CTA (e.g. `/users/foo/settings/config`). */
+  /** Route path for the inline CTA (e.g. `/users/foo/settings/habits`). */
   ctaLocation?: string;
   /** Called when the toast is dismissed (button or replaced by another toast). */
   onDismiss?: () => void;

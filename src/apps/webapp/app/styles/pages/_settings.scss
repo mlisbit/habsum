@@ -31,8 +31,9 @@
 
 .settings__sidebar {
   position: sticky;
+  top: functions.spacing(4);
   height: fit-content;
-  max-height: calc(100vh - 40px);
+  max-height: calc(100dvh - #{functions.spacing(4)});
   overflow: auto;
 }
 

@@ -111,7 +111,7 @@ export default function HabitsPage() {
       message: 'We added a few example habits to help you get started.',
       persistent: true,
       ctaTitle: 'Customize habits',
-      ctaLocation: `/users/${encodeURIComponent(user)}/settings/config`,
+      ctaLocation: `/users/${encodeURIComponent(user)}/settings/habits`,
       onDismiss: dismissIntro,
     });
   }, [userLoading, isNewUser, user, hasDismissedIntro, showToast, dismissIntro]);
@@ -235,7 +235,7 @@ export default function HabitsPage() {
 
       {state && user ? (
         <Link
-          to={`/users/${encodeURIComponent(user)}/settings/config?showAddModal=1`}
+          to={`/users/${encodeURIComponent(user)}/settings/habits?showAddModal=1`}
           className="button button--secondary button--medium habits-page__add-habit"
         >
           Add habit

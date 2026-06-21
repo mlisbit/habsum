@@ -15,18 +15,18 @@ describe('config edit habit query param', () => {
   });
 
   it('reads and writes the habit query param', () => {
-    expect(readConfigEditHabitId('?yaml=1')).toBeNull();
-    expect(readConfigEditHabitId('?habit=push-ups&yaml=1')).toBe('push-ups');
-    expect(withConfigEditHabitId('?yaml=1', 'push-ups')).toBe('?yaml=1&habit=push-ups');
+    expect(readConfigEditHabitId('?tab=stats')).toBeNull();
+    expect(readConfigEditHabitId('?habit=push-ups&tab=stats')).toBe('push-ups');
+    expect(withConfigEditHabitId('?tab=stats', 'push-ups')).toBe('?tab=stats&habit=push-ups');
     expect(withConfigEditHabitId('?habit=push-ups', null)).toBe('');
   });
 
   it('reads and writes the showAddModal query param', () => {
     expect(readShowAddModal('')).toBe(false);
-    expect(readShowAddModal('?yaml=1')).toBe(false);
+    expect(readShowAddModal('?tab=stats')).toBe(false);
     expect(readShowAddModal('?showAddModal=1')).toBe(true);
     expect(readShowAddModal('?showAddModal=true')).toBe(true);
-    expect(withShowAddModal('?yaml=1', true)).toBe('?yaml=1&showAddModal=1');
+    expect(withShowAddModal('?tab=stats', true)).toBe('?tab=stats&showAddModal=1');
     expect(withShowAddModal('?showAddModal=1', false)).toBe('');
   });
 
@@ -38,7 +38,7 @@ describe('config edit habit query param', () => {
 
   it('builds the settings config edit url', () => {
     expect(configEditHabitUrl('user2', 'push ups')).toBe(
-      '/users/user2/settings/config?habit=push-ups',
+      '/users/user2/settings/habits?habit=push-ups',
     );
   });
 });

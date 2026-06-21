@@ -50,29 +50,3 @@
 .config-page__statistics-copy {
   margin: 0;
 }
-
-.config-page__view-toggle {
-  align-self: flex-start;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  background: none;
-  cursor: pointer;
-  text-align: left;
-
-  &:hover:not(:disabled) {
-    text-decoration: underline;
-  }
-
-  &:focus-visible {
-    outline: none;
-    text-decoration: underline;
-    border-radius: var(--border-radius-s);
-    box-shadow: var(--box-shadow-focus);
-  }
-
-  &:disabled {
-    cursor: not-allowed;
-    opacity: 0.5;
-  }
-}
