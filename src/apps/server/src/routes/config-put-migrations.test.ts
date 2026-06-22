@@ -1,10 +1,9 @@
-import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import Database from 'better-sqlite3';
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { createApp } from '../app.js';
-import { ensureConfigLayout } from '../config.js';
+import { createUserFromSampleConfig, writeUserConfigFileText } from '../config.js';
 import {
   createUserSession,
   ensureUserPins,
@@ -16,9 +15,10 @@ import {
 import { SESSION_COOKIE_NAME } from '../session-cookie.js';
 
 function writeUserConfig(user: string, text: string) {
-  ensureConfigLayout();
-  const usersDir = join(process.env.HABSUM_CONFIG_DIR!, 'users');
-  writeFileSync(join(usersDir, `${user}.yaml`), text, 'utf8');
+  const created = createUserFromSampleConfig(user);
+  if (!created.ok) throw new Error(created.error);
+  const written = writeUserConfigFileText(user, text);
+  if (!written.ok) throw new Error(written.error);
 }
 
 describe('PUT /users/:user/config migrations', () => {
@@ -44,7 +44,7 @@ describe('PUT /users/:user/config migrations', () => {
       const active = sqlite
         .prepare('SELECT active_habit_config_version FROM users WHERE username = ?')
         .get(user) as { active_habit_config_version: number };
-      expect(active.active_habit_config_version).toBe(1);
+      expect(active.active_habit_config_version).toBe(2);
     } finally {
       sqlite.close();
     }
@@ -90,16 +90,16 @@ describe('PUT /users/:user/config migrations', () => {
         )
         .all(user) as Array<{ version: number; text: string }>;
 
-      expect(rows.map((row) => row.version)).toEqual([2, 3, 4]);
+      expect(rows.map((row) => row.version)).toEqual([3, 4, 5]);
       expect(rows.at(-1)?.text).toContain('fourth');
       const active = sqlite
         .prepare('SELECT active_habit_config_version FROM users WHERE username = ?')
         .get(user) as { active_habit_config_version: number };
-      expect(active.active_habit_config_version).toBe(4);
+      expect(active.active_habit_config_version).toBe(5);
 
       sqlite
         .prepare('UPDATE users SET active_habit_config_version = ? WHERE username = ?')
-        .run(3, user);
+        .run(4, user);
     } finally {
       sqlite.close();
     }

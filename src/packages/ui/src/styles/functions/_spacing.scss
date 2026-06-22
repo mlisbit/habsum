@@ -1,6 +1,7 @@
-// `margin-top: spacing(1);` → 4px. Steps 1–5 map to 4, 8, 12, 16, 20px.
+// `margin-top: spacing(1);` → 4px. Steps 0–10 map to 4px increments.
 // Shorthand: `padding: spacing(2, 3);` → 8px 12px (same rules as CSS two-value padding).
-// Up to four steps: `spacing(1, 2, 3, 4)` → top / right / bottom / left.
+// Also accepts a space-separated list: `spacing(1 2 3 4)`.
+// Up to four steps: `spacing(1, 2, 3, 4)` or `spacing(1 2 3 4)` → top / right / bottom / left.
 @use 'sass:list';
 @use 'sass:math';
 @use 'sass:meta';
@@ -10,22 +11,26 @@
     @error "spacing(): expected a number, got #{meta.type-of($n)} (#{$n}).";
   }
   @if math.unit($n) != '' {
-    @error "spacing(): use unitless steps 1–5, not #{$n}.";
+    @error "spacing(): use unitless steps 0–10, not #{$n}.";
   }
   @if $n != math.round($n) {
     @error "spacing(): steps must be whole numbers (got #{$n}).";
   }
-  @if $n < 1 or $n > 5 {
-    @error "spacing(): each step must be between 1 and 5 (got #{$n}).";
+  @if $n < 0 or $n > 10 {
+    @error "spacing(): each step must be between 0 and 10 (got #{$n}).";
   }
 
   @return $n * 4px;
 }
 
 @function spacing($steps...) {
+  @if list.length($steps) == 1 and meta.type-of(list.nth($steps, 1)) == 'list' {
+    $steps: list.nth($steps, 1);
+  }
+
   $len: list.length($steps);
   @if $len == 0 {
-    @error "spacing(): pass at least one step (1–5).";
+    @error "spacing(): pass at least one step (0–10).";
   }
   @if $len > 4 {
     @error "spacing(): at most four steps (got #{$len}).";

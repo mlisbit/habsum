@@ -13,6 +13,7 @@ import {
   type MutableRefObject,
   type ReactNode,
 } from 'react';
+import * as ReactDOM from 'react-dom';
 
 /** Where the floating panel is placed relative to the anchor (before viewport clamp / flip). */
 export type HoverablePanelSide = 'top' | 'bottom' | 'left' | 'right';
@@ -208,18 +209,21 @@ function HoverableContent({
     };
   }, [open, anchorRef, offset, side]);
 
-  if (!open) return null;
+  if (!open || typeof document === 'undefined') return null;
 
-  return (
+  return ReactDOM.createPortal(
     <div
       ref={panelRef}
       role="tooltip"
-      className={['hover-layer__panel', 'text-b-m', className].filter(Boolean).join(' ')}
+      className={['hover-layer__panel', 'text-b-m', 'text--hoverable', className]
+        .filter(Boolean)
+        .join(' ')}
       style={style}
       {...rest}
     >
       {children}
-    </div>
+    </div>,
+    document.body,
   );
 }
 

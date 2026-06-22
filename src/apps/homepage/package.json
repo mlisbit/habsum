@@ -7,6 +7,10 @@
     "**/*.scss",
     "**/*.css"
   ],
+  "exports": {
+    ".": "./src/main.tsx",
+    "./styles": "./src/styles/index.scss"
+  },
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 3002",
     "build": "vite build",

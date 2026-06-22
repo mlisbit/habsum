@@ -57,6 +57,28 @@ describe('habsum/single-block-per-file', () => {
     });
   });
 
+  it('rejects compound selectors that combine the file block with hover-layer', async () => {
+    const result = await lintScss(`
+      .example-block__tooltip.hover-layer__panel {
+        margin: 0;
+      }
+    `);
+
+    expect(result.results[0]?.warnings).toHaveLength(2);
+    expect(result.results[0]?.warnings[0]).toMatchObject({
+      rule: ruleName,
+      text: expect.stringContaining(
+        'Expected a single BEM primary block in this selector, found 2: "example-block", "hover-layer"',
+      ),
+    });
+    expect(result.results[0]?.warnings[1]).toMatchObject({
+      rule: ruleName,
+      text: expect.stringContaining(
+        'Foreign BEM block "hover-layer" is not allowed in a "example-block" stylesheet',
+      ),
+    });
+  });
+
   it('rejects universal selectors such as > *', async () => {
     const result = await lintScss(`
       .example-block__preview-sample {

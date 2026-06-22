@@ -12,10 +12,8 @@ const server = app.listen(PORT, HOST, () => {
   const rawDir = process.env.HABSUM_CONFIG_DIR;
   const dataDir = rawDir ? resolve(rawDir) : '(missing)';
   const dbPath = rawDir ? join(dataDir, 'habsum.db') : '(missing)';
-  const usersDir = rawDir ? join(dataDir, 'users') : '(missing)';
   console.log(`[habsum] HABSUM_CONFIG_DIR=${dataDir}`);
   console.log(`[habsum] DB=${dbPath}`);
-  console.log(`[habsum] users=${usersDir}`);
   console.log(`[habsum] server listening on http://${HOST}:${PORT}`);
 });
 

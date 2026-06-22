@@ -1,16 +1,15 @@
-import { writeFileSync } from 'node:fs';
-import { join } from 'node:path';
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { createApp } from '../app.js';
-import { ensureConfigLayout } from '../config.js';
+import { createUserFromSampleConfig, writeUserConfigFileText } from '../config.js';
 import { createUserSession, ensureUserPins, setSelect } from '../db.js';
 import { SESSION_COOKIE_NAME } from '../session-cookie.js';
 
 function writeUserConfig(user: string, text: string) {
-  ensureConfigLayout();
-  const usersDir = join(process.env.HABSUM_CONFIG_DIR!, 'users');
-  writeFileSync(join(usersDir, `${user}.yaml`), text, 'utf8');
+  const created = createUserFromSampleConfig(user);
+  if (!created.ok) throw new Error(created.error);
+  const written = writeUserConfigFileText(user, text);
+  if (!written.ok) throw new Error(written.error);
 }
 
 describe('GET /users/:user/config insights', () => {

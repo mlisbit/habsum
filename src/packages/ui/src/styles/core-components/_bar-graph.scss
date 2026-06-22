@@ -74,8 +74,8 @@
   min-block-size: 0;
 }
 
-.bar-graph__hover.hover-layer__panel {
-  background: var(--background);
+.bar-graph__hover {
+  background: var(--background-hoverable);
 }
 
 .bar-graph__hover-body {

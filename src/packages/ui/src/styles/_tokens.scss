@@ -14,18 +14,22 @@ html[data-theme='dark'] {
   --background: #1c1d21;
   --background-secondary: #212327;
   --background-disabled: #292b2f;
+  --background-inverse: #e5e5e5;
   --background-warning: #5b333a;
   --background-input: #292b2f;
   --background-modal-backdrop: rgb(0 0 0 / 45%);
+  --background-hoverable: var(--background-secondary);
 
   // text colors
   --text-color: #e5e5e5;
   --text-muted: #b8b8b8;
   --text-error: #f87171;
+  --text-inverse: #1c1d21;
   --text-success: #89ac96;
   --text-warning: #fbbf24;
   --text-link: #89ac96;
   --text-accent: var(--accent-selected);
+  --text-hoverable: var(--text-color);
 
   // ctas primary
   --cta-base-background: var(--accent-selected);
@@ -77,18 +81,22 @@ html[data-theme='light'] {
   --background: #ccc;
   --background-secondary: #d8d8d8;
   --background-disabled: #a6acbd;
+  --background-inverse: #1c1d21;
   --background-warning: var(--accent-red-1);
   --background-input: #e4e4e4;
   --background-modal-backdrop: rgb(0 0 0 / 45%);
+  --background-hoverable: #4a4a4b;
 
   // text colors
   --text-color: #222;
   --text-muted: #5f6368;
   --text-error: #c62828;
+  --text-inverse: #fff;
   --text-success: #2e7d32;
   --text-warning: #9a6700;
   --text-link: #2d6cdf;
   --text-accent: #355c4b;
+  --text-hoverable: var(--text-inverse);
 
   // ctas
   --cta-base-background: var(--accent-selected);

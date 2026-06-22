@@ -14,7 +14,7 @@ export function Pills({ pills }: PillsProps) {
       {pills.map((pill) =>
         pill.hover ? (
           <Hoverable.Root key={`${pill.label}-${pill.hover}`}>
-            <Hoverable.Anchor className="habit-module-pills__pill text-b-s text--hoverable">
+            <Hoverable.Anchor className="habit-module-pills__pill text-b-s text--hoverable-target">
               {pill.label}
             </Hoverable.Anchor>
             <Hoverable.Content className="habit-module-pills__pill-tooltip" side="top">

@@ -37,13 +37,12 @@
   opacity: 0.45;
 }
 
-.heatmap__tooltip.hover-layer__panel {
+.heatmap__tooltip {
   display: flex;
   flex-direction: column;
   gap: functions.spacing(1);
   align-items: center;
   padding: functions.spacing(2);
-  background: var(--background-secondary);
 }
 
 .heatmap__tooltip-label {

@@ -1,17 +1,15 @@
-import { join } from 'node:path';
-import { writeFileSync } from 'node:fs';
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { createApp } from '../app.js';
-import { ensureConfigLayout } from '../config.js';
+import { createUserFromSampleConfig, writeUserConfigFileText } from '../config.js';
 import { addToTotal, createUserSession, ensureUserPins, setSelect } from '../db.js';
 import { SESSION_COOKIE_NAME } from '../session-cookie.js';
 
 function writeExportUserConfig(user: string) {
-  ensureConfigLayout();
-  const usersDir = join(process.env.HABSUM_CONFIG_DIR!, 'users');
-  writeFileSync(
-    join(usersDir, `${user}.yaml`),
+  const created = createUserFromSampleConfig(user);
+  if (!created.ok) throw new Error(created.error);
+  const written = writeUserConfigFileText(
+    user,
     `habits:
   mood:
     type: single_select
@@ -19,8 +17,8 @@ function writeExportUserConfig(user: string) {
   push ups:
     type: summation
 `,
-    'utf8',
   );
+  if (!written.ok) throw new Error(written.error);
 }
 
 describe('GET /users/:user/data', () => {

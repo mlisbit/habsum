@@ -32,7 +32,7 @@ export default defineConfig({
   },
   optimizeDeps: {
     noDiscovery: true,
-    include: [],
+    include: ['react-dom'],
   },
   plugins: [
     remix({
@@ -47,8 +47,8 @@ export default defineConfig({
       },
       routes(defineRoutes) {
         return defineRoutes((route) => {
+          route('', 'routes/_index/route.tsx', { index: true });
           route('', 'routes/_layout.tsx', () => {
-            route('', 'routes/_index/route.tsx', { index: true });
             route('login', 'routes/login/route.tsx');
             route('forgot-password', 'routes/forgot-password.tsx');
             route('reset-password', 'routes/reset-password.tsx');

@@ -12,6 +12,7 @@ import { Hoverable } from '@habsum/ui/components/Hoverable';
 type HabitWidgetRendererProps = {
   habit: Habit;
   viewDate: Day;
+  className?: string;
   onDeleteSummationEvent?: (eventId: number) => Promise<void>;
 };
 
@@ -24,7 +25,7 @@ function WidgetTitleValue({ widget }: { widget: HabitWidget }) {
 
   return (
     <Hoverable.Root>
-      <Hoverable.Anchor className="habit-widget__widget-title-value text--hoverable">
+      <Hoverable.Anchor className="habit-widget__widget-title-value text--hoverable-target">
         {widget.titleValue}
       </Hoverable.Anchor>
       <Hoverable.Content className="habit-widget__widget-title-value-tooltip" side="top">
@@ -82,12 +83,13 @@ function HabitWidgetItem({ habit, widget }: { habit: Habit; widget: HabitWidget 
 export default function HabitWidgetRenderer({
   habit,
   viewDate,
+  className,
   onDeleteSummationEvent,
 }: HabitWidgetRendererProps) {
   const widgets = habit.widgets ?? [];
 
   return (
-    <div className="habit-widget">
+    <div className={['habit-widget', className].filter(Boolean).join(' ')}>
       {habit.type === 'summation' ? (
         <Events
           habitName={habit.name}

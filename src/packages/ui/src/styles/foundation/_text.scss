@@ -34,25 +34,25 @@
 }
 
 .text-b-xl {
-  font-size: 1.125rem;
+  font-size: 18px;
   line-height: 1.5;
   color: var(--text-color);
 }
 
 .text-b-l {
-  font-size: 1rem;
+  font-size: 16px;
   line-height: 1.5;
   color: var(--text-color);
 }
 
 .text-b-m {
-  font-size: 0.875rem;
+  font-size: 14px;
   line-height: 1.45;
   color: var(--text-color);
 }
 
 .text-b-s {
-  font-size: 0.75rem;
+  font-size: 12px;
   line-height: 1.4;
   color: var(--text-color);
 }
@@ -69,11 +69,24 @@
   color: var(--text-link);
 }
 
+.text-inverse {
+  color: var(--text-inverse);
+}
+
+.text--hoverable {
+  color: var(--text-hoverable);
+}
+
+.text--hoverable
+  :is(.text-h-xl, .text-h-l, .text-h-m, .text-h-s, .text-b-xl, .text-b-l, .text-b-m, .text-b-s) {
+  color: var(--text-hoverable);
+}
+
 .link--fancy {
   color: var(--text-accent);
 }
 
-.text--hoverable {
+.text--hoverable-target {
   text-decoration: underline dotted;
   text-underline-offset: 0.15em;
   cursor: default;

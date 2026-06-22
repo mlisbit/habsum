@@ -1,18 +1,16 @@
-import { join } from 'node:path';
-import { writeFileSync } from 'node:fs';
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { toDateKey, toDateKeyWithTime } from '@habsum/utils';
 import { createApp } from '../app.js';
-import { ensureConfigLayout } from '../config.js';
+import { createUserFromSampleConfig, writeUserConfigFileText } from '../config.js';
 import { createUserSession, ensureUserPins } from '../db.js';
 import { SESSION_COOKIE_NAME } from '../session-cookie.js';
 
 function writeSummationUserConfig(user: string) {
-  ensureConfigLayout();
-  const usersDir = join(process.env.HABSUM_CONFIG_DIR!, 'users');
-  writeFileSync(
-    join(usersDir, `${user}.yaml`),
+  const created = createUserFromSampleConfig(user);
+  if (!created.ok) throw new Error(created.error);
+  const written = writeUserConfigFileText(
+    user,
     `habits:
   push ups:
     type: summation
@@ -20,8 +18,8 @@ function writeSummationUserConfig(user: string) {
     history:
       period: 1w
 `,
-    'utf8',
   );
+  if (!written.ok) throw new Error(written.error);
 }
 
 describe('PATCH /users/:user/habits summation history', () => {

@@ -17,6 +17,7 @@ type HabitHeaderAndActionRendererProps = {
   LinkComponent?: ComponentType<{ to: string; className?: string; children: ReactNode }>;
   onNavigate?: (url: string) => void;
   demo?: boolean;
+  className?: string;
   onUpdate: (patch: HabitPatch) => Promise<void>;
 };
 
@@ -221,6 +222,7 @@ export default function HabitHeaderAndActionRenderer({
   LinkComponent,
   onNavigate,
   demo = false,
+  className,
   onUpdate,
 }: HabitHeaderAndActionRendererProps) {
   const openResetModal = useHabitResetMenu({
@@ -231,8 +233,8 @@ export default function HabitHeaderAndActionRenderer({
     onUpdate,
   });
 
-  if (habit.type === 'single_select') {
-    return (
+  const header =
+    habit.type === 'single_select' ? (
       <SingleSelectHabitHeader
         user={user}
         habit={habit}
@@ -243,19 +245,18 @@ export default function HabitHeaderAndActionRenderer({
         openResetModal={openResetModal}
         onUpdate={onUpdate}
       />
+    ) : (
+      <SummationHabitHeader
+        user={user}
+        habit={habit}
+        pending={pending}
+        currentSearch={currentSearch}
+        LinkComponent={LinkComponent}
+        demo={demo}
+        openResetModal={openResetModal}
+        onUpdate={onUpdate}
+      />
     );
-  }
 
-  return (
-    <SummationHabitHeader
-      user={user}
-      habit={habit}
-      pending={pending}
-      currentSearch={currentSearch}
-      LinkComponent={LinkComponent}
-      demo={demo}
-      openResetModal={openResetModal}
-      onUpdate={onUpdate}
-    />
-  );
+  return className ? <div className={className}>{header}</div> : header;
 }

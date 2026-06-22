@@ -1,6 +1,6 @@
 @use 'functions' as fn;
 
-@for $step from 1 through 5 {
+@for $step from 1 through 10 {
   .mt-#{$step} {
     margin-top: fn.spacing($step);
   }

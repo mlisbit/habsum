@@ -1,4 +1,4 @@
-import { StrictMode, useEffect, useRef, useState } from 'react';
+import { StrictMode, useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import type { BarGraphData } from '@habsum/types/common/bar-chart';
 import { dayFromString, type Day } from '@habsum/types/common/day';
@@ -8,7 +8,7 @@ import type { StreakGraphData } from '@habsum/types/common/streak';
 import HabitRenderer from '@habsum/habit-render';
 import { Button } from '@habsum/ui/components/Button';
 import { Hoverable } from '@habsum/ui/components/Hoverable';
-import { ModalProvider } from '@habsum/ui/contexts/modal';
+import { ModalBody, ModalHeader, ModalProvider, useModal } from '@habsum/ui/contexts/modal';
 import { ToastProvider } from '@habsum/ui/contexts/toast';
 import { build, buildWidget } from '@habsum/utils';
 
@@ -19,16 +19,21 @@ import './styles/index.scss';
 const viewDate = dayFromString('2026-06-19');
 const user = 'demo';
 
-const readingTotals = [
+const initialReadingTotals = [
   18, 25, 12, 42, 31, 50, 55, 20, 28, 36, 44, 60, 16, 32, 40, 48, 52, 26, 22, 38, 25,
 ];
 
-const readingStreakTotals = [
+const initialReadingStreakTotals = [
   14, 28, 34, 45, 52, 24, 30, 38, 46, 55, 49, 18, 25, 29, 35, 42, 48, 54, 22, 31, 36, 44, 50, 57,
   61, 66, 70, 16, 24, 32, 39, 45, 52, 58, 64, 68, 26, 33, 40, 47, 53, 59, 25, 18, 30, 41, 51, 56,
   62, 67, 72, 21, 27, 35, 43, 50, 57, 63, 69, 19, 29, 37, 44, 52, 60, 65, 71, 76, 15, 24, 31, 39,
   46, 53, 61, 68, 73, 20, 28, 36, 43, 51, 58, 64, 70, 25,
 ];
+
+type HomepageTheme = 'dark' | 'light';
+type DemoHabitKind = 'checkbox' | 'quickSelect' | 'singleSelect';
+
+const demoHabitKinds: DemoHabitKind[] = ['quickSelect', 'checkbox', 'singleSelect'];
 
 function fakeGraphData(values: number[]): BarGraphData {
   const top = Math.max(1, ...values);
@@ -68,68 +73,124 @@ function fakeStreakData(values: number[], goal: number): StreakGraphData {
   };
 }
 
-const readingWidget = buildWidget()
-  .withTitle('3 week progress')
-  .withTitleValue('25 pages today')
-  .withProgress(25, 50)
-  .withBarGraph({
-    data: fakeGraphData(readingTotals),
-    lines: [{ value: 50, label: 'Daily target' }],
-  })
-  .model();
-
-const readingStreakWidget = buildWidget()
-  .withTitle('Streak')
-  .withTitleValue('86 days')
-  .withPills([
-    { label: 'Current: 7 days', hover: 'Current streak of reading goal days' },
-    { label: 'Longest: 16 days', hover: 'Longest streak in this fake history' },
-  ])
-  .withStreakGraph(fakeStreakData(readingStreakTotals, 50))
-  .model();
-
-const focusWidget = buildWidget().withTitle('Today').withTitleValue('steady').model();
-
-const readingHabit = build()
-  .withName('Reading')
-  .withType('summation')
-  .withGoal(50)
-  .withTotal(25)
-  .withSummationOptions({ manualInput: true, increments: [25, 50] })
-  .withWidget(readingWidget)
-  .withWidget(readingStreakWidget)
-  .model();
-
-const focusHabit = build()
-  .withName('Focus')
-  .withType('single_select')
-  .withOptions(['distracted', 'steady', 'locked in'])
-  .withValue('steady')
-  .withWidget(focusWidget)
-  .model();
-
-const brushTeethHabit = build()
-  .withName('Brush teeth before bed')
-  .withType('checkbox')
-  .withValue('yes')
-  .model();
-
-const habits: Habit[] = [readingHabit, focusHabit, brushTeethHabit];
-
-const captions = [
-  'Choose the views that work for you—from daily history graphs to long-term heatmaps and streak tracking.',
-  'Use ratings to capture things that can’t be measured with a simple yes or no.',
-  'Some habits are simple. Mark them complete and keep your streak alive.',
-] as const;
-const activeCardViewportOffset = 0.38;
-
 function formatPages(value: number | null): string {
   return `${(value ?? 0).toLocaleString()} pages today`;
 }
 
+function randomInt(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function randomTotals(count: number): number[] {
+  return Array.from({ length: count }, () => randomInt(8, 72));
+}
+
+function createStreakWidget(streakTotals: number[], goal: number) {
+  const currentStreak = randomInt(4, 18);
+  const longestStreak = Math.max(currentStreak, randomInt(10, 32));
+
+  return buildWidget()
+    .withTitle('Streak')
+    .withTitleValue(`${streakTotals.length} days`)
+    .withPills([
+      { label: `Current: ${currentStreak} days`, hover: 'Current streak of reading goal days' },
+      { label: `Longest: ${longestStreak} days`, hover: 'Longest streak in this fake history' },
+    ])
+    .withStreakGraph(fakeStreakData(streakTotals, goal))
+    .model();
+}
+
+function createQuickSelectHabit({
+  historyTotals = initialReadingTotals,
+  progressTotal = 25,
+  streakTotals = initialReadingStreakTotals,
+}: {
+  historyTotals?: number[];
+  progressTotal?: number;
+  streakTotals?: number[];
+}) {
+  const goal = 50;
+
+  const readingProgressWidget = buildWidget()
+    .withTitle('Progress')
+    .withTitleValue(formatPages(progressTotal))
+    .withProgress(progressTotal, goal)
+    .model();
+
+  const readingHistoryWidget = buildWidget()
+    .withTitle('History')
+    .withBarGraph({
+      data: fakeGraphData(historyTotals),
+      lines: [{ value: goal, label: 'Daily target' }],
+    })
+    .model();
+
+  const readingStreakWidget = createStreakWidget(streakTotals, goal);
+
+  return build()
+    .withName('Reading')
+    .withType('summation')
+    .withGoal(goal)
+    .withTotal(progressTotal)
+    .withSummationOptions({ manualInput: true, increments: [25, 50] })
+    .withWidget(readingProgressWidget)
+    .withWidget(readingHistoryWidget)
+    .withWidget(readingStreakWidget)
+    .model();
+}
+
+function createCheckboxHabit() {
+  const value = Math.random() > 0.5 ? 'yes' : Math.random() > 0.5 ? 'no' : null;
+  const label = value === 'yes' ? 'done' : value === 'no' ? 'skipped' : 'not set';
+  const widget = buildWidget().withTitle('Today').withTitleValue(label).model();
+  const streakWidget = createStreakWidget(randomTotals(initialReadingStreakTotals.length), 50);
+
+  return build()
+    .withName('Reading')
+    .withType('checkbox')
+    .withValue(value)
+    .withWidget(widget)
+    .withWidget(streakWidget)
+    .model();
+}
+
+function createSingleSelectHabit() {
+  const options = ['nothing', 'a bit', 'a lot'];
+  const value = options[randomInt(0, options.length - 1)]!;
+  const widget = buildWidget().withTitle('Today').withTitleValue(value).model();
+  const streakWidget = createStreakWidget(randomTotals(initialReadingStreakTotals.length), 50);
+
+  return build()
+    .withName('Reading')
+    .withType('single_select')
+    .withOptions(options)
+    .withValue(value)
+    .withWidget(widget)
+    .withWidget(streakWidget)
+    .model();
+}
+
+function createDemoHabit(kind: DemoHabitKind): Habit {
+  if (kind === 'checkbox') return createCheckboxHabit();
+  if (kind === 'singleSelect') return createSingleSelectHabit();
+
+  return createQuickSelectHabit({
+    historyTotals: randomTotals(initialReadingTotals.length),
+    progressTotal: randomInt(0, 72),
+    streakTotals: randomTotals(initialReadingStreakTotals.length),
+  });
+}
+
+function randomDemoHabitKind(currentKind: DemoHabitKind): DemoHabitKind {
+  const nextKinds = demoHabitKinds.filter((kind) => kind !== currentKind);
+  return nextKinds[randomInt(0, nextKinds.length - 1)]!;
+}
+
+const readingHabit = createQuickSelectHabit({});
+
 function updateSummationWidgets(widgets: HabitWidget[] | undefined, total: number | null) {
   return widgets?.map((widget) => {
-    if (widget.title !== '3 week progress') return widget;
+    if (widget.title !== 'Progress') return widget;
 
     return {
       ...widget,
@@ -190,108 +251,116 @@ function updateHomepageHabit(habit: Habit, patch: HabitPatch): Habit {
   return habit;
 }
 
-function useActiveCardStep(cardRefs: { current: Array<HTMLDivElement | null> }, stepCount: number) {
-  const [activeStep, setActiveStep] = useState(0);
-
-  useEffect(() => {
-    const update = () => {
-      const activationLine = 64 + window.innerHeight * activeCardViewportOffset;
-      const nextStep = cardRefs.current.reduce((currentStep, card, index) => {
-        if (!card) return currentStep;
-        return card.getBoundingClientRect().top <= activationLine ? index : currentStep;
-      }, 0);
-
-      setActiveStep((current) => (current === nextStep ? current : nextStep));
-    };
-
-    update();
-    window.addEventListener('scroll', update, { passive: true });
-    window.addEventListener('resize', update);
-    return () => {
-      window.removeEventListener('scroll', update);
-      window.removeEventListener('resize', update);
-    };
-  }, [cardRefs, stepCount]);
-
-  return activeStep;
+function LegalTodoModal({ title }: { title: string }) {
+  return (
+    <>
+      <ModalHeader>{title}</ModalHeader>
+      <ModalBody>
+        <p className="text-b-m text-light">TODO</p>
+      </ModalBody>
+    </>
+  );
 }
 
-function App() {
-  const [homepageHabits, setHomepageHabits] = useState(habits);
-  const cardRefs = useRef<Array<HTMLDivElement | null>>([]);
-  const activeStep = useActiveCardStep(cardRefs, habits.length);
+function HomepageContent() {
+  const [demoHabitKind, setDemoHabitKind] = useState<DemoHabitKind>('quickSelect');
+  const [homepageHabit, setHomepageHabit] = useState(readingHabit);
+  const [theme, setTheme] = useState<HomepageTheme>(() => {
+    if (typeof document === 'undefined') return 'light';
+    return document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
+  });
+  const { present } = useModal();
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = theme;
+  }, [theme]);
 
   const updateHabit = async (patch: HabitPatch) => {
-    setHomepageHabits((current) => current.map((habit) => updateHomepageHabit(habit, patch)));
+    setHomepageHabit((current) => updateHomepageHabit(current, patch));
+  };
+
+  const randomizeHabitData = () => {
+    const nextKind = randomDemoHabitKind(demoHabitKind);
+    setDemoHabitKind(nextKind);
+    setHomepageHabit(createDemoHabit(nextKind));
+  };
+
+  const toggleTheme = () => {
+    setTheme((current) => (current === 'dark' ? 'light' : 'dark'));
+  };
+
+  const openLegalTodo = (title: string) => {
+    present({ content: <LegalTodoModal title={title} /> });
   };
 
   return (
-    <ToastProvider>
-      <ModalProvider>
-        <header className="homepage-habits__topbar">
-          <div className="homepage-habits__brand text-h-m" aria-label="Habsum">
-            <img className="homepage-habits__brand-icon" src="/favicon.svg" alt="" />
-            Habsum
-          </div>
-          <nav className="homepage-habits__nav flex align-items-center gap-2" aria-label="Homepage">
-            <Hoverable.Root>
-              <Hoverable.Anchor className="homepage-habits__demo-anchor">
-                <Button
-                  type="secondary"
-                  size="large"
-                  text="Demo"
-                  aria-disabled="true"
-                  className="homepage-habits__demo-button"
-                  onClick={(event) => event.preventDefault()}
-                />
-              </Hoverable.Anchor>
-              <Hoverable.Content className="homepage-habits__demo-tooltip" side="bottom">
-                <span className="text-b-m">Coming soon</span>
-              </Hoverable.Content>
-            </Hoverable.Root>
-            <a className="homepage-habits__login-link" href="/login">
-              <Button type="primary" size="large" text="Login" />
-            </a>
-          </nav>
-        </header>
-        <main className="homepage-habits">
+    <>
+      <header className="homepage-habits__topbar">
+        <div className="homepage-habits__brand text-h-m" aria-label="Habsum">
+          <img className="homepage-habits__brand-icon" src="/favicon.svg" alt="" />
+          Habsum
+        </div>
+        <nav className="homepage-habits__nav flex align-items-center gap-2" aria-label="Homepage">
+          <Hoverable.Root>
+            <Hoverable.Anchor className="homepage-habits__demo-anchor">
+              <Button
+                type="secondary"
+                size="large"
+                text="Demo"
+                aria-disabled="true"
+                className="homepage-habits__demo-button"
+                onClick={(event) => event.preventDefault()}
+              />
+            </Hoverable.Anchor>
+            <Hoverable.Content className="homepage-habits__demo-tooltip" side="bottom">
+              <span>Coming soon</span>
+            </Hoverable.Content>
+          </Hoverable.Root>
+          <a className="homepage-habits__login-link" href="/login">
+            <Button type="primary" size="large" text="Login" />
+          </a>
+        </nav>
+      </header>
+      <main className="homepage-habits">
+        <div className="homepage-habits__grid">
           <header className="homepage-habits__intro">
             <h1 className="homepage-habits__title text-h-xl">Track habits your way.</h1>
             <p className="homepage-habits__subtitle text-b-xl text-light">
               Create trackers that match how you measure progress.
             </p>
           </header>
-          <div className="homepage-habits__stage">
-            <section className="homepage-habits__copy mt-5" aria-live="polite">
-              <p className="homepage-habits__caption text-b-xl text-light">
-                {captions[activeStep]}
+          <section className="homepage-habits__demo" aria-label="Habits">
+            <div className="homepage-habits__demo-left">
+              <p className="homepage-habits__widget-callout text-b-xl text-light">
+                Pick and choose which widgets you want to show: <strong>history</strong>,
+                <strong>streaks</strong>, <strong>progress</strong>, and more.
               </p>
-            </section>
-            <section className="homepage-habits__cards" aria-label="Habits">
-              {homepageHabits.map((habit, index) => (
-                <div
-                  key={habit.name}
-                  ref={(node) => {
-                    cardRefs.current[index] = node;
-                  }}
-                  className={[
-                    'homepage-habits__card',
-                    activeStep === index ? 'homepage-habits__card--active' : null,
-                  ]
-                    .filter(Boolean)
-                    .join(' ')}
-                >
-                  <HabitRenderer
-                    user={user}
-                    viewDate={viewDate}
-                    habit={habit}
-                    demo
-                    onUpdate={updateHabit}
-                  />
-                </div>
-              ))}
-            </section>
-          </div>
+            </div>
+            <div className="homepage-habits__demo-right">
+              <HabitRenderer
+                user={user}
+                viewDate={viewDate}
+                habit={homepageHabit}
+                demo
+                widgetsClassName="homepage-habits__widgets-highlight"
+                onUpdate={updateHabit}
+              />
+              <div className="homepage-habits__demo-controls">
+                <Button
+                  type="secondary"
+                  size="medium"
+                  text="Generate data"
+                  onClick={randomizeHabitData}
+                />
+                <Button
+                  type="secondary"
+                  size="medium"
+                  text={theme === 'dark' ? 'Light mode' : 'Dark mode'}
+                  onClick={toggleTheme}
+                />
+              </div>
+            </div>
+          </section>
           <section className="homepage-habits__active-development">
             <h2 className="text-h-l">Actively developed</h2>
             <p className="text-b-xl text-light">
@@ -299,31 +368,64 @@ function App() {
               quality-of-life improvements. Early users have a direct impact on what gets built
               next.
             </p>
-            <a
-              className="homepage-habits__waitlist-link text-b-xl text-link"
-              href="#"
-              onClick={(event) => event.preventDefault()}
-            >
-              Join waitlist
-            </a>
+            <Hoverable.Root>
+              <Hoverable.Anchor className="homepage-habits__waitlist-anchor">
+                <Button
+                  type="primary"
+                  size="large"
+                  text="Join waitlist"
+                  aria-disabled="true"
+                  className="homepage-habits__waitlist-button"
+                  onClick={(event) => event.preventDefault()}
+                />
+              </Hoverable.Anchor>
+              <Hoverable.Content className="homepage-habits__waitlist-tooltip" side="top">
+                <span>Waitlist coming soon</span>
+              </Hoverable.Content>
+            </Hoverable.Root>
           </section>
-          <footer className="homepage-habits__footer">
-            <span className="text-b-m text-light">&copy; 2026 Habsum</span>
-            <a className="text-b-m text-link" href="#" onClick={(event) => event.preventDefault()}>
-              Terms of Service
-            </a>
-          </footer>
-        </main>
+        </div>
+        <footer className="homepage-habits__footer">
+          <div className="homepage-habits__grid homepage-habits__footer-grid">
+            <span className="homepage-habits__footer-copy text-b-m">&copy; 2026 Habsum</span>
+            <nav className="homepage-habits__footer-nav" aria-label="Legal">
+              <button
+                type="button"
+                className="homepage-habits__footer-link text-b-m"
+                onClick={() => openLegalTodo('Terms')}
+              >
+                Terms
+              </button>
+              <button
+                type="button"
+                className="homepage-habits__footer-link text-b-m"
+                onClick={() => openLegalTodo('Privacy')}
+              >
+                Privacy
+              </button>
+            </nav>
+          </div>
+        </footer>
+      </main>
+    </>
+  );
+}
+
+export function HomepageApp() {
+  return (
+    <ToastProvider>
+      <ModalProvider>
+        <HomepageContent />
       </ModalProvider>
     </ToastProvider>
   );
 }
 
-const root = document.getElementById('root');
-if (root == null) throw new Error('Root element not found');
-
-createRoot(root).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-);
+const root = typeof document === 'undefined' ? null : document.getElementById('root');
+if (root?.dataset.homepageRoot === 'true') {
+  createRoot(root).render(
+    <StrictMode>
+      <HomepageApp />
+    </StrictMode>,
+  );
+}

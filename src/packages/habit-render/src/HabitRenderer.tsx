@@ -17,6 +17,8 @@ type HabitRendererProps = {
   LinkComponent?: ComponentType<{ to: string; className?: string; children: ReactNode }>;
   onNavigate?: (url: string) => void;
   demo?: boolean;
+  className?: string;
+  widgetsClassName?: string;
 };
 
 function usePendingOp({ onError }: { onError: (message: string) => void }) {
@@ -40,7 +42,18 @@ function usePendingOp({ onError }: { onError: (message: string) => void }) {
 }
 
 export default function HabitRenderer(props: HabitRendererProps) {
-  const { user, habit, viewDate, onUpdate, currentSearch, LinkComponent, onNavigate, demo } = props;
+  const {
+    user,
+    habit,
+    viewDate,
+    onUpdate,
+    currentSearch,
+    LinkComponent,
+    onNavigate,
+    demo,
+    className,
+    widgetsClassName,
+  } = props;
   const { showToast } = useToast();
   const showUpdateError = useCallback(
     (message: string) => {
@@ -55,7 +68,7 @@ export default function HabitRenderer(props: HabitRendererProps) {
   );
 
   return (
-    <div className="card habit">
+    <div className={['card card--no-padding habit', className].filter(Boolean).join(' ')}>
       <HabitHeaderAndActionRenderer
         user={user}
         habit={habit}
@@ -64,11 +77,13 @@ export default function HabitRenderer(props: HabitRendererProps) {
         LinkComponent={LinkComponent}
         onNavigate={onNavigate}
         demo={demo}
+        className="habit__header"
         onUpdate={updateHabit}
       />
       <HabitWidgetRenderer
         habit={habit}
         viewDate={viewDate}
+        className={['habit__widgets', widgetsClassName].filter(Boolean).join(' ')}
         onDeleteSummationEvent={(eventId) =>
           updateHabit({ habit: habit.name, action: 'delete_event', eventId })
         }

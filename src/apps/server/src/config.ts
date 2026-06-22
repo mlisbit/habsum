@@ -1,4 +1,4 @@
-import { readdirSync, readFileSync, existsSync, mkdirSync, unlinkSync } from 'node:fs';
+import { readFileSync, mkdirSync } from 'node:fs';
 import { join, resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import Database from 'better-sqlite3';
@@ -16,7 +16,6 @@ if (!rawDir) {
 }
 
 const DATA_DIR = resolve(rawDir);
-const USERS_DIR = join(DATA_DIR, 'users');
 const DB_PATH = join(DATA_DIR, 'habsum.db');
 const SAMPLE_CONFIG_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -98,9 +97,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return value != null && typeof value === 'object' && !Array.isArray(value);
 }
 
-/** Creates `<HABSUM_CONFIG_DIR>/users/` when missing (safe to call repeatedly). */
+/** Ensures the configured data directory exists (safe to call repeatedly). */
 export function ensureConfigLayout(): void {
-  mkdirSync(USERS_DIR, { recursive: true });
+  mkdirSync(DATA_DIR, { recursive: true });
 }
 
 type HabitConfigRow = {
@@ -159,13 +158,6 @@ const renameHabitConfigsStmt = configDb.prepare<{ fromUser: string; toUser: stri
 const deleteHabitConfigsStmt = configDb.prepare<[string], unknown>(`
   DELETE FROM habit_configs WHERE user = ?
 `);
-
-function listLegacyConfigFileUsers(): string[] {
-  if (!existsSync(USERS_DIR)) return [];
-  return readdirSync(USERS_DIR)
-    .filter((f) => f.endsWith('.yaml') || f.endsWith('.yml'))
-    .map((f) => f.replace(/\.ya?ml$/, ''));
-}
 
 function getLatestStoredConfig(user: string): HabitConfigRow | null {
   return getLatestHabitConfigStmt.get(user) ?? null;
@@ -228,34 +220,6 @@ function getActiveStoredConfig(user: string): HabitConfigRow | null {
   return latest;
 }
 
-function deleteLegacyUserConfigFile(user: string): void {
-  const path = getUserConfigFilePath(user);
-  if (!path) return;
-  try {
-    unlinkSync(path);
-  } catch {
-    // Best-effort cleanup for legacy disk-backed configs.
-  }
-}
-
-function importLegacyUserConfigIfNeeded(user: string): HabitConfigRow | null {
-  const existing = getActiveStoredConfig(user);
-  if (existing) {
-    deleteLegacyUserConfigFile(user);
-    return existing;
-  }
-
-  const path = getUserConfigFilePath(user);
-  if (!path) return null;
-  const text = readFileSync(path, 'utf8');
-  const out = appendUserConfigVersion(user, text);
-  if (!out.ok) {
-    throw new ConfigValidationError(out.error);
-  }
-  deleteLegacyUserConfigFile(user);
-  return getActiveStoredConfig(user);
-}
-
 const appendUserConfigVersion = configDb.transaction(
   (user: string, content: string): { ok: true } | { ok: false; error: string } => {
     const validation = validateUserConfigText(user, content);
@@ -273,29 +237,21 @@ const appendUserConfigVersion = configDb.transaction(
 );
 
 export function listUsers(): string[] {
-  return Array.from(
-    new Set([
-      ...listHabitConfigUsersStmt.all().map((row) => row.user),
-      ...listLegacyConfigFileUsers(),
-    ]),
-  ).sort();
-}
-
-/** Resolved path to the user's YAML on disk, or null if the file is missing. */
-export function getUserConfigFilePath(user: string): string | null {
-  const candidates = [join(USERS_DIR, `${user}.yaml`), join(USERS_DIR, `${user}.yml`)];
-  return candidates.find((p) => existsSync(p)) ?? null;
+  return listHabitConfigUsersStmt
+    .all()
+    .map((row) => row.user)
+    .sort();
 }
 
 export function readUserConfigFileText(user: string): string | null {
-  return importLegacyUserConfigIfNeeded(user)?.text ?? null;
+  return getActiveStoredConfig(user)?.text ?? null;
 }
 
 export function writeUserConfigFileText(
   user: string,
   content: string,
 ): { ok: true } | { ok: false; error: string } {
-  if (!importLegacyUserConfigIfNeeded(user)) {
+  if (!getActiveStoredConfig(user)) {
     return { ok: false, error: 'config file not found' };
   }
   return appendUserConfigVersion(user, content);
@@ -328,7 +284,7 @@ export function validateUserConfigText(
 }
 
 export function loadUserConfig(user: string): UserConfig | null {
-  const row = importLegacyUserConfigIfNeeded(user);
+  const row = getActiveStoredConfig(user);
   if (!row) return null;
 
   const parsed = yaml.load(row.text);
@@ -511,7 +467,7 @@ export function createUserFromSampleConfig(
 ): { ok: true; user: string } | { ok: false; error: string } {
   ensureConfigLayout();
 
-  const existing = importLegacyUserConfigIfNeeded(user);
+  const existing = getActiveStoredConfig(user);
   if (existing) {
     return { ok: false, error: `user "${user}" already exists` };
   }
@@ -540,15 +496,14 @@ export function renameUserConfigFile(
   fromUser: string,
   toUser: string,
 ): { ok: true; user: string } | { ok: false; error: string } {
-  if (!importLegacyUserConfigIfNeeded(fromUser)) return { ok: false, error: 'user not found' };
+  if (!getActiveStoredConfig(fromUser)) return { ok: false, error: 'user not found' };
 
-  const existingTarget = importLegacyUserConfigIfNeeded(toUser);
+  const existingTarget = getActiveStoredConfig(toUser);
   if (existingTarget) {
     return { ok: false, error: `user "${toUser}" already exists` };
   }
 
   renameHabitConfigsStmt.run({ fromUser, toUser });
-  deleteLegacyUserConfigFile(fromUser);
 
   return { ok: true, user: toUser };
 }
@@ -556,9 +511,8 @@ export function renameUserConfigFile(
 export function deleteUserConfigFile(
   user: string,
 ): { ok: true; user: string } | { ok: false; error: string } {
-  if (!importLegacyUserConfigIfNeeded(user)) return { ok: false, error: 'user not found' };
+  if (!getActiveStoredConfig(user)) return { ok: false, error: 'user not found' };
   deleteHabitConfigsStmt.run(user);
   setActiveHabitConfigVersion(user, null);
-  deleteLegacyUserConfigFile(user);
   return { ok: true, user };
 }

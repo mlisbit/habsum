@@ -2,4 +2,14 @@
 
 .habit {
   min-width: 0;
+  background: var(--background-secondary);
+  border-radius: var(--border-radius-m);
+}
+
+.habit__header {
+  padding: functions.spacing(4 4 0 4);
+}
+
+.habit__widgets {
+  padding: functions.spacing(0 4 4 4);
 }

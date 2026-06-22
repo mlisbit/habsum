@@ -89,10 +89,10 @@
   z-index: 1;
 }
 
-.calendar__hoverable.hover-layer__panel {
+.calendar__hoverable {
   background: var(--background-secondary);
 }
 
-.calendar__hoverable--min-width.hover-layer__panel {
+.calendar__hoverable--min-width {
   min-inline-size: 200px;
 }

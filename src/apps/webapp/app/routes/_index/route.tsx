@@ -1,5 +1,5 @@
-import { Navigate } from '@remix-run/react';
+import { HomepageApp } from '@habsum/homepage';
 
 export default function IndexRoute() {
-  return <Navigate to="/login" replace />;
+  return <HomepageApp />;
 }

@@ -54,7 +54,6 @@ function primaryNamespace(className: string): string {
 function isAllowedCompanion(className: string): boolean {
   if (className === 'progress') return true;
   if (className.startsWith('cm-')) return true;
-  if (bemBlock(className) === 'hover-layer') return true;
   /** Core input innards styled from component blocks (e.g. count-control). */
   if (bemBlock(className) === 'input') return true;
   return false;
