@@ -1,6 +1,7 @@
 @use 'functions';
 
 .button {
+  box-sizing: border-box;
   font: inherit;
   border: none;
   border-radius: var(--border-radius-m);
@@ -65,6 +66,8 @@
 // ignoring this line because buttons are not cards, and shouldnt really be "locked" to the spacing of them.
 // stylelint-disable-next-line habsum/atomic-class-enforcer
 .button--medium {
+  min-height: 30px;
+  min-width: 30px;
   padding: functions.spacing(2, 3);
 }
 
@@ -135,6 +138,20 @@
     &:focus-visible {
       box-shadow: var(--box-shadow-alert);
     }
+  }
+}
+
+.button--inverse {
+  background: var(--background-inverse);
+  color: var(--text-inverse);
+  border-color: var(--background-inverse);
+
+  &:hover {
+    filter: brightness(1.08);
+  }
+
+  &:active {
+    filter: brightness(0.96);
   }
 }
 

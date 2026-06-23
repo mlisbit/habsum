@@ -28,7 +28,7 @@ function AddAmountTrigger({
     <Button
       type="tertiary"
       size="medium"
-      text="+"
+      icon="plus"
       disabled={pending}
       className="count-control__amount-trigger text-b-m"
       onClick={onClick}

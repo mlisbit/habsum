@@ -34,6 +34,8 @@
 
 .homepage-habits__login-link,
 .homepage-habits__demo-anchor,
+.homepage-habits__randomize-anchor,
+.homepage-habits__theme-anchor,
 .homepage-habits__waitlist-anchor {
   display: inline-flex;
 }
@@ -48,6 +50,8 @@
 }
 
 .homepage-habits__demo-tooltip,
+.homepage-habits__randomize-tooltip,
+.homepage-habits__theme-tooltip,
 .homepage-habits__waitlist-tooltip {
   white-space: nowrap;
 }
@@ -104,6 +108,7 @@
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
+  align-items: center;
   gap: functions.spacing(2);
 }
 

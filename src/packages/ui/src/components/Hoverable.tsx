@@ -20,6 +20,8 @@ export type HoverablePanelSide = 'top' | 'bottom' | 'left' | 'right';
 
 type HoverableRootProps = {
   children: ReactNode;
+  /** Keeps the floating panel open regardless of hover/focus state. */
+  open?: boolean;
   /** Delay before opening (ms). */
   openDelay?: number;
 };
@@ -39,8 +41,8 @@ function useHoverableContext(component: string): HoverableContextValue {
   return v;
 }
 
-function HoverableRoot({ children, openDelay = 60 }: HoverableRootProps) {
-  const [open, setOpen] = useState(false);
+function HoverableRoot({ children, open: forcedOpen = false, openDelay = 60 }: HoverableRootProps) {
+  const [hoverOpen, setHoverOpen] = useState(false);
   const anchorRef = useRef<HTMLDivElement | null>(null);
   const openTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -52,28 +54,28 @@ function HoverableRoot({ children, openDelay = 60 }: HoverableRootProps) {
   }, []);
 
   const beginHover = useCallback(() => {
-    if (open) return;
+    if (hoverOpen) return;
     clearOpenTimer();
     openTimer.current = setTimeout(() => {
       openTimer.current = null;
-      setOpen(true);
+      setHoverOpen(true);
     }, openDelay);
-  }, [open, openDelay, clearOpenTimer]);
+  }, [hoverOpen, openDelay, clearOpenTimer]);
 
   /** Close as soon as the pointer leaves the anchor (panel does not keep it open). */
   const endHover = useCallback(() => {
     clearOpenTimer();
-    setOpen(false);
+    setHoverOpen(false);
   }, [clearOpenTimer]);
 
   const value = useMemo(
     () => ({
-      open,
+      open: forcedOpen || hoverOpen,
       anchorRef,
       beginHover,
       endHover,
     }),
-    [open, beginHover, endHover],
+    [forcedOpen, hoverOpen, beginHover, endHover],
   );
 
   useLayoutEffect(
@@ -87,7 +89,7 @@ function HoverableRoot({ children, openDelay = 60 }: HoverableRootProps) {
 }
 
 const HoverableAnchor = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
-  function HoverableAnchor({ onMouseEnter, onMouseLeave, ...props }, ref) {
+  function HoverableAnchor({ onBlur, onFocus, onMouseEnter, onMouseLeave, ...props }, ref) {
     const { anchorRef, beginHover, endHover } = useHoverableContext('Hoverable.Anchor');
 
     const setRefs = (el: HTMLDivElement | null) => {
@@ -106,6 +108,14 @@ const HoverableAnchor = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement
         onMouseLeave={(e) => {
           endHover();
           onMouseLeave?.(e);
+        }}
+        onFocus={(e) => {
+          beginHover();
+          onFocus?.(e);
+        }}
+        onBlur={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget)) endHover();
+          onBlur?.(e);
         }}
         {...props}
       />

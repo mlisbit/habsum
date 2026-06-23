@@ -8,6 +8,7 @@ import type { StreakGraphData } from '@habsum/types/common/streak';
 import HabitRenderer from '@habsum/habit-render';
 import { Button } from '@habsum/ui/components/Button';
 import { Hoverable } from '@habsum/ui/components/Hoverable';
+import { Toggle } from '@habsum/ui/components/Toggle';
 import { ModalBody, ModalHeader, ModalProvider, useModal } from '@habsum/ui/contexts/modal';
 import { ToastProvider } from '@habsum/ui/contexts/toast';
 import { build, buildWidget } from '@habsum/utils';
@@ -285,10 +286,6 @@ function HomepageContent() {
     setHomepageHabit(createDemoHabit(nextKind));
   };
 
-  const toggleTheme = () => {
-    setTheme((current) => (current === 'dark' ? 'light' : 'dark'));
-  };
-
   const openLegalTodo = (title: string) => {
     present({ content: <LegalTodoModal title={title} /> });
   };
@@ -346,18 +343,36 @@ function HomepageContent() {
                 onUpdate={updateHabit}
               />
               <div className="homepage-habits__demo-controls">
-                <Button
-                  type="secondary"
-                  size="medium"
-                  text="Generate data"
-                  onClick={randomizeHabitData}
-                />
-                <Button
-                  type="secondary"
-                  size="medium"
-                  text={theme === 'dark' ? 'Light mode' : 'Dark mode'}
-                  onClick={toggleTheme}
-                />
+                <Hoverable.Root>
+                  <Hoverable.Anchor className="homepage-habits__randomize-anchor">
+                    <Button
+                      type="primary"
+                      color="inverse"
+                      size="medium"
+                      icon="shuffle"
+                      aria-label="Randomize data and view"
+                      onClick={randomizeHabitData}
+                    />
+                  </Hoverable.Anchor>
+                  <Hoverable.Content className="homepage-habits__randomize-tooltip" side="top">
+                    <span>randomize data/view</span>
+                  </Hoverable.Content>
+                </Hoverable.Root>
+                <Hoverable.Root>
+                  <Hoverable.Anchor className="homepage-habits__theme-anchor">
+                    <Toggle
+                      checked={theme === 'dark'}
+                      size="medium"
+                      checkedIllustration="moon"
+                      uncheckedIllustration="sun"
+                      aria-label="Use dark mode"
+                      onChange={(checked) => setTheme(checked ? 'dark' : 'light')}
+                    />
+                  </Hoverable.Anchor>
+                  <Hoverable.Content className="homepage-habits__theme-tooltip" side="top">
+                    <span>{theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}</span>
+                  </Hoverable.Content>
+                </Hoverable.Root>
               </div>
             </div>
           </section>

@@ -5,7 +5,7 @@ export type ButtonIcon = IconName;
 
 type ButtonProps = {
   type: 'primary' | 'secondary' | 'tertiary';
-  color?: 'primary' | 'danger' | 'muted';
+  color?: 'primary' | 'danger' | 'muted' | 'inverse';
   size?: keyof typeof ICON_SIZES_PX;
   icon?: IconName;
   circle?: boolean;
@@ -30,10 +30,11 @@ export function Button({
     visual === 'tertiary' && 'button--tertiary',
     color === 'danger' && 'button--danger',
     color === 'muted' && 'button--muted',
+    color === 'inverse' && 'button--inverse',
     `button--${size}`,
     icon != null && 'button--with-icon',
     isIconOnly && 'button--icon',
-    circle && isIconOnly && 'button--circle',
+    (isIconOnly || circle) && 'button--circle',
     className,
   ]
     .filter(Boolean)

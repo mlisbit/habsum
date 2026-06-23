@@ -5,9 +5,9 @@
   max-inline-size: 100%;
   padding: functions.spacing(2, 3);
   border-radius: var(--border-radius-m);
-  background: var(--background-hoverable);
+  background: var(--background-inverse);
   /* stylelint-disable-next-line color-function-notation, habsum/atomic-class-enforcer */
-  color: var(--text-hoverable);
+  color: var(--text-inverse);
   box-shadow: var(--elevation-shadow);
   pointer-events: none;
 }
