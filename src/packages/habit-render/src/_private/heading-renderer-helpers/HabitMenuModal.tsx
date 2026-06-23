@@ -1,7 +1,7 @@
 // exclusive-bem-block: habit-menu-modal
 import { Button } from '@habsum/ui/components/Button';
 import { ModalBody, ModalHeader } from '@habsum/ui/contexts/modal';
-import { configEditHabitUrl } from '@habsum/utils';
+import { configEditHabitUrl } from '@habsum/utils/habit-id';
 
 type HabitMenuModalProps = {
   user: string;

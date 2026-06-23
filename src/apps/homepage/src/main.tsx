@@ -11,7 +11,8 @@ import { Hoverable } from '@habsum/ui/components/Hoverable';
 import { Toggle } from '@habsum/ui/components/Toggle';
 import { ModalBody, ModalHeader, ModalProvider, useModal } from '@habsum/ui/contexts/modal';
 import { ToastProvider } from '@habsum/ui/contexts/toast';
-import { build, buildWidget } from '@habsum/utils';
+import { build } from '@habsum/utils/model-builders/habit';
+import { build as buildWidget } from '@habsum/utils/model-builders/widget';
 
 import '@habsum/ui/styles';
 import '@habsum/habit-render/styles';

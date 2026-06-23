@@ -42,7 +42,7 @@ import type {
   CreateOucSessionResponse,
   OucLoginResponse,
 } from '@habsum/types/api-responses/ouc-post';
-import { toDateKeyWithTime } from '@habsum/utils';
+import { toDateKeyWithTime } from '@habsum/utils/date';
 import { oucSessionRequestHeaders, clearOucSessionToken } from '~/ouc.client';
 import { WEBAPP_VERSION } from '~/version';
 

@@ -1,4 +1,4 @@
-import { toDateKey } from '@habsum/utils';
+import { toDateKey } from '@habsum/utils/date';
 import { Button } from '@habsum/ui/components/Button';
 import { HumanDate } from '@habsum/ui/components/HumanDate';
 import { addDays } from '~/utils/date-utils';

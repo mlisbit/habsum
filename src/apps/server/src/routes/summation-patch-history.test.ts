@@ -1,6 +1,6 @@
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
-import { toDateKey, toDateKeyWithTime } from '@habsum/utils';
+import { toDateKey, toDateKeyWithTime } from '@habsum/utils/date';
 import { createApp } from '../app.js';
 import { createUserFromSampleConfig, writeUserConfigFileText } from '../config.js';
 import { createUserSession, ensureUserPins } from '../db.js';

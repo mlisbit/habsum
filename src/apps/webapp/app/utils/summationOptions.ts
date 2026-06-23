@@ -1,1 +1,1 @@
-export { formatIncrementLabel, hasSummationOptions } from '@habsum/utils';
+export { formatIncrementLabel, hasSummationOptions } from '@habsum/utils/habit-helpers';

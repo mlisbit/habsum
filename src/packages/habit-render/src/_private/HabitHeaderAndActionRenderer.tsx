@@ -7,7 +7,8 @@ import { HabitMenuModal } from './heading-renderer-helpers/HabitMenuModal';
 import { TogglePill } from '@habsum/ui/components/Pill';
 import { TernaryCheckbox, type TernaryCheckboxValue } from '@habsum/ui/components/TernaryCheckbox';
 import { useModal } from '@habsum/ui/contexts/modal';
-import { classBuilder, isGoalHit } from '@habsum/utils';
+import { classBuilder } from '@habsum/utils/class-builder';
+import { isGoalHit } from '@habsum/utils/habit-helpers';
 
 type HabitHeaderAndActionRendererProps = {
   user: string;

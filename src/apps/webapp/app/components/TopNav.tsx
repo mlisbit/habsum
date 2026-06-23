@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { fromDateKey } from '@habsum/utils';
+import { fromDateKey } from '@habsum/utils/date';
 import { diffDays } from '~/utils/date-utils';
 import { useTodayDateKey } from '~/utils/use-today-date-key';
 import { Button } from '@habsum/ui/components/Button';

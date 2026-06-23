@@ -10,4 +10,4 @@ export {
   readShowAddModal,
   withConfigEditHabitId,
   withShowAddModal,
-} from '@habsum/utils';
+} from '@habsum/utils/habit-id';

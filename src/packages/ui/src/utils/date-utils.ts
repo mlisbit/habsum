@@ -1,4 +1,4 @@
-import { fromDateKey, toDateKey } from '@habsum/utils';
+import { fromDateKey, toDateKey } from '@habsum/utils/date';
 
 /**
  * Converts a calendar date key (YYYY-MM-DD) to a localized label ("Today", or weekday + date).

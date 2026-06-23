@@ -1,5 +1,5 @@
 import type { ServerTimeResponse } from '@habsum/types/common/misc';
-import { fromDateKey, toDateKey } from '@habsum/utils';
+import { fromDateKey, toDateKey } from '@habsum/utils/date';
 
 /** `?date=` for GET: `YYYY-MM-DD` or `YYYY-MM-DD|<suffix>`; validates with {@link fromDateKey}. */
 function habitQueryDateKey(raw: string): string | null {

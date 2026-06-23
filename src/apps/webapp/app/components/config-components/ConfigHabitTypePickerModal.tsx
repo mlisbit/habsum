@@ -3,7 +3,7 @@ import type { ReactNode } from 'react';
 import HabitRenderer from '@habsum/habit-render';
 import { dayFromString } from '@habsum/types/common/day';
 import { ModalBody, ModalHeader } from '@habsum/ui/contexts/modal';
-import { build } from '@habsum/utils';
+import { build } from '@habsum/utils/model-builders/habit';
 
 const PREVIEW_USER = '_preview';
 const PREVIEW_VIEW_DATE = dayFromString('2025-05-21');

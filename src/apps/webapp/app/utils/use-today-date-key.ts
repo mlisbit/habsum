@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { toDateKey } from '@habsum/utils';
+import { toDateKey } from '@habsum/utils/date';
 import { msUntilNextLocalDay } from '~/utils/date-utils';
 
 /** Live “today” date key that advances at local midnight. */

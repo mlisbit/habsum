@@ -4,7 +4,7 @@ import type { SummationEvent, SummationEventCreatedAt } from '@habsum/types/comm
 import { BarGraph } from '@habsum/ui/components/graphs/BarGraph';
 import { Button } from '@habsum/ui/components/Button';
 import { ModalBody, ModalHeader, useModal } from '@habsum/ui/contexts/modal';
-import { summationHourlyBarGraphData } from '@habsum/utils';
+import { summationHourlyBarGraphData } from '@habsum/utils/summation-hourly-bar-data';
 
 type EventsProps = {
   habitName: string;

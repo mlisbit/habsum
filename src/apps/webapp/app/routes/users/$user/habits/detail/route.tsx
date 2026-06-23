@@ -14,7 +14,7 @@ import HabitRenderer from '@habsum/habit-render';
 import { getHabitHistory, patchHabit, type Habit } from '~/api.client';
 import { useUser } from '~/context/user';
 import { ensureUserSessionForRoute } from '~/utils/user-session-guard';
-import { toDateKey } from '@habsum/utils';
+import { toDateKey } from '@habsum/utils/date';
 import { addDays } from '~/utils/date-utils';
 import { userPageTitle } from '~/utils/page-title';
 

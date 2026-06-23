@@ -1,2 +1,2 @@
-export { classBuilder } from '@habsum/utils';
-export type { ClassMap } from '@habsum/utils';
+export { classBuilder } from '@habsum/utils/class-builder';
+export type { ClassMap } from '@habsum/utils/class-builder';

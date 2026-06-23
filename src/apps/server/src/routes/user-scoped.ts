@@ -19,7 +19,7 @@ import type {
   SecuritySessionsDeleteOthersResponse,
 } from '@habsum/types/api-responses/security-delete';
 import type { UsersPatchRequest } from '@habsum/types/api-responses/users-patch';
-import { dasherize } from '@habsum/utils';
+import { dasherize } from '@habsum/utils/strings';
 import { isForbiddenUsername } from '../forbidden-usernames.js';
 import {
   deleteUserConfigFile,

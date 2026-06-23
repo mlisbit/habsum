@@ -8,7 +8,7 @@ import {
   type StreakGraphData,
 } from '@habsum/types/common/streak';
 import type { Habit, HabitHistory, HabitWidget } from '@habsum/types/common/habit';
-import { fromDateKey, toDateKey } from '@habsum/utils';
+import { fromDateKey, toDateKey } from '@habsum/utils/date';
 import type { HabitDef } from './config.js';
 import {
   getAllSelects,

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Button } from '@habsum/ui/components/Button';
 import { Hoverable, type HoverablePanelSide } from '@habsum/ui/components/Hoverable';
-import { fromDateKey, toDateKey } from '@habsum/utils';
+import { fromDateKey, toDateKey } from '@habsum/utils/date';
 import { addDays } from '~/utils/date-utils';
 
 export type CalendarCellInfo = {

@@ -1,4 +1,4 @@
-import { fromDateKey, toDateKey } from '@habsum/utils';
+import { fromDateKey, toDateKey } from '@habsum/utils/date';
 
 /**
  * Add whole days to a YYYY-MM-DD date key in the given timezone.

@@ -6,7 +6,7 @@ import type { HabitPatch } from '@habsum/types/api-responses/habit-patch';
 import HabitHeaderAndActionRenderer from './_private/HabitHeaderAndActionRenderer';
 import HabitWidgetRenderer from './_private/HabitWidgetRenderer';
 import { useToast } from '@habsum/ui/contexts/toast';
-import { classBuilder } from '@habsum/utils';
+import { classBuilder } from '@habsum/utils/class-builder';
 
 type HabitRendererProps = {
   user: string;

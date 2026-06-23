@@ -4,10 +4,15 @@
   "private": true,
   "type": "module",
   "sideEffects": false,
-  "main": "./src/index.ts",
-  "types": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts"
+    "./class-builder": "./src/class-builder.ts",
+    "./date": "./src/date.ts",
+    "./habit-helpers": "./src/habit-helpers.ts",
+    "./habit-id": "./src/habit-id.ts",
+    "./model-builders/habit": "./src/model-builders/habit.ts",
+    "./model-builders/widget": "./src/model-builders/widget.ts",
+    "./strings": "./src/strings.ts",
+    "./summation-hourly-bar-data": "./src/summation-hourly-bar-data.ts"
   },
   "dependencies": {
     "@habsum/types": "*"

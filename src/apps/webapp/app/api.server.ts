@@ -1,7 +1,7 @@
 import type { HabitsResponse } from '@habsum/types/api-responses/habits-get';
 import type { PatchHabitResponse } from '@habsum/types/api-responses/habit-patch';
 import type { ListUsersResponse } from '@habsum/types/common/misc';
-import { toDateKeyWithTime } from '@habsum/utils';
+import { toDateKeyWithTime } from '@habsum/utils/date';
 
 const SERVER_URL = process.env.HABSUM_SERVER_URL ?? 'http://localhost:3001';
 

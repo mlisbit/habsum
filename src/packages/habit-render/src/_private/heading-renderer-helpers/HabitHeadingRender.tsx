@@ -2,7 +2,8 @@
 import type { ComponentType, ReactNode } from 'react';
 import { Button } from '@habsum/ui/components/Button';
 import { Icon } from '@habsum/ui/components/Icon';
-import { classBuilder, habitDetailUrl } from '@habsum/utils';
+import { classBuilder } from '@habsum/utils/class-builder';
+import { habitDetailUrl } from '@habsum/utils/habit-id';
 
 type HabitHeadingRenderProps = {
   user: string;
