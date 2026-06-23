@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -35,6 +36,23 @@ type ModalContextValue = {
 };
 
 const ModalContext = createContext<ModalContextValue | null>(null);
+
+const FOCUSABLE_SELECTOR =
+  'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+function getFocusableElements(container: HTMLElement): HTMLElement[] {
+  return Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter((el) => {
+    if (el.getAttribute('aria-hidden') === 'true') return false;
+    return el.getClientRects().length > 0;
+  });
+}
+
+function focusInitialElement(dialog: HTMLElement) {
+  const focusables = getFocusableElements(dialog);
+  const target = focusables[0] ?? dialog;
+  if (target === dialog) dialog.tabIndex = -1;
+  target.focus();
+}
 
 /** Shell slots for modal content. Compose inside `present({ content: <>...</> })`. */
 export function ModalHeader({
@@ -130,6 +148,7 @@ export function AlertModal({
 export function ModalProvider({ children }: { children: ReactNode }) {
   const [active, setActive] = useState<ActiveModal | null>(null);
   const activeRef = useRef<ActiveModal | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const genRef = useRef(0);
   activeRef.current = active;
 
@@ -172,6 +191,48 @@ export function ModalProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [active, closeModal]);
 
+  useLayoutEffect(() => {
+    if (!active) return;
+
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    const previousFocus =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    focusInitialElement(dialog);
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+
+      const focusables = getFocusableElements(dialog);
+      if (focusables.length === 0) {
+        e.preventDefault();
+        dialog.focus();
+        return;
+      }
+
+      const first = focusables[0]!;
+      const last = focusables[focusables.length - 1]!;
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else if (document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      if (previousFocus && document.contains(previousFocus)) {
+        previousFocus.focus();
+      }
+    };
+  }, [active?.generation]);
+
   const value = useMemo(() => ({ present, closeModal }), [present, closeModal]);
 
   return (
@@ -180,6 +241,7 @@ export function ModalProvider({ children }: { children: ReactNode }) {
       {active ? (
         <div className="modal__backdrop" role="presentation" onClick={closeModal}>
           <div
+            ref={dialogRef}
             className={[
               'modal__dialog',
               active.size === 'large' && 'modal__dialog--large',

@@ -1,15 +1,29 @@
 // exclusive-bem-block: config-habit-type-picker
 import type { ReactNode } from 'react';
 import HabitRenderer from '@habsum/habit-render';
+import { dayFromString } from '@habsum/types/common/day';
 import { ModalBody, ModalHeader } from '@habsum/ui/contexts/modal';
-import {
-  PREVIEW_SINGLE_SELECT_HABIT,
-  PREVIEW_CHECKBOX_HABIT,
-  PREVIEW_SUMMATION_HABIT,
-  PREVIEW_USER,
-  PREVIEW_VIEW_DATE,
-  previewNoop,
-} from './utils';
+import { build } from '@habsum/utils';
+
+const PREVIEW_USER = '_preview';
+const PREVIEW_VIEW_DATE = dayFromString('2025-05-21');
+const previewNoop = async (): Promise<void> => {};
+
+const PREVIEW_SUMMATION_HABIT = build()
+  .withName('Pages read')
+  .withType('summation')
+  .withGoal(25)
+  .withTotal(6)
+  .withSummationOptions({ manualInput: true, increments: [25, 50] })
+  .model();
+
+const PREVIEW_SINGLE_SELECT_HABIT = build()
+  .withName('Reading')
+  .withType('single_select')
+  .withOptions(['None', 'not much', 'a lot'])
+  .model();
+
+const PREVIEW_CHECKBOX_HABIT = build().withName('Reading').withType('checkbox').model();
 
 export type HabitTypeChoice = 'summation' | 'single_select' | 'checkbox';
 
