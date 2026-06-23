@@ -7,7 +7,7 @@ import { HabitMenuModal } from './heading-renderer-helpers/HabitMenuModal';
 import { TogglePill } from '@habsum/ui/components/Pill';
 import { TernaryCheckbox, type TernaryCheckboxValue } from '@habsum/ui/components/TernaryCheckbox';
 import { useModal } from '@habsum/ui/contexts/modal';
-import { isGoalHit } from '@habsum/utils';
+import { classBuilder, isGoalHit } from '@habsum/utils';
 
 type HabitHeaderAndActionRendererProps = {
   user: string;
@@ -141,6 +141,7 @@ function SingleSelectHabitHeader({
   currentSearch,
   LinkComponent,
   demo,
+  className,
   openResetModal,
   onUpdate,
 }: {
@@ -150,6 +151,7 @@ function SingleSelectHabitHeader({
   currentSearch?: string;
   LinkComponent?: ComponentType<{ to: string; className?: string; children: ReactNode }>;
   demo?: boolean;
+  className?: string;
   openResetModal: () => void;
   onUpdate: (patch: HabitPatch) => Promise<void>;
 }) {
@@ -164,7 +166,7 @@ function SingleSelectHabitHeader({
       demo={demo}
       menuAriaLabel={`More options for ${habit.name}`}
       onMenuClick={openResetModal}
-      className="mb-4"
+      className={['mb-4', className].filter(Boolean).join(' ')}
       actions={<SingleSelectActions habit={habit} pending={pending} onUpdate={onUpdate} />}
     />
   );
@@ -177,6 +179,7 @@ function SummationHabitHeader({
   currentSearch,
   LinkComponent,
   demo,
+  className,
   openResetModal,
   onUpdate,
 }: {
@@ -186,6 +189,7 @@ function SummationHabitHeader({
   currentSearch?: string;
   LinkComponent?: ComponentType<{ to: string; className?: string; children: ReactNode }>;
   demo?: boolean;
+  className?: string;
   openResetModal: () => void;
   onUpdate: (patch: HabitPatch) => Promise<void>;
 }) {
@@ -200,7 +204,7 @@ function SummationHabitHeader({
       demo={demo}
       menuAriaLabel={`More options for ${habit.name}`}
       onMenuClick={openResetModal}
-      className="mb-4"
+      className={['mb-4', className].filter(Boolean).join(' ')}
       actions={
         <CountControl
           summationSteps={habit.summationOptions}
@@ -243,6 +247,7 @@ export default function HabitHeaderAndActionRenderer({
         LinkComponent={LinkComponent}
         demo={demo}
         openResetModal={openResetModal}
+        className={className}
         onUpdate={onUpdate}
       />
     ) : (
@@ -254,9 +259,10 @@ export default function HabitHeaderAndActionRenderer({
         LinkComponent={LinkComponent}
         demo={demo}
         openResetModal={openResetModal}
+        className={className}
         onUpdate={onUpdate}
       />
     );
 
-  return className ? <div className={className}>{header}</div> : header;
+  return header;
 }

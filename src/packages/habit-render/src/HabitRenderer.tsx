@@ -6,6 +6,7 @@ import type { HabitPatch } from '@habsum/types/api-responses/habit-patch';
 import HabitHeaderAndActionRenderer from './_private/HabitHeaderAndActionRenderer';
 import HabitWidgetRenderer from './_private/HabitWidgetRenderer';
 import { useToast } from '@habsum/ui/contexts/toast';
+import { classBuilder } from '@habsum/utils';
 
 type HabitRendererProps = {
   user: string;
@@ -68,7 +69,14 @@ export default function HabitRenderer(props: HabitRendererProps) {
   );
 
   return (
-    <div className={['card card--no-padding habit', className].filter(Boolean).join(' ')}>
+    <div
+      className={classBuilder(
+        {
+          'habit--demo': demo,
+        },
+        ['card card--no-padding habit', className].filter(Boolean).join(' '),
+      )}
+    >
       <HabitHeaderAndActionRenderer
         user={user}
         habit={habit}

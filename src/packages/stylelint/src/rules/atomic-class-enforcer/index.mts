@@ -1,5 +1,6 @@
 import path from 'node:path';
-import stylelint, { type Plugin, type Rule } from 'stylelint';
+import type { AnyNode, Rule as PostcssRule } from 'postcss';
+import stylelint, { type Plugin, type Rule as StylelintRule } from 'stylelint';
 
 const ruleName = 'habsum/atomic-class-enforcer';
 
@@ -37,6 +38,15 @@ function normalizeDecl(prop: string, value: string): string {
   return `${prop.trim().toLowerCase()}:${value.trim().replace(/\s+/g, ' ')}`;
 }
 
+function hasRuleAncestor(rule: PostcssRule): boolean {
+  let parent: AnyNode | undefined = rule.parent;
+  while (parent) {
+    if (parent.type === 'rule') return true;
+    parent = parent.parent;
+  }
+  return false;
+}
+
 /** Stylesheets that define or reset global typography/color — skip the rule entirely. */
 const IGNORED_STEMS = new Set(['reset', 'text', 'theme', 'tokens']);
 
@@ -56,7 +66,7 @@ function disallowedPropsForFile(filePath: string | undefined): Set<string> | nul
   return new Set([...TYPOGRAPHY_PROPS, COLOR_PROP]);
 }
 
-const ruleFunction: Rule<boolean> = (primary) => (root, result) => {
+const ruleFunction: StylelintRule<boolean> = (primary) => (root, result) => {
   const validOptions = stylelint.utils.validateOptions(result, ruleName, {
     actual: primary,
     possible: [true, false],
@@ -72,6 +82,9 @@ const ruleFunction: Rule<boolean> = (primary) => (root, result) => {
     const disallowed = disallowedPropsForFile(sourceFile);
     if (disallowed && disallowed.size > 0) {
       root.walkDecls((decl) => {
+        if (decl.parent?.type !== 'rule') return;
+        if (hasRuleAncestor(decl.parent)) return;
+
         const prop = decl.prop.toLowerCase();
         if (!disallowed.has(prop)) return;
 
@@ -89,6 +102,7 @@ const ruleFunction: Rule<boolean> = (primary) => (root, result) => {
   if (!skipLayout) {
     root.walkRules((rule) => {
       if (rule.parent?.type === 'atrule' && rule.parent.name === 'keyframes') return;
+      if (hasRuleAncestor(rule)) return;
 
       const decls: string[] = [];
       rule.walkDecls((decl) => {

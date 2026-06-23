@@ -8,8 +8,16 @@
 
 .habit__header {
   padding: functions.spacing(4 4 0 4);
+
+  .habit--demo & {
+    align-items: center;
+  }
 }
 
 .habit__widgets {
   padding: functions.spacing(0 4 4 4);
+
+  &:empty {
+    padding: 0;
+  }
 }

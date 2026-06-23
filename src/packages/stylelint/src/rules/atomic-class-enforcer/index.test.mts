@@ -152,6 +152,25 @@ describe('habsum/atomic-class-enforcer', () => {
     expect(result.results[0]?.warnings).toHaveLength(0);
   });
 
+  it('ignores nested SCSS rules when enforcing atomic classes', async () => {
+    const result = await lintScss(
+      `
+      .habit__header {
+        padding: functions.spacing(4 4 0 4);
+
+        .habit--demo & {
+          align-items: center;
+          font-size: var(--font-size-s);
+          color: var(--text-color);
+        }
+      }
+    `,
+      '_habit.scss',
+    );
+
+    expect(result.results[0]?.warnings).toHaveLength(0);
+  });
+
   it('ignores layout atomic definitions', async () => {
     const result = await lintScss(
       `

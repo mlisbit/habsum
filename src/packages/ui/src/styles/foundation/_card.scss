@@ -7,6 +7,10 @@
   padding: functions.spacing(3);
 }
 
+.card--transparent {
+  background: transparent;
+}
+
 .card--no-padding {
   padding: 0;
 }
@@ -15,7 +19,6 @@
   display: block;
   text-decoration: none;
   cursor: pointer;
-  background: var(--background-secondary);
   transition:
     transform 0.08s ease,
     border-color 0.12s ease,

@@ -14,7 +14,7 @@
 .modal__dialog {
   width: min(100%, 22rem);
   margin-bottom: 0;
-  background: var(--background-secondary);
+  background: var(--background);
   box-shadow: var(--elevation-shadow);
   border-radius: var(--border-radius-m);
 }
@@ -36,12 +36,12 @@
   display: flex;
   align-items: center;
   gap: functions.spacing(1);
-  padding: functions.spacing(2, 3);
-  border-bottom: 1px solid var(--background);
+  padding: functions.spacing(3);
+  border-bottom: 1px solid var(--border-color-faint);
 }
 
 .modal__footer {
-  border-top: 1px solid var(--background);
+  border-top: 1px solid var(--border-color-faint);
 }
 
 .modal__header-title {

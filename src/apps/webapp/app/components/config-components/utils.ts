@@ -15,23 +15,26 @@ export const PREVIEW_SINGLE_SELECT_STREAK: HabitWidget = {
 };
 
 export const PREVIEW_SUMMATION_HABIT: HabitRowSummation = {
-  name: 'Water intake',
+  name: 'Pages read',
   type: 'summation',
+  summationOptions: {
+    manualInput: true,
+    increments: [25, 50],
+  },
   goal: 25,
   total: 6,
 };
 
 export const PREVIEW_SINGLE_SELECT_HABIT: HabitRowSingleSelect = {
-  name: 'Mood',
+  name: 'Reading',
   type: 'single_select',
   goal: null,
-  options: ['Good', 'Okay', 'Bad'],
+  options: ['None', 'not much', 'a lot'],
   value: null,
-  widgets: [PREVIEW_SINGLE_SELECT_STREAK],
 };
 
 export const PREVIEW_CHECKBOX_HABIT: HabitRowSingleSelect = {
-  name: 'Brush teeth',
+  name: 'Reading',
   type: 'single_select',
   goal: null,
   options: ['yes', 'no'],

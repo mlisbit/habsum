@@ -24,6 +24,7 @@ function SummationTypePreview() {
       habit={PREVIEW_SUMMATION_HABIT}
       viewDate={PREVIEW_VIEW_DATE}
       onUpdate={previewNoop}
+      demo
     />
   );
 }
@@ -35,6 +36,7 @@ function SingleSelectTypePreview() {
       habit={PREVIEW_SINGLE_SELECT_HABIT}
       viewDate={PREVIEW_VIEW_DATE}
       onUpdate={previewNoop}
+      demo
     />
   );
 }
@@ -46,6 +48,7 @@ function CheckboxTypePreview() {
       habit={PREVIEW_CHECKBOX_HABIT}
       viewDate={PREVIEW_VIEW_DATE}
       onUpdate={previewNoop}
+      demo
     />
   );
 }
@@ -61,7 +64,7 @@ function TypeOption({ title, description, onSelect, preview }: TypeOptionProps) 
   return (
     <button
       type="button"
-      className="card card--clickable config-habit-type-picker__option"
+      className="card card--transparent card--clickable config-habit-type-picker__option"
       onClick={onSelect}
     >
       <div className="config-habit-type-picker__option-copy">
@@ -78,24 +81,24 @@ function TypeOption({ title, description, onSelect, preview }: TypeOptionProps) 
 export function ConfigHabitTypePickerModal({ onSelect }: ConfigHabitTypePickerModalProps) {
   return (
     <>
-      <ModalHeader>How do you want to track this habit?</ModalHeader>
+      <ModalHeader>Choose a tracking type</ModalHeader>
       <ModalBody className="config-habit-type-picker">
         <div className="config-habit-type-picker__options">
           <TypeOption
             title="Count toward a goal"
-            description="Great for water, reading, exercise, or anything you measure with numbers."
+            description="Track numbers like pages, minutes, miles, etc."
             preview={<SummationTypePreview />}
             onSelect={() => onSelect('summation')}
           />
           <TypeOption
-            title="Choose one option"
-            description="Great for mood, alcohol intake, sleep quality, or other ratings."
+            title="Pick from options"
+            description="Choose one value from a predefined list."
             preview={<SingleSelectTypePreview />}
             onSelect={() => onSelect('single_select')}
           />
           <TypeOption
             title="Yes / No"
-            description="Great for habits that are simply done or not done."
+            description="Simply mark it done or not done."
             preview={<CheckboxTypePreview />}
             onSelect={() => onSelect('checkbox')}
           />
