@@ -1,3 +1,8 @@
 npm run --silent secrets:check
-npm run --silent stylelint-plugins:build && npm run --silent eslint-plugins:build
+npm run --silent lint
 npx lint-staged
+
+if git diff --cached --name-only --diff-filter=ACMR | grep -Eq '^src/(apps|packages)/'; then
+  echo "Workspace changes detected; running full test suite..."
+  npm test
+fi

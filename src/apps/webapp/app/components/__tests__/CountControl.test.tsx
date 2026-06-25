@@ -37,7 +37,7 @@ describe('CountControl', () => {
       />,
     );
     const trigger = screen.getByRole('button', { name: /Enter custom amount for/ });
-    expect(trigger.textContent?.trim()).toBe('+');
+    expect(trigger.classList.contains('button--icon')).toBe(true);
     expect(screen.queryByRole('spinbutton', { name: /Amount for/ })).toBeNull();
     await user.click(trigger);
     expect(screen.getByRole('heading', { name: `Add to "${habitName}"` })).toBeTruthy();
