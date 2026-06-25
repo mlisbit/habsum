@@ -1,6 +1,6 @@
 {
   "name": "@habsum/webapp",
-  "version": "0.1.21",
+  "version": "0.1.22",
   "private": true,
   "type": "module",
   "sideEffects": false,
