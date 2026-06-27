@@ -1,7 +1,5 @@
 // exclusive-bem-block: widget-config-streak
 import type { ConfigHabitDraft } from '~/api.client';
-import { ConfigHabitFieldLabel } from '../../../ConfigHabitFieldLabel';
-import { ConfigHabitModalField } from '../utils/ConfigHabitModalField';
 import { ConfigHabitStreakOptionsPills } from '../utils/ConfigHabitOptionPills';
 import { formatOptionLines } from '~/utils/configHabitDraft';
 import { Widget } from './Widget';
@@ -35,25 +33,33 @@ function StreakFrequencyField({
   patch: (partial: Partial<ConfigHabitDraft>) => void;
 }) {
   return (
-    <ConfigHabitModalField label="Frequency" info={info} htmlFor="habit-streak-frequency">
-      <select
-        id="habit-streak-frequency"
-        className="config-habit-modal__select text-b-m"
-        value={draft.streakFrequencyPerWeek}
-        onChange={(e) => patch({ streakFrequencyPerWeek: e.target.value })}
-      >
-        {Array.from({ length: 7 }, (_, i) => {
-          const n = i + 1;
-          const value = String(n);
-          const label = n === 1 ? '1 day per week' : `${n} days per week`;
-          return (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          );
-        })}
-      </select>
-    </ConfigHabitModalField>
+    <div className="config-habit-modal__field">
+      <div className="config-habit-modal__label">
+        <label htmlFor="habit-streak-frequency" className="text-b-m">
+          Frequency
+        </label>
+        <p className="config-habit-modal__field-info text-b-s text-light">{info}</p>
+      </div>
+      <div className="config-habit-modal__control">
+        <select
+          id="habit-streak-frequency"
+          className="config-habit-modal__select text-b-m"
+          value={draft.streakFrequencyPerWeek}
+          onChange={(e) => patch({ streakFrequencyPerWeek: e.target.value })}
+        >
+          {Array.from({ length: 7 }, (_, i) => {
+            const n = i + 1;
+            const value = String(n);
+            const label = n === 1 ? '1 day per week' : `${n} days per week`;
+            return (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            );
+          })}
+        </select>
+      </div>
+    </div>
   );
 }
 
@@ -93,17 +99,21 @@ export function StreakTrackingWidget(props: StreakTrackingWidgetProps) {
         onCheckedChange={setStreakEnabled}
       >
         {type === 'single_select' ? (
-          <ConfigHabitModalField
-            label="Streak"
-            info="Values that count toward maintaining a streak."
-            className="config-habit-modal__field--option-pills"
-          >
-            <ConfigHabitStreakOptionsPills
-              options={props.habitOptions}
-              selected={props.streakOptions}
-              onChange={(selected) => setStreakOptions?.(selected)}
-            />
-          </ConfigHabitModalField>
+          <div className="config-habit-modal__field config-habit-modal__field--option-pills">
+            <div className="config-habit-modal__label">
+              <span className="text-b-m">Streak</span>
+              <p className="config-habit-modal__field-info text-b-s text-light">
+                Values that count toward maintaining a streak.
+              </p>
+            </div>
+            <div className="config-habit-modal__control">
+              <ConfigHabitStreakOptionsPills
+                options={props.habitOptions}
+                selected={props.streakOptions}
+                onChange={(selected) => setStreakOptions?.(selected)}
+              />
+            </div>
+          </div>
         ) : null}
 
         <StreakFrequencyField draft={draft} info={frequencyInfo} patch={patch} />
@@ -116,7 +126,9 @@ export function StreakTrackingWidget(props: StreakTrackingWidgetProps) {
             checked={draft.streakShowLongest}
             onChange={(e) => patch({ streakShowLongest: e.target.checked })}
           />
-          <ConfigHabitFieldLabel htmlFor="habit-streak-show-longest" label="Show longest streak" />
+          <label htmlFor="habit-streak-show-longest" className="text-b-m">
+            Show longest streak
+          </label>
         </div>
       </Widget>
     </div>

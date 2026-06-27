@@ -9,6 +9,7 @@
   white-space: nowrap;
   text-align: center;
   cursor: pointer;
+  flex-shrink: 0;
   text-decoration: none;
   transition:
     transform 0.05s ease,

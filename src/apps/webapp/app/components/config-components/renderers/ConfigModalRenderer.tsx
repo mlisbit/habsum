@@ -5,10 +5,7 @@ import { Input } from '@habsum/ui/components/Input';
 import type { ConfigHabitDraft, UserConfigJsonHabit } from '~/api.client';
 import { SingleSelectBaseOptions } from './_private/base-options/SingleSelectBaseOptions';
 import { SummationBaseOptions } from './_private/base-options/SummationBaseOptions';
-import {
-  ConfigHabitModalActions,
-  ConfigHabitModalField,
-} from './_private/utils/ConfigHabitModalField';
+import { ConfigHabitModalActions } from './_private/utils/ConfigHabitModalActions';
 import { HistoryWidget } from './_private/widgets/HistoryWidget';
 import { StreakTrackingWidget } from './_private/widgets/StreakTrackingWidget';
 import { isHabitDraftDirty, parseOptionLines } from '~/utils/configHabitDraft';
@@ -114,20 +111,21 @@ export function ConfigModalRenderer({
     <>
       <ModalHeader>Editing "{editingHabitName}"</ModalHeader>
       <ModalBody className="config-habit-modal">
-        <ConfigHabitModalField
-          label="Name"
-          htmlFor="habit-name"
-          className="config-habit-modal__field--name"
-        >
-          <Input
-            id="habit-name"
-            className="config-habit-modal__name"
-            value={draft.name}
-            size="small"
-            onChange={(name) => patch({ name })}
-            placeholder="Habit name"
-          />
-        </ConfigHabitModalField>
+        <div className="config-habit-modal__field config-habit-modal__field--name">
+          <label htmlFor="habit-name" className="config-habit-modal__label text-b-m">
+            Name
+          </label>
+          <div className="config-habit-modal__control">
+            <Input
+              id="habit-name"
+              className="config-habit-modal__name"
+              value={draft.name}
+              size="small"
+              onChange={(name) => patch({ name })}
+              placeholder="Habit name"
+            />
+          </div>
+        </div>
 
         {fields}
 

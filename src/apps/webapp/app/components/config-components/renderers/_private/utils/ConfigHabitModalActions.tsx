@@ -1,38 +1,5 @@
-import type { ReactNode } from 'react';
-import { ModalFooter } from '@habsum/ui/contexts/modal';
 import { Button } from '@habsum/ui/components/Button';
-import { ConfigHabitFieldLabel } from '../../../ConfigHabitFieldLabel';
-
-type ConfigHabitModalFieldProps = {
-  label: string;
-  info?: string | null;
-  tooltip?: string | null;
-  htmlFor?: string;
-  className?: string;
-  children: ReactNode;
-};
-
-export function ConfigHabitModalField({
-  label,
-  info,
-  tooltip,
-  htmlFor,
-  className,
-  children,
-}: ConfigHabitModalFieldProps) {
-  return (
-    <div className={['config-habit-modal__field', className].filter(Boolean).join(' ')}>
-      <ConfigHabitFieldLabel
-        htmlFor={htmlFor}
-        label={label}
-        info={info ?? undefined}
-        tooltip={tooltip ?? undefined}
-        className="config-habit-modal__label"
-      />
-      <div className="config-habit-modal__control">{children}</div>
-    </div>
-  );
-}
+import { ModalFooter } from '@habsum/ui/contexts/modal';
 
 export function ConfigHabitModalActions({
   dirty,

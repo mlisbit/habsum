@@ -2,7 +2,6 @@
 import type { ReactNode } from 'react';
 import { CollapsibleCard } from '@habsum/ui/components/CollapsibleCard';
 import { Toggle } from '@habsum/ui/components/Toggle';
-import { ConfigHabitFieldLabel } from '../../../ConfigHabitFieldLabel';
 
 type WidgetProps = {
   checked: boolean;
@@ -11,7 +10,6 @@ type WidgetProps = {
   label: string;
   onCheckedChange: (checked: boolean) => void;
   subheader?: string;
-  tooltip?: string;
 };
 
 export function Widget({
@@ -21,14 +19,15 @@ export function Widget({
   label,
   onCheckedChange,
   subheader,
-  tooltip,
 }: WidgetProps) {
   return (
     <CollapsibleCard expanded={checked} collapsible={checked} className="config-widget">
       <CollapsibleCard.Header>
         <div className="collapsible-card__header-main">
           <div className="config-widget__header-label" onClick={(e) => e.stopPropagation()}>
-            <ConfigHabitFieldLabel htmlFor={checkboxId} label={label} tooltip={tooltip} />
+            <label htmlFor={checkboxId} className="text-h-xs">
+              {label}
+            </label>
             {subheader ? (
               <p className="config-widget__subheader text-b-s text-light">{subheader}</p>
             ) : null}

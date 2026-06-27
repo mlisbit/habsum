@@ -2,14 +2,34 @@
 
 .summation-quick-add-options {
   display: flex;
+  flex-flow: column nowrap;
+  gap: functions.spacing(1);
+  min-width: 0;
+}
+
+.summation-quick-add-options__header {
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: functions.spacing(2);
+  min-width: 0;
+}
+
+.summation-quick-add-options__label {
+  min-width: 0;
+}
+
+.summation-quick-add-options__info {
+  margin: 0;
+}
+
+.summation-quick-add-options__values {
+  display: flex;
   flex-wrap: wrap;
   gap: functions.spacing(1);
   align-items: center;
   min-width: 0;
-}
-
-.summation-quick-add-options__add {
-  flex-shrink: 0;
 }
 
 .summation-quick-add-options__add-input {

@@ -45,6 +45,10 @@
   min-width: 0;
 }
 
+.config-habit-modal__field-info {
+  margin: 0;
+}
+
 .config-habit-modal__field--option-pills .config-habit-modal__label {
   align-self: flex-start;
   padding-block-start: functions.spacing(1);
@@ -66,6 +70,18 @@
 
 .config-habit-modal__stacked-label {
   min-width: 0;
+}
+
+.config-habit-modal__inline-field {
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: center;
+  gap: functions.spacing(2);
+  min-width: 0;
+}
+
+.config-habit-modal__inline-field .config-habit-modal__input {
+  flex: 1 1 auto;
 }
 
 .config-habit-modal__widgets {
@@ -109,7 +125,6 @@
 .config-habit-modal__name {
   inline-size: 100%;
   min-inline-size: 0;
-  min-block-size: auto;
 }
 
 .config-habit-modal__collpasable-card {

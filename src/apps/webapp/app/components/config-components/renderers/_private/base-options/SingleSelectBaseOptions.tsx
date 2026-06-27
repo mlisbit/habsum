@@ -1,6 +1,4 @@
 import type { ConfigHabitDraft } from '~/api.client';
-import { ConfigHabitFieldLabel } from '../../../ConfigHabitFieldLabel';
-import { ConfigHabitModalField } from '../utils/ConfigHabitModalField';
 import { ConfigHabitOptionsPills } from '../utils/ConfigHabitOptionPills';
 import { formatOptionLines } from '~/utils/configHabitDraft';
 
@@ -33,31 +31,32 @@ export function SingleSelectBaseOptions({
   };
 
   return (
-    <ConfigHabitModalField
-      label="Values"
-      info="Values that can be selected when recording this habit."
-      tooltip="The available choices when recording this habit. For example, a mood habit might use values such as “great”, “good”, “okay”, and “bad”."
-      className="config-habit-modal__field--option-pills"
-    >
-      <div className="config-habit-modal__field-control-stack">
-        <ConfigHabitOptionsPills options={habitOptions} onChange={setHabitOptions} />
-        {showCheckboxThemeToggle ? (
-          <div className="config-habit-modal__checkbox-field">
-            <input
-              id="habit-theme-checkbox"
-              className="config-habit-modal__checkbox"
-              type="checkbox"
-              checked={draft.theme === 'checkbox'}
-              onChange={(e) => patch({ theme: e.target.checked ? 'checkbox' : '' })}
-            />
-            <ConfigHabitFieldLabel
-              htmlFor="habit-theme-checkbox"
-              label="Show as checkbox"
-              tooltip="Render yes, no, and empty values as a tri-state checkbox on the habit page."
-            />
-          </div>
-        ) : null}
+    <div className="config-habit-modal__field config-habit-modal__field--option-pills">
+      <div className="config-habit-modal__label">
+        <label className="text-b-m">Values</label>
+        <p className="config-habit-modal__field-info text-b-s text-light">
+          Values that can be selected when recording this habit.
+        </p>
       </div>
-    </ConfigHabitModalField>
+      <div className="config-habit-modal__control">
+        <div className="config-habit-modal__field-control-stack">
+          <ConfigHabitOptionsPills options={habitOptions} onChange={setHabitOptions} />
+          {showCheckboxThemeToggle ? (
+            <div className="config-habit-modal__checkbox-field">
+              <input
+                id="habit-theme-checkbox"
+                className="config-habit-modal__checkbox"
+                type="checkbox"
+                checked={draft.theme === 'checkbox'}
+                onChange={(e) => patch({ theme: e.target.checked ? 'checkbox' : '' })}
+              />
+              <label htmlFor="habit-theme-checkbox" className="text-b-m">
+                Show as checkbox
+              </label>
+            </div>
+          ) : null}
+        </div>
+      </div>
+    </div>
   );
 }
