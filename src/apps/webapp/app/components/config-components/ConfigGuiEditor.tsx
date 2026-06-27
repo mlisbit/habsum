@@ -20,8 +20,7 @@ import {
   withShowAddModal,
 } from '~/utils/habit-id';
 import { ConfigCard, createConfigCardDragPreview } from './ConfigCard';
-import { ConfigSingleSelectHabitModal } from './single-select/ConfigSingleSelectHabitModal';
-import { ConfigSummationHabitModal } from './summation/ConfigSummationHabitModal';
+import { ConfigModalRenderer } from './renderers/ConfigModalRenderer';
 import { ConfigHabitTypePickerModal, type HabitTypeChoice } from './ConfigHabitTypePickerModal';
 import {
   addHabitToConfig,
@@ -223,26 +222,16 @@ export function ConfigGuiEditor({
         return;
       }
       const draft = draftFromHabit(habitModel);
-      const content =
-        habit.type === 'single_select' ? (
-          <ConfigSingleSelectHabitModal
-            habitName={habit.name}
-            initialDraft={draft}
-            isNewHabit={options?.isNew}
-            onDoneClick={applyHabitDraft}
-            onRemoveClick={handleRemoveClick}
-            onCancel={cancelHabitModal}
-          />
-        ) : (
-          <ConfigSummationHabitModal
-            habitName={habit.name}
-            initialDraft={draft}
-            isNewHabit={options?.isNew}
-            onDoneClick={applyHabitDraft}
-            onRemoveClick={handleRemoveClick}
-            onCancel={cancelHabitModal}
-          />
-        );
+      const content = (
+        <ConfigModalRenderer
+          habit={habitModel}
+          initialDraft={draft}
+          isNewHabit={options?.isNew}
+          onDoneClick={applyHabitDraft}
+          onRemoveClick={handleRemoveClick}
+          onCancel={cancelHabitModal}
+        />
+      );
       void syncHabitQueryParam(configEditHabitQueryValue(habit.name));
       present({
         size: 'xl',

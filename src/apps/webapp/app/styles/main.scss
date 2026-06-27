@@ -37,11 +37,13 @@
 @use 'components/config-card';
 @use 'components/config-habit-field-label';
 @use 'components/config-habit-option-pills';
-@use 'components/config-habit-quick-add-pills';
 @use 'components/config-habit-modal';
+@use 'components/config-widget';
 @use 'components/config-habit-type-picker';
 @use 'components/config-gui-editor';
 @use 'components/config-yaml-editor';
+@use 'components/summation-quick-add-options';
+@use 'components/widget-config-history';
 
 // pages
 @use 'pages/settings';

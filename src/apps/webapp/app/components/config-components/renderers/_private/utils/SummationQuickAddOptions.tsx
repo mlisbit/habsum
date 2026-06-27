@@ -1,11 +1,11 @@
-// exclusive-bem-block: config-habit-quick-add-pills
+// exclusive-bem-block: summation-quick-add-options
 import { useState } from 'react';
 import { Button } from '@habsum/ui/components/Button';
 import { Input } from '@habsum/ui/components/Input';
 import { EditablePill } from '@habsum/ui/components/Pill';
 import { sortQuickAddItems } from '~/utils/configHabitDraft';
 
-type ConfigHabitQuickAddPillsProps = {
+type SummationQuickAddOptionsProps = {
   values: string[];
   onChange: (values: string[]) => void;
 };
@@ -18,7 +18,7 @@ function parseQuickAddValue(raw: string): string | null {
   return String(n);
 }
 
-export function ConfigHabitQuickAddPills({ values, onChange }: ConfigHabitQuickAddPillsProps) {
+export function SummationQuickAddOptions({ values, onChange }: SummationQuickAddOptionsProps) {
   const [adding, setAdding] = useState(false);
   const [addDraft, setAddDraft] = useState('');
 
@@ -49,7 +49,7 @@ export function ConfigHabitQuickAddPills({ values, onChange }: ConfigHabitQuickA
   };
 
   return (
-    <div className="config-habit-quick-add-pills" role="list">
+    <div className="summation-quick-add-options" role="list">
       {values.map((label, index) => (
         <EditablePill
           key={`${label}-${index}`}
@@ -62,7 +62,7 @@ export function ConfigHabitQuickAddPills({ values, onChange }: ConfigHabitQuickA
       ))}
       {adding ? (
         <Input
-          className="config-habit-quick-add-pills__add-input"
+          className="summation-quick-add-options__add-input"
           size="small"
           type="number"
           submittable
@@ -82,7 +82,7 @@ export function ConfigHabitQuickAddPills({ values, onChange }: ConfigHabitQuickA
           size="medium"
           icon="plus"
           circle
-          className="config-habit-quick-add-pills__add"
+          className="summation-quick-add-options__add"
           aria-label="Add quick add value"
           onClick={() => setAdding(true)}
         />

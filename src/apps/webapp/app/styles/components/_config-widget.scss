@@ -1,0 +1,19 @@
+@use 'functions';
+
+.config-widget {
+  background: var(--background-secondary);
+}
+
+.config-widget__toggle {
+  flex: 0 0 auto;
+  margin-left: functions.spacing(1);
+}
+
+.config-widget__header-label {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.config-widget__subheader {
+  margin: 0;
+}

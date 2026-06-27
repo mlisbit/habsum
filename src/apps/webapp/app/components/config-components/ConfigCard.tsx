@@ -3,7 +3,24 @@ import type { MouseEvent, PointerEvent } from 'react';
 import { Button } from '@habsum/ui/components/Button';
 import { Icon } from '@habsum/ui/components/Icon';
 import type { UserConfigJsonHabit } from '~/api.client';
-import { habitDetailLines } from './configHabitDisplay';
+
+function habitTypeLabel(type: UserConfigJsonHabit['type']): string {
+  return type === 'single_select' ? 'Single select' : 'Summation';
+}
+
+function habitDetailLines(habit: UserConfigJsonHabit): string[] {
+  const lines: string[] = [habitTypeLabel(habit.type)];
+  if (habit.type === 'summation' && habit.goal != null) {
+    lines.push(`Goal: ${habit.goal}`);
+  }
+  if (habit.type === 'single_select' && habit.options?.length) {
+    lines.push(`Options: ${habit.options.join(', ')}`);
+  }
+  if (habit.history != null) {
+    lines.push('History enabled');
+  }
+  return lines;
+}
 
 function ConfigCardDetails({ habit }: { habit: UserConfigJsonHabit }) {
   const details = habitDetailLines(habit);

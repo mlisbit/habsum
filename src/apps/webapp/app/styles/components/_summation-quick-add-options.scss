@@ -1,7 +1,6 @@
 @use 'functions';
 
-// Block: config-habit-quick-add-pills
-.config-habit-quick-add-pills {
+.summation-quick-add-options {
   display: flex;
   flex-wrap: wrap;
   gap: functions.spacing(1);
@@ -9,11 +8,11 @@
   min-width: 0;
 }
 
-.config-habit-quick-add-pills__add {
+.summation-quick-add-options__add {
   flex-shrink: 0;
 }
 
-.config-habit-quick-add-pills__add-input {
+.summation-quick-add-options__add-input {
   flex: 1 1 10rem;
   min-inline-size: 10rem;
   max-inline-size: 100%;
