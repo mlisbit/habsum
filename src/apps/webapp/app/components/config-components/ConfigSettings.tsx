@@ -1,7 +1,7 @@
 // exclusive-bem-block: config-page
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useBlocker } from '@remix-run/react';
-import { getUserConfig, putUserConfig, type UserConfigInsights } from '~/api.client';
+import { getUserConfig, putUserConfig, type UserConfigJson } from '~/api.client';
 import { ConfigGuiEditor } from './ConfigGuiEditor';
 import { ConfigYamlEditor } from './ConfigYamlEditor';
 import { UnsavedChangesModal } from '~/components/UnsavedChangesModal';
@@ -9,15 +9,15 @@ import { Button } from '@habsum/ui/components/Button';
 import { InfoText } from '@habsum/ui/components/InfoText';
 import { useModal } from '@habsum/ui/contexts/modal';
 import { useToast } from '@habsum/ui/contexts/toast';
-import {
-  buildConfigDeletions,
-  buildConfigMigrations,
-  habitOrderKey,
-  parseConfigHabitCards,
-  readIncludeAbsentDaysInAverage,
-  reorderHabitsInConfigYaml,
-  setIncludeAbsentDaysInAverage,
-} from '~/utils/configYaml';
+import { reorderConfigHabits } from '~/utils/configHabitDraft';
+
+function habitOrderKey(names: string[]): string {
+  return names.join('\0');
+}
+
+function configKey(config: UserConfigJson | null): string {
+  return config == null ? '' : JSON.stringify(config);
+}
 
 type ConfigSettingsCardProps = {
   headerText: string;
@@ -36,8 +36,9 @@ type ConfigSettingsProps = {
 export function ConfigSettings({ user, mode, renderCard }: ConfigSettingsProps) {
   const [text, setText] = useState('');
   const [initialText, setInitialText] = useState('');
+  const [config, setConfig] = useState<UserConfigJson | null>(null);
+  const [initialConfig, setInitialConfig] = useState<UserConfigJson | null>(null);
   const [habitOrder, setHabitOrder] = useState<string[]>([]);
-  const [insights, setInsights] = useState<UserConfigInsights>({});
   const [initialHabitOrderKey, setInitialHabitOrderKey] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -57,40 +58,22 @@ export function ConfigSettings({ user, mode, renderCard }: ConfigSettingsProps) 
       .then((r) => {
         setText(r.text);
         setInitialText(r.text);
-        setInsights(r.insights);
-        try {
-          const cards = parseConfigHabitCards(r.text);
-          const order = cards.map((h) => h.name);
-          setHabitOrder(order);
-          setInitialHabitOrderKey(habitOrderKey(order));
-        } catch (e) {
-          setHabitOrder([]);
-          setInitialHabitOrderKey('');
-          setLoadError(e instanceof Error ? e.message : String(e));
-        }
+        setConfig(r.config);
+        setInitialConfig(r.config);
+        const order = r.config.habits.map((h) => h.name);
+        setHabitOrder(order);
+        setInitialHabitOrderKey(habitOrderKey(order));
       })
       .catch((e) => setLoadError(e instanceof Error ? e.message : String(e)))
       .finally(() => setLoading(false));
   }, [user]);
 
-  const habitCards = useMemo(() => {
-    try {
-      return parseConfigHabitCards(text);
-    } catch {
-      return [];
-    }
-  }, [text]);
-  const includeAbsentDaysInAverage = useMemo(() => {
-    try {
-      return readIncludeAbsentDaysInAverage(text);
-    } catch {
-      return false;
-    }
-  }, [text]);
+  const includeAbsentDaysInAverage = config?.includeAbsentDaysInAverage ?? false;
 
   const yamlDirty = text !== initialText;
   const orderDirty = habitOrderKey(habitOrder) !== initialHabitOrderKey;
-  const dirty = yamlDirty || (mode === 'habits' && orderDirty);
+  const configDirty = configKey(config) !== configKey(initialConfig);
+  const dirty = mode === 'yaml' ? yamlDirty : configDirty || orderDirty;
   const blocker = useBlocker(
     ({ currentLocation, nextLocation }) =>
       dirty && currentLocation.pathname !== nextLocation.pathname,
@@ -123,48 +106,32 @@ export function ConfigSettings({ user, mode, renderCard }: ConfigSettingsProps) 
     return dismiss;
   }, [blocker.state]);
 
-  useEffect(() => {
-    if (mode !== 'habits' || loading) return;
-    try {
-      const order = parseConfigHabitCards(text).map((h) => h.name);
-      setHabitOrder(order);
-    } catch {
-      // Keep the last known order when yaml is temporarily invalid in the editor.
-    }
-  }, [loading, mode, text]);
-
   const onCancel = useCallback(() => {
     setText(initialText);
+    setConfig(initialConfig);
     setSaveError(null);
-    try {
-      const order = parseConfigHabitCards(initialText).map((h) => h.name);
-      setHabitOrder(order);
-    } catch {
-      setHabitOrder([]);
-    }
-  }, [initialText]);
+    const order = initialConfig?.habits.map((h) => h.name) ?? [];
+    setHabitOrder(order);
+    setInitialHabitOrderKey(habitOrderKey(order));
+  }, [initialConfig, initialText]);
 
   const onSave = useCallback(async () => {
     if (!user || !dirty) return;
     setSaving(true);
     setSaveError(null);
     try {
-      const payload = mode === 'yaml' ? text : reorderHabitsInConfigYaml(text, habitOrder);
-      const migrations = buildConfigMigrations(initialText, payload);
-      const deletions = buildConfigDeletions(initialText, payload);
-      await putUserConfig(user, payload, migrations, deletions);
-      setText(payload);
-      setInitialText(payload);
-      const cards = parseConfigHabitCards(payload);
-      setInsights((prev) =>
-        Object.fromEntries(
-          cards.map((habit) => [
-            habit.name,
-            prev[habit.name] ?? (habit.type === 'single_select' ? { optionsWithData: [] } : {}),
-          ]),
-        ),
-      );
-      const order = cards.map((h) => h.name);
+      if (mode === 'habits') {
+        if (config == null) throw new Error('config is not loaded');
+        await putUserConfig(user, { config: reorderConfigHabits(config, habitOrder) });
+      } else {
+        await putUserConfig(user, { text });
+      }
+      const refreshed = await getUserConfig(user);
+      setText(refreshed.text);
+      setInitialText(refreshed.text);
+      setConfig(refreshed.config);
+      setInitialConfig(refreshed.config);
+      const order = refreshed.config.habits.map((h) => h.name);
       setHabitOrder(order);
       setInitialHabitOrderKey(habitOrderKey(order));
       showToast({ type: 'success', message: 'Saved.' });
@@ -175,18 +142,19 @@ export function ConfigSettings({ user, mode, renderCard }: ConfigSettingsProps) 
     } finally {
       setSaving(false);
     }
-  }, [dirty, habitOrder, initialText, mode, showToast, text, user]);
+  }, [config, dirty, habitOrder, mode, showToast, text, user]);
 
   const onIncludeAbsentDaysInAverageChange = useCallback(
-    (next: boolean) => {
+    (value: boolean) => {
       try {
-        setText(setIncludeAbsentDaysInAverage(text, next));
+        const nextConfig = config == null ? null : { ...config, includeAbsentDaysInAverage: value };
+        setConfig(nextConfig);
         if (saveError != null) setSaveError(null);
       } catch (e) {
         setSaveError(e instanceof Error ? e.message : String(e));
       }
     },
-    [saveError, text],
+    [config, saveError],
   );
 
   if (loading) {
@@ -258,13 +226,13 @@ export function ConfigSettings({ user, mode, renderCard }: ConfigSettingsProps) 
             />
           ) : (
             <ConfigGuiEditor
-              configText={text}
-              habits={habitCards}
-              insights={insights}
+              config={config}
+              habits={config?.habits ?? []}
               order={habitOrder}
               onOrderChange={setHabitOrder}
-              onConfigTextChange={(next) => {
-                setText(next);
+              onConfigChange={(nextConfig) => {
+                setConfig(nextConfig);
+                setHabitOrder(nextConfig.habits.map((h) => h.name));
                 if (saveError != null) setSaveError(null);
               }}
               registerAddHabit={(fn) => {

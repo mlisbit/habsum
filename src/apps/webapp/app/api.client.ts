@@ -24,6 +24,7 @@ import type {
   PurgeUserDataResponse,
   UserConfigDeletion,
   UserConfigGetResponse,
+  UserConfigJson,
   UserConfigMigration,
   UserConfigPutRequest,
   UserConfigPutResponse,
@@ -49,8 +50,10 @@ import { WEBAPP_VERSION } from '~/version';
 export type {
   ApiErrorBody,
   AdminResetUserPasswordResponse,
+  ConfigHabitDraft,
   CreateUserResponse,
   HealthResponse,
+  HistoryPeriodUnit,
   ListUsersResponse,
   LoginUserResponse,
   LogoutResponse,
@@ -58,13 +61,11 @@ export type {
   ServerTimeResponse,
   UserConfigDeletion,
   UserConfigGetResponse,
-  UserConfigHabitInsight,
-  UserConfigInsights,
+  UserConfigJson,
+  UserConfigJsonHabit,
   UserConfigMigration,
   UserConfigPutRequest,
   UserConfigPutResponse,
-  UserConfigSingleSelectHabitInsight,
-  UserConfigSummationHabitInsight,
   UserSessionResponse,
 } from '@habsum/types/common/misc';
 export type {
@@ -103,6 +104,8 @@ const OVERRIDE_SERVER_URL = import.meta.env.VITE_HABSUM_SERVER_URL;
 const API_PREFIX = OVERRIDE_SERVER_URL ? '' : '/api';
 const SERVER_URL = OVERRIDE_SERVER_URL ?? '';
 const habitHistoryRequests = new Map<string, Promise<HistoryGetResponse>>();
+const userConfigRequests = new Map<string, Promise<UserConfigGetResponse>>();
+const userSessionRequests = new Map<string, Promise<UserSessionResponse>>();
 
 export class ApiRequestError extends Error {
   readonly status: number;
@@ -249,7 +252,15 @@ export async function loginUser(user: string, pin: string) {
 }
 
 export async function getUserSession(user: string) {
-  return request<UserSessionResponse>(`/users/${encodeURIComponent(user)}/session`);
+  const path = `/users/${encodeURIComponent(user)}/session`;
+  const pending = userSessionRequests.get(path);
+  if (pending) return pending;
+
+  const next = request<UserSessionResponse>(path).finally(() => {
+    userSessionRequests.delete(path);
+  });
+  userSessionRequests.set(path, next);
+  return next;
 }
 
 export async function getUserSecurity(user: string) {
@@ -340,16 +351,22 @@ export async function patchHabit(user: string, body: HabitPatch, opts: { date: s
 }
 
 export async function getUserConfig(user: string) {
-  return request<UserConfigGetResponse>(`/users/${encodeURIComponent(user)}/config`);
+  const path = `/users/${encodeURIComponent(user)}/config`;
+  const pending = userConfigRequests.get(path);
+  if (pending) return pending;
+
+  const next = request<UserConfigGetResponse>(path).finally(() => {
+    userConfigRequests.delete(path);
+  });
+  userConfigRequests.set(path, next);
+  return next;
 }
 
 export async function putUserConfig(
   user: string,
-  text: string,
-  migrations: UserConfigMigration[],
-  deletions: UserConfigDeletion[],
+  payload: { text: string } | { config: UserConfigJson },
 ) {
-  const body: UserConfigPutRequest = { text, migrations, deletions };
+  const body: UserConfigPutRequest = payload;
   return request<UserConfigPutResponse>(`/users/${encodeURIComponent(user)}/config`, {
     method: 'PUT',
     body: JSON.stringify(body),

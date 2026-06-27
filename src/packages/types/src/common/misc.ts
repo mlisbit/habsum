@@ -1,5 +1,6 @@
 import type { DayWithTime } from './day.js';
 import type { ProductEntitlement } from './entitlement.js';
+import type { SummationOptions } from './habit.js';
 
 /** JSON error body for 4xx/5xx responses that include `{ error: string }` */
 export type ApiErrorBody = { error: string };
@@ -65,30 +66,62 @@ export type UserSessionResponse = {
   entitlements: ProductEntitlement[];
 };
 
-export type UserConfigSummationHabitInsight = Record<string, never>;
-
-export type UserConfigSingleSelectHabitInsight = {
-  /** Distinct option values with stored selections for this user and habit. */
-  optionsWithData: string[];
+export type UserConfigJsonHabit = {
+  name: string;
+  type: 'summation' | 'single_select';
+  goal: number | null;
+  options?: string[];
+  theme?: string;
+  summationOptions?: SummationOptions;
+  history?: {
+    period: string;
+  };
+  streak?: {
+    options: string[];
+    frequency?: string;
+    show_longest?: boolean;
+  };
 };
 
-export type UserConfigHabitInsight =
-  | UserConfigSummationHabitInsight
-  | UserConfigSingleSelectHabitInsight;
+export type UserConfigJson = {
+  user: string;
+  includeAbsentDaysInAverage: boolean;
+  habits: UserConfigJsonHabit[];
+};
 
-export type UserConfigInsights = Record<string, UserConfigHabitInsight>;
-
-export type UserConfigGetResponse = { text: string; insights: UserConfigInsights };
+export type UserConfigGetResponse = {
+  text: string;
+  config: UserConfigJson;
+};
 
 export type UserConfigMigration = [from: string, to: string];
 export type UserConfigDeletion = string;
 
 export type UserConfigPutRequest = {
-  text: string;
-  migrations: UserConfigMigration[];
-  deletions: UserConfigDeletion[];
+  text?: string;
+  config?: UserConfigJson;
+  migrations?: UserConfigMigration[];
+  deletions?: UserConfigDeletion[];
 };
 
 export type UserConfigPutResponse = { ok: true; user: string };
+
+export type HistoryPeriodUnit = 'd' | 'w';
+
+export type ConfigHabitDraft = {
+  name: string;
+  type: 'summation' | 'single_select';
+  goal: string;
+  quickAddItems: string[];
+  optionsText: string;
+  theme: string;
+  streakEnabled: boolean;
+  streakOptionsText: string;
+  streakFrequencyPerWeek: string;
+  streakShowLongest: boolean;
+  historyEnabled: boolean;
+  historyPeriodAmount: string;
+  historyPeriodUnit: HistoryPeriodUnit;
+};
 
 export type PurgeUserDataResponse = { ok: true; user: string };

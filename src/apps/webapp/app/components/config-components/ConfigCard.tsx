@@ -2,10 +2,10 @@
 import type { MouseEvent, PointerEvent } from 'react';
 import { Button } from '@habsum/ui/components/Button';
 import { Icon } from '@habsum/ui/components/Icon';
-import type { ConfigHabitCard } from '~/utils/configYaml';
+import type { UserConfigJsonHabit } from '~/api.client';
 import { habitDetailLines } from './configHabitDisplay';
 
-function ConfigCardDetails({ habit }: { habit: ConfigHabitCard }) {
+function ConfigCardDetails({ habit }: { habit: UserConfigJsonHabit }) {
   const details = habitDetailLines(habit);
 
   return (
@@ -24,7 +24,7 @@ function stopEditButtonPointer(event: MouseEvent<HTMLElement>) {
 }
 
 export type ConfigCardProps = {
-  habit: ConfigHabitCard;
+  habit: UserConfigJsonHabit;
   isDragging?: boolean;
   onEdit?: () => void;
   onReorderPointerDown?: (event: PointerEvent<HTMLSpanElement>) => void;

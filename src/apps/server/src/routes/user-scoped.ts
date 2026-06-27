@@ -31,6 +31,12 @@ import {
   type HabitDef,
 } from '../config.js';
 import {
+  buildConfigDeletions,
+  buildConfigMigrations,
+  configResponseParts,
+  serializeConfigJson,
+} from '../config-editor.js';
+import {
   addToTotal,
   createUserSession,
   listSessionsForUsername,
@@ -49,7 +55,6 @@ import {
   getFirstDate,
   getHabitFirstDate,
   getSelect,
-  getSelectValuesWithData,
   getSummationEvents,
   getSummationDayTotal,
   getUserProfile,
@@ -106,20 +111,6 @@ type ClassifiedConfigMigrations = {
 };
 
 type ConfigDeletion = { habit: string; option: string };
-
-function configInsightsForUser(
-  user: string,
-  habits: HabitDef[],
-): UserConfigGetResponse['insights'] {
-  const insights: UserConfigGetResponse['insights'] = {};
-  for (const habit of habits) {
-    insights[habit.name] =
-      habit.type === 'single_select'
-        ? { optionsWithData: getSelectValuesWithData(user, habit.name) }
-        : {};
-  }
-  return insights;
-}
 
 function csvCell(value: string | number | null | undefined): string {
   if (value == null) return '';
@@ -1001,7 +992,7 @@ userScopedRouter.get(
     if (!config) return res.status(404).json({ error: 'user not found' });
     const body: UserConfigGetResponse = {
       text,
-      insights: configInsightsForUser(user, config.habits),
+      ...configResponseParts(user, text),
     };
     res.json(body);
   },
@@ -1015,32 +1006,50 @@ userScopedRouter.put(
     if (!isSafeConfigUserId(user)) {
       return res.status(400).json({ error: 'invalid user' });
     }
-    const { text } = req.body ?? {};
-    if (typeof text !== 'string') {
-      return res.status(400).json({ error: 'text is required' });
+    const requestBody = req.body ?? {};
+    let text: string;
+    if (typeof requestBody.text === 'string') {
+      text = requestBody.text;
+    } else if (requestBody.config != null) {
+      try {
+        text = serializeConfigJson(requestBody.config);
+      } catch (e) {
+        return res.status(400).json({ error: e instanceof Error ? e.message : 'invalid config' });
+      }
+    } else {
+      return res.status(400).json({ error: 'text or config is required' });
     }
-    const migrations = parseConfigMigrationTuples(req.body?.migrations);
+    const migrations =
+      req.body?.migrations == null ? null : parseConfigMigrationTuples(req.body.migrations);
     if (migrations == null) {
-      return res.status(400).json({ error: 'migrations must be an array of string tuples' });
+      if (req.body?.migrations != null) {
+        return res.status(400).json({ error: 'migrations must be an array of string tuples' });
+      }
     }
-    const deletions = parseConfigDeletions(req.body?.deletions);
+    const deletions = req.body?.deletions == null ? null : parseConfigDeletions(req.body.deletions);
     if (deletions == null) {
-      return res.status(400).json({ error: 'deletions must be an array of strings' });
+      if (req.body?.deletions != null) {
+        return res.status(400).json({ error: 'deletions must be an array of strings' });
+      }
     }
     const previousConfig = loadUserConfig(user);
     if (!previousConfig) return res.status(404).json({ error: 'user not found' });
+    const previousText = readUserConfigFileText(user);
+    if (previousText == null) return res.status(404).json({ error: 'user not found' });
+    const configMigrations = migrations ?? buildConfigMigrations(previousText, text);
+    const configDeletions = deletions ?? buildConfigDeletions(previousText, text);
 
     const out = writeUserConfigFileText(user, text);
     if (!out.ok) {
       return res.status(400).json({ error: out.error });
     }
-    if (migrations.length > 0) {
+    if (configMigrations.length > 0) {
       const nextConfig = loadUserConfig(user);
       if (!nextConfig) return res.status(404).json({ error: 'user not found' });
-      applyConfigDataMigrations(user, migrations, previousConfig.habits, nextConfig.habits);
+      applyConfigDataMigrations(user, configMigrations, previousConfig.habits, nextConfig.habits);
     }
-    if (deletions.length > 0) {
-      applyConfigDataDeletions(user, deletions, previousConfig.habits);
+    if (configDeletions.length > 0) {
+      applyConfigDataDeletions(user, configDeletions, previousConfig.habits);
     }
     const body: UserConfigPutResponse = { ok: true, user };
     res.json(body);

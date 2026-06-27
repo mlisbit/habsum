@@ -3,7 +3,6 @@ import { ModalBody, ModalHeader } from '@habsum/ui/contexts/modal';
 import { CollapsibleCard } from '@habsum/ui/components/CollapsibleCard';
 import { InfoText } from '@habsum/ui/components/InfoText';
 import { Input } from '@habsum/ui/components/Input';
-import type { UserConfigSingleSelectHabitInsight } from '~/api.client';
 import { ConfigHabitFieldLabel } from '../ConfigHabitFieldLabel';
 import { ConfigHabitOptionsPills, ConfigHabitStreakOptionsPills } from './ConfigHabitOptionPills';
 import {
@@ -14,31 +13,11 @@ import {
 } from '../ConfigHabitModalShared';
 import { formatOptionLines } from '~/utils/configHabitDraft';
 
-type ConfigSingleSelectHabitModalProps = Omit<ConfigHabitModalProps, 'insight'> & {
-  insight: UserConfigSingleSelectHabitInsight;
-};
-
-function removedOptionsWithoutRename(
-  previousOptions: string[],
-  currentOptions: string[],
-): string[] {
-  const previousSet = new Set(previousOptions);
-  const currentSet = new Set(currentOptions);
-  const removed = previousOptions.filter((option) => !currentSet.has(option));
-  const added = currentOptions.filter((option) => !previousSet.has(option));
-  const looksLikeRename =
-    previousOptions.length === currentOptions.length &&
-    removed.length > 0 &&
-    removed.length === added.length;
-
-  return looksLikeRename ? [] : removed;
-}
-
 function hasYesNoOptions(options: string[]): boolean {
   return options.length === 2 && options.includes('yes') && options.includes('no');
 }
 
-export function ConfigSingleSelectHabitModal(props: ConfigSingleSelectHabitModalProps) {
+export function ConfigSingleSelectHabitModal(props: ConfigHabitModalProps) {
   const {
     draft,
     dirty,
@@ -47,21 +26,12 @@ export function ConfigSingleSelectHabitModal(props: ConfigSingleSelectHabitModal
     habitOptions,
     handleDoneClick,
     handleRemoveClick,
-    initialHabitOptions,
     patch,
     saving,
     streakOptions,
   } = useConfigHabitModalDraft(props);
-  const { insight, onCancel } = props;
+  const { onCancel } = props;
   const [streakExpanded, setStreakExpanded] = useState(() => draft.streakEnabled);
-  const optionsWithData = new Set(insight.optionsWithData);
-  const removedOptionsWithData = removedOptionsWithoutRename(
-    initialHabitOptions,
-    habitOptions,
-  ).filter((option) => optionsWithData.has(option));
-  const removedOptionsWithDataLabel = removedOptionsWithData
-    .map((option) => `"${option}"`)
-    .join(', ');
   const showCheckboxThemeToggle = hasYesNoOptions(habitOptions);
 
   const setHabitOptions = (options: string[]) => {
@@ -118,12 +88,6 @@ export function ConfigSingleSelectHabitModal(props: ConfigSingleSelectHabitModal
                   tooltip="Render yes, no, and empty values as a tri-state checkbox on the habit page."
                 />
               </div>
-            ) : null}
-            {removedOptionsWithData.length > 0 ? (
-              <InfoText size="small" variant="warning" className="config-habit-modal__error">
-                Your existing entries that use {removedOptionsWithDataLabel} value will also be
-                removed.
-              </InfoText>
             ) : null}
           </div>
         </ConfigHabitModalField>

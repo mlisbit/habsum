@@ -10,8 +10,7 @@ import {
 import { useLocation, useNavigate } from '@remix-run/react';
 import { useModal } from '@habsum/ui/contexts/modal';
 import { useToast } from '@habsum/ui/contexts/toast';
-import type { UserConfigInsights, UserConfigSingleSelectHabitInsight } from '~/api.client';
-import type { ConfigHabitCard } from '~/utils/configYaml';
+import { type ConfigHabitDraft, type UserConfigJson, type UserConfigJsonHabit } from '~/api.client';
 import {
   configEditHabitQueryValue,
   findHabitNameByConfigEditId,
@@ -24,29 +23,21 @@ import { ConfigCard, createConfigCardDragPreview } from './ConfigCard';
 import { ConfigSingleSelectHabitModal } from './single-select/ConfigSingleSelectHabitModal';
 import { ConfigSummationHabitModal } from './summation/ConfigSummationHabitModal';
 import { ConfigHabitTypePickerModal, type HabitTypeChoice } from './ConfigHabitTypePickerModal';
-import { removeHabitFromConfigYaml, addHabitToConfigYaml } from '~/utils/configHabitDraft';
+import {
+  addHabitToConfig,
+  applyHabitDraftToConfig,
+  draftFromHabit,
+  removeHabitFromConfig,
+} from '~/utils/configHabitDraft';
 
 type ConfigGuiEditorProps = {
-  configText: string;
-  habits: ConfigHabitCard[];
-  insights: UserConfigInsights;
+  config: UserConfigJson | null;
+  habits: UserConfigJsonHabit[];
   order: string[];
   onOrderChange: (order: string[]) => void;
-  onConfigTextChange: (text: string) => void;
+  onConfigChange: (config: UserConfigJson) => void;
   registerAddHabit?: (addHabit: (() => void) | null) => void;
 };
-
-function singleSelectInsightForHabit(
-  insights: UserConfigInsights,
-  habitName: string,
-): UserConfigSingleSelectHabitInsight {
-  const insight = insights[habitName];
-  if (insight == null || !('optionsWithData' in insight)) {
-    return { optionsWithData: [] };
-  }
-  const { optionsWithData } = insight as { optionsWithData?: unknown };
-  return Array.isArray(optionsWithData) ? { optionsWithData } : { optionsWithData: [] };
-}
 
 type ReorderSession = {
   name: string;
@@ -91,12 +82,11 @@ function ConfigInsertMarker() {
 }
 
 export function ConfigGuiEditor({
-  configText,
+  config,
   habits,
-  insights,
   order,
   onOrderChange,
-  onConfigTextChange,
+  onConfigChange,
   registerAddHabit,
 }: ConfigGuiEditorProps) {
   const [draggingName, setDraggingName] = useState<string | null>(null);
@@ -109,15 +99,15 @@ export function ConfigGuiEditor({
   const { present, closeModal } = useModal();
   const { showToast } = useToast();
   const locationRef = useRef(location);
-  const configTextRef = useRef(configText);
-  const onConfigTextChangeRef = useRef(onConfigTextChange);
+  const configRef = useRef(config);
+  const onConfigChangeRef = useRef(onConfigChange);
   const pendingNewHabitRef = useRef<string | null>(null);
   const pendingDeepLinkHabitIdRef = useRef<string | null | undefined>(undefined);
   const pendingShowAddModalRef = useRef<boolean | undefined>(undefined);
 
   locationRef.current = location;
-  configTextRef.current = configText;
-  onConfigTextChangeRef.current = onConfigTextChange;
+  configRef.current = config;
+  onConfigChangeRef.current = onConfigChange;
 
   if (pendingDeepLinkHabitIdRef.current === undefined) {
     pendingDeepLinkHabitIdRef.current = readConfigEditHabitId(location.search);
@@ -130,6 +120,9 @@ export function ConfigGuiEditor({
   const syncConfigSearch = useCallback(
     (search: string): Promise<void> => {
       const { pathname } = locationRef.current;
+      if (pathname === locationRef.current.pathname && search === locationRef.current.search) {
+        return Promise.resolve();
+      }
       navigate({ pathname, search }, { replace: true });
       return Promise.resolve();
     },
@@ -164,67 +157,88 @@ export function ConfigGuiEditor({
     const pendingNewHabit = pendingNewHabitRef.current;
     pendingNewHabitRef.current = null;
     void syncHabitQueryParam(null);
-    if (pendingNewHabit) {
-      onConfigTextChangeRef.current(
-        removeHabitFromConfigYaml(configTextRef.current, pendingNewHabit),
-      );
+    if (!pendingNewHabit || configRef.current == null) return;
+    try {
+      const next = removeHabitFromConfig(configRef.current, pendingNewHabit);
+      configRef.current = next;
+      onConfigChangeRef.current(next);
+    } catch (e) {
+      showToast({ type: 'error', message: e instanceof Error ? e.message : String(e) });
     }
-  }, [syncHabitQueryParam]);
+  }, [showToast, syncHabitQueryParam]);
 
   const cancelHabitModal = closeHabitModal;
 
-  const handleDoneClick = useCallback(
-    async (next: string, appliedHabitName: string) => {
-      pendingNewHabitRef.current = null;
-      configTextRef.current = next;
-      closeModal();
-      onConfigTextChangeRef.current(next);
-      void syncHabitQueryParam(null);
-      showToast({
-        type: 'info',
-        message: `Applied changes to ${appliedHabitName}`,
-      });
+  const applyHabitDraft = useCallback(
+    async (habitName: string, draft: ConfigHabitDraft) => {
+      try {
+        if (configRef.current == null) throw new Error('config is not loaded');
+        const next = applyHabitDraftToConfig(configRef.current, habitName, draft);
+        pendingNewHabitRef.current = null;
+        configRef.current = next.config;
+        closeModal();
+        onConfigChangeRef.current(next.config);
+        void syncHabitQueryParam(null);
+        showToast({
+          type: 'info',
+          message: `Applied changes to ${next.appliedHabitName}`,
+        });
+      } catch (e) {
+        showToast({ type: 'error', message: e instanceof Error ? e.message : String(e) });
+      }
     },
     [closeModal, showToast, syncHabitQueryParam],
   );
 
   const handleRemoveClick = useCallback(
     async (habitName: string) => {
-      pendingNewHabitRef.current = null;
-      const next = removeHabitFromConfigYaml(configTextRef.current, habitName);
-      configTextRef.current = next;
-      closeModal();
-      onConfigTextChangeRef.current(next);
-      void syncHabitQueryParam(null);
-      showToast({
-        type: 'info',
-        message: `Removed ${habitName}`,
-      });
+      try {
+        pendingNewHabitRef.current = null;
+        if (configRef.current == null) throw new Error('config is not loaded');
+        const next = removeHabitFromConfig(configRef.current, habitName);
+        configRef.current = next;
+        closeModal();
+        onConfigChangeRef.current(next);
+        void syncHabitQueryParam(null);
+        showToast({
+          type: 'info',
+          message: `Removed ${habitName}`,
+        });
+      } catch (e) {
+        showToast({ type: 'error', message: e instanceof Error ? e.message : String(e) });
+      }
     },
     [closeModal, showToast, syncHabitQueryParam],
   );
 
   const openHabitModal = useCallback(
-    (habit: ConfigHabitCard, options?: { isNew?: boolean; configText?: string }) => {
-      const modalConfigText = options?.configText ?? configTextRef.current;
+    async (habit: UserConfigJsonHabit, options?: { isNew?: boolean; config?: UserConfigJson }) => {
+      const modalConfig = options?.config ?? configRef.current;
+      let habitModel: UserConfigJsonHabit | undefined;
+      try {
+        habitModel = modalConfig?.habits.find((item) => item.name === habit.name);
+        if (!habitModel) throw new Error(`unknown habit: ${habit.name}`);
+      } catch (e) {
+        showToast({ type: 'error', message: e instanceof Error ? e.message : String(e) });
+        return;
+      }
+      const draft = draftFromHabit(habitModel);
       const content =
         habit.type === 'single_select' ? (
           <ConfigSingleSelectHabitModal
-            configText={modalConfigText}
             habitName={habit.name}
-            insight={singleSelectInsightForHabit(insights, habit.name)}
+            initialDraft={draft}
             isNewHabit={options?.isNew}
-            onDoneClick={handleDoneClick}
+            onDoneClick={applyHabitDraft}
             onRemoveClick={handleRemoveClick}
             onCancel={cancelHabitModal}
           />
         ) : (
           <ConfigSummationHabitModal
-            configText={modalConfigText}
             habitName={habit.name}
-            insight={insights[habit.name] ?? {}}
+            initialDraft={draft}
             isNewHabit={options?.isNew}
-            onDoneClick={handleDoneClick}
+            onDoneClick={applyHabitDraft}
             onRemoveClick={handleRemoveClick}
             onCancel={cancelHabitModal}
           />
@@ -238,42 +252,39 @@ export function ConfigGuiEditor({
     },
     [
       cancelHabitModal,
-      handleDoneClick,
+      applyHabitDraft,
       handleRemoveClick,
-      insights,
       onHabitModalRequestClose,
       present,
+      showToast,
       syncHabitQueryParam,
     ],
   );
 
   const addHabitWithType = useCallback(
-    (typeChoice: HabitTypeChoice) => {
-      const type = typeChoice === 'checkbox' ? 'single_select' : typeChoice;
-      const checkboxTheme = typeChoice === 'checkbox';
-      const { text: next, habitName } = addHabitToConfigYaml(
-        configTextRef.current,
-        type,
-        checkboxTheme ? { theme: 'checkbox' } : undefined,
-      );
-      configTextRef.current = next;
-      onConfigTextChangeRef.current(next);
-      pendingNewHabitRef.current = habitName;
-      openHabitModal(
-        {
-          name: habitName,
+    async (typeChoice: HabitTypeChoice) => {
+      try {
+        if (configRef.current == null) throw new Error('config is not loaded');
+        const type = typeChoice === 'checkbox' ? 'single_select' : typeChoice;
+        const checkboxTheme = typeChoice === 'checkbox';
+        const result = addHabitToConfig(
+          configRef.current,
           type,
-          goal: null,
-          hasSummationOptions: false,
-          hasHistory: false,
-          ...(type === 'single_select'
-            ? { optionLabels: checkboxTheme ? ['yes', 'no'] : ['1', '2', '3'] }
-            : {}),
-        },
-        { isNew: true, configText: next },
-      );
+          checkboxTheme ? { theme: 'checkbox' } : undefined,
+        );
+        const next = result.config;
+        const { habitName } = result;
+        configRef.current = next;
+        onConfigChangeRef.current(next);
+        pendingNewHabitRef.current = habitName;
+        const habit = next.habits.find((item) => item.name === habitName);
+        if (!habit) throw new Error(`unknown habit: ${habitName}`);
+        await openHabitModal(habit, { isNew: true, config: next });
+      } catch (e) {
+        showToast({ type: 'error', message: e instanceof Error ? e.message : String(e) });
+      }
     },
-    [openHabitModal],
+    [openHabitModal, showToast],
   );
 
   const onAddModalRequestClose = useCallback(() => {
@@ -309,7 +320,7 @@ export function ConfigGuiEditor({
     if (!habit) return;
 
     pendingShowAddModalRef.current = false;
-    openHabitModal(habit);
+    void openHabitModal(habit);
   }, [habits, openHabitModal]);
 
   useEffect(() => {
@@ -432,7 +443,7 @@ export function ConfigGuiEditor({
             <ConfigCard
               habit={habit}
               isDragging={isDragging}
-              onEdit={() => openHabitModal(habit)}
+              onEdit={() => void openHabitModal(habit)}
               onReorderPointerDown={(event) => onReorderPointerDown(name, event)}
             />
           </Fragment>

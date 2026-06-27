@@ -1,37 +1,24 @@
-import yaml from 'js-yaml';
 import {
   DEFAULT_STREAK_FREQUENCY,
   formatStreakFrequency,
   parseStreakFrequencyDays,
 } from '@habsum/types/common/streak';
-import { dumpConfigYaml, parseConfigHabitCards } from './configYaml';
+import type {
+  ConfigHabitDraft,
+  HistoryPeriodUnit,
+  UserConfigJson,
+  UserConfigJsonHabit,
+} from '~/api.client';
 
-export type HistoryPeriodUnit = 'd' | 'w';
-
-export type ConfigHabitDraft = {
-  name: string;
-  type: 'summation' | 'single_select';
-  goal: string;
-  /** Ordered numeric amounts for YAML `summation_options`. */
-  quickAddItems: string[];
-  optionsText: string;
-  theme: string;
-  streakEnabled: boolean;
-  streakOptionsText: string;
-  /** Streak days required per week (`1`–`7`; `7` = daily). */
-  streakFrequencyPerWeek: string;
-  streakShowLongest: boolean;
-  historyEnabled: boolean;
-  historyPeriodAmount: string;
-  historyPeriodUnit: HistoryPeriodUnit;
-};
+const DEFAULT_HISTORY_PERIOD_AMOUNT = '1';
+const DEFAULT_HISTORY_PERIOD_UNIT: HistoryPeriodUnit = 'w';
+const DEFAULT_NEW_HABIT_NAME = 'New habit';
 
 function quickAddItemsEqual(a: string[], b: string[]): boolean {
   if (a.length !== b.length) return false;
   return a.every((item, index) => item === b[index]);
 }
 
-/** Whether `draft` differs from the habit state captured when the modal opened. */
 export function isHabitDraftDirty(initial: ConfigHabitDraft, draft: ConfigHabitDraft): boolean {
   return (
     initial.name !== draft.name ||
@@ -50,59 +37,11 @@ export function isHabitDraftDirty(initial: ConfigHabitDraft, draft: ConfigHabitD
   );
 }
 
-const DEFAULT_HISTORY_PERIOD_AMOUNT = '1';
-const DEFAULT_HISTORY_PERIOD_UNIT: HistoryPeriodUnit = 'w';
-
-const LEGACY_SUMMATION_INPUT_TOKEN = 'input';
-
-export function parseHistoryPeriod(period: string): {
-  amount: string;
-  unit: HistoryPeriodUnit;
-} {
-  const m = period.trim().match(/^(\d+)([dw])$/);
-  if (m?.[1] && (m[2] === 'd' || m[2] === 'w')) {
-    return { amount: m[1], unit: m[2] };
-  }
-  return { amount: DEFAULT_HISTORY_PERIOD_AMOUNT, unit: DEFAULT_HISTORY_PERIOD_UNIT };
-}
-
-export function formatHistoryPeriod(amount: string, unit: HistoryPeriodUnit): string {
-  const n = parseOptionalPositiveInt(amount);
-  if (n == null) {
-    throw new Error('history length must be a positive integer');
-  }
-  if (unit !== 'd' && unit !== 'w') {
-    throw new Error('history unit must be days or weeks');
-  }
-  return `${n}${unit}`;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return value != null && typeof value === 'object' && !Array.isArray(value);
-}
-
 function parseLines(text: string): string[] {
   return text
     .split('\n')
     .map((line) => line.trim())
     .filter((line) => line.length > 0);
-}
-
-/** YAML key on single_select habits for consecutive-day tracking config. */
-const HABIT_STREAK_YAML_KEY = 'str' + 'eak';
-
-function readHabitStreakYaml(def: Record<string, unknown>): unknown {
-  return def[HABIT_STREAK_YAML_KEY];
-}
-
-type HabitStreakYaml = {
-  options: Array<string | number>;
-  frequency?: string;
-  show_longest?: boolean;
-};
-
-function writeHabitStreakYaml(def: Record<string, unknown>, value: HabitStreakYaml): void {
-  def[HABIT_STREAK_YAML_KEY] = value;
 }
 
 export function parseOptionLines(text: string): string[] {
@@ -113,6 +52,10 @@ export function formatOptionLines(lines: string[]): string {
   return lines.join('\n');
 }
 
+export function sortQuickAddItems(items: string[]): string[] {
+  return [...items].sort((a, b) => Math.trunc(Number(a)) - Math.trunc(Number(b)));
+}
+
 function parseOptionalPositiveInt(raw: string): number | null {
   const t = raw.trim();
   if (t === '') return null;
@@ -121,311 +64,202 @@ function parseOptionalPositiveInt(raw: string): number | null {
   return n;
 }
 
-function intString(value: unknown): string | null {
-  const n = Math.trunc(Number(value));
-  if (!Number.isFinite(n)) return null;
-  return String(n);
+function parseHistoryPeriod(period: string): {
+  amount: string;
+  unit: HistoryPeriodUnit;
+} {
+  const m = period.trim().match(/^(\d+)([dw])$/);
+  if (m?.[1] && (m[2] === 'd' || m[2] === 'w')) {
+    return { amount: m[1], unit: m[2] };
+  }
+  return { amount: DEFAULT_HISTORY_PERIOD_AMOUNT, unit: DEFAULT_HISTORY_PERIOD_UNIT };
 }
 
-/** Sort quick-add amounts ascending (negatives first). */
-export function sortQuickAddItems(items: string[]): string[] {
-  return [...items].sort((a, b) => Math.trunc(Number(a)) - Math.trunc(Number(b)));
+function formatHistoryPeriod(amount: string, unit: HistoryPeriodUnit): string {
+  const n = parseOptionalPositiveInt(amount);
+  if (n == null) {
+    throw new Error('history length must be a positive integer');
+  }
+  if (unit !== 'd' && unit !== 'w') {
+    throw new Error('history unit must be days or weeks');
+  }
+  return `${n}${unit}`;
 }
 
-function parseSummationQuickAddEntry(entry: unknown): string | null {
-  if (typeof entry === 'string' && entry.trim().toLowerCase() === LEGACY_SUMMATION_INPUT_TOKEN) {
-    return null;
-  }
-  return intString(entry);
-}
-
-function parseQuickAddFromDef(
-  def: Record<string, unknown>,
-): Pick<ConfigHabitDraft, 'quickAddItems'> {
-  const raw = def.summation_options ?? def.summationOptions;
-  if (raw == null) {
-    return { quickAddItems: [] };
-  }
-
-  if (Array.isArray(raw)) {
-    const items = raw
-      .map((entry) => parseSummationQuickAddEntry(entry))
-      .filter((entry): entry is string => entry != null);
-    return { quickAddItems: sortQuickAddItems(items) };
-  }
-
-  if (isRecord(raw)) {
-    const sub = intString(raw.sub);
-    const add = intString(raw.add);
-    if (sub == null || add == null) return { quickAddItems: [] };
-    return { quickAddItems: sortQuickAddItems([sub, add]) };
-  }
-
-  return { quickAddItems: [] };
-}
-
-export function summationQuickAddItemsToYaml(items: string[]): number[] {
-  return items.map((item) => {
-    const n = Math.trunc(Number(item));
-    if (!Number.isFinite(n)) {
-      throw new Error(`invalid quick add value: ${item}`);
-    }
-    return n;
-  });
-}
-
-export function parseHabitDraftFromDef(name: string, def: unknown): ConfigHabitDraft {
-  if (!isRecord(def)) {
-    throw new Error(`habit "${name}" must be a yaml mapping`);
-  }
-
-  const type = def.type === 'single_select' ? 'single_select' : 'summation';
-  const goalRaw = def.goal;
-  const goal =
-    typeof goalRaw === 'number' && Number.isFinite(goalRaw) ? String(Math.trunc(goalRaw)) : '';
-
-  const options =
-    type === 'single_select' && Array.isArray(def.options)
-      ? def.options.filter((x): x is string => typeof x === 'string')
-      : [];
-
-  let streakEnabled = false;
-  let streakOptionsText = '';
-  let streakFrequencyPerWeek = '7';
-  let streakShowLongest = false;
-  const streakBlock = readHabitStreakYaml(def);
-  if (isRecord(streakBlock)) {
-    const streakOpts = Array.isArray(streakBlock.options)
-      ? streakBlock.options
-          .map((x) => (typeof x === 'number' && Number.isFinite(x) ? String(x) : x))
-          .filter((x): x is string => typeof x === 'string')
-      : [];
-    if (streakOpts.length > 0 || type === 'summation') {
-      streakEnabled = true;
-      streakOptionsText = streakOpts.join('\n');
-      const frequencyRaw =
-        typeof streakBlock.frequency === 'string'
-          ? streakBlock.frequency
-          : DEFAULT_STREAK_FREQUENCY;
-      streakFrequencyPerWeek = String(parseStreakFrequencyDays(frequencyRaw));
-      streakShowLongest = streakBlock.show_longest === true;
-    }
-  }
-
-  const history = def.history;
-  const historyBlockEnabled = type === 'summation' && isRecord(history);
-  const historyPeriodRaw =
-    historyBlockEnabled && typeof history.period === 'string'
-      ? history.period
-      : `${DEFAULT_HISTORY_PERIOD_AMOUNT}${DEFAULT_HISTORY_PERIOD_UNIT}`;
-  const { amount: historyPeriodAmount, unit: historyPeriodUnit } =
-    parseHistoryPeriod(historyPeriodRaw);
+export function draftFromHabit(habit: UserConfigJsonHabit): ConfigHabitDraft {
+  const historyPeriod = parseHistoryPeriod(
+    habit.history?.period ?? `${DEFAULT_HISTORY_PERIOD_AMOUNT}${DEFAULT_HISTORY_PERIOD_UNIT}`,
+  );
 
   return {
-    name,
-    type,
-    goal,
-    ...parseQuickAddFromDef(def),
-    optionsText: options.join('\n'),
-    theme: type === 'single_select' && typeof def.theme === 'string' ? def.theme : '',
-    streakEnabled,
-    streakOptionsText,
-    streakFrequencyPerWeek,
-    streakShowLongest,
-    historyEnabled: historyBlockEnabled,
-    historyPeriodAmount,
-    historyPeriodUnit,
+    name: habit.name,
+    type: habit.type,
+    goal: habit.goal == null ? '' : String(habit.goal),
+    quickAddItems: sortQuickAddItems(
+      habit.type === 'summation'
+        ? (habit.summationOptions?.increments ?? []).map((item) => String(item))
+        : [],
+    ),
+    optionsText: habit.type === 'single_select' ? (habit.options ?? []).join('\n') : '',
+    theme: habit.type === 'single_select' ? (habit.theme ?? '') : '',
+    streakEnabled: habit.streak != null,
+    streakOptionsText: habit.streak?.options.join('\n') ?? '',
+    streakFrequencyPerWeek: String(parseStreakFrequencyDays(habit.streak?.frequency)),
+    streakShowLongest: habit.streak?.show_longest === true,
+    historyEnabled: habit.type === 'summation' && habit.history != null,
+    historyPeriodAmount: historyPeriod.amount,
+    historyPeriodUnit: historyPeriod.unit,
   };
 }
 
-export function parseHabitDraftFromText(text: string, habitName: string): ConfigHabitDraft {
-  let parsed: unknown;
-  try {
-    parsed = yaml.load(text);
-  } catch {
-    throw new Error('invalid yaml');
-  }
-  if (!isRecord(parsed)) {
-    throw new Error('config must be a yaml mapping');
-  }
-  const habits = parsed.habits;
-  if (!isRecord(habits) || !Object.hasOwn(habits, habitName)) {
-    throw new Error(`unknown habit: ${habitName}`);
-  }
-  return parseHabitDraftFromDef(habitName, habits[habitName]);
-}
+function draftToHabit(draft: ConfigHabitDraft): UserConfigJsonHabit {
+  const name = draft.name.trim();
+  if (name === '') throw new Error('habit name is required');
 
-function draftToRawHabit(draft: ConfigHabitDraft): Record<string, unknown> {
-  const def: Record<string, unknown> = { type: draft.type };
-
-  if (draft.type === 'summation') {
-    const goal = parseOptionalPositiveInt(draft.goal);
-    if (goal != null) def.goal = goal;
-
-    if (draft.quickAddItems.length > 0) {
-      def.summation_options = summationQuickAddItemsToYaml(draft.quickAddItems);
-    }
-
-    if (draft.streakEnabled) {
-      if (goal == null) {
-        throw new Error('summation streak tracking requires a goal');
-      }
-      const streakYaml: HabitStreakYaml = {
-        options: [goal],
-      };
-      const daysPerWeek = parseOptionalPositiveInt(draft.streakFrequencyPerWeek) ?? 7;
-      const frequency = formatStreakFrequency(daysPerWeek);
-      if (frequency !== DEFAULT_STREAK_FREQUENCY) {
-        streakYaml.frequency = frequency;
-      }
-      if (draft.streakShowLongest) {
-        streakYaml.show_longest = true;
-      }
-      writeHabitStreakYaml(def, streakYaml);
-    }
-  } else {
+  if (draft.type === 'single_select') {
     const options = parseLines(draft.optionsText);
     if (options.length === 0) {
       throw new Error('single select habits need at least one option');
     }
-    def.options = options;
-    if (draft.theme.trim().length > 0) {
-      def.theme = draft.theme.trim();
-    }
-
+    const habit: UserConfigJsonHabit = {
+      name,
+      type: 'single_select',
+      goal: null,
+      options,
+    };
+    if (draft.theme.trim() !== '') habit.theme = draft.theme.trim();
     if (draft.streakEnabled) {
       const allowed = new Set(options);
       const streakOptions = parseLines(draft.streakOptionsText).filter((opt) => allowed.has(opt));
       if (streakOptions.length === 0) {
         throw new Error('tracking options must list at least one habit option');
       }
-      const streakYaml: HabitStreakYaml = {
+      const frequency = formatStreakFrequency(
+        parseOptionalPositiveInt(draft.streakFrequencyPerWeek) ?? 7,
+      );
+      habit.streak = {
         options: streakOptions,
+        ...(frequency !== DEFAULT_STREAK_FREQUENCY ? { frequency } : {}),
+        ...(draft.streakShowLongest ? { show_longest: true } : {}),
       };
-      const daysPerWeek = parseOptionalPositiveInt(draft.streakFrequencyPerWeek) ?? 7;
-      const frequency = formatStreakFrequency(daysPerWeek);
-      if (frequency !== DEFAULT_STREAK_FREQUENCY) {
-        streakYaml.frequency = frequency;
-      }
-      if (draft.streakShowLongest) {
-        streakYaml.show_longest = true;
-      }
-      writeHabitStreakYaml(def, streakYaml);
     }
+    return habit;
   }
 
-  if (draft.type === 'summation' && draft.historyEnabled) {
-    def.history = {
+  const goal = parseOptionalPositiveInt(draft.goal);
+  const habit: UserConfigJsonHabit = {
+    name,
+    type: 'summation',
+    goal,
+  };
+  if (draft.quickAddItems.length > 0) {
+    habit.summationOptions = {
+      manualInput: true,
+      increments: draft.quickAddItems.map((item) => {
+        const n = Math.trunc(Number(item));
+        if (!Number.isFinite(n)) throw new Error(`invalid quick add value: ${item}`);
+        return n;
+      }),
+    };
+  }
+  if (draft.streakEnabled) {
+    if (goal == null) throw new Error('summation streak tracking requires a goal');
+    const frequency = formatStreakFrequency(
+      parseOptionalPositiveInt(draft.streakFrequencyPerWeek) ?? 7,
+    );
+    habit.streak = {
+      options: [String(goal)],
+      ...(frequency !== DEFAULT_STREAK_FREQUENCY ? { frequency } : {}),
+      ...(draft.streakShowLongest ? { show_longest: true } : {}),
+    };
+  }
+  if (draft.historyEnabled) {
+    habit.history = {
       period: formatHistoryPeriod(draft.historyPeriodAmount, draft.historyPeriodUnit),
     };
   }
-
-  return def;
+  return habit;
 }
 
-export function applyHabitDraftToConfigYaml(
-  text: string,
-  draft: ConfigHabitDraft,
+export function applyHabitDraftToConfig(
+  config: UserConfigJson,
   originalName: string,
-): string {
-  let parsed: unknown;
-  try {
-    parsed = yaml.load(text);
-  } catch {
-    throw new Error('invalid yaml');
+  draft: ConfigHabitDraft,
+): { config: UserConfigJson; appliedHabitName: string } {
+  const nextHabit = draftToHabit(draft);
+  if (
+    nextHabit.name !== originalName &&
+    config.habits.some((habit) => habit.name === nextHabit.name)
+  ) {
+    throw new Error(`habit "${nextHabit.name}" already exists`);
   }
-  if (!isRecord(parsed)) {
-    throw new Error('config must be a yaml mapping');
-  }
-  const habits = parsed.habits;
-  if (!isRecord(habits) || !Object.hasOwn(habits, originalName)) {
-    throw new Error(`unknown habit: ${originalName}`);
-  }
-
-  const newName = draft.name.trim();
-  if (newName === '') {
-    throw new Error('habit name is required');
-  }
-  if (newName !== originalName && Object.hasOwn(habits, newName)) {
-    throw new Error(`habit "${newName}" already exists`);
-  }
-
-  const def = draftToRawHabit({ ...draft, name: newName });
-  const order = parseConfigHabitCards(text).map((h) => h.name);
-
-  if (newName !== originalName) {
-    delete habits[originalName];
-    habits[newName] = def;
-    return dumpConfigYaml(
-      parsed,
-      order.map((name) => (name === originalName ? newName : name)),
-    );
-  }
-
-  habits[newName] = def;
-  return dumpConfigYaml(parsed, order);
+  let found = false;
+  const habits = config.habits.map((habit) => {
+    if (habit.name !== originalName) return habit;
+    found = true;
+    return nextHabit;
+  });
+  if (!found) throw new Error(`unknown habit: ${originalName}`);
+  return {
+    config: { ...config, habits },
+    appliedHabitName: nextHabit.name,
+  };
 }
 
-export function removeHabitFromConfigYaml(text: string, habitName: string): string {
-  let parsed: unknown;
-  try {
-    parsed = yaml.load(text);
-  } catch {
-    throw new Error('invalid yaml');
-  }
-  if (!isRecord(parsed)) {
-    throw new Error('config must be a yaml mapping');
-  }
-  const habits = parsed.habits;
-  if (!isRecord(habits) || !Object.hasOwn(habits, habitName)) {
+export function removeHabitFromConfig(config: UserConfigJson, habitName: string): UserConfigJson {
+  if (!config.habits.some((habit) => habit.name === habitName)) {
     throw new Error(`unknown habit: ${habitName}`);
   }
-
-  delete habits[habitName];
-  const order = parseConfigHabitCards(text)
-    .map((h) => h.name)
-    .filter((name) => name !== habitName);
-  return dumpConfigYaml(parsed, order);
+  return {
+    ...config,
+    habits: config.habits.filter((habit) => habit.name !== habitName),
+  };
 }
 
-const DEFAULT_NEW_HABIT_NAME = 'New habit';
-
-function uniqueNewHabitName(
-  existingNames: ReadonlySet<string>,
-  base = DEFAULT_NEW_HABIT_NAME,
-): string {
+function uniqueNewHabitName(existingNames: ReadonlySet<string>, base = DEFAULT_NEW_HABIT_NAME) {
   if (!existingNames.has(base)) return base;
   let n = 2;
   while (existingNames.has(`${base} ${n}`)) n++;
   return `${base} ${n}`;
 }
 
-/** Appends a default habit of the given type and returns the updated YAML plus the new habit name. */
-export function addHabitToConfigYaml(
-  text: string,
+export function addHabitToConfig(
+  config: UserConfigJson,
   type: 'summation' | 'single_select' = 'summation',
   options?: { theme?: string },
-): { text: string; habitName: string } {
-  let parsed: unknown;
-  try {
-    parsed = yaml.load(text);
-  } catch {
-    throw new Error('invalid yaml');
-  }
-
-  const root: Record<string, unknown> = isRecord(parsed) ? parsed : { habits: {} };
-  const habits = isRecord(root.habits) ? root.habits : {};
-  root.habits = habits;
-
-  const existingNames = new Set(parseConfigHabitCards(text).map((h) => h.name));
-  const habitName = uniqueNewHabitName(existingNames);
-  habits[habitName] =
+): { config: UserConfigJson; habitName: string } {
+  const habitName = uniqueNewHabitName(new Set(config.habits.map((habit) => habit.name)));
+  const habit: UserConfigJsonHabit =
     type === 'single_select'
       ? options?.theme === 'checkbox'
-        ? { type: 'single_select', options: ['yes', 'no'], theme: 'checkbox' }
-        : { type: 'single_select', options: ['1', '2', '3'] }
-      : { type: 'summation' };
+        ? {
+            name: habitName,
+            type: 'single_select',
+            goal: null,
+            options: ['yes', 'no'],
+            theme: 'checkbox',
+          }
+        : { name: habitName, type: 'single_select', goal: null, options: ['1', '2', '3'] }
+      : { name: habitName, type: 'summation', goal: null };
 
-  const order = [...existingNames, habitName];
-  return { text: dumpConfigYaml(root, order), habitName };
+  return {
+    config: { ...config, habits: [...config.habits, habit] },
+    habitName,
+  };
+}
+
+export function reorderConfigHabits(
+  config: UserConfigJson,
+  orderedNames: string[],
+): UserConfigJson {
+  const byName = new Map(config.habits.map((habit) => [habit.name, habit]));
+  if (orderedNames.length !== config.habits.length) {
+    throw new Error('habit order must include every habit');
+  }
+  const habits = orderedNames.map((name) => {
+    const habit = byName.get(name);
+    if (!habit) throw new Error(`unknown habit: ${name}`);
+    return habit;
+  });
+  return { ...config, habits };
 }

@@ -1,15 +1,9 @@
 import { useMemo, useState, type ReactNode } from 'react';
-import type { UserConfigHabitInsight } from '~/api.client';
+import type { ConfigHabitDraft } from '~/api.client';
 import { ModalFooter } from '@habsum/ui/contexts/modal';
 import { Button } from '@habsum/ui/components/Button';
 import { ConfigHabitFieldLabel } from './ConfigHabitFieldLabel';
-import {
-  applyHabitDraftToConfigYaml,
-  isHabitDraftDirty,
-  parseHabitDraftFromText,
-  parseOptionLines,
-  type ConfigHabitDraft,
-} from '~/utils/configHabitDraft';
+import { isHabitDraftDirty, parseOptionLines } from '~/utils/configHabitDraft';
 
 type ConfigHabitModalFieldProps = {
   label: string;
@@ -43,26 +37,22 @@ export function ConfigHabitModalField({
 }
 
 export type ConfigHabitModalProps = {
-  configText: string;
   habitName: string;
-  insight: UserConfigHabitInsight;
+  initialDraft: ConfigHabitDraft;
   isNewHabit?: boolean;
-  onDoneClick: (nextConfigText: string, appliedHabitName: string) => void | Promise<void>;
+  onDoneClick: (habitName: string, draft: ConfigHabitDraft) => void | Promise<void>;
   onRemoveClick: (habitName: string) => void | Promise<void>;
   onCancel: () => void;
 };
 
 export function useConfigHabitModalDraft({
-  configText,
   habitName,
+  initialDraft,
   isNewHabit = false,
   onDoneClick,
   onRemoveClick,
 }: Omit<ConfigHabitModalProps, 'onCancel'>) {
-  const initial = useMemo(
-    () => parseHabitDraftFromText(configText, habitName),
-    [configText, habitName],
-  );
+  const initial = useMemo(() => initialDraft, [initialDraft]);
   const [draft, setDraft] = useState<ConfigHabitDraft>(initial);
   const dirty = useMemo(
     () => isHabitDraftDirty(initial, draft) || isNewHabit,
@@ -90,11 +80,9 @@ export function useConfigHabitModalDraft({
 
   const handleDoneClick = async () => {
     try {
-      const appliedHabitName = draft.name.trim() || habitName;
-      const next = applyHabitDraftToConfigYaml(configText, draft, habitName);
       setSaving(true);
       setError(null);
-      await onDoneClick(next, appliedHabitName);
+      await onDoneClick(habitName, draft);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
@@ -103,7 +91,6 @@ export function useConfigHabitModalDraft({
   };
 
   const habitOptions = parseOptionLines(draft.optionsText);
-  const initialHabitOptions = parseOptionLines(initial.optionsText);
   const streakOptions = parseOptionLines(draft.streakOptionsText);
   const editingHabitName = draft.name.trim() || habitName;
 
@@ -115,7 +102,6 @@ export function useConfigHabitModalDraft({
     habitOptions,
     handleDoneClick,
     handleRemoveClick,
-    initialHabitOptions,
     patch,
     saving,
     streakOptions,
