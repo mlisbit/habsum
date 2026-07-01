@@ -16,7 +16,7 @@
   "stylelint.validate": ["css", "scss"],
   "css.validate": false,
   "scss.validate": false,
-  "editor.hover.enabled": true,
+  "editor.hover.enabled": "on",
   "editor.codeActionsOnSave": {
     "source.fixAll.stylelint": "explicit"
   }

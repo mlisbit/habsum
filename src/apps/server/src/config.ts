@@ -46,6 +46,7 @@ export type HabitDef = {
   name: string;
   type: HabitType;
   goal: number | null;
+  repeat: string[];
   options?: string[];
   theme?: string;
   /** Fixed +/− steps from YAML `summation_options` (array) or legacy `{ sub, add }`. */
@@ -74,12 +75,25 @@ type RawHabit = {
   goal?: number;
   options?: string[];
   theme?: unknown;
+  repeat?: unknown;
   /** `[subtract, add]` or `{ sub, add }` / `{ add, sub }` */
   summation_options?: unknown;
   summationOptions?: unknown;
   history?: { period?: unknown; display?: unknown };
   streak?: unknown;
 };
+
+export const HABIT_REPEAT_DAYS = [
+  'monday',
+  'tuesday',
+  'wednesday',
+  'thursday',
+  'friday',
+  'saturday',
+  'sunday',
+] as const;
+
+const HABIT_REPEAT_DAY_SET = new Set<string>(HABIT_REPEAT_DAYS);
 
 type RawConfig = {
   include_absent_days_in_average?: unknown;
@@ -318,6 +332,7 @@ function parseUserConfig(user: string, parsed: unknown): UserConfig {
         name,
         type,
         goal: rawHabit.goal ?? null,
+        repeat: normalizeRepeat(rawHabit.repeat, name),
         options: opts,
         theme:
           type === 'single_select' && typeof rawHabit.theme === 'string'
@@ -341,6 +356,27 @@ function parseUserConfig(user: string, parsed: unknown): UserConfig {
       };
     }),
   };
+}
+
+function normalizeRepeat(raw: unknown, habitName: string): HabitDef['repeat'] {
+  if (raw == null) return [...HABIT_REPEAT_DAYS];
+  if (!Array.isArray(raw)) {
+    throw new ConfigValidationError(`habit "${habitName}" repeat must be a yaml list`);
+  }
+
+  const days: string[] = [];
+  for (const item of raw) {
+    if (typeof item !== 'string' || !HABIT_REPEAT_DAY_SET.has(item)) {
+      throw new ConfigValidationError(
+        `habit "${habitName}" repeat must only include monday, tuesday, wednesday, thursday, friday, saturday, sunday`,
+      );
+    }
+    if (!days.includes(item)) days.push(item);
+  }
+  if (days.length === 0) {
+    throw new ConfigValidationError(`habit "${habitName}" repeat must include at least one day`);
+  }
+  return days;
 }
 
 function normalizeHistory(

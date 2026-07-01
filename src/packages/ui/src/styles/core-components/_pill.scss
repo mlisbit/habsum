@@ -1,9 +1,14 @@
 @use 'functions';
 
 .pill {
+  display: inline-flex;
+  align-items: center;
+  max-inline-size: 100%;
   background: var(--pill-fill);
   border: 1px solid var(--pill-border);
   cursor: pointer;
+  white-space: nowrap;
+  vertical-align: middle;
 
   &:disabled {
     opacity: 0.6;
@@ -38,13 +43,15 @@
 }
 
 .pill--large {
-  padding: functions.spacing(2, 3);
+  block-size: 2.25rem;
+  padding: 0 functions.spacing(3);
   border-radius: var(--border-radius-full);
 }
 
 .pill--small {
+  block-size: 2.25rem;
   border-radius: var(--border-radius-full);
-  padding: functions.spacing(1, 3);
+  padding: 0 functions.spacing(3);
 }
 
 .pill--selected {
@@ -58,8 +65,6 @@
 }
 
 .pill--dismissable {
-  display: inline-flex;
-  align-items: center;
   cursor: default;
   pointer-events: none;
   // stylelint-disable-next-line
@@ -69,13 +74,11 @@
     background 0.12s ease;
 
   &.pill--large {
-    // stylelint-disable-next-line
-    padding: 4px 4px 4px 12px;
+    padding-inline: functions.spacing(3, 1);
   }
 
   &.pill--small {
-    // stylelint-disable-next-line
-    padding: 4px 4px 4px 12px;
+    padding-inline: functions.spacing(3, 1);
   }
 
   &:hover,
@@ -87,8 +90,6 @@
 }
 
 .pill--editable {
-  display: inline-flex;
-  align-items: center;
   cursor: text;
   pointer-events: auto;
   // stylelint-disable-next-line
@@ -98,13 +99,11 @@
     background 0.12s ease;
 
   &.pill--large {
-    // stylelint-disable-next-line
-    padding: 4px 4px 4px 12px;
+    padding-inline: functions.spacing(3, 1);
   }
 
   &.pill--small {
-    // stylelint-disable-next-line
-    padding: 4px 4px 4px 12px;
+    padding-inline: functions.spacing(3, 1);
   }
 
   &:hover,
@@ -120,6 +119,34 @@
   }
 }
 
+.pill--trigger {
+  justify-content: space-between;
+  gap: functions.spacing(1);
+  border-radius: var(--border-radius-full);
+  transition:
+    transform 0.05s ease,
+    box-shadow 0.12s ease,
+    background 0.12s ease;
+
+  &:hover {
+    background: functions.lighten(var(--pill-fill));
+  }
+
+  &:active {
+    transform: translateY(1px);
+    background: var(--background-disabled);
+  }
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--box-shadow-focus);
+  }
+}
+
+.pill--trigger[aria-expanded='true'] .pill__trigger-icon {
+  transform: rotate(180deg);
+}
+
 .pill--editing {
   background: functions.lighten(var(--pill-fill));
   box-shadow: var(--box-shadow-focus);
@@ -127,6 +154,14 @@
 
 .pill__label {
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pill__trigger-icon {
+  flex: 0 0 auto;
+  transition: transform 0.12s ease;
 }
 
 .pill__input {
@@ -141,11 +176,14 @@
 }
 
 .pill__dismiss-button {
-  display: flex;
+  display: inline-flex;
   align-self: center;
   align-items: center;
   justify-content: center;
-  padding: functions.spacing(1);
+  flex: 0 0 auto;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  padding: 0;
   border: none;
   background: transparent;
   cursor: pointer;

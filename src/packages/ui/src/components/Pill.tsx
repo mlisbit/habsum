@@ -1,5 +1,5 @@
 // exclusive-bem-block: pill
-import { useEffect, useRef, useState } from 'react';
+import { forwardRef, useEffect, useRef, useState } from 'react';
 import type { ButtonHTMLAttributes, HTMLAttributes, KeyboardEvent, ReactNode } from 'react';
 import { Icon } from './Icon';
 import { classBuilder } from '../utils/class-builder';
@@ -209,3 +209,31 @@ export function EditablePill({
     </span>
   );
 }
+
+type TriggerPillProps = {
+  size?: PillSize;
+  children: ReactNode;
+} & Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'>;
+
+export const TriggerPill = forwardRef<HTMLButtonElement, TriggerPillProps>(function TriggerPill(
+  { size = 'small', children, className, type = 'button', ...props },
+  ref,
+) {
+  return (
+    <button
+      ref={ref}
+      type={type}
+      className={classBuilder(
+        {
+          'pill--small text-b-s': size === 'small',
+          'pill--large text-b-m': size === 'large',
+        },
+        `pill pill--trigger ${className}`,
+      )}
+      {...props}
+    >
+      <span className="pill__label">{children}</span>
+      <Icon name="chevronDown" size="small" className="pill__trigger-icon" />
+    </button>
+  );
+});

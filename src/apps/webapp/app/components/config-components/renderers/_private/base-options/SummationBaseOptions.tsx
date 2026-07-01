@@ -1,5 +1,6 @@
 // exclusive-bem-block: summation-quick-add-options
 import { useState } from 'react';
+import type { ReactNode } from 'react';
 import { Button } from '@habsum/ui/components/Button';
 import { Input } from '@habsum/ui/components/Input';
 import { EditablePill } from '@habsum/ui/components/Pill';
@@ -9,6 +10,7 @@ import { sortQuickAddItems } from '~/utils/configHabitDraft';
 type SummationBaseOptionsProps = {
   draft: ConfigHabitDraft;
   patch: (partial: Partial<ConfigHabitDraft>) => void;
+  repeatControl?: ReactNode;
 };
 
 function parseQuickAddValue(raw: string): string | null {
@@ -19,7 +21,7 @@ function parseQuickAddValue(raw: string): string | null {
   return String(n);
 }
 
-export function SummationBaseOptions({ draft, patch }: SummationBaseOptionsProps) {
+export function SummationBaseOptions({ draft, patch, repeatControl }: SummationBaseOptionsProps) {
   const { quickAddItems } = draft;
   const [addingQuickAdd, setAddingQuickAdd] = useState(false);
   const [quickAddDraft, setQuickAddDraft] = useState('');
@@ -72,6 +74,12 @@ export function SummationBaseOptions({ draft, patch }: SummationBaseOptionsProps
             placeholder="No goal"
           />
         </div>
+        {repeatControl != null ? (
+          <div className="config-habit-modal__inline-field">
+            <label className="text-h-xs">Repeat</label>
+            {repeatControl}
+          </div>
+        ) : null}
       </div>
 
       <div className="config-habit-modal__stacked-field">

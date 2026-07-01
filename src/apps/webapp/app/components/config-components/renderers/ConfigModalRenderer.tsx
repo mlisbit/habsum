@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react';
+import { Dropdown } from '@habsum/ui/components/Dropdown';
+import { TriggerPill } from '@habsum/ui/components/Pill';
 import { ModalBody, ModalHeader } from '@habsum/ui/contexts/modal';
 import { InfoText } from '@habsum/ui/components/InfoText';
 import { Input } from '@habsum/ui/components/Input';
@@ -8,7 +10,7 @@ import { SummationBaseOptions } from './_private/base-options/SummationBaseOptio
 import { ConfigHabitModalActions } from './_private/utils/ConfigHabitModalActions';
 import { HistoryWidget } from './_private/widgets/HistoryWidget';
 import { StreakTrackingWidget } from './_private/widgets/StreakTrackingWidget';
-import { isHabitDraftDirty, parseOptionLines } from '~/utils/configHabitDraft';
+import { HABIT_REPEAT_DAYS, isHabitDraftDirty, parseOptionLines } from '~/utils/configHabitDraft';
 
 type ConfigModalRendererProps = {
   habit: UserConfigJsonHabit;
@@ -18,6 +20,25 @@ type ConfigModalRendererProps = {
   onRemoveClick: (habitName: string) => void | Promise<void>;
   onCancel: () => void;
 };
+
+const REPEAT_DAY_LABELS: Record<(typeof HABIT_REPEAT_DAYS)[number], string> = {
+  monday: 'Monday',
+  tuesday: 'Tuesday',
+  wednesday: 'Wednesday',
+  thursday: 'Thursday',
+  friday: 'Friday',
+  saturday: 'Saturday',
+  sunday: 'Sunday',
+};
+
+function repeatLabel(repeat: string[]): string {
+  if (repeat.length === HABIT_REPEAT_DAYS.length) return 'everyday';
+  return (
+    HABIT_REPEAT_DAYS.filter((day) => repeat.includes(day))
+      .map((day) => REPEAT_DAY_LABELS[day].slice(0, 3))
+      .join(', ') || 'No days'
+  );
+}
 
 export function ConfigModalRenderer({
   habit,
@@ -68,6 +89,51 @@ export function ConfigModalRenderer({
     }
   };
 
+  const repeatControl = (
+    <Dropdown>
+      <Dropdown.Trigger asChild>
+        <TriggerPill size="small" className="config-habit-modal__repeat-trigger">
+          {repeatLabel(draft.repeat)}
+        </TriggerPill>
+      </Dropdown.Trigger>
+      <Dropdown.Content className="config-habit-modal__repeat-dropdown">
+        <div className="config-habit-modal__repeat-options">
+          {HABIT_REPEAT_DAYS.map((day) => (
+            <label key={day} className="config-habit-modal__repeat-option text-b-s">
+              <input
+                className="config-habit-modal__checkbox"
+                type="checkbox"
+                checked={draft.repeat.includes(day)}
+                onChange={(event) => {
+                  if (event.target.checked) {
+                    patch({
+                      repeat: HABIT_REPEAT_DAYS.filter(
+                        (candidate) => candidate === day || draft.repeat.includes(candidate),
+                      ),
+                    });
+                    return;
+                  }
+                  if (draft.repeat.length <= 1) return;
+                  patch({ repeat: draft.repeat.filter((repeatDay) => repeatDay !== day) });
+                }}
+              />
+              {REPEAT_DAY_LABELS[day]}
+            </label>
+          ))}
+        </div>
+      </Dropdown.Content>
+    </Dropdown>
+  );
+
+  const repeatField = (
+    <div className="config-habit-modal__field">
+      <div className="config-habit-modal__label">
+        <label className="text-b-m">Repeat</label>
+      </div>
+      <div className="config-habit-modal__control">{repeatControl}</div>
+    </div>
+  );
+
   let fields;
   switch (habit.type) {
     case 'single_select':
@@ -79,6 +145,8 @@ export function ConfigModalRenderer({
             patch={patch}
             streakOptions={streakOptions}
           />
+
+          {repeatField}
 
           <div className="config-habit-modal__widgets">
             <StreakTrackingWidget
@@ -95,7 +163,7 @@ export function ConfigModalRenderer({
     case 'summation':
       fields = (
         <>
-          <SummationBaseOptions draft={draft} patch={patch} />
+          <SummationBaseOptions draft={draft} patch={patch} repeatControl={repeatControl} />
 
           <div className="config-habit-modal__widgets">
             <StreakTrackingWidget type="summation" draft={draft} patch={patch} />

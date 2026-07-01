@@ -64,7 +64,7 @@
 .config-habit-modal__stacked-field {
   display: flex;
   flex-flow: column nowrap;
-  gap: functions.spacing(1);
+  gap: functions.spacing(2);
   min-width: 0;
 }
 
@@ -104,6 +104,35 @@
   align-items: center;
   gap: functions.spacing(1);
   min-width: 0;
+}
+
+.config-habit-modal__repeat-trigger {
+  align-self: flex-start;
+}
+
+.config-habit-modal__repeat-dropdown {
+  padding: functions.spacing(1);
+}
+
+.config-habit-modal__repeat-options {
+  display: flex;
+  flex-flow: column nowrap;
+  gap: functions.spacing(1);
+  min-inline-size: 9rem;
+}
+
+.config-habit-modal__repeat-option {
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: center;
+  gap: functions.spacing(1);
+  padding: functions.spacing(1, 2);
+  border-radius: var(--border-radius-s);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--background-secondary);
+  }
 }
 
 .config-habit-modal__select {

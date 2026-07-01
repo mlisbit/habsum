@@ -23,6 +23,7 @@ import { dasherize } from '@habsum/utils/strings';
 import { isForbiddenUsername } from '../forbidden-usernames.js';
 import {
   deleteUserConfigFile,
+  HABIT_REPEAT_DAYS,
   listUsers,
   loadUserConfig,
   readUserConfigFileText,
@@ -111,6 +112,15 @@ type ClassifiedConfigMigrations = {
 };
 
 type ConfigDeletion = { habit: string; option: string };
+
+function repeatDayForDateKey(date: string): string {
+  const dayIndex = new Date(`${date}T00:00:00.000Z`).getUTCDay();
+  return HABIT_REPEAT_DAYS[dayIndex === 0 ? 6 : dayIndex - 1];
+}
+
+function habitRepeatsOnDate(habit: HabitDef, date: string): boolean {
+  return habit.repeat.includes(repeatDayForDateKey(date));
+}
 
 function csvCell(value: string | number | null | undefined): string {
   if (value == null) return '';
@@ -623,17 +633,17 @@ userScopedRouter.get(
       const habitsForDay = new Map(habits.map((habit) => [habit.name, habit]));
       habitsByDate.set(
         day,
-        habitDefs.map(
-          (habitDef) => habitsForDay.get(habitDef.name) ?? emptyHabitForHistory(habitDef),
-        ),
+        habitDefs
+          .filter((habitDef) => habitRepeatsOnDate(habitDef, day))
+          .map((habitDef) => habitsForDay.get(habitDef.name) ?? emptyHabitForHistory(habitDef)),
       );
     }
 
     const inspectDayHabits = habitsByDate.get(inspectDate);
     const inspectMap = inspectDayHabits ? new Map(inspectDayHabits.map((h) => [h.name, h])) : null;
-    const data: Habit[] = habitDefs.map(
-      (habitDef) => inspectMap?.get(habitDef.name) ?? emptyHabitForHistory(habitDef),
-    );
+    const data: Habit[] = habitDefs
+      .filter((habitDef) => habitRepeatsOnDate(habitDef, inspectDate))
+      .map((habitDef) => inspectMap?.get(habitDef.name) ?? emptyHabitForHistory(habitDef));
 
     const body: HistoryGetResponse = {
       user,
@@ -670,10 +680,49 @@ userScopedRouter.get(
     const date = resolveHabitApiDateQuery(req.query.date, at);
     const tzOffsetMinutes = parseTzOffsetMinutes(req.query.tzOffsetMinutes);
 
-    const habits = config.habits.map((h) => {
-      if (h.type === 'single_select') {
+    const habits = config.habits
+      .filter((h) => habitRepeatsOnDate(h, date))
+      .map((h) => {
+        if (h.type === 'single_select') {
+          const streak = h.streak
+            ? streakGraphForConfiguredWindow(
+                user,
+                h.name,
+                date,
+                h.streak.options,
+                at,
+                tzOffsetMinutes,
+                h.streak.frequency,
+                h.streak.show_longest === true,
+                firstDate,
+              )
+            : null;
+          const widgets = habitWidgets([streak ? streakWidget(streak) : null]);
+          return {
+            name: h.name,
+            goal: h.goal,
+            type: 'single_select' as const,
+            options: h.options ?? [],
+            ...(h.theme ? { theme: h.theme } : {}),
+            value: getSelect(user, h.name, date),
+            ...(widgets.length > 0 ? { widgets } : {}),
+          } satisfies Habit;
+        }
+        const total = getSummationDayTotal(user, h.name, date);
+        const history = h.history
+          ? habitHistoryForConfiguredPeriod(
+              user,
+              h.name,
+              date,
+              firstDate,
+              h.history.period,
+              h.goal,
+              at,
+              tzOffsetMinutes,
+            )
+          : null;
         const streak = h.streak
-          ? streakGraphForConfiguredWindow(
+          ? summationStreakGraphForConfiguredWindow(
               user,
               h.name,
               date,
@@ -685,60 +734,23 @@ userScopedRouter.get(
               firstDate,
             )
           : null;
-        const widgets = habitWidgets([streak ? streakWidget(streak) : null]);
-        return {
+        const widgets = habitWidgets([
+          progressWidget(total, h.goal),
+          history ? historyWidget(history, h.goal, config.includeAbsentDaysInAverage) : null,
+          streak ? streakWidget(streak) : null,
+        ]);
+        const base = {
           name: h.name,
           goal: h.goal,
-          type: 'single_select' as const,
-          options: h.options ?? [],
-          ...(h.theme ? { theme: h.theme } : {}),
-          value: getSelect(user, h.name, date),
+        };
+        return {
+          ...base,
+          type: 'summation' as const,
+          total,
+          ...(h.summationOptions ? { summationOptions: h.summationOptions } : {}),
           ...(widgets.length > 0 ? { widgets } : {}),
         } satisfies Habit;
-      }
-      const total = getSummationDayTotal(user, h.name, date);
-      const history = h.history
-        ? habitHistoryForConfiguredPeriod(
-            user,
-            h.name,
-            date,
-            firstDate,
-            h.history.period,
-            h.goal,
-            at,
-            tzOffsetMinutes,
-          )
-        : null;
-      const streak = h.streak
-        ? summationStreakGraphForConfiguredWindow(
-            user,
-            h.name,
-            date,
-            h.streak.options,
-            at,
-            tzOffsetMinutes,
-            h.streak.frequency,
-            h.streak.show_longest === true,
-            firstDate,
-          )
-        : null;
-      const widgets = habitWidgets([
-        progressWidget(total, h.goal),
-        history ? historyWidget(history, h.goal, config.includeAbsentDaysInAverage) : null,
-        streak ? streakWidget(streak) : null,
-      ]);
-      const base = {
-        name: h.name,
-        goal: h.goal,
-      };
-      return {
-        ...base,
-        type: 'summation' as const,
-        total,
-        ...(h.summationOptions ? { summationOptions: h.summationOptions } : {}),
-        ...(widgets.length > 0 ? { widgets } : {}),
-      } satisfies Habit;
-    });
+      });
     const body: HabitsResponse = {
       user,
       date,

@@ -1,6 +1,7 @@
 import {
   ArrowUp,
   Check,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Circle,
@@ -34,6 +35,7 @@ import {
 /** Named icons usable with {@link Icon} (shared lucide mappings). */
 const ICON_COMPONENTS = {
   gear: Settings,
+  chevronDown: ChevronDown,
   chevronLeft: ChevronLeft,
   chevronRight: ChevronRight,
   /** Same glyph as `chevronLeft`, for semantics (e.g. “back”). */

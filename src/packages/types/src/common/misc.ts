@@ -70,6 +70,7 @@ export type UserConfigJsonHabit = {
   name: string;
   type: 'summation' | 'single_select';
   goal: number | null;
+  repeat?: string[];
   options?: string[];
   theme?: string;
   summationOptions?: SummationOptions;
@@ -112,6 +113,7 @@ export type ConfigHabitDraft = {
   name: string;
   type: 'summation' | 'single_select';
   goal: string;
+  repeat: string[];
   quickAddItems: string[];
   optionsText: string;
   theme: string;

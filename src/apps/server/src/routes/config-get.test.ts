@@ -20,6 +20,7 @@ describe('GET /users/:user/config', () => {
       `habits:
   mood:
     type: single_select
+    repeat: [monday, wednesday]
     options: [good, okay, bad]
   push ups:
     type: summation
@@ -38,8 +39,17 @@ describe('GET /users/:user/config', () => {
       user,
       includeAbsentDaysInAverage: false,
       habits: [
-        { name: 'mood', type: 'single_select', options: ['good', 'okay', 'bad'] },
-        { name: 'push ups', type: 'summation' },
+        {
+          name: 'mood',
+          type: 'single_select',
+          repeat: ['monday', 'wednesday'],
+          options: ['good', 'okay', 'bad'],
+        },
+        {
+          name: 'push ups',
+          type: 'summation',
+          repeat: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
+        },
       ],
     });
     expect(res.body.habits).toBeUndefined();
@@ -66,7 +76,9 @@ habits:
         config: {
           user,
           includeAbsentDaysInAverage: true,
-          habits: [{ name: 'pages', type: 'summation', goal: null }],
+          habits: [
+            { name: 'pages', type: 'summation', goal: null, repeat: ['tuesday', 'thursday'] },
+          ],
         },
       })
       .expect(200);
@@ -78,5 +90,6 @@ habits:
 
     expect(res.body.config.includeAbsentDaysInAverage).toBe(true);
     expect(res.body.text).toContain('include_absent_days_in_average: true');
+    expect(res.body.text).toContain('repeat: [tuesday, thursday]');
   });
 });

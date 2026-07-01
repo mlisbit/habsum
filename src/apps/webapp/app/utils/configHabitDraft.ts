@@ -13,6 +13,15 @@ import type {
 const DEFAULT_HISTORY_PERIOD_AMOUNT = '1';
 const DEFAULT_HISTORY_PERIOD_UNIT: HistoryPeriodUnit = 'w';
 const DEFAULT_NEW_HABIT_NAME = 'New habit';
+export const HABIT_REPEAT_DAYS = [
+  'monday',
+  'tuesday',
+  'wednesday',
+  'thursday',
+  'friday',
+  'saturday',
+  'sunday',
+] as const;
 
 function quickAddItemsEqual(a: string[], b: string[]): boolean {
   if (a.length !== b.length) return false;
@@ -24,6 +33,7 @@ export function isHabitDraftDirty(initial: ConfigHabitDraft, draft: ConfigHabitD
     initial.name !== draft.name ||
     initial.type !== draft.type ||
     initial.goal !== draft.goal ||
+    !quickAddItemsEqual(initial.repeat, draft.repeat) ||
     !quickAddItemsEqual(initial.quickAddItems, draft.quickAddItems) ||
     initial.optionsText !== draft.optionsText ||
     initial.theme !== draft.theme ||
@@ -86,6 +96,12 @@ function formatHistoryPeriod(amount: string, unit: HistoryPeriodUnit): string {
   return `${n}${unit}`;
 }
 
+function normalizeDraftRepeat(repeat: string[]): string[] {
+  const normalized = HABIT_REPEAT_DAYS.filter((day) => repeat.includes(day));
+  if (normalized.length === 0) throw new Error('repeat must include at least one day');
+  return normalized;
+}
+
 export function draftFromHabit(habit: UserConfigJsonHabit): ConfigHabitDraft {
   const historyPeriod = parseHistoryPeriod(
     habit.history?.period ?? `${DEFAULT_HISTORY_PERIOD_AMOUNT}${DEFAULT_HISTORY_PERIOD_UNIT}`,
@@ -95,6 +111,10 @@ export function draftFromHabit(habit: UserConfigJsonHabit): ConfigHabitDraft {
     name: habit.name,
     type: habit.type,
     goal: habit.goal == null ? '' : String(habit.goal),
+    repeat:
+      habit.repeat == null
+        ? [...HABIT_REPEAT_DAYS]
+        : HABIT_REPEAT_DAYS.filter((day) => habit.repeat?.includes(day)),
     quickAddItems: sortQuickAddItems(
       habit.type === 'summation'
         ? (habit.summationOptions?.increments ?? []).map((item) => String(item))
@@ -115,6 +135,7 @@ export function draftFromHabit(habit: UserConfigJsonHabit): ConfigHabitDraft {
 function draftToHabit(draft: ConfigHabitDraft): UserConfigJsonHabit {
   const name = draft.name.trim();
   if (name === '') throw new Error('habit name is required');
+  const repeat = normalizeDraftRepeat(draft.repeat);
 
   if (draft.type === 'single_select') {
     const options = parseLines(draft.optionsText);
@@ -127,6 +148,7 @@ function draftToHabit(draft: ConfigHabitDraft): UserConfigJsonHabit {
       goal: null,
       options,
     };
+    if (repeat.length < HABIT_REPEAT_DAYS.length) habit.repeat = repeat;
     if (draft.theme.trim() !== '') habit.theme = draft.theme.trim();
     if (draft.streakEnabled) {
       const allowed = new Set(options);
@@ -152,6 +174,7 @@ function draftToHabit(draft: ConfigHabitDraft): UserConfigJsonHabit {
     type: 'summation',
     goal,
   };
+  if (repeat.length < HABIT_REPEAT_DAYS.length) habit.repeat = repeat;
   if (draft.quickAddItems.length > 0) {
     habit.summationOptions = {
       manualInput: true,

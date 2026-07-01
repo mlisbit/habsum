@@ -112,6 +112,9 @@ function formatSummationOptionsInline(raw: unknown): string | null {
 function habitToYamlDef(habit: UserConfigJsonHabit): Record<string, unknown> {
   const def: Record<string, unknown> = { type: habit.type };
   if (habit.goal != null) def.goal = habit.goal;
+  if (habit.repeat != null && habit.repeat.length > 0 && habit.repeat.length < 7) {
+    def.repeat = habit.repeat;
+  }
   if (habit.type === 'single_select') {
     def.options = habit.options ?? [];
     if (habit.theme != null && habit.theme.trim() !== '') def.theme = habit.theme;
@@ -139,6 +142,11 @@ function dumpHabitDef(def: Record<string, unknown>): string {
         lines.push(`summation_options: ${inline}`);
         continue;
       }
+    }
+
+    if (key === 'repeat' && Array.isArray(value) && value.every((x) => typeof x === 'string')) {
+      lines.push(`repeat: ${formatStringListInline(value)}`);
+      continue;
     }
 
     lines.push(yaml.dump({ [key]: value }, YAML_DUMP_OPTS).trimEnd());
