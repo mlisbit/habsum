@@ -9,7 +9,7 @@ import type {
   UserConfigPutResponse,
   UserSessionResponse,
 } from '@habsum/types/common/misc';
-import type { HabitsResponse } from '@habsum/types/api-responses/habits-get';
+import type { HabitsPageProgress, HabitsResponse } from '@habsum/types/api-responses/habits-get';
 import type { PatchHabitResponse } from '@habsum/types/api-responses/habit-patch';
 import type { HistoryGetResponse } from '@habsum/types/api-responses/history-get';
 import type { UserPasswordChangeRequest } from '@habsum/types/api-responses/user-password-change';
@@ -20,6 +20,8 @@ import type {
 } from '@habsum/types/api-responses/security-delete';
 import type { UsersPatchRequest } from '@habsum/types/api-responses/users-patch';
 import { dasherize } from '@habsum/utils/strings';
+import { fromDateKey } from '@habsum/utils/date';
+import { getProgress } from '@habsum/utils/habit-helpers';
 import { isForbiddenUsername } from '../forbidden-usernames.js';
 import {
   deleteUserConfigFile,
@@ -100,6 +102,7 @@ import { appendSessionCookie, sessionTtlSeconds } from '../session-cookie.js';
 import { mapSummationEventsToApi } from '../summation-event-api.js';
 import {
   parseClientCreatedAtIso,
+  habitApiTodayKey,
   parseTzOffsetMinutes,
   resolveHabitApiDateQuery,
 } from '../server-time.js';
@@ -120,6 +123,146 @@ function repeatDayForDateKey(date: string): string {
 
 function habitRepeatsOnDate(habit: HabitDef, date: string): boolean {
   return habit.repeat.includes(repeatDayForDateKey(date));
+}
+
+function familiarNameForUser(user: string): string {
+  const displayName = getUserProfile(user).displayName?.trim();
+  if (!displayName) return user;
+  return displayName.split(/\s+/)[0] ?? user;
+}
+
+function habitPageHeading(user: string, at: Date, tzOffsetMinutes?: number): string {
+  const name = familiarNameForUser(user);
+  const localHour = new Date(at.getTime() - (tzOffsetMinutes ?? 0) * 60_000).getUTCHours();
+  if (localHour < 12) return `Good morning, ${name}`;
+  if (localHour < 17) return `Good afternoon, ${name}`;
+  return `Hi, ${name}`;
+}
+
+function dateKeyDiffDays(from: string, to: string, tzOffsetMinutes?: number): number {
+  const offset = tzOffsetMinutes ?? 0;
+  return Math.round(
+    (fromDateKey(to, offset).getTime() - fromDateKey(from, offset).getTime()) / 86_400_000,
+  );
+}
+
+function dateKeyAsUtcDate(date: string): Date {
+  return new Date(
+    Date.UTC(Number(date.slice(0, 4)), Number(date.slice(5, 7)) - 1, Number(date.slice(8, 10))),
+  );
+}
+
+function weekdayName(date: string): string {
+  return new Intl.DateTimeFormat('en-US', { weekday: 'long', timeZone: 'UTC' }).format(
+    dateKeyAsUtcDate(date),
+  );
+}
+
+function monthDay(date: string): string {
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'long',
+    day: 'numeric',
+    timeZone: 'UTC',
+  }).format(dateKeyAsUtcDate(date));
+}
+
+function exactDate(date: string): string {
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+    timeZone: 'UTC',
+  }).format(dateKeyAsUtcDate(date));
+}
+
+function habitPageDateHeading(date: string, today: string, tzOffsetMinutes?: number): string {
+  const daysAgo = dateKeyDiffDays(date, today, tzOffsetMinutes);
+  if (daysAgo === 1) return 'Your day yesterday';
+  if (daysAgo > 1 && daysAgo <= 7) return `This past ${weekdayName(date)}`;
+  return monthDay(date);
+}
+
+function habitPageSubheaderTemplate(date: string, at: Date, tzOffsetMinutes?: number): string {
+  const endOfDay =
+    Date.UTC(
+      Number(date.slice(0, 4)),
+      Number(date.slice(5, 7)) - 1,
+      Number(date.slice(8, 10)) + 1,
+    ) +
+    (tzOffsetMinutes ?? 0) * 60_000 -
+    1;
+
+  return at.getTime() > endOfDay ? 'This day has ended' : '{{timeLeftInDay}} until end of day';
+}
+
+function habitPageProgress(habits: readonly Habit[]): HabitsPageProgress {
+  const progress = getProgress(habits);
+  const { done, total } = progress.total;
+  const percent = total > 0 && Number.isFinite(done) ? Math.round((done / total) * 100) : null;
+
+  if (total <= 0) {
+    return {
+      percent,
+      caption: 'No habits for this day',
+      isComplete: false,
+      ariaLabel: 'Day progress — no habits for this day',
+    };
+  }
+
+  const isComplete = percent === 100;
+  if (isComplete) {
+    return {
+      percent,
+      caption: 'Completed all goals!',
+      isComplete,
+      ariaLabel: `${percent}% weighted average habit completion for the day`,
+    };
+  }
+
+  const parts: string[] = [];
+  const { goals, other } = progress;
+  const othersFullyLogged = other.total > 0 && other.done === other.total;
+
+  if (goals.total > 0) {
+    const completedPct = Math.round((goals.done / goals.total) * 100);
+    parts.push(`${completedPct}% of goals completed`);
+  }
+
+  if (other.total > 0 && !othersFullyLogged) {
+    const remaining = other.total - other.done;
+    parts.push(`${remaining} other habit${remaining === 1 ? '' : 's'} remaining`);
+  }
+
+  return {
+    percent,
+    caption: parts.length > 0 ? parts.join(' · ') : null,
+    isComplete,
+    ariaLabel: `${percent}% weighted average habit completion for the day`,
+  };
+}
+
+function habitPageCopy(
+  user: string,
+  date: string,
+  at: Date,
+  habits: readonly Habit[],
+  tzOffsetMinutes?: number,
+) {
+  const progress = habitPageProgress(habits);
+  const today = habitApiTodayKey(at, tzOffsetMinutes);
+  if (date !== today) {
+    return {
+      heading: habitPageDateHeading(date, today, tzOffsetMinutes),
+      subheader: exactDate(date),
+      progress,
+    };
+  }
+
+  return {
+    heading: habitPageHeading(user, at, tzOffsetMinutes),
+    subheader: habitPageSubheaderTemplate(date, at, tzOffsetMinutes),
+    progress,
+  };
 }
 
 function csvCell(value: string | number | null | undefined): string {
@@ -755,6 +898,7 @@ userScopedRouter.get(
       user,
       date,
       firstDate,
+      page: habitPageCopy(user, date, at, habits, tzOffsetMinutes),
       habits,
       serverTime: at.toISOString(),
     };

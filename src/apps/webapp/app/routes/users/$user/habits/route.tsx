@@ -2,7 +2,7 @@ import { Link, useNavigate } from '@remix-run/react';
 import type { MetaFunction } from '@remix-run/node';
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { dayFromString } from '@habsum/types/common/day';
-import { getHabits, logout, patchHabit, type Habit } from '~/api.client';
+import { getHabits, logout, patchHabit, type Habit, type HabitsResponse } from '~/api.client';
 import { Footer } from '~/components/Footer';
 import { TopNav } from '~/components/TopNav';
 import HabitRenderer from '@habsum/habit-render';
@@ -12,7 +12,6 @@ import { useUser } from '~/context/user';
 import { ensureUserSessionForRoute } from '~/utils/user-session-guard';
 import { awaitOucPopupBootstrap, getOucSessionToken } from '~/ouc.client';
 import { useTodayDateKey } from '~/utils/use-today-date-key';
-import { getProgress } from '~/utils/habit-helpers';
 import { getMediaQuerySnapshot, subscribeToMediaQuery } from '~/utils/media-query-store';
 import { userPageTitle } from '~/utils/page-title';
 
@@ -26,7 +25,13 @@ function useWideHabitsLayout(): boolean {
   );
 }
 
-type HabitsState = { user: string; habits: Habit[] };
+type HabitsState = { user: string; page: HabitsResponse['page']; habits: Habit[] };
+const EMPTY_PAGE_PROGRESS: HabitsResponse['page']['progress'] = {
+  percent: null,
+  caption: 'No habits for this day',
+  isComplete: false,
+  ariaLabel: 'Day progress — no habits for this day',
+};
 
 function toListHabit(habit: Habit): Habit {
   if (habit.type === 'single_select') return habit;
@@ -122,7 +127,7 @@ export default function HabitsPage() {
     getHabits(user, effectiveDate)
       .then((r) => {
         setFirstDate(r.firstDate);
-        setState({ user: r.user, habits: r.habits });
+        setState({ user: r.user, page: r.page, habits: r.habits });
 
         // Keep URL clean: don't include ?date= when it's today.
         const qs = new URLSearchParams(window.location.search);
@@ -151,6 +156,12 @@ export default function HabitsPage() {
     setUrlDate(next === today ? null : next);
   };
 
+  const refreshHabits = async () => {
+    const refreshed = await getHabits(user, effectiveDate);
+    setFirstDate(refreshed.firstDate);
+    setState({ user: refreshed.user, page: refreshed.page, habits: refreshed.habits });
+  };
+
   const onHabitUpdated = (updated: Habit) => {
     setState((prev) => {
       if (!prev) return prev;
@@ -169,7 +180,6 @@ export default function HabitsPage() {
   };
 
   const wideTwoColumn = useWideHabitsLayout();
-  const dayProgress = useMemo(() => getProgress(state?.habits ?? []), [state?.habits]);
 
   function renderHabit(h: Habit) {
     return (
@@ -187,6 +197,7 @@ export default function HabitsPage() {
         onUpdate={async (patch) => {
           const updated = await patchHabit(state!.user, patch, { date: effectiveDate });
           onHabitUpdated({ ...h, ...updated } as Habit);
+          await refreshHabits();
         }}
       />
     );
@@ -195,8 +206,8 @@ export default function HabitsPage() {
   return (
     <div className="habits-page">
       <TopNav
-        username={user}
-        displayName={me.username === user ? me.displayName : null}
+        heading={state?.page.heading ?? ''}
+        subheader={state?.page.subheader ?? ''}
         effectiveDate={effectiveDate}
         tzOffsetMinutes={tzOffsetMinutes}
         firstDate={firstDate}
@@ -205,7 +216,7 @@ export default function HabitsPage() {
           void logout().then(() => window.location.assign('/login'));
         }}
         onSettings={() => navigate(`/users/${encodeURIComponent(user)}/settings/account`)}
-        progress={dayProgress}
+        progress={state?.page.progress ?? EMPTY_PAGE_PROGRESS}
       />
 
       {error ? (

@@ -1,8 +1,8 @@
 import request from 'supertest';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../app.js';
 import { createUserFromSampleConfig, writeUserConfigFileText } from '../config.js';
-import { createUserSession, ensureUserPins, setTotal } from '../db.js';
+import { createUserSession, ensureUserPins, patchUserProfile, setTotal } from '../db.js';
 import { SESSION_COOKIE_NAME } from '../session-cookie.js';
 
 function writeUserConfig(user: string, text: string) {
@@ -13,6 +13,101 @@ function writeUserConfig(user: string, text: string) {
 }
 
 describe('GET /users/:user/habits repeat config', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('returns server-owned page copy with a familiar display name and dynamic subheader token', async () => {
+    const user = 'habits-page-copy-user';
+    writeUserConfig(
+      user,
+      `habits:
+  every day:
+    type: summation
+  daily goal:
+    type: summation
+    goal: 10
+`,
+    );
+    patchUserProfile(user, { displayName: 'Alex Morgan' });
+    ensureUserPins([user]);
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2999-07-01T09:00:00.000Z'));
+    const session = createUserSession(user, 24 * 3600);
+
+    const morning = await request(createApp())
+      .get(`/users/${user}/habits?date=2999-07-01&tzOffsetMinutes=0`)
+      .set('Cookie', `${SESSION_COOKIE_NAME}=${session}`)
+      .expect(200);
+
+    expect(morning.body.page).toMatchObject({
+      heading: 'Good morning, Alex',
+      subheader: '{{timeLeftInDay}} until end of day',
+      progress: {
+        percent: 0,
+        caption: '0% of goals completed · 1 other habit remaining',
+        isComplete: false,
+        ariaLabel: '0% weighted average habit completion for the day',
+      },
+    });
+
+    vi.setSystemTime(new Date('2999-07-01T13:00:00.000Z'));
+    const afternoon = await request(createApp())
+      .get(`/users/${user}/habits?date=2999-07-01&tzOffsetMinutes=0`)
+      .set('Cookie', `${SESSION_COOKIE_NAME}=${session}`)
+      .expect(200);
+
+    expect(afternoon.body.page.heading).toBe('Good afternoon, Alex');
+
+    vi.setSystemTime(new Date('2999-07-01T17:00:00.000Z'));
+    const evening = await request(createApp())
+      .get(`/users/${user}/habits?date=2999-07-01&tzOffsetMinutes=0`)
+      .set('Cookie', `${SESSION_COOKIE_NAME}=${session}`)
+      .expect(200);
+
+    expect(evening.body.page.heading).toBe('Hi, Alex');
+
+    const yesterday = await request(createApp())
+      .get(`/users/${user}/habits?date=2999-06-30&tzOffsetMinutes=0`)
+      .set('Cookie', `${SESSION_COOKIE_NAME}=${session}`)
+      .expect(200);
+
+    expect(yesterday.body.page).toMatchObject({
+      heading: 'Your day yesterday',
+      subheader: 'June 30, 2999',
+    });
+
+    const withinPastWeek = await request(createApp())
+      .get(`/users/${user}/habits?date=2999-06-27&tzOffsetMinutes=0`)
+      .set('Cookie', `${SESSION_COOKIE_NAME}=${session}`)
+      .expect(200);
+
+    expect(withinPastWeek.body.page).toMatchObject({
+      heading: 'This past Thursday',
+      subheader: 'June 27, 2999',
+    });
+
+    const older = await request(createApp())
+      .get(`/users/${user}/habits?date=2999-06-22&tzOffsetMinutes=0`)
+      .set('Cookie', `${SESSION_COOKIE_NAME}=${session}`)
+      .expect(200);
+
+    expect(older.body.page).toMatchObject({
+      heading: 'June 22',
+      subheader: 'June 22, 2999',
+    });
+
+    const past = await request(createApp())
+      .get(`/users/${user}/habits?date=2000-01-01&tzOffsetMinutes=0`)
+      .set('Cookie', `${SESSION_COOKIE_NAME}=${session}`)
+      .expect(200);
+
+    expect(past.body.page).toMatchObject({
+      heading: 'January 1',
+      subheader: 'January 1, 2000',
+    });
+  });
+
   it('only returns habits configured for the requested weekday', async () => {
     const user = 'habits-repeat-user';
     writeUserConfig(
