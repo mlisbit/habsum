@@ -254,7 +254,7 @@ function habitPageCopy(
   if (isNewUser) {
     return {
       heading: 'Welcome to Habsum',
-      subheader: habitPageSubheaderTemplate(date, at, tzOffsetMinutes),
+      subheader: '',
       progress,
       showEmptyIntro,
     };

@@ -44,6 +44,17 @@ type ReorderSession = {
   lockedLeft: number;
 };
 
+type ActiveConfigModal =
+  | {
+      kind: 'habit';
+      habitId: string;
+      dispose: () => void;
+    }
+  | {
+      kind: 'add';
+      dispose: () => void;
+    };
+
 function reorderToInsertIndex(order: string[], fromIndex: number, insertIndex: number): string[] {
   if (fromIndex < 0 || fromIndex >= order.length) return order;
   const clampedInsert = Math.max(0, Math.min(insertIndex, order.length));
@@ -101,61 +112,48 @@ export function ConfigGuiEditor({
   const configRef = useRef(config);
   const onConfigChangeRef = useRef(onConfigChange);
   const pendingNewHabitRef = useRef<string | null>(null);
-  const pendingDeepLinkHabitIdRef = useRef<string | null | undefined>(undefined);
-  const pendingShowAddModalRef = useRef<boolean | undefined>(undefined);
+  const activeConfigModalRef = useRef<ActiveConfigModal | null>(null);
+  const pendingConfigModalSearchRef = useRef<string | null>(null);
 
   locationRef.current = location;
   configRef.current = config;
   onConfigChangeRef.current = onConfigChange;
 
-  if (pendingDeepLinkHabitIdRef.current === undefined) {
-    pendingDeepLinkHabitIdRef.current = readConfigEditHabitId(location.search);
-  }
-
-  if (pendingShowAddModalRef.current === undefined) {
-    pendingShowAddModalRef.current = readShowAddModal(location.search);
-  }
-
   const syncConfigSearch = useCallback(
-    (search: string): Promise<void> => {
+    (search: string, options?: { replace?: boolean }): Promise<void> => {
       const { pathname } = locationRef.current;
       if (pathname === locationRef.current.pathname && search === locationRef.current.search) {
         return Promise.resolve();
       }
-      navigate({ pathname, search }, { replace: true });
+      navigate({ pathname, search }, { replace: options?.replace ?? true });
       return Promise.resolve();
     },
     [navigate],
   );
 
   const syncHabitQueryParam = useCallback(
-    (habitId: string | null): Promise<void> => {
+    (habitId: string | null, options?: { replace?: boolean }): Promise<void> => {
       const { search } = locationRef.current;
       let next = withConfigEditHabitId(search, habitId);
       if (habitId) next = withShowAddModal(next, false);
-      return syncConfigSearch(next);
+      return syncConfigSearch(next, options);
     },
     [syncConfigSearch],
   );
 
   const syncShowAddModalQueryParam = useCallback(
-    (show: boolean): Promise<void> => {
+    (show: boolean, options?: { replace?: boolean }): Promise<void> => {
       const { search } = locationRef.current;
       let next = withShowAddModal(search, show);
       if (show) next = withConfigEditHabitId(next, null);
-      return syncConfigSearch(next);
+      return syncConfigSearch(next, options);
     },
     [syncConfigSearch],
   );
 
-  const closeHabitModal = useCallback(() => {
-    closeModal();
-  }, [closeModal]);
-
-  const onHabitModalRequestClose = useCallback(() => {
+  const cleanupPendingNewHabit = useCallback(() => {
     const pendingNewHabit = pendingNewHabitRef.current;
     pendingNewHabitRef.current = null;
-    void syncHabitQueryParam(null);
     if (!pendingNewHabit || configRef.current == null) return;
     try {
       const next = removeHabitFromConfig(configRef.current, pendingNewHabit);
@@ -164,7 +162,27 @@ export function ConfigGuiEditor({
     } catch (e) {
       showToast({ type: 'error', message: e instanceof Error ? e.message : String(e) });
     }
-  }, [showToast, syncHabitQueryParam]);
+  }, [showToast]);
+
+  const disposeActiveConfigModal = useCallback(
+    (cleanupNewHabit: boolean) => {
+      const activeConfigModal = activeConfigModalRef.current;
+      activeConfigModalRef.current = null;
+      activeConfigModal?.dispose();
+      if (cleanupNewHabit) cleanupPendingNewHabit();
+    },
+    [cleanupPendingNewHabit],
+  );
+
+  const closeHabitModal = useCallback(() => {
+    closeModal();
+  }, [closeModal]);
+
+  const onHabitModalRequestClose = useCallback(() => {
+    void syncHabitQueryParam(null);
+    activeConfigModalRef.current = null;
+    cleanupPendingNewHabit();
+  }, [cleanupPendingNewHabit, syncHabitQueryParam]);
 
   const cancelHabitModal = closeHabitModal;
 
@@ -210,8 +228,8 @@ export function ConfigGuiEditor({
     [closeModal, showToast, syncHabitQueryParam],
   );
 
-  const openHabitModal = useCallback(
-    async (habit: UserConfigJsonHabit, options?: { isNew?: boolean; config?: UserConfigJson }) => {
+  const presentHabitModal = useCallback(
+    (habit: UserConfigJsonHabit, options?: { isNew?: boolean; config?: UserConfigJson }) => {
       const modalConfig = options?.config ?? configRef.current;
       let habitModel: UserConfigJsonHabit | undefined;
       try {
@@ -222,6 +240,7 @@ export function ConfigGuiEditor({
         return;
       }
       const draft = draftFromHabit(habitModel);
+      const habitId = configEditHabitQueryValue(habitModel.name);
       const content = (
         <ConfigModalRenderer
           habit={habitModel}
@@ -232,22 +251,38 @@ export function ConfigGuiEditor({
           onCancel={cancelHabitModal}
         />
       );
-      void syncHabitQueryParam(configEditHabitQueryValue(habit.name));
-      present({
+      disposeActiveConfigModal(false);
+      const dispose = present({
         size: 'xl',
         content,
         onRequestClose: onHabitModalRequestClose,
+        history: false,
       });
+      activeConfigModalRef.current = { kind: 'habit', habitId, dispose };
     },
     [
       cancelHabitModal,
       applyHabitDraft,
+      disposeActiveConfigModal,
       handleRemoveClick,
       onHabitModalRequestClose,
       present,
       showToast,
-      syncHabitQueryParam,
     ],
+  );
+
+  const openHabitModal = useCallback(
+    async (habit: UserConfigJsonHabit, options?: { isNew?: boolean; config?: UserConfigJson }) => {
+      let nextSearch = withConfigEditHabitId(
+        locationRef.current.search,
+        configEditHabitQueryValue(habit.name),
+      );
+      nextSearch = withShowAddModal(nextSearch, false);
+      pendingConfigModalSearchRef.current = nextSearch;
+      void syncConfigSearch(nextSearch, { replace: false });
+      presentHabitModal(habit, options);
+    },
+    [presentHabitModal, syncConfigSearch],
   );
 
   const addHabitWithType = useCallback(
@@ -278,16 +313,27 @@ export function ConfigGuiEditor({
 
   const onAddModalRequestClose = useCallback(() => {
     void syncShowAddModalQueryParam(false);
+    activeConfigModalRef.current = null;
   }, [syncShowAddModalQueryParam]);
 
-  const openAddModal = useCallback(() => {
-    void syncShowAddModalQueryParam(true);
-    present({
+  const presentAddModal = useCallback(() => {
+    disposeActiveConfigModal(false);
+    const dispose = present({
       size: 'xl',
       content: <ConfigHabitTypePickerModal onSelect={addHabitWithType} />,
       onRequestClose: onAddModalRequestClose,
+      history: false,
     });
-  }, [addHabitWithType, onAddModalRequestClose, present, syncShowAddModalQueryParam]);
+    activeConfigModalRef.current = { kind: 'add', dispose };
+  }, [addHabitWithType, disposeActiveConfigModal, onAddModalRequestClose, present]);
+
+  const openAddModal = useCallback(() => {
+    let nextSearch = withShowAddModal(locationRef.current.search, true);
+    nextSearch = withConfigEditHabitId(nextSearch, null);
+    pendingConfigModalSearchRef.current = nextSearch;
+    void syncConfigSearch(nextSearch, { replace: false });
+    presentAddModal();
+  }, [presentAddModal, syncConfigSearch]);
 
   const addHabit = openAddModal;
 
@@ -297,31 +343,39 @@ export function ConfigGuiEditor({
   }, [addHabit, registerAddHabit]);
 
   useEffect(() => {
-    const habitId = pendingDeepLinkHabitIdRef.current;
-    if (!habitId) return;
-
-    pendingDeepLinkHabitIdRef.current = null;
-
-    const habitName = findHabitNameByConfigEditId(habits, habitId);
-    if (!habitName) return;
-
-    const habit = habits.find((h) => h.name === habitName);
-    if (!habit) return;
-
-    pendingShowAddModalRef.current = false;
-    void openHabitModal(habit);
-  }, [habits, openHabitModal]);
+    return () => {
+      const activeConfigModal = activeConfigModalRef.current;
+      disposeActiveConfigModal(activeConfigModal?.kind === 'habit');
+    };
+  }, [disposeActiveConfigModal]);
 
   useEffect(() => {
-    if (!pendingShowAddModalRef.current) return;
+    const pendingSearch = pendingConfigModalSearchRef.current;
+    if (pendingSearch) {
+      if (location.search !== pendingSearch) return;
+      pendingConfigModalSearchRef.current = null;
+    }
 
-    pendingShowAddModalRef.current = false;
-    present({
-      size: 'xl',
-      content: <ConfigHabitTypePickerModal onSelect={addHabitWithType} />,
-      onRequestClose: onAddModalRequestClose,
-    });
-  }, [addHabitWithType, onAddModalRequestClose, present]);
+    const habitId = readConfigEditHabitId(location.search);
+    if (habitId) {
+      const activeConfigModal = activeConfigModalRef.current;
+      if (activeConfigModal?.kind === 'habit' && activeConfigModal.habitId === habitId) return;
+
+      const habitName = findHabitNameByConfigEditId(habits, habitId);
+      const habit = habitName ? habits.find((h) => h.name === habitName) : null;
+      if (habit) presentHabitModal(habit);
+      return;
+    }
+
+    if (readShowAddModal(location.search)) {
+      if (activeConfigModalRef.current?.kind !== 'add') presentAddModal();
+      return;
+    }
+
+    const activeConfigModal = activeConfigModalRef.current;
+    if (!activeConfigModal) return;
+    disposeActiveConfigModal(activeConfigModal.kind === 'habit');
+  }, [disposeActiveConfigModal, habits, location.search, presentAddModal, presentHabitModal]);
 
   const habitByName = new Map(habits.map((h) => [h.name, h]));
 

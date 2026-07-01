@@ -114,7 +114,9 @@ export function TopNav({
             </Hoverable.Content>
           </Hoverable.Root>
         </div>
-        <p className="top-nav__countdown text-b-m text-light">{renderedSubheader}</p>
+        {renderedSubheader ? (
+          <p className="top-nav__countdown text-b-m text-light">{renderedSubheader}</p>
+        ) : null}
       </div>
       {!hideDayNavigation ? (
         <div className="top-nav__right">

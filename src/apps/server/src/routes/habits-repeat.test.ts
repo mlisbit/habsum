@@ -124,6 +124,7 @@ describe('GET /users/:user/habits repeat config', () => {
 
     expect(res.body.page).toMatchObject({
       heading: 'Welcome to Habsum',
+      subheader: '',
       showEmptyIntro: true,
     });
   });

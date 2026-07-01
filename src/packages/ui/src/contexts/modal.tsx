@@ -19,6 +19,7 @@ type ActiveModal = {
   content: ReactNode;
   size: ModalSize;
   onRequestClose?: () => void;
+  historyToken: string | null;
 };
 
 export type PresentModalOptions = {
@@ -26,6 +27,8 @@ export type PresentModalOptions = {
   /** Dialog width preset. Default: `medium`. */
   size?: ModalSize;
   onRequestClose?: () => void;
+  /** Default: true. Set false when the route/search params already own modal history. */
+  history?: boolean;
 };
 
 type ModalContextValue = {
@@ -150,26 +153,55 @@ export function ModalProvider({ children }: { children: ReactNode }) {
   const activeRef = useRef<ActiveModal | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const genRef = useRef(0);
+  const closeAfterHistoryPopRef = useRef<ActiveModal | null>(null);
   activeRef.current = active;
 
-  const closeModal = useCallback(() => {
+  const dismissActive = useCallback((invokeRequestClose: boolean) => {
     const prev = activeRef.current;
     if (!prev) return;
     setActive(null);
     activeRef.current = null;
-    prev.onRequestClose?.();
+    if (invokeRequestClose) prev.onRequestClose?.();
   }, []);
 
+  const closeModal = useCallback(() => {
+    const prev = activeRef.current;
+    if (!prev) return;
+    if (prev.historyToken && window.history.state?.habsumModalToken === prev.historyToken) {
+      closeAfterHistoryPopRef.current = prev;
+      window.history.back();
+      return;
+    }
+    dismissActive(true);
+  }, [dismissActive]);
+
   const present = useCallback((options: PresentModalOptions) => {
+    const current = activeRef.current;
     const generation = ++genRef.current;
+    const historyToken =
+      options.history === false
+        ? null
+        : `modal-${Date.now().toString(36)}-${generation.toString(36)}`;
     const next: ActiveModal = {
       generation,
       content: options.content,
       size: options.size ?? 'medium',
       onRequestClose: options.onRequestClose,
+      historyToken,
     };
     activeRef.current = next;
     setActive(next);
+
+    if (historyToken) {
+      const state = { ...(window.history.state ?? {}), habsumModalToken: historyToken };
+      const replacesCurrentModalHistory =
+        current?.historyToken && window.history.state?.habsumModalToken === current.historyToken;
+      if (replacesCurrentModalHistory) {
+        window.history.replaceState(state, '', window.location.href);
+      } else {
+        window.history.pushState(state, '', window.location.href);
+      }
+    }
 
     return () => {
       setActive((cur) => {
@@ -181,6 +213,23 @@ export function ModalProvider({ children }: { children: ReactNode }) {
       });
     };
   }, []);
+
+  useEffect(() => {
+    const onPopState = () => {
+      const pendingClose = closeAfterHistoryPopRef.current;
+      closeAfterHistoryPopRef.current = null;
+      if (pendingClose && activeRef.current?.generation === pendingClose.generation) {
+        dismissActive(true);
+        return;
+      }
+
+      const activeModal = activeRef.current;
+      if (activeModal?.historyToken) dismissActive(false);
+    };
+
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [dismissActive]);
 
   useEffect(() => {
     if (!active) return;
