@@ -179,7 +179,7 @@ fly ssh console --app habsum-api
 cd /app/src/apps/server && HABSUM_CONFIG_DIR=/data npm run init-admin
 ```
 
-This creates `<HABSUM_CONFIG_DIR>/users/`, seeds the admin's YAML from the sample config, and prints a generated login password.
+This creates the initial admin account with an empty habit config and prints a generated login password.
 
 ---
 

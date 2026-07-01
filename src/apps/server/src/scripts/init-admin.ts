@@ -1,6 +1,6 @@
 import { createInterface } from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
-import { ensureConfigLayout, createUserFromSampleConfig } from '../config.js';
+import { createEmptyUserConfig, ensureConfigLayout } from '../config.js';
 import { closeDb, countAdmins, createInitialAdminUser } from '../db.js';
 import { isForbiddenUsername } from '../forbidden-usernames.js';
 import { isSafeConfigUserId } from '../request-helpers.js';
@@ -47,7 +47,7 @@ async function main(): Promise<void> {
 
   const username = await promptUsername();
 
-  const configResult = createUserFromSampleConfig(username);
+  const configResult = createEmptyUserConfig(username);
   if (!configResult.ok) {
     console.error(`Failed to create user config: ${configResult.error}`);
     process.exit(1);

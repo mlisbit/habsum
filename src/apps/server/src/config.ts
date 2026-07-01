@@ -1,6 +1,5 @@
-import { readFileSync, mkdirSync } from 'node:fs';
-import { join, resolve, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { mkdirSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 import Database from 'better-sqlite3';
 import { parseSummationOptionsFromRaw, type SummationOptions } from '@habsum/types/common/habit';
 import {
@@ -17,12 +16,8 @@ if (!rawDir) {
 
 const DATA_DIR = resolve(rawDir);
 const DB_PATH = join(DATA_DIR, 'habsum.db');
-const SAMPLE_CONFIG_PATH = join(
-  dirname(fileURLToPath(import.meta.url)),
-  'utils',
-  'sample-config.yaml',
-);
 const PREVIOUS_HABIT_CONFIG_VERSIONS_TO_KEEP = 2;
+const EMPTY_USER_CONFIG_TEXT = 'habits: {}\n';
 
 mkdirSync(DATA_DIR, { recursive: true });
 const configDb = new Database(DB_PATH);
@@ -498,7 +493,7 @@ function normalizeStreakFrequency(raw: unknown, habitName: string): string {
   }
 }
 
-export function createUserFromSampleConfig(
+export function createEmptyUserConfig(
   user: string,
 ): { ok: true; user: string } | { ok: false; error: string } {
   ensureConfigLayout();
@@ -508,21 +503,7 @@ export function createUserFromSampleConfig(
     return { ok: false, error: `user "${user}" already exists` };
   }
 
-  let sample: string;
-  try {
-    sample = readFileSync(SAMPLE_CONFIG_PATH, 'utf8');
-  } catch (e) {
-    return {
-      ok: false,
-      error: e instanceof Error ? e.message : 'failed to read sample config',
-    };
-  }
-
-  if (!sample.trim()) {
-    return { ok: false, error: 'sample config is empty' };
-  }
-
-  const out = appendUserConfigVersion(user, sample);
+  const out = appendUserConfigVersion(user, EMPTY_USER_CONFIG_TEXT);
   if (!out.ok) return out;
 
   return { ok: true, user };

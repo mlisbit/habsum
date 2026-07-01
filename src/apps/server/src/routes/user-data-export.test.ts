@@ -1,12 +1,12 @@
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { createApp } from '../app.js';
-import { createUserFromSampleConfig, writeUserConfigFileText } from '../config.js';
+import { createEmptyUserConfig, writeUserConfigFileText } from '../config.js';
 import { addToTotal, createUserSession, ensureUserPins, setSelect } from '../db.js';
 import { SESSION_COOKIE_NAME } from '../session-cookie.js';
 
 function writeExportUserConfig(user: string) {
-  const created = createUserFromSampleConfig(user);
+  const created = createEmptyUserConfig(user);
   if (!created.ok) throw new Error(created.error);
   const written = writeUserConfigFileText(
     user,

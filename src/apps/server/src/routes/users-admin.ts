@@ -6,7 +6,7 @@ import type {
 } from '@habsum/types/common/misc';
 import type { CreateOucSessionResponse } from '@habsum/types/api-responses/ouc-post';
 import {
-  createUserFromSampleConfig,
+  createEmptyUserConfig,
   deleteUserConfigFile,
   listUsers,
   loadUserConfig,
@@ -129,7 +129,7 @@ usersAdminRouter.post(
 
     const password = generateTemporaryPassword();
 
-    const out = createUserFromSampleConfig(name);
+    const out = createEmptyUserConfig(name);
     if (!out.ok) {
       const status = out.error.includes('already exists') ? 409 : 400;
       return res.status(status).json({ error: out.error });

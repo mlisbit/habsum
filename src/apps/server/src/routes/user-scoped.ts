@@ -246,15 +246,27 @@ function habitPageCopy(
   date: string,
   at: Date,
   habits: readonly Habit[],
+  showEmptyIntro: boolean,
+  isNewUser: boolean,
   tzOffsetMinutes?: number,
-) {
+): HabitsResponse['page'] {
   const progress = habitPageProgress(habits);
+  if (isNewUser) {
+    return {
+      heading: 'Welcome to Habsum',
+      subheader: habitPageSubheaderTemplate(date, at, tzOffsetMinutes),
+      progress,
+      showEmptyIntro,
+    };
+  }
+
   const today = habitApiTodayKey(at, tzOffsetMinutes);
   if (date !== today) {
     return {
       heading: habitPageDateHeading(date, today, tzOffsetMinutes),
       subheader: exactDate(date),
       progress,
+      showEmptyIntro,
     };
   }
 
@@ -262,6 +274,7 @@ function habitPageCopy(
     heading: habitPageHeading(user, at, tzOffsetMinutes),
     subheader: habitPageSubheaderTemplate(date, at, tzOffsetMinutes),
     progress,
+    showEmptyIntro,
   };
 }
 
@@ -897,10 +910,16 @@ userScopedRouter.get(
     const body: HabitsResponse = {
       user,
       date,
-      firstDate,
-      page: habitPageCopy(user, date, at, habits, tzOffsetMinutes),
+      page: habitPageCopy(
+        user,
+        date,
+        at,
+        habits,
+        config.habits.length === 0,
+        firstDate === null,
+        tzOffsetMinutes,
+      ),
       habits,
-      serverTime: at.toISOString(),
     };
     res.json(body);
   },

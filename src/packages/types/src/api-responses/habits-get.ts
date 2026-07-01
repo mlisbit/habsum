@@ -11,14 +11,13 @@ export type HabitsPageCopy = {
   heading: string;
   subheader: string;
   progress: HabitsPageProgress;
+  showEmptyIntro: boolean;
 };
 
 /** Response body for `GET /users/:user/habits` */
 export type HabitsResponse = {
   user: string;
   date: string;
-  firstDate: string | null;
   page: HabitsPageCopy;
   habits: Habit[];
-  serverTime: string;
 };

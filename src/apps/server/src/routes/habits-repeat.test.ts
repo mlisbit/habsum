@@ -1,12 +1,12 @@
 import request from 'supertest';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../app.js';
-import { createUserFromSampleConfig, writeUserConfigFileText } from '../config.js';
+import { createEmptyUserConfig, writeUserConfigFileText } from '../config.js';
 import { createUserSession, ensureUserPins, patchUserProfile, setTotal } from '../db.js';
 import { SESSION_COOKIE_NAME } from '../session-cookie.js';
 
 function writeUserConfig(user: string, text: string) {
-  const created = createUserFromSampleConfig(user);
+  const created = createEmptyUserConfig(user);
   if (!created.ok) throw new Error(created.error);
   const written = writeUserConfigFileText(user, text);
   if (!written.ok) throw new Error(written.error);
@@ -31,6 +31,7 @@ describe('GET /users/:user/habits repeat config', () => {
     );
     patchUserProfile(user, { displayName: 'Alex Morgan' });
     ensureUserPins([user]);
+    setTotal(user, 'every day', '2999-06-01', 1, '2999-06-01 08:00:00');
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2999-07-01T09:00:00.000Z'));
     const session = createUserSession(user, 24 * 3600);
@@ -108,6 +109,25 @@ describe('GET /users/:user/habits repeat config', () => {
     });
   });
 
+  it('returns a welcome heading for new users', async () => {
+    const user = 'habits-new-user-heading';
+    writeUserConfig(user, `habits: {}\n`);
+    ensureUserPins([user]);
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2999-07-01T09:00:00.000Z'));
+    const session = createUserSession(user, 24 * 3600);
+
+    const res = await request(createApp())
+      .get(`/users/${user}/habits?date=2999-07-01&tzOffsetMinutes=0`)
+      .set('Cookie', `${SESSION_COOKIE_NAME}=${session}`)
+      .expect(200);
+
+    expect(res.body.page).toMatchObject({
+      heading: 'Welcome to Habsum',
+      showEmptyIntro: true,
+    });
+  });
+
   it('only returns habits configured for the requested weekday', async () => {
     const user = 'habits-repeat-user';
     writeUserConfig(
@@ -136,6 +156,7 @@ describe('GET /users/:user/habits repeat config', () => {
       'every day',
       'midweek mood',
     ]);
+    expect(wednesday.body.page.showEmptyIntro).toBe(false);
 
     const friday = await request(createApp())
       .get(`/users/${user}/habits?date=2026-07-03`)
@@ -146,6 +167,44 @@ describe('GET /users/:user/habits repeat config', () => {
       'every day',
       'friday reps',
     ]);
+  });
+
+  it('reports configured habits when none repeat on the requested day', async () => {
+    const user = 'habits-no-active-repeat-user';
+    writeUserConfig(
+      user,
+      `habits:
+  friday reps:
+    type: summation
+    repeat: [friday]
+`,
+    );
+    ensureUserPins([user]);
+    const session = createUserSession(user, 3600);
+
+    const res = await request(createApp())
+      .get(`/users/${user}/habits?date=2026-07-01`)
+      .set('Cookie', `${SESSION_COOKIE_NAME}=${session}`)
+      .expect(200);
+
+    expect(res.body.habits).toEqual([]);
+    expect(res.body.page.showEmptyIntro).toBe(false);
+    expect(res.body.page.progress.caption).toBe('No habits for this day');
+  });
+
+  it('sets empty intro when the user has no configured habits', async () => {
+    const user = 'habits-empty-config-user';
+    writeUserConfig(user, `habits: {}\n`);
+    ensureUserPins([user]);
+    const session = createUserSession(user, 3600);
+
+    const res = await request(createApp())
+      .get(`/users/${user}/habits?date=2026-07-01`)
+      .set('Cookie', `${SESSION_COOKIE_NAME}=${session}`)
+      .expect(200);
+
+    expect(res.body.habits).toEqual([]);
+    expect(res.body.page.showEmptyIntro).toBe(true);
   });
 
   it('filters history rows by each habit repeat schedule', async () => {

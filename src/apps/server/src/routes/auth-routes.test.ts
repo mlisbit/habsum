@@ -1,7 +1,7 @@
 import request from 'supertest';
 import { describe, expect, it, vi } from 'vitest';
 import { createApp } from '../app.js';
-import { createUserFromSampleConfig, ensureConfigLayout } from '../config.js';
+import { createEmptyUserConfig, ensureConfigLayout } from '../config.js';
 import { ensureUserPins, isUserPinValid, patchUserProfile, setUserPin } from '../db.js';
 import { issuePasswordResetToken } from '../password-reset-token.js';
 import * as passwordResetEmail from '../password-reset-email.js';
@@ -151,7 +151,7 @@ describe('password reset token flow', () => {
   it('returns display name for invite tokens and auto-logs in after password set', async () => {
     ensureConfigLayout();
     const app = createApp();
-    createUserFromSampleConfig('invite-setup-user');
+    createEmptyUserConfig('invite-setup-user');
     setUserPin('invite-setup-user', 'temp-secret');
     patchUserProfile('invite-setup-user', { displayName: 'Alex', email: 'alex@example.com' });
 

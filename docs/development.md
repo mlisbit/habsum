@@ -46,13 +46,13 @@ The server stores all runtime state under a single user-controlled directory:
 - **SQLite DB**: `<HABSUM_CONFIG_DIR>/habsum.db`
 - **User configs**: `<HABSUM_CONFIG_DIR>/users/*.yaml`
 
-Set `HABSUM_CONFIG_DIR` to point at that directory when starting the server.
+Set `HABSUM_CONFIG_DIR` to point at that directory when starting the server. New accounts start
+with an empty habit config.
 
 Example (repo root):
 
 ```bash
-mkdir -p data/users
-cp src/apps/server/src/utils/sample-config.yaml data/users/mac.yaml
+mkdir -p data
 
 HABSUM_CONFIG_DIR="$(pwd)/data" npm run dev:server
 ```

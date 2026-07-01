@@ -51,6 +51,7 @@ export type TopNavProps = {
   onBack: () => void;
   onSettings: () => void;
   progress: HabitsPageProgress;
+  hideDayNavigation?: boolean;
 };
 
 export function TopNav({
@@ -63,6 +64,7 @@ export function TopNav({
   onBack,
   onSettings,
   progress,
+  hideDayNavigation = false,
 }: TopNavProps) {
   const timeLeftInDay = useTimeLeftInDay(effectiveDate, tzOffsetMinutes);
   const renderedSubheader = renderCopyTemplate(subheader, { timeLeftInDay });
@@ -114,39 +116,41 @@ export function TopNav({
         </div>
         <p className="top-nav__countdown text-b-m text-light">{renderedSubheader}</p>
       </div>
-      <div className="top-nav__right">
-        <DayNav
-          date={effectiveDate}
-          tzOffsetMinutes={tzOffsetMinutes}
-          today={today}
-          onChangeDate={onChangeDate}
-          nextDisabled={nextDisabled}
-          showJumpToToday={showJumpToToday}
-          onDateTooFarText={showBeforeDataNotice ? 'No data past this day.' : undefined}
-        />
-        <div className="top-nav__progress-wrap">
-          {progress.percent != null ? (
-            <Hoverable.Root>
-              <Hoverable.Anchor className="top-nav__progress-anchor">
-                <ProgressBar {...progressBarProps} />
-              </Hoverable.Anchor>
-              <Hoverable.Content className="top-nav__progress-tooltip" side="bottom">
-                {progress.percent}%
-              </Hoverable.Content>
-            </Hoverable.Root>
-          ) : (
-            <ProgressBar {...progressBarProps} />
-          )}
-          {progress.isComplete && progress.caption ? (
-            <p className="top-nav__progress-caption top-nav__progress-caption--celebrate text-b-s text-light">
-              <Icon name="party" size="medium" className="top-nav__progress-party" />
-              <span>{progress.caption}</span>
-            </p>
-          ) : progress.caption ? (
-            <p className="top-nav__progress-caption text-b-s text-light">{progress.caption}</p>
-          ) : null}
+      {!hideDayNavigation ? (
+        <div className="top-nav__right">
+          <DayNav
+            date={effectiveDate}
+            tzOffsetMinutes={tzOffsetMinutes}
+            today={today}
+            onChangeDate={onChangeDate}
+            nextDisabled={nextDisabled}
+            showJumpToToday={showJumpToToday}
+            onDateTooFarText={showBeforeDataNotice ? 'No data past this day.' : undefined}
+          />
+          <div className="top-nav__progress-wrap">
+            {progress.percent != null ? (
+              <Hoverable.Root>
+                <Hoverable.Anchor className="top-nav__progress-anchor">
+                  <ProgressBar {...progressBarProps} />
+                </Hoverable.Anchor>
+                <Hoverable.Content className="top-nav__progress-tooltip" side="bottom">
+                  {progress.percent}%
+                </Hoverable.Content>
+              </Hoverable.Root>
+            ) : (
+              <ProgressBar {...progressBarProps} />
+            )}
+            {progress.isComplete && progress.caption ? (
+              <p className="top-nav__progress-caption top-nav__progress-caption--celebrate text-b-s text-light">
+                <Icon name="party" size="medium" className="top-nav__progress-party" />
+                <span>{progress.caption}</span>
+              </p>
+            ) : progress.caption ? (
+              <p className="top-nav__progress-caption text-b-s text-light">{progress.caption}</p>
+            ) : null}
+          </div>
         </div>
-      </div>
+      ) : null}
     </div>
   );
 }

@@ -2,7 +2,12 @@ import request from 'supertest';
 import { ProductEntitlement } from '@habsum/types/common/entitlement';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../app.js';
-import { createUserFromSampleConfig, ensureConfigLayout } from '../config.js';
+import {
+  createEmptyUserConfig,
+  ensureConfigLayout,
+  loadUserConfig,
+  writeUserConfigFileText,
+} from '../config.js';
 import {
   addToTotal,
   countAdmins,
@@ -56,6 +61,7 @@ describe('POST /users', () => {
 
     expect(res.status).toBe(201);
     expect(res.body).toMatchObject({ ok: true, user: expect.any(String) });
+    expect(loadUserConfig(res.body.user)?.habits).toEqual([]);
   });
 
   it('stores display name and sends invite email when requested', async () => {
@@ -97,7 +103,17 @@ describe('GET /users', () => {
 
   it('includes null last login until /auth/me resolves, then returns unix seconds', async () => {
     ensureConfigLayout();
-    createUserFromSampleConfig('login-audit-user');
+    createEmptyUserConfig('login-audit-user');
+    writeUserConfigFileText(
+      'login-audit-user',
+      `habits:
+  push ups:
+    type: summation
+  soda consumption:
+    type: single_select
+    options: [none, light, moderate, heavy]
+`,
+    );
     ensureUserPins(['login-audit-user']);
     patchUserProfile('login-audit-user', {
       displayName: 'Login Audit',
@@ -115,7 +131,7 @@ describe('GET /users', () => {
       email: 'login-audit@example.com',
       lastLoginAt: null,
       webAndApiVersion: null,
-      habitCount: 3,
+      habitCount: 2,
       eventCount: 2,
       entitlements: [ProductEntitlement.BETA_TESTER],
     });
@@ -137,7 +153,7 @@ describe('GET /users', () => {
       email: 'login-audit@example.com',
       lastLoginAt: 1_900_000_000,
       webAndApiVersion: PACKAGE_VERSION,
-      habitCount: 3,
+      habitCount: 2,
       eventCount: 2,
       entitlements: [ProductEntitlement.BETA_TESTER],
     });

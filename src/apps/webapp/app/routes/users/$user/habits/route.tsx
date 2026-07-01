@@ -6,8 +6,8 @@ import { getHabits, logout, patchHabit, type Habit, type HabitsResponse } from '
 import { Footer } from '~/components/Footer';
 import { TopNav } from '~/components/TopNav';
 import HabitRenderer from '@habsum/habit-render';
+import { Icon } from '@habsum/ui/components/Icon';
 import { InfoText } from '@habsum/ui/components/InfoText';
-import { useToast } from '@habsum/ui/contexts/toast';
 import { useUser } from '~/context/user';
 import { ensureUserSessionForRoute } from '~/utils/user-session-guard';
 import { awaitOucPopupBootstrap, getOucSessionToken } from '~/ouc.client';
@@ -25,7 +25,11 @@ function useWideHabitsLayout(): boolean {
   );
 }
 
-type HabitsState = { user: string; page: HabitsResponse['page']; habits: Habit[] };
+type HabitsState = {
+  user: string;
+  page: HabitsResponse['page'];
+  habits: Habit[];
+};
 const EMPTY_PAGE_PROGRESS: HabitsResponse['page']['progress'] = {
   percent: null,
   caption: 'No habits for this day',
@@ -39,23 +43,45 @@ function toListHabit(habit: Habit): Habit {
   return listHabit;
 }
 
+function EmptyHabits({ user }: { user: string }) {
+  return (
+    <section className="habits-page__empty" aria-labelledby="habits-page-empty-heading">
+      <div className="habits-page__empty-icon">
+        <Icon name="pencil-sparkles" sizePx={40} />
+      </div>
+      <div className="habits-page__empty-copy">
+        <h2 id="habits-page-empty-heading" className="text-h-l">
+          Let’s build your first habit.
+        </h2>
+        <p className="text-light text-b-m">Add your first habit to start tracking today.</p>
+      </div>
+      <Link
+        to={`/users/${encodeURIComponent(user)}/settings/habits?showAddModal=1`}
+        className="button button--primary button--large habits-page__empty-add-habit"
+      >
+        Add your first habit
+      </Link>
+    </section>
+  );
+}
+
+function NoHabitsForDay() {
+  return (
+    <div className="habits-page__stack">
+      <p className="habits-page__no-day-habits text-light text-b-m">
+        No habits to complete for this day.
+      </p>
+    </div>
+  );
+}
+
 export default function HabitsPage() {
   const navigate = useNavigate();
-  const { showToast, dismissToast } = useToast();
-  const {
-    me,
-    loading: userLoading,
-    isNewUser,
-    hasDismissedIntro,
-    dismissIntro,
-    refresh: refreshUser,
-  } = useUser();
-  const introToastOfferedRef = useRef(false);
+  const { me, loading: userLoading, isNewUser, refresh: refreshUser } = useUser();
   const syncedEntitlementsAfterFirstActivityRef = useRef(false);
   const [user, setUser] = useState<string>('');
   // Source of truth: the URL. `null` means "today" (clean URL).
   const [urlDate, setUrlDate] = useState<string | null>(null);
-  const [firstDate, setFirstDate] = useState<string | null>(null);
   const [state, setState] = useState<HabitsState | null>(null);
   const [error, setError] = useState<string | null>(null);
   const tzOffsetMinutes = useMemo(() => new Date().getTimezoneOffset(), []);
@@ -101,33 +127,15 @@ export default function HabitsPage() {
   }, [me, userLoading, navigate]);
 
   useEffect(() => {
-    introToastOfferedRef.current = false;
-  }, [user]);
-
-  useEffect(() => {
-    if (userLoading || !isNewUser || !user || hasDismissedIntro || introToastOfferedRef.current) {
-      return;
-    }
-    introToastOfferedRef.current = true;
-    showToast({
-      type: 'info',
-      title: 'Welcome to Habsum!',
-      titleIcon: 'hand',
-      message: 'We added a few example habits to help you get started.',
-      persistent: true,
-      ctaTitle: 'Customize habits',
-      ctaLocation: `/users/${encodeURIComponent(user)}/settings/habits`,
-      onDismiss: dismissIntro,
-    });
-  }, [userLoading, isNewUser, user, hasDismissedIntro, showToast, dismissIntro]);
-
-  useEffect(() => {
     if (!user) return;
     setError(null);
     getHabits(user, effectiveDate)
       .then((r) => {
-        setFirstDate(r.firstDate);
-        setState({ user: r.user, page: r.page, habits: r.habits });
+        setState({
+          user: r.user,
+          page: r.page,
+          habits: r.habits,
+        });
 
         // Keep URL clean: don't include ?date= when it's today.
         const qs = new URLSearchParams(window.location.search);
@@ -158,8 +166,11 @@ export default function HabitsPage() {
 
   const refreshHabits = async () => {
     const refreshed = await getHabits(user, effectiveDate);
-    setFirstDate(refreshed.firstDate);
-    setState({ user: refreshed.user, page: refreshed.page, habits: refreshed.habits });
+    setState({
+      user: refreshed.user,
+      page: refreshed.page,
+      habits: refreshed.habits,
+    });
   };
 
   const onHabitUpdated = (updated: Habit) => {
@@ -174,7 +185,6 @@ export default function HabitsPage() {
     });
     if (isNewUser && !syncedEntitlementsAfterFirstActivityRef.current) {
       syncedEntitlementsAfterFirstActivityRef.current = true;
-      dismissToast();
       void refreshUser();
     }
   };
@@ -210,13 +220,14 @@ export default function HabitsPage() {
         subheader={state?.page.subheader ?? ''}
         effectiveDate={effectiveDate}
         tzOffsetMinutes={tzOffsetMinutes}
-        firstDate={firstDate}
+        firstDate={null}
         onChangeDate={goToDate}
         onBack={() => {
           void logout().then(() => window.location.assign('/login'));
         }}
         onSettings={() => navigate(`/users/${encodeURIComponent(user)}/settings/account`)}
         progress={state?.page.progress ?? EMPTY_PAGE_PROGRESS}
+        hideDayNavigation={state?.page.showEmptyIntro === true}
       />
 
       {error ? (
@@ -230,7 +241,11 @@ export default function HabitsPage() {
           Loading…
         </p>
       ) : state.habits.length === 0 ? (
-        <p className="text-light text-b-m">No habits configured.</p>
+        state.page.showEmptyIntro ? (
+          <EmptyHabits user={state.user} />
+        ) : (
+          <NoHabitsForDay />
+        )
       ) : wideTwoColumn ? (
         <div className="habits-page__columns">
           <div className="habits-page__column">
@@ -243,15 +258,6 @@ export default function HabitsPage() {
       ) : (
         <div className="habits-page__stack">{state.habits.map((h) => renderHabit(h))}</div>
       )}
-
-      {state && user ? (
-        <Link
-          to={`/users/${encodeURIComponent(user)}/settings/habits?showAddModal=1`}
-          className="button button--secondary button--medium habits-page__add-habit"
-        >
-          Add habit
-        </Link>
-      ) : null}
 
       <Footer />
     </div>

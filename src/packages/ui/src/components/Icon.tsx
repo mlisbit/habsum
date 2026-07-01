@@ -1,3 +1,4 @@
+import { forwardRef } from 'react';
 import {
   ArrowUp,
   Check,
@@ -30,7 +31,38 @@ import {
   Trash2,
   UserLock,
   X,
+  type LucideProps,
 } from 'lucide-react';
+
+const PencilSparkles = forwardRef<SVGSVGElement, Omit<LucideProps, 'ref'>>(
+  ({ size, strokeWidth = 2, className, ...rest }, ref) => {
+    return (
+      <svg
+        ref={ref}
+        className={className}
+        width={size}
+        height={size}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={strokeWidth}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden
+        {...rest}
+      >
+        <path d="m15 5 4 4" />
+        <path d="M13 7 4 16l-1 5 5-1 9-9" />
+        <path d="m14 6 2-2a1.5 1.5 0 0 1 2 0l2 2a1.5 1.5 0 0 1 0 2l-2 2" />
+        <path d="M5 4v3" />
+        <path d="M6.5 5.5h-3" />
+        <path d="M19 15v4" />
+        <path d="M21 17h-4" />
+      </svg>
+    );
+  },
+);
+PencilSparkles.displayName = 'PencilSparkles';
 
 /** Named icons usable with {@link Icon} (shared lucide mappings). */
 const ICON_COMPONENTS = {
@@ -58,6 +90,7 @@ const ICON_COMPONENTS = {
   menu: Menu,
   'octagon-x': OctagonX,
   pencil: Pencil,
+  'pencil-sparkles': PencilSparkles,
   'square-pen': SquarePen,
   trash: Trash2,
   'user-lock': UserLock,
