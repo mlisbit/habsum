@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { dayFromString } from '@habsum/types/common/day';
+import type { StreakDatum, StreakGraphData } from '@habsum/types/common/streak';
 
 vi.mock('./db.js', () => ({
   getSeries: vi.fn(),
@@ -22,6 +23,10 @@ import {
 const user = 'tester';
 const habit = 'mood';
 const eligible = ['good'];
+
+function streakDatumForDate(streak: StreakGraphData, date: string): StreakDatum | undefined {
+  return streak.data.flat().find((datum) => datum.date === date);
+}
 
 describe('historyGraphScaleTop', () => {
   it('uses the goal when it exceeds logged totals in the period', () => {
@@ -200,12 +205,19 @@ describe('streakGraphForConfiguredWindow', () => {
     const streak = streakGraphForConfiguredWindow(user, habit, viewDate, eligible, at);
 
     expect(streak.currentText).toBe('2 days');
-    expect(streak.data[viewDate]?.label).toBeUndefined();
-    expect(streak.data[viewDate]?.outline).toBeUndefined();
-    expect(Object.keys(streak.data)).toHaveLength(126);
+    expect(streak.data).toHaveLength(7);
+    expect(
+      streak.data[0]?.every((datum) => new Date(`${datum.date}T00:00:00.000Z`).getUTCDay() === 0),
+    ).toBe(true);
+    expect(
+      streak.data[6]?.every((datum) => new Date(`${datum.date}T00:00:00.000Z`).getUTCDay() === 6),
+    ).toBe(true);
+    expect(streakDatumForDate(streak, viewDate)?.label).toBeUndefined();
+    expect(streakDatumForDate(streak, viewDate)?.outline).toBeUndefined();
+    expect(streak.data.flat()).toHaveLength(368);
   });
 
-  it('pads up to three days after a past view date and outlines the view date', () => {
+  it('pads up to today after a past view date and outlines the view date', () => {
     const at = new Date('2025-05-21T12:00:00.000Z');
     const viewDate = '2025-05-18';
     vi.mocked(getSelect).mockImplementation((_u, _h, date) =>
@@ -213,15 +225,19 @@ describe('streakGraphForConfiguredWindow', () => {
     );
 
     const streak = streakGraphForConfiguredWindow(user, habit, viewDate, eligible, at);
-    const keys = Object.keys(streak.data);
+    const keys = streak.data
+      .flat()
+      .map((datum) => datum.date)
+      .sort();
 
     expect(keys.at(-1)).toBe('2025-05-21');
-    expect(streak.data[dayFromString(viewDate)]?.outline).toBe(true);
-    expect(streak.data[dayFromString(viewDate)]?.dimmed).toBeUndefined();
-    expect(streak.data[dayFromString('2025-05-19')]?.dimmed).toBe(true);
-    expect(streak.data[dayFromString('2025-05-20')]?.dimmed).toBe(true);
-    expect(streak.data[dayFromString('2025-05-21')]?.dimmed).toBe(true);
-    expect(streak.data[dayFromString('2025-05-21')]?.outline).toBeUndefined();
+    expect(streakDatumForDate(streak, dayFromString(viewDate))?.outline).toBe(true);
+    expect(streakDatumForDate(streak, dayFromString(viewDate))?.dimmed).toBeUndefined();
+    expect(streakDatumForDate(streak, dayFromString('2025-05-19'))?.dimmed).toBe(true);
+    expect(streakDatumForDate(streak, dayFromString('2025-05-20'))?.dimmed).toBe(true);
+    expect(streakDatumForDate(streak, dayFromString('2025-05-21'))?.dimmed).toBe(true);
+    expect(streakDatumForDate(streak, dayFromString('2025-05-21'))?.outline).toBeUndefined();
+    expect(streakDatumForDate(streak, dayFromString('2025-05-22'))).toBeUndefined();
   });
 
   it('omits an unlogged UTC today from current streak length', () => {
@@ -236,8 +252,9 @@ describe('streakGraphForConfiguredWindow', () => {
     const streak = streakGraphForConfiguredWindow(user, habit, viewDate, eligible, at);
 
     expect(streak.currentText).toBe('2 days');
-    expect(streak.data[viewDate]?.value).toBeNull();
-    expect(streak.data[viewDate]?.fill).toBe(0);
+    expect(streakDatumForDate(streak, viewDate)?.value).toBeNull();
+    expect(streakDatumForDate(streak, viewDate)?.fill).toBe(0);
+    expect(streakDatumForDate(streak, dayFromString('2025-05-22'))).toBeUndefined();
   });
 
   it('counts today when it has a streak-eligible selection', () => {
@@ -248,7 +265,7 @@ describe('streakGraphForConfiguredWindow', () => {
     const streak = streakGraphForConfiguredWindow(user, habit, viewDate, eligible, at);
 
     expect(streak.currentText).toBe('1 day');
-    expect(streak.data[viewDate]?.fill).toBe(10);
+    expect(streakDatumForDate(streak, viewDate)?.fill).toBe(10);
   });
 
   it('uses a nonzero fill for logged selections outside the streak config', () => {
@@ -259,8 +276,8 @@ describe('streakGraphForConfiguredWindow', () => {
     const streak = streakGraphForConfiguredWindow(user, habit, viewDate, eligible, at);
 
     expect(streak.currentText).toBe('0 days');
-    expect(streak.data[viewDate]?.value).toBe('bad');
-    expect(streak.data[viewDate]?.fill).toBe(1);
+    expect(streakDatumForDate(streak, viewDate)?.value).toBe('bad');
+    expect(streakDatumForDate(streak, viewDate)?.fill).toBe(1);
   });
 
   it('treats an unlogged past view date as breaking the streak', () => {
@@ -318,9 +335,9 @@ describe('streakGraphForConfiguredWindow (weekly frequency)', () => {
     );
 
     const viewWeekStart = dayFromString('2025-05-19');
-    expect(streak.data[viewWeekStart]?.label).toMatch(/–/);
-    expect(streak.data[viewWeekStart]?.value).toBe('3/3');
-    expect(streak.data[viewWeekStart]?.fill).toBe(10);
+    expect(streakDatumForDate(streak, viewWeekStart)?.label).toMatch(/–/);
+    expect(streakDatumForDate(streak, viewWeekStart)?.value).toBe('3/3');
+    expect(streakDatumForDate(streak, viewWeekStart)?.fill).toBe(10);
     expect(streak.currentText).toBe('2 weeks');
   });
 
@@ -344,8 +361,8 @@ describe('streakGraphForConfiguredWindow (weekly frequency)', () => {
     );
 
     const viewWeekStart = dayFromString('2025-05-19');
-    expect(streak.data[viewWeekStart]?.value).toBe('1/3');
-    expect(streak.data[viewWeekStart]?.fill).toBe(3);
+    expect(streakDatumForDate(streak, viewWeekStart)?.value).toBe('1/3');
+    expect(streakDatumForDate(streak, viewWeekStart)?.fill).toBe(3);
     expect(streak.currentText).toBe('1 week');
   });
 
@@ -367,8 +384,8 @@ describe('streakGraphForConfiguredWindow (weekly frequency)', () => {
     );
 
     const viewWeekStart = dayFromString('2025-05-19');
-    expect(streak.data[viewWeekStart]?.value).toBeNull();
-    expect(streak.data[viewWeekStart]?.fill).toBe(1);
+    expect(streakDatumForDate(streak, viewWeekStart)?.value).toBeNull();
+    expect(streakDatumForDate(streak, viewWeekStart)?.fill).toBe(1);
     expect(streak.currentText).toBe('0 weeks');
   });
 });
@@ -387,9 +404,9 @@ describe('summationStreakGraphForConfiguredWindow', () => {
     const streak = summationStreakGraphForConfiguredWindow(user, 'push ups', viewDate, ['10'], at);
 
     expect(streak.currentText).toBe('1 day');
-    expect(streak.data[viewDate]?.value).toBe('12');
-    expect(streak.data[viewDate]?.fill).toBe(10);
-    expect(streak.data[dayFromString('2025-05-20')]?.fill).toBe(1);
+    expect(streakDatumForDate(streak, viewDate)?.value).toBe('12');
+    expect(streakDatumForDate(streak, viewDate)?.fill).toBe(10);
+    expect(streakDatumForDate(streak, dayFromString('2025-05-20'))?.fill).toBe(1);
   });
 });
 

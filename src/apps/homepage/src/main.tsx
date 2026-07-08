@@ -54,25 +54,21 @@ function fakeGraphData(values: number[]): BarGraphData {
 
 function fakeStreakData(values: number[], goal: number): StreakGraphData {
   const start = new Date(2026, 4, 8);
+  const data: StreakGraphData['data'] = Array.from({ length: 7 }, () => []);
 
-  return {
-    data: Object.fromEntries(
-      values.map((value, index) => {
-        const date = new Date(start);
-        date.setDate(start.getDate() + index);
-        const day = dayFromString(date.toISOString().slice(0, 10)) as Day;
-        const hitGoal = value >= goal;
+  values.forEach((value, index) => {
+    const date = new Date(start);
+    date.setDate(start.getDate() + index);
+    const day = dayFromString(date.toISOString().slice(0, 10)) as Day;
+    const hitGoal = value >= goal;
+    data[date.getDay()]!.push({
+      date: day,
+      value: hitGoal ? 'goal hit' : null,
+      fill: hitGoal ? 10 : Math.max(0, Math.round((value / goal) * 8)),
+    });
+  });
 
-        return [
-          day,
-          {
-            value: hitGoal ? 'goal hit' : null,
-            fill: hitGoal ? 10 : Math.max(0, Math.round((value / goal) * 8)),
-          },
-        ];
-      }),
-    ),
-  };
+  return { data };
 }
 
 function formatPages(value: number | null): string {

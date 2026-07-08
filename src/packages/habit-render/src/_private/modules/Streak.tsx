@@ -1,10 +1,9 @@
 // exclusive-bem-block: habit-module-streak
 import { useMemo } from 'react';
-import type { Day } from '@habsum/types/common/day';
 import type { StreakDatum, StreakGraphData } from '@habsum/types/common/streak';
 import { Heatmap, type HeatmapEntry } from '@habsum/ui/components/graphs/Heatmap';
 
-function formatStreakDayLabel(dateKey: Day): string {
+function formatStreakDayLabel(dateKey: string): string {
   const [ys, ms, ds] = dateKey.split('-');
   const y = Number(ys);
   const m = Number(ms);
@@ -35,7 +34,8 @@ const STREAK_FILL_COLOR_BY_VALUE = [
   'var(--heatmap-fill-10)',
 ] as const;
 
-function streakHeatmapEntry(dateKey: Day, datum: StreakDatum): HeatmapEntry {
+function streakHeatmapEntry(datum: StreakDatum): HeatmapEntry {
+  const dateKey = datum.date;
   const periodLabel = datum.label ?? formatStreakDayLabel(dateKey);
   const valueLabel =
     datum.value ?? (datum.label != null ? 'No streak days logged' : 'No selection logged');
@@ -60,17 +60,12 @@ type StreakProps = {
 
 /** One dot per period in the streak window; hover shows the logged option (or empty). */
 export function Streak({ streak }: StreakProps) {
-  const entries = useMemo(
-    () =>
-      (Object.entries(streak.data) as [Day, StreakDatum][]).sort(([a], [b]) => a.localeCompare(b)),
+  const heatmapEntries = useMemo(
+    () => streak.data.map((row) => row.map((datum) => streakHeatmapEntry(datum))),
     [streak.data],
   );
-  const heatmapEntries = useMemo(
-    () => entries.map(([dateKey, datum]) => streakHeatmapEntry(dateKey, datum)),
-    [entries],
-  );
 
-  if (entries.length === 0) return null;
+  if (streak.data.every((row) => row.length === 0)) return null;
 
   return <Heatmap entries={heatmapEntries} className="habit-module-streak__heatmap" />;
 }

@@ -26,6 +26,8 @@ export function isDailyStreakFrequency(daysPerWeek: number): boolean {
 }
 
 export type StreakDatum = {
+  /** Period date key. Daily streaks use the calendar day; weekly streaks use the week-start Monday. */
+  date: Day;
   /** Day: logged option, or `null`. Week: progress label (e.g. `2/3`), or `null` if nothing logged. */
   value: string | null;
   /** Dot fill intensity from `0` to `10`. */
@@ -47,9 +49,9 @@ export type LongestStreak = {
   range: string;
 };
 
-/** Streak window ending on the API view date. Keys are `YYYY-MM-DD` (day or week-start Monday). */
+/** Streak window grouped into weekday rows. Row 0 is Sunday; row 6 is Saturday. */
 export type StreakGraphData = {
-  data: Record<Day, StreakDatum>;
+  data: StreakDatum[][];
   /** Present when `streak.show_longest` is enabled and a longest run exists. */
   longestStreak?: LongestStreak;
 };

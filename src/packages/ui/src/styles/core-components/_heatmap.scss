@@ -10,8 +10,9 @@
 
 .heatmap__row {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: functions.spacing(1);
+  width: 100%;
   min-width: 0;
 }
 
@@ -26,6 +27,13 @@
   border-radius: var(--border-radius-s);
   background: var(--heatmap-fill-0);
   cursor: default;
+}
+
+.heatmap__spacer {
+  flex: 0 0 auto;
+  width: 0.75rem;
+  height: 0.75rem;
+  visibility: hidden;
 }
 
 .heatmap__cell--outlined {

@@ -15,12 +15,10 @@ export type HeatmapDatum = {
 export type HeatmapEntry = readonly [string, HeatmapDatum];
 
 type HeatmapProps = {
-  entries: HeatmapEntry[];
+  entries: HeatmapEntry[][];
   className?: string;
-  rows?: number;
 };
 
-const DEFAULT_HEATMAP_ROWS = 3;
 const INITIAL_CELLS_PER_ROW = 1;
 const CELL_FALLBACK_WIDTH_PX = 12;
 
@@ -36,22 +34,6 @@ function cellsPerRow(row: HTMLDivElement): number {
   const cellWidth = firstCell?.getBoundingClientRect().width ?? CELL_FALLBACK_WIDTH_PX;
   const rowWidth = row.getBoundingClientRect().width;
   return Math.max(1, Math.floor((rowWidth + gap) / (cellWidth + gap)));
-}
-
-function distributeEntriesByColumn<T>(entries: T[], rowCount: number): T[][] {
-  const rows = Array.from({ length: rowCount }, () => [] as T[]);
-  entries.forEach((entry, index) => {
-    rows[index % rowCount]!.push(entry);
-  });
-  while (rows.length > 0 && rows[rows.length - 1]!.length === 0) {
-    rows.pop();
-  }
-  return rows;
-}
-
-function normalizeRowCount(rows: number): number {
-  if (!Number.isFinite(rows)) return DEFAULT_HEATMAP_ROWS;
-  return Math.max(1, Math.trunc(rows));
 }
 
 function HeatmapCell({ datum }: { datum: HeatmapDatum }) {
@@ -82,13 +64,16 @@ function HeatmapCell({ datum }: { datum: HeatmapDatum }) {
   );
 }
 
-/** Responsive heatmap grid; entries are filled top-to-bottom by column. */
-export function Heatmap({ entries, className, rows = DEFAULT_HEATMAP_ROWS }: HeatmapProps) {
+function HeatmapSpacer({ index }: { index: number }) {
+  return <span key={`spacer-${index}`} className="heatmap__spacer" aria-hidden />;
+}
+
+/** Responsive heatmap grid; entries are rendered as the row arrays supplied by the caller. */
+export function Heatmap({ entries, className }: HeatmapProps) {
   const rowRef = useRef<HTMLDivElement | null>(null);
   const [cellsPerMeasuredRow, setCellsPerMeasuredRow] = useState(INITIAL_CELLS_PER_ROW);
-  const rowCount = normalizeRowCount(rows);
-  const visibleEntries = entries.slice(-(cellsPerMeasuredRow * rowCount));
-  const visibleRows = distributeEntriesByColumn(visibleEntries, rowCount);
+  const visibleRows = entries.map((row) => row.slice(-cellsPerMeasuredRow));
+  const visibleCellCount = Math.max(0, ...visibleRows.map((row) => row.length));
   const rootClassName = className == null ? 'heatmap' : `heatmap ${className}`;
 
   useLayoutEffect(() => {
@@ -104,9 +89,9 @@ export function Heatmap({ entries, className, rows = DEFAULT_HEATMAP_ROWS }: Hea
     const observer = new ResizeObserver(updateCellsPerRow);
     observer.observe(row);
     return () => observer.disconnect();
-  }, [entries.length]);
+  }, [entries]);
 
-  if (entries.length === 0) return null;
+  if (entries.every((row) => row.length === 0)) return null;
 
   return (
     <div ref={rowRef} className={rootClassName} role="list">
@@ -114,6 +99,9 @@ export function Heatmap({ entries, className, rows = DEFAULT_HEATMAP_ROWS }: Hea
         <div key={rowIndex} className="heatmap__row">
           {row.map(([key, datum]) => (
             <HeatmapCell key={key} datum={datum} />
+          ))}
+          {Array.from({ length: visibleCellCount - row.length }, (_, index) => (
+            <HeatmapSpacer key={`spacer-${index}`} index={index} />
           ))}
         </div>
       ))}
