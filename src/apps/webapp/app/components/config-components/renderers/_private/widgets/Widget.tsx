@@ -7,6 +7,7 @@ type WidgetProps = {
   checked: boolean;
   checkboxId: string;
   children: ReactNode;
+  expanded?: boolean;
   label: string;
   onCheckedChange: (checked: boolean) => void;
   subheader?: string;
@@ -16,12 +17,13 @@ export function Widget({
   checked,
   checkboxId,
   children,
+  expanded = checked,
   label,
   onCheckedChange,
   subheader,
 }: WidgetProps) {
   return (
-    <CollapsibleCard expanded={checked} collapsible={checked} className="config-widget">
+    <CollapsibleCard expanded={expanded} collapsible={expanded} className="config-widget">
       <CollapsibleCard.Header>
         <div className="collapsible-card__header-main">
           <div className="config-widget__header-label" onClick={(e) => e.stopPropagation()}>

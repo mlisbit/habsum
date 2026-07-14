@@ -8,7 +8,7 @@ import type { ConfigHabitDraft, UserConfigJsonHabit } from '~/api.client';
 import { SingleSelectBaseOptions } from './_private/base-options/SingleSelectBaseOptions';
 import { SummationBaseOptions } from './_private/base-options/SummationBaseOptions';
 import { ConfigHabitModalActions } from './_private/utils/ConfigHabitModalActions';
-import { HistoryWidget } from './_private/widgets/HistoryWidget';
+import { DataVisualizationWidget } from './_private/widgets/DataVisualizationWidget';
 import { StreakTrackingWidget } from './_private/widgets/StreakTrackingWidget';
 import { HABIT_REPEAT_DAYS, isHabitDraftDirty, parseOptionLines } from '~/utils/configHabitDraft';
 
@@ -149,6 +149,8 @@ export function ConfigModalRenderer({
           {repeatField}
 
           <div className="config-habit-modal__widgets">
+            <DataVisualizationWidget draft={draft} patch={patch} type={['heatmap']} />
+
             <StreakTrackingWidget
               type="single_select"
               draft={draft}
@@ -166,9 +168,13 @@ export function ConfigModalRenderer({
           <SummationBaseOptions draft={draft} patch={patch} repeatControl={repeatControl} />
 
           <div className="config-habit-modal__widgets">
-            <StreakTrackingWidget type="summation" draft={draft} patch={patch} />
+            <DataVisualizationWidget
+              draft={draft}
+              patch={patch}
+              type={['weekly_history', 'heatmap']}
+            />
 
-            <HistoryWidget draft={draft} patch={patch} />
+            <StreakTrackingWidget type="summation" draft={draft} patch={patch} />
           </div>
         </>
       );

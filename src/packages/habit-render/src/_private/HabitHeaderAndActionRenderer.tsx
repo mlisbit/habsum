@@ -48,7 +48,7 @@ function useHabitResetMenu({
   onNavigate?: (url: string) => void;
   onUpdate: (patch: HabitPatch) => Promise<void>;
 }) {
-  const { present, closeModal } = useModal();
+  const { present, closeModal, closeModalThen } = useModal();
 
   return useCallback(() => {
     present({
@@ -58,7 +58,7 @@ function useHabitResetMenu({
           habitName={habit.name}
           pending={pending}
           onNavigate={onNavigate}
-          closeModal={closeModal}
+          closeModalThen={closeModalThen}
           onReset={async () => {
             await onUpdate({ habit: habit.name, action: 'clear' });
             closeModal();
@@ -66,7 +66,7 @@ function useHabitResetMenu({
         />
       ),
     });
-  }, [present, closeModal, habit.name, onNavigate, onUpdate, pending, user]);
+  }, [present, closeModal, closeModalThen, habit.name, onNavigate, onUpdate, pending, user]);
 }
 
 function SingleSelectActions({

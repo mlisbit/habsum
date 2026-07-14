@@ -1,0 +1,28 @@
+@use 'functions';
+
+.widget-config-data-visualization__options {
+  display: flex;
+  flex-flow: column nowrap;
+  gap: functions.spacing(2);
+}
+
+.widget-config-data-visualization__option {
+  display: flex;
+  align-items: center;
+  gap: functions.spacing(2);
+  cursor: pointer;
+}
+
+.widget-config-data-visualization__weekly {
+  display: flex;
+  flex-flow: row nowrap;
+  align-items: center;
+  gap: functions.spacing(2);
+  min-width: 0;
+}
+
+.widget-config-data-visualization__weekly-select {
+  flex: 0 0 auto;
+  inline-size: auto;
+  min-width: 7rem;
+}

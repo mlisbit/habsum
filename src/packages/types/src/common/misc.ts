@@ -76,6 +76,8 @@ export type UserConfigJsonHabit = {
   summationOptions?: SummationOptions;
   history?: {
     period: string;
+    displays?: HistoryDisplay[];
+    display?: 'heatmap' | 'weekly_history';
   };
   streak?: {
     options: string[];
@@ -108,6 +110,7 @@ export type UserConfigPutRequest = {
 export type UserConfigPutResponse = { ok: true; user: string };
 
 export type HistoryPeriodUnit = 'd' | 'w';
+export type HistoryDisplay = 'heatmap' | 'weekly_history';
 
 export type ConfigHabitDraft = {
   name: string;
@@ -122,6 +125,7 @@ export type ConfigHabitDraft = {
   streakFrequencyPerWeek: string;
   streakShowLongest: boolean;
   historyEnabled: boolean;
+  historyDisplays: HistoryDisplay[];
   historyPeriodAmount: string;
   historyPeriodUnit: HistoryPeriodUnit;
 };

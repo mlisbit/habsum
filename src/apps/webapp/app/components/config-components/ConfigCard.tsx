@@ -17,7 +17,9 @@ function habitDetailLines(habit: UserConfigJsonHabit): string[] {
     lines.push(`Options: ${habit.options.join(', ')}`);
   }
   if (habit.history != null) {
-    lines.push('History enabled');
+    const displays = habit.history.displays ?? [habit.history.display ?? 'weekly_history'];
+    if (displays.includes('heatmap')) lines.push('Heatmap enabled');
+    if (displays.includes('weekly_history')) lines.push('Weekly history enabled');
   }
   return lines;
 }

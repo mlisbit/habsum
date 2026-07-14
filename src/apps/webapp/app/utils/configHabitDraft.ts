@@ -5,13 +5,17 @@ import {
 } from '@habsum/types/common/streak';
 import type {
   ConfigHabitDraft,
+  HistoryDisplay,
   HistoryPeriodUnit,
   UserConfigJson,
   UserConfigJsonHabit,
 } from '~/api.client';
 
-const DEFAULT_HISTORY_PERIOD_AMOUNT = '1';
+const DEFAULT_HISTORY_PERIOD_AMOUNT = '3';
 const DEFAULT_HISTORY_PERIOD_UNIT: HistoryPeriodUnit = 'w';
+const HISTORY_DISPLAY_ORDER: HistoryDisplay[] = ['heatmap', 'weekly_history'];
+const HISTORY_WEEK_OPTIONS = ['1', '2', '3'];
+const DEFAULT_HISTORY_DISPLAYS: HistoryDisplay[] = ['weekly_history'];
 const DEFAULT_NEW_HABIT_NAME = 'New habit';
 export const HABIT_REPEAT_DAYS = [
   'monday',
@@ -42,6 +46,7 @@ export function isHabitDraftDirty(initial: ConfigHabitDraft, draft: ConfigHabitD
     initial.streakFrequencyPerWeek !== draft.streakFrequencyPerWeek ||
     initial.streakShowLongest !== draft.streakShowLongest ||
     initial.historyEnabled !== draft.historyEnabled ||
+    !quickAddItemsEqual(initial.historyDisplays, draft.historyDisplays) ||
     initial.historyPeriodAmount !== draft.historyPeriodAmount ||
     initial.historyPeriodUnit !== draft.historyPeriodUnit
   );
@@ -102,10 +107,26 @@ function normalizeDraftRepeat(repeat: string[]): string[] {
   return normalized;
 }
 
+function normalizeHistoryDisplays(displays: readonly HistoryDisplay[]): HistoryDisplay[] {
+  return HISTORY_DISPLAY_ORDER.filter((display) => displays.includes(display));
+}
+
+function normalizeHistoryPeriodAmount(amount: string): string {
+  return HISTORY_WEEK_OPTIONS.includes(amount) ? amount : DEFAULT_HISTORY_PERIOD_AMOUNT;
+}
+
 export function draftFromHabit(habit: UserConfigJsonHabit): ConfigHabitDraft {
   const historyPeriod = parseHistoryPeriod(
     habit.history?.period ?? `${DEFAULT_HISTORY_PERIOD_AMOUNT}${DEFAULT_HISTORY_PERIOD_UNIT}`,
   );
+
+  const configuredHistoryDisplays = normalizeHistoryDisplays(
+    habit.history?.displays ?? [habit.history?.display ?? DEFAULT_HISTORY_DISPLAYS[0]],
+  );
+  const historyDisplays =
+    habit.type === 'single_select'
+      ? configuredHistoryDisplays.filter((display) => display === 'heatmap')
+      : configuredHistoryDisplays;
 
   return {
     name: habit.name,
@@ -126,8 +147,10 @@ export function draftFromHabit(habit: UserConfigJsonHabit): ConfigHabitDraft {
     streakOptionsText: habit.streak?.options.join('\n') ?? '',
     streakFrequencyPerWeek: String(parseStreakFrequencyDays(habit.streak?.frequency)),
     streakShowLongest: habit.streak?.show_longest === true,
-    historyEnabled: habit.type === 'summation' && habit.history != null,
-    historyPeriodAmount: historyPeriod.amount,
+    historyEnabled: habit.history != null && historyDisplays.length > 0,
+    historyDisplays:
+      habit.history == null && habit.type === 'single_select' ? ['heatmap'] : historyDisplays,
+    historyPeriodAmount: normalizeHistoryPeriodAmount(historyPeriod.amount),
     historyPeriodUnit: historyPeriod.unit,
   };
 }
@@ -165,6 +188,15 @@ function draftToHabit(draft: ConfigHabitDraft): UserConfigJsonHabit {
         ...(draft.streakShowLongest ? { show_longest: true } : {}),
       };
     }
+    if (draft.historyEnabled) {
+      if (!draft.historyDisplays.includes('heatmap')) {
+        throw new Error('single select data visualization requires heatmap');
+      }
+      habit.history = {
+        displays: ['heatmap'],
+        period: formatHistoryPeriod(draft.historyPeriodAmount, draft.historyPeriodUnit),
+      };
+    }
     return habit;
   }
 
@@ -197,7 +229,11 @@ function draftToHabit(draft: ConfigHabitDraft): UserConfigJsonHabit {
     };
   }
   if (draft.historyEnabled) {
+    if (draft.historyDisplays.length === 0) {
+      throw new Error('data visualization needs at least one option');
+    }
     habit.history = {
+      displays: normalizeHistoryDisplays(draft.historyDisplays),
       period: formatHistoryPeriod(draft.historyPeriodAmount, draft.historyPeriodUnit),
     };
   }

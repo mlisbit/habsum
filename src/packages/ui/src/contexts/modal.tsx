@@ -36,6 +36,8 @@ type ModalContextValue = {
   present: (options: PresentModalOptions) => () => void;
   /** Closes the active modal and runs its `onRequestClose`, if any. */
   closeModal: () => void;
+  /** Closes the active modal, including its history entry, before running a follow-up action. */
+  closeModalThen: (afterClose: () => void) => void;
 };
 
 const ModalContext = createContext<ModalContextValue | null>(null);
@@ -153,7 +155,10 @@ export function ModalProvider({ children }: { children: ReactNode }) {
   const activeRef = useRef<ActiveModal | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const genRef = useRef(0);
-  const closeAfterHistoryPopRef = useRef<ActiveModal | null>(null);
+  const closeAfterHistoryPopRef = useRef<{
+    modal: ActiveModal;
+    afterClose?: () => void;
+  } | null>(null);
   activeRef.current = active;
 
   const dismissActive = useCallback((invokeRequestClose: boolean) => {
@@ -164,16 +169,29 @@ export function ModalProvider({ children }: { children: ReactNode }) {
     if (invokeRequestClose) prev.onRequestClose?.();
   }, []);
 
-  const closeModal = useCallback(() => {
-    const prev = activeRef.current;
-    if (!prev) return;
-    if (prev.historyToken && window.history.state?.habsumModalToken === prev.historyToken) {
-      closeAfterHistoryPopRef.current = prev;
-      window.history.back();
-      return;
-    }
-    dismissActive(true);
-  }, [dismissActive]);
+  const requestClose = useCallback(
+    (afterClose?: () => void) => {
+      const prev = activeRef.current;
+      if (!prev) {
+        afterClose?.();
+        return;
+      }
+      if (prev.historyToken && window.history.state?.habsumModalToken === prev.historyToken) {
+        closeAfterHistoryPopRef.current = { modal: prev, afterClose };
+        window.history.back();
+        return;
+      }
+      dismissActive(true);
+      afterClose?.();
+    },
+    [dismissActive],
+  );
+
+  const closeModal = useCallback(() => requestClose(), [requestClose]);
+  const closeModalThen = useCallback(
+    (afterClose: () => void) => requestClose(afterClose),
+    [requestClose],
+  );
 
   const present = useCallback((options: PresentModalOptions) => {
     const current = activeRef.current;
@@ -218,8 +236,9 @@ export function ModalProvider({ children }: { children: ReactNode }) {
     const onPopState = () => {
       const pendingClose = closeAfterHistoryPopRef.current;
       closeAfterHistoryPopRef.current = null;
-      if (pendingClose && activeRef.current?.generation === pendingClose.generation) {
+      if (pendingClose && activeRef.current?.generation === pendingClose.modal.generation) {
         dismissActive(true);
+        pendingClose.afterClose?.();
         return;
       }
 
@@ -282,7 +301,10 @@ export function ModalProvider({ children }: { children: ReactNode }) {
     };
   }, [active?.generation]);
 
-  const value = useMemo(() => ({ present, closeModal }), [present, closeModal]);
+  const value = useMemo(
+    () => ({ present, closeModal, closeModalThen }),
+    [present, closeModal, closeModalThen],
+  );
 
   return (
     <ModalContext.Provider value={value}>

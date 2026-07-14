@@ -326,8 +326,14 @@ export function streakWidget(streak: StreakGraphWithText): HabitWidget {
             : []),
         ],
       },
-      { kind: 'streakGraph', graph: streakGraphData(streak) },
     ],
+  };
+}
+
+export function heatmapWidget(streak: StreakGraphWithText): HabitWidget {
+  return {
+    title: 'Data Visualization',
+    body: [{ kind: 'streakGraph', graph: streakGraphData(streak) }],
   };
 }
 

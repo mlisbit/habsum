@@ -8,7 +8,7 @@ type HabitMenuModalProps = {
   habitName: string;
   pending?: boolean;
   onNavigate?: (url: string) => void;
-  closeModal: () => void;
+  closeModalThen: (afterClose: () => void) => void;
   onReset: () => void | Promise<void>;
 };
 
@@ -17,17 +17,18 @@ export function HabitMenuModal({
   habitName,
   pending = false,
   onNavigate,
-  closeModal,
+  closeModalThen,
   onReset,
 }: HabitMenuModalProps) {
   const onEdit = () => {
     const url = configEditHabitUrl(user, habitName);
-    closeModal();
-    if (onNavigate) {
-      onNavigate(url);
-    } else {
-      window.location.href = url;
-    }
+    closeModalThen(() => {
+      if (onNavigate) {
+        onNavigate(url);
+      } else {
+        window.location.href = url;
+      }
+    });
   };
 
   return (

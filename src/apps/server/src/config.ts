@@ -48,6 +48,7 @@ export type HabitDef = {
   summationOptions?: SummationOptions;
   history?: {
     period: string;
+    displays: Array<'heatmap' | 'weekly_history'>;
   };
   /** Subset of selectable values or summation totals that count toward the streak. */
   streak?: {
@@ -74,7 +75,7 @@ type RawHabit = {
   /** `[subtract, add]` or `{ sub, add }` / `{ add, sub }` */
   summation_options?: unknown;
   summationOptions?: unknown;
-  history?: { period?: unknown; display?: unknown };
+  history?: { period?: unknown; display?: unknown; displays?: unknown };
   streak?: unknown;
 };
 
@@ -392,7 +393,33 @@ function normalizeHistory(
       `habit "${habitName}" history.period must be a non-empty string`,
     );
   }
-  return { period };
+  const displays = normalizeHistoryDisplays(raw.displays, raw.display, habitName);
+  return { period, displays };
+}
+
+function normalizeHistoryDisplays(
+  rawDisplays: unknown,
+  rawDisplay: unknown,
+  habitName: string,
+): NonNullable<HabitDef['history']>['displays'] {
+  const rawValues =
+    rawDisplays == null ? (rawDisplay == null ? ['weekly_history'] : [rawDisplay]) : rawDisplays;
+  if (!Array.isArray(rawValues)) {
+    throw new ConfigValidationError(`habit "${habitName}" history.displays must be a yaml list`);
+  }
+  const displays: NonNullable<HabitDef['history']>['displays'] = [];
+  for (const item of rawValues) {
+    if (item !== 'heatmap' && item !== 'weekly_history') {
+      throw new ConfigValidationError(
+        `habit "${habitName}" history.displays must only include "heatmap" or "weekly_history"`,
+      );
+    }
+    if (!displays.includes(item)) displays.push(item);
+  }
+  if (displays.length > 0) return displays;
+  throw new ConfigValidationError(
+    `habit "${habitName}" history.displays must include at least one display`,
+  );
 }
 
 function normalizeStreak(

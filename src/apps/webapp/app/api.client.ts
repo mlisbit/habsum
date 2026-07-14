@@ -53,6 +53,7 @@ export type {
   ConfigHabitDraft,
   CreateUserResponse,
   HealthResponse,
+  HistoryDisplay,
   HistoryPeriodUnit,
   ListUsersResponse,
   LoginUserResponse,
