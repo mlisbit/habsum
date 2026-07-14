@@ -4,7 +4,7 @@ import type { BarGraphData } from '@habsum/types/common/bar-chart';
 import { dayFromString, type Day } from '@habsum/types/common/day';
 import type { HabitPatch } from '@habsum/types/api-responses/habit-patch';
 import type { Habit, HabitWidget } from '@habsum/types/common/habit';
-import type { StreakGraphData } from '@habsum/types/common/streak';
+import type { StreakFill, StreakGraphData } from '@habsum/types/common/streak';
 import HabitRenderer from '@habsum/habit-render';
 import { Button } from '@habsum/ui/components/Button';
 import { Hoverable } from '@habsum/ui/components/Hoverable';
@@ -65,11 +65,17 @@ function fakeStreakData(values: number[], goal: number): StreakGraphData {
     data.at(-1)!.push({
       date: day,
       value: hitGoal ? 'goal hit' : null,
-      fill: hitGoal ? 10 : Math.max(0, Math.round((value / goal) * 8)),
+      fill: fakeStreakFill(value, goal),
     });
   });
 
   return { data };
+}
+
+function fakeStreakFill(value: number, goal: number): StreakFill {
+  if (value >= goal) return 5;
+  if (value === 0) return -5;
+  return Math.max(1, Math.min(4, Math.round((value / goal) * 5))) as StreakFill;
 }
 
 function formatPages(value: number | null): string {

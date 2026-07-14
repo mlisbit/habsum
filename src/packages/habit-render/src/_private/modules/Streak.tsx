@@ -1,6 +1,6 @@
 // exclusive-bem-block: habit-module-streak
 import { useMemo } from 'react';
-import type { StreakDatum, StreakGraphData } from '@habsum/types/common/streak';
+import type { StreakDatum, StreakFill, StreakGraphData } from '@habsum/types/common/streak';
 import { Heatmap, type HeatmapEntry } from '@habsum/ui/components/graphs/Heatmap';
 
 function formatStreakDayLabel(dateKey: string): string {
@@ -14,25 +14,29 @@ function formatStreakDayLabel(dateKey: string): string {
   return dt.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
-function streakFillValue(datum: StreakDatum): number {
-  const value = Number.isFinite(datum.fill) ? Math.trunc(datum.fill) : 0;
-  const fill = Math.max(0, Math.min(10, value));
-  return fill === 0 && datum.value != null ? 1 : fill;
+function streakFillValue(datum: StreakDatum): StreakFill {
+  const value = typeof datum.fill === 'number' ? Math.trunc(datum.fill) : 0;
+  return Math.max(-5, Math.min(5, value)) as StreakFill;
 }
 
-const STREAK_FILL_COLOR_BY_VALUE = [
-  'var(--heatmap-fill-0)',
-  'var(--heatmap-fill-1)',
-  'var(--heatmap-fill-2)',
-  'var(--heatmap-fill-3)',
-  'var(--heatmap-fill-4)',
-  'var(--heatmap-fill-5)',
-  'var(--heatmap-fill-6)',
-  'var(--heatmap-fill-7)',
-  'var(--heatmap-fill-8)',
-  'var(--heatmap-fill-9)',
-  'var(--heatmap-fill-10)',
-] as const;
+const STREAK_FILL_COLOR_BY_VALUE: Record<StreakFill, string> = {
+  [-5]: 'var(--heatmap-fill-negative-5)',
+  [-4]: 'var(--heatmap-fill-negative-4)',
+  [-3]: 'var(--heatmap-fill-negative-3)',
+  [-2]: 'var(--heatmap-fill-negative-2)',
+  [-1]: 'var(--heatmap-fill-negative-1)',
+  0: 'var(--heatmap-fill-0)',
+  1: 'var(--heatmap-fill-positive-1)',
+  2: 'var(--heatmap-fill-positive-2)',
+  3: 'var(--heatmap-fill-positive-3)',
+  4: 'var(--heatmap-fill-positive-4)',
+  5: 'var(--heatmap-fill-positive-5)',
+};
+
+function streakFillAriaLabel(fill: StreakFill): string {
+  if (fill === 0) return 'no fill';
+  return `${fill > 0 ? 'positive' : 'negative'} intensity ${Math.abs(fill)} of 5`;
+}
 
 function streakHeatmapEntry(datum: StreakDatum): HeatmapEntry {
   const dateKey = datum.date;
@@ -46,7 +50,7 @@ function streakHeatmapEntry(datum: StreakDatum): HeatmapEntry {
     {
       label: periodLabel,
       value: datum.value ?? '—',
-      ariaLabel: `${periodLabel}: ${valueLabel}, fill ${fill} of 10`,
+      ariaLabel: `${periodLabel}: ${valueLabel}, ${streakFillAriaLabel(fill)}`,
       color: STREAK_FILL_COLOR_BY_VALUE[fill],
       outline: datum.outline,
       dimmed: datum.dimmed,

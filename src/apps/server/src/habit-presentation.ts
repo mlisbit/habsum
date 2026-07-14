@@ -20,6 +20,7 @@ import {
 } from './db.js';
 import { habitApiTodayKey } from './server-time.js';
 import { mapSummationEventsToApi } from './summation-event-api.js';
+import { fillDistribution } from './fill-distribution.js';
 
 type StreakGraphWithText = StreakGraphData & {
   currentText: string;
@@ -145,6 +146,17 @@ function addDailyStreakDatum(columns: StreakDatum[][], datum: StreakDatum): void
 
 function addWeeklyStreakDatum(columns: StreakDatum[][], datum: StreakDatum): void {
   columns.push([datum]);
+}
+
+function applyStreakFillDistribution(
+  columns: StreakDatum[][],
+  values: ReadonlyArray<number | undefined>,
+): void {
+  const fills = fillDistribution(values);
+  columns.flat().forEach((datum, index) => {
+    const fill = fills[index];
+    if (fill !== undefined) datum.fill = fill;
+  });
 }
 
 function parsePeriodDays(period: string): number | null {
@@ -452,23 +464,6 @@ function countLoggedSummationDaysInRange(
     if (getSummationDayTotal(user, habitName, d) != null) count++;
   }
   return count;
-}
-
-function dailyStreakFill(value: string | null, eligible: ReadonlySet<string>): number {
-  if (value == null) return 0;
-  return eligible.has(value) ? 10 : 1;
-}
-
-function dailySummationStreakFill(total: number | null, eligible: ReadonlySet<string>): number {
-  if (total == null) return 0;
-  return totalCountsTowardStreak(total, eligible) ? 10 : 1;
-}
-
-function weeklyStreakFill(hits: number, loggedDays: number, daysPerWeek: number): number {
-  if (loggedDays === 0) return 0;
-  if (hits >= daysPerWeek) return 10;
-  if (hits === 0) return 1;
-  return Math.max(1, Math.min(9, Math.round((hits / daysPerWeek) * 10)));
 }
 
 function weekMeetsFrequency(
@@ -1008,18 +1003,20 @@ function streakGraphDailyWindow(
   const start = addDaysUtc(weekStartSunday(end), -(DAILY_STREAK_WINDOW_DAYS - WEEKDAY_ROW_COUNT));
   const outlineViewDate = shouldOutlineViewDate(viewDate, today);
   const data = emptyStreakColumns();
+  const rawFillValues: Array<number | undefined> = [];
   for (let i = 0; i < DAILY_STREAK_WINDOW_DAYS; i++) {
     const d = addDaysUtc(start, i);
     if (d > end) continue;
     const value = getSelect(user, habitName, d);
+    rawFillValues.push(value == null ? undefined : eligible.has(value) ? 1 : -1);
     addDailyStreakDatum(data, {
       date: dayFromString(d),
       value,
-      fill: dailyStreakFill(value, eligible),
       ...(outlineViewDate && d === viewDate ? { outline: true } : {}),
       ...(d > viewDate ? { dimmed: true } : {}),
     });
   }
+  applyStreakFillDistribution(data, rawFillValues);
   const current = currentSelectStreakLength(user, habitName, viewDate, eligible, omitEmptyViewDate);
   return {
     data,
@@ -1041,20 +1038,22 @@ function streakGraphWeeklyWindow(
   const endWeekStart = weekStartMonday(addDaysUtc(viewDate, rightPaddingDays));
   const outlineViewDate = shouldOutlineViewDate(viewDate, today);
   const data = emptyStreakColumns();
+  const rawFillValues: Array<number | undefined> = [];
   for (let i = WEEKLY_STREAK_WINDOW_WEEKS - 1; i >= 0; i--) {
     const weekStart = addDaysUtc(endWeekStart, -i * 7);
     const weekEnd = addDaysUtc(weekStart, 6);
     const hits = countEligibleDaysInRange(user, habitName, weekStart, weekEnd, eligible);
     const loggedDays = countLoggedDaysInRange(user, habitName, weekStart, weekEnd);
+    rawFillValues.push(loggedDays === 0 ? undefined : hits === 0 ? -1 : hits);
     addWeeklyStreakDatum(data, {
       date: dayFromString(weekStart),
       value: formatWeekProgressLabel(hits, daysPerWeek),
-      fill: weeklyStreakFill(hits, loggedDays, daysPerWeek),
       label: formatWeekRangeLabel(weekStart, weekEnd),
       ...(outlineViewDate && weekStart === viewWeekStart ? { outline: true } : {}),
       ...(outlineViewDate && weekStart > viewWeekStart ? { dimmed: true } : {}),
     });
   }
+  applyStreakFillDistribution(data, rawFillValues);
   const current = currentSelectStreakWeeks(
     user,
     habitName,
@@ -1082,18 +1081,20 @@ function summationStreakGraphDailyWindow(
   const start = addDaysUtc(weekStartSunday(end), -(DAILY_STREAK_WINDOW_DAYS - WEEKDAY_ROW_COUNT));
   const outlineViewDate = shouldOutlineViewDate(viewDate, today);
   const data = emptyStreakColumns();
+  const rawFillValues: Array<number | undefined> = [];
   for (let i = 0; i < DAILY_STREAK_WINDOW_DAYS; i++) {
     const d = addDaysUtc(start, i);
     if (d > end) continue;
     const total = getSummationDayTotal(user, habitName, d);
+    rawFillValues.push(total ?? undefined);
     addDailyStreakDatum(data, {
       date: dayFromString(d),
       value: total == null ? null : String(total),
-      fill: dailySummationStreakFill(total, eligible),
       ...(outlineViewDate && d === viewDate ? { outline: true } : {}),
       ...(d > viewDate ? { dimmed: true } : {}),
     });
   }
+  applyStreakFillDistribution(data, rawFillValues);
   const current = currentSummationStreakLength(
     user,
     habitName,
@@ -1121,20 +1122,22 @@ function summationStreakGraphWeeklyWindow(
   const endWeekStart = weekStartMonday(addDaysUtc(viewDate, rightPaddingDays));
   const outlineViewDate = shouldOutlineViewDate(viewDate, today);
   const data = emptyStreakColumns();
+  const rawFillValues: Array<number | undefined> = [];
   for (let i = WEEKLY_STREAK_WINDOW_WEEKS - 1; i >= 0; i--) {
     const weekStart = addDaysUtc(endWeekStart, -i * 7);
     const weekEnd = addDaysUtc(weekStart, 6);
     const hits = countEligibleSummationDaysInRange(user, habitName, weekStart, weekEnd, eligible);
     const loggedDays = countLoggedSummationDaysInRange(user, habitName, weekStart, weekEnd);
+    rawFillValues.push(loggedDays === 0 ? undefined : hits === 0 ? -1 : hits);
     addWeeklyStreakDatum(data, {
       date: dayFromString(weekStart),
       value: formatWeekProgressLabel(hits, daysPerWeek),
-      fill: weeklyStreakFill(hits, loggedDays, daysPerWeek),
       label: formatWeekRangeLabel(weekStart, weekEnd),
       ...(outlineViewDate && weekStart === viewWeekStart ? { outline: true } : {}),
       ...(outlineViewDate && weekStart > viewWeekStart ? { dimmed: true } : {}),
     });
   }
+  applyStreakFillDistribution(data, rawFillValues);
   const current = currentSummationStreakWeeks(
     user,
     habitName,

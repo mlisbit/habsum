@@ -53,16 +53,48 @@ html[data-theme='dark'] {
   --accent-graph-line: #ababab;
   --graph-previous-day-color: var(--accent-selected);
   --heatmap-fill-0: var(--background-input);
-  --heatmap-fill-1: var(--accent-red-1);
-  --heatmap-fill-2: color-mix(in srgb, var(--background-input) 80%, var(--accent-selected) 20%);
-  --heatmap-fill-3: color-mix(in srgb, var(--background-input) 70%, var(--accent-selected) 30%);
-  --heatmap-fill-4: color-mix(in srgb, var(--background-input) 60%, var(--accent-selected) 40%);
-  --heatmap-fill-5: color-mix(in srgb, var(--background-input) 50%, var(--accent-selected) 50%);
-  --heatmap-fill-6: color-mix(in srgb, var(--background-input) 40%, var(--accent-selected) 60%);
-  --heatmap-fill-7: color-mix(in srgb, var(--background-input) 30%, var(--accent-selected) 70%);
-  --heatmap-fill-8: color-mix(in srgb, var(--background-input) 20%, var(--accent-selected) 80%);
-  --heatmap-fill-9: color-mix(in srgb, var(--background-input) 10%, var(--accent-selected) 90%);
-  --heatmap-fill-10: var(--accent-selected);
+  --heatmap-fill-negative-1: color-mix(
+    in srgb,
+    var(--background-input) 80%,
+    var(--accent-red-1) 20%
+  );
+  --heatmap-fill-negative-2: color-mix(
+    in srgb,
+    var(--background-input) 60%,
+    var(--accent-red-1) 40%
+  );
+  --heatmap-fill-negative-3: color-mix(
+    in srgb,
+    var(--background-input) 40%,
+    var(--accent-red-1) 60%
+  );
+  --heatmap-fill-negative-4: color-mix(
+    in srgb,
+    var(--background-input) 20%,
+    var(--accent-red-1) 80%
+  );
+  --heatmap-fill-negative-5: var(--accent-red-1);
+  --heatmap-fill-positive-1: color-mix(
+    in srgb,
+    var(--background-input) 80%,
+    var(--accent-selected) 20%
+  );
+  --heatmap-fill-positive-2: color-mix(
+    in srgb,
+    var(--background-input) 60%,
+    var(--accent-selected) 40%
+  );
+  --heatmap-fill-positive-3: color-mix(
+    in srgb,
+    var(--background-input) 40%,
+    var(--accent-selected) 60%
+  );
+  --heatmap-fill-positive-4: color-mix(
+    in srgb,
+    var(--background-input) 20%,
+    var(--accent-selected) 80%
+  );
+  --heatmap-fill-positive-5: var(--accent-selected);
 
   // other
   --elevation-shadow: 0 1px 2px rgb(0 0 0 / 12%), 0 2px 8px rgb(0 0 0 / 16%);
@@ -114,16 +146,48 @@ html[data-theme='light'] {
   --accent-graph-line: #8b919a;
   --graph-previous-day-color: var(--accent-selected);
   --heatmap-fill-0: var(--background-input);
-  --heatmap-fill-1: var(--accent-red-1);
-  --heatmap-fill-2: color-mix(in srgb, var(--background-input) 80%, var(--accent-selected) 20%);
-  --heatmap-fill-3: color-mix(in srgb, var(--background-input) 70%, var(--accent-selected) 30%);
-  --heatmap-fill-4: color-mix(in srgb, var(--background-input) 60%, var(--accent-selected) 40%);
-  --heatmap-fill-5: color-mix(in srgb, var(--background-input) 50%, var(--accent-selected) 50%);
-  --heatmap-fill-6: color-mix(in srgb, var(--background-input) 40%, var(--accent-selected) 60%);
-  --heatmap-fill-7: color-mix(in srgb, var(--background-input) 30%, var(--accent-selected) 70%);
-  --heatmap-fill-8: color-mix(in srgb, var(--background-input) 20%, var(--accent-selected) 80%);
-  --heatmap-fill-9: color-mix(in srgb, var(--background-input) 10%, var(--accent-selected) 90%);
-  --heatmap-fill-10: var(--accent-selected);
+  --heatmap-fill-negative-1: color-mix(
+    in srgb,
+    var(--background-input) 80%,
+    var(--accent-red-1) 20%
+  );
+  --heatmap-fill-negative-2: color-mix(
+    in srgb,
+    var(--background-input) 60%,
+    var(--accent-red-1) 40%
+  );
+  --heatmap-fill-negative-3: color-mix(
+    in srgb,
+    var(--background-input) 40%,
+    var(--accent-red-1) 60%
+  );
+  --heatmap-fill-negative-4: color-mix(
+    in srgb,
+    var(--background-input) 20%,
+    var(--accent-red-1) 80%
+  );
+  --heatmap-fill-negative-5: var(--accent-red-1);
+  --heatmap-fill-positive-1: color-mix(
+    in srgb,
+    var(--background-input) 80%,
+    var(--accent-selected) 20%
+  );
+  --heatmap-fill-positive-2: color-mix(
+    in srgb,
+    var(--background-input) 60%,
+    var(--accent-selected) 40%
+  );
+  --heatmap-fill-positive-3: color-mix(
+    in srgb,
+    var(--background-input) 40%,
+    var(--accent-selected) 60%
+  );
+  --heatmap-fill-positive-4: color-mix(
+    in srgb,
+    var(--background-input) 20%,
+    var(--accent-selected) 80%
+  );
+  --heatmap-fill-positive-5: var(--accent-selected);
 
   // other
   --elevation-shadow: 0 1px 2px rgb(0 0 0 / 4%), 0 2px 8px rgb(0 0 0 / 6%);

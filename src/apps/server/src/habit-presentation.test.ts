@@ -256,7 +256,7 @@ describe('streakGraphForConfiguredWindow', () => {
 
     expect(streak.currentText).toBe('2 days');
     expect(streakDatumForDate(streak, viewDate)?.value).toBeNull();
-    expect(streakDatumForDate(streak, viewDate)?.fill).toBe(0);
+    expect(streakDatumForDate(streak, viewDate)?.fill).toBeUndefined();
     expect(streakDatumForDate(streak, dayFromString('2025-05-22'))).toBeUndefined();
   });
 
@@ -268,7 +268,7 @@ describe('streakGraphForConfiguredWindow', () => {
     const streak = streakGraphForConfiguredWindow(user, habit, viewDate, eligible, at);
 
     expect(streak.currentText).toBe('1 day');
-    expect(streakDatumForDate(streak, viewDate)?.fill).toBe(10);
+    expect(streakDatumForDate(streak, viewDate)?.fill).toBe(5);
   });
 
   it('uses a nonzero fill for logged selections outside the streak config', () => {
@@ -280,7 +280,7 @@ describe('streakGraphForConfiguredWindow', () => {
 
     expect(streak.currentText).toBe('0 days');
     expect(streakDatumForDate(streak, viewDate)?.value).toBe('bad');
-    expect(streakDatumForDate(streak, viewDate)?.fill).toBe(1);
+    expect(streakDatumForDate(streak, viewDate)?.fill).toBe(-5);
   });
 
   it('treats an unlogged past view date as breaking the streak', () => {
@@ -340,7 +340,7 @@ describe('streakGraphForConfiguredWindow (weekly frequency)', () => {
     const viewWeekStart = dayFromString('2025-05-19');
     expect(streakDatumForDate(streak, viewWeekStart)?.label).toMatch(/–/);
     expect(streakDatumForDate(streak, viewWeekStart)?.value).toBe('3/3');
-    expect(streakDatumForDate(streak, viewWeekStart)?.fill).toBe(10);
+    expect(streakDatumForDate(streak, viewWeekStart)?.fill).toBe(5);
     expect(streak.currentText).toBe('2 weeks');
   });
 
@@ -365,7 +365,7 @@ describe('streakGraphForConfiguredWindow (weekly frequency)', () => {
 
     const viewWeekStart = dayFromString('2025-05-19');
     expect(streakDatumForDate(streak, viewWeekStart)?.value).toBe('1/3');
-    expect(streakDatumForDate(streak, viewWeekStart)?.fill).toBe(3);
+    expect(streakDatumForDate(streak, viewWeekStart)?.fill).toBe(2);
     expect(streak.currentText).toBe('1 week');
   });
 
@@ -388,7 +388,7 @@ describe('streakGraphForConfiguredWindow (weekly frequency)', () => {
 
     const viewWeekStart = dayFromString('2025-05-19');
     expect(streakDatumForDate(streak, viewWeekStart)?.value).toBeNull();
-    expect(streakDatumForDate(streak, viewWeekStart)?.fill).toBe(1);
+    expect(streakDatumForDate(streak, viewWeekStart)?.fill).toBe(-5);
     expect(streak.currentText).toBe('0 weeks');
   });
 });
@@ -408,8 +408,8 @@ describe('summationStreakGraphForConfiguredWindow', () => {
 
     expect(streak.currentText).toBe('1 day');
     expect(streakDatumForDate(streak, viewDate)?.value).toBe('12');
-    expect(streakDatumForDate(streak, viewDate)?.fill).toBe(10);
-    expect(streakDatumForDate(streak, dayFromString('2025-05-20'))?.fill).toBe(1);
+    expect(streakDatumForDate(streak, viewDate)?.fill).toBe(5);
+    expect(streakDatumForDate(streak, dayFromString('2025-05-20'))?.fill).toBe(2);
   });
 });
 

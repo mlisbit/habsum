@@ -106,7 +106,7 @@ describe('PATCH /users/:user/habits summation history', () => {
         ?.find((body: { kind: string }) => body.kind === 'streakGraph')
         ?.graph?.data?.flat()
         .find((datum: { date: string }) => datum.date === date)?.fill,
-    ).toBe(10);
+    ).toBe(5);
 
     const listRes = await request(app)
       .get(`/users/${user}/habits`)

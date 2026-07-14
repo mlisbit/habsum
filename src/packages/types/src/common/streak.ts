@@ -25,13 +25,16 @@ export function isDailyStreakFrequency(daysPerWeek: number): boolean {
   return daysPerWeek >= 7;
 }
 
+/** Signed heatmap intensity: negative is unsuccessful, positive is successful/progress, and 0 is empty. */
+export type StreakFill = -5 | -4 | -3 | -2 | -1 | 0 | 1 | 2 | 3 | 4 | 5;
+
 export type StreakDatum = {
   /** Period date key. Daily streaks use the calendar day; weekly streaks use the week-start Monday. */
   date: Day;
   /** Day: logged option, or `null`. Week: progress label (e.g. `2/3`), or `null` if nothing logged. */
   value: string | null;
-  /** Dot fill intensity from `0` to `10`. */
-  fill: number;
+  /** Signed dot fill intensity from `-5` to `5`; omitted when there is no logged data. */
+  fill?: StreakFill;
   /** When true, highlight this period with an accent outline. */
   outline?: boolean;
   /** When true, visually de-emphasize this period. */
