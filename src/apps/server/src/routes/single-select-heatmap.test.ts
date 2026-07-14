@@ -36,14 +36,14 @@ describe('single-select heatmap', () => {
       .send({ habit: 'read', value: 'yes', date, tzOffsetMinutes });
 
     expect(res.status).toBe(200);
-    const dataVisualizationWidget = res.body.widgets?.find(
-      (widget: { title: string }) => widget.title === 'Data Visualization',
+    const historyWidget = res.body.widgets?.find(
+      (widget: { title: string }) => widget.title === 'History',
     );
-    expect(dataVisualizationWidget?.body?.map((body: { kind: string }) => body.kind)).toEqual([
+    expect(historyWidget?.body?.map((body: { kind: string }) => body.kind)).toEqual([
       'streakGraph',
     ]);
     expect(
-      dataVisualizationWidget?.body?.[0]?.graph?.data
+      historyWidget?.body?.[0]?.graph?.data
         ?.flat()
         .find((datum: { date: string }) => datum.date === date)?.fill,
     ).toBe(10);
@@ -56,7 +56,7 @@ describe('single-select heatmap', () => {
     expect(listRes.status).toBe(200);
     expect(
       listRes.body.habits?.[0]?.widgets?.find(
-        (widget: { title: string }) => widget.title === 'Data Visualization',
+        (widget: { title: string }) => widget.title === 'History',
       )?.body?.[0]?.kind,
     ).toBe('streakGraph');
   });

@@ -77,7 +77,6 @@ import {
   emptyHabitForHistory,
   habitHistoryForConfiguredPeriod,
   habitWidgets,
-  heatmapWidget,
   historyWidget,
   habitRowsForHistory,
   minDate,
@@ -86,7 +85,6 @@ import {
   summationStreakGraphForConfiguredWindow,
   type PatchBody,
   streakGraphForConfiguredWindow,
-  streakWidget,
 } from '../habit-presentation.js';
 import { authenticatedSessionId, requireMatchingRouteUser } from '../middleware/auth.js';
 import {
@@ -841,7 +839,7 @@ userScopedRouter.get(
       .filter((h) => habitRepeatsOnDate(h, date))
       .map((h) => {
         if (h.type === 'single_select') {
-          const dataVisualization = h.history?.displays.includes('heatmap')
+          const heatmap = h.history?.displays.includes('heatmap')
             ? streakGraphForConfiguredWindow(
                 user,
                 h.name,
@@ -868,8 +866,7 @@ userScopedRouter.get(
               )
             : null;
           const widgets = habitWidgets([
-            dataVisualization ? heatmapWidget(dataVisualization) : null,
-            streak ? streakWidget(streak) : null,
+            heatmap || streak ? historyWidget(null, h.goal, false, heatmap, streak) : null,
           ]);
           return {
             name: h.name,
@@ -894,7 +891,7 @@ userScopedRouter.get(
               tzOffsetMinutes,
             )
           : null;
-        const dataVisualization =
+        const heatmap =
           h.history?.displays.includes('heatmap') && h.goal != null
             ? summationStreakGraphForConfiguredWindow(
                 user,
@@ -923,9 +920,9 @@ userScopedRouter.get(
           : null;
         const widgets = habitWidgets([
           progressWidget(total, h.goal),
-          history ? historyWidget(history, h.goal, config.includeAbsentDaysInAverage) : null,
-          dataVisualization ? heatmapWidget(dataVisualization) : null,
-          streak ? streakWidget(streak) : null,
+          history || heatmap || streak
+            ? historyWidget(history, h.goal, config.includeAbsentDaysInAverage, heatmap, streak)
+            : null,
         ]);
         const base = {
           name: h.name,
@@ -1004,7 +1001,7 @@ userScopedRouter.patch(
         deleteDailySelect(user, habit, date);
         const opts = known.options ?? [];
         const firstDate = getFirstDate(user);
-        const dataVisualization = known.history?.displays.includes('heatmap')
+        const heatmap = known.history?.displays.includes('heatmap')
           ? streakGraphForConfiguredWindow(
               user,
               habit,
@@ -1031,8 +1028,7 @@ userScopedRouter.patch(
             )
           : null;
         const widgets = habitWidgets([
-          dataVisualization ? heatmapWidget(dataVisualization) : null,
-          streak ? streakWidget(streak) : null,
+          heatmap || streak ? historyWidget(null, known.goal, false, heatmap, streak) : null,
         ]);
         const out: PatchHabitResponse = {
           user,
@@ -1056,7 +1052,7 @@ userScopedRouter.patch(
       }
       const next = setSelect(user, habit, date, value);
       const firstDate = getFirstDate(user);
-      const dataVisualization = known.history?.displays.includes('heatmap')
+      const heatmap = known.history?.displays.includes('heatmap')
         ? streakGraphForConfiguredWindow(
             user,
             habit,
@@ -1083,8 +1079,7 @@ userScopedRouter.patch(
           )
         : null;
       const widgets = habitWidgets([
-        dataVisualization ? heatmapWidget(dataVisualization) : null,
-        streak ? streakWidget(streak) : null,
+        heatmap || streak ? historyWidget(null, known.goal, false, heatmap, streak) : null,
       ]);
       const out: PatchHabitResponse = {
         user,
@@ -1116,7 +1111,7 @@ userScopedRouter.patch(
             tzOffsetMinutes,
           )
         : null;
-      const dataVisualization =
+      const heatmap =
         known.history?.displays.includes('heatmap') && known.goal != null
           ? summationStreakGraphForConfiguredWindow(
               user,
@@ -1145,9 +1140,9 @@ userScopedRouter.patch(
         : null;
       return habitWidgets([
         progressWidget(nextTotal, known.goal),
-        history ? historyWidget(history, known.goal, config.includeAbsentDaysInAverage) : null,
-        dataVisualization ? heatmapWidget(dataVisualization) : null,
-        streak ? streakWidget(streak) : null,
+        history || heatmap || streak
+          ? historyWidget(history, known.goal, config.includeAbsentDaysInAverage, heatmap, streak)
+          : null,
       ]);
     };
 

@@ -205,13 +205,16 @@ describe('streakGraphForConfiguredWindow', () => {
     const streak = streakGraphForConfiguredWindow(user, habit, viewDate, eligible, at);
 
     expect(streak.currentText).toBe('2 days');
-    expect(streak.data).toHaveLength(7);
-    expect(
-      streak.data[0]?.every((datum) => new Date(`${datum.date}T00:00:00.000Z`).getUTCDay() === 0),
-    ).toBe(true);
-    expect(
-      streak.data[6]?.every((datum) => new Date(`${datum.date}T00:00:00.000Z`).getUTCDay() === 6),
-    ).toBe(true);
+    expect(streak.data).toHaveLength(53);
+    expect(streak.data.every((week) => week.length >= 1 && week.length <= 7)).toBe(true);
+    expect(streak.data[0]?.[0]?.date).toBe('2024-05-19');
+    expect(streak.data[0]?.at(-1)?.date).toBe('2024-05-25');
+    expect(streak.data.at(-1)?.map((datum) => datum.date)).toEqual([
+      '2025-05-18',
+      '2025-05-19',
+      '2025-05-20',
+      '2025-05-21',
+    ]);
     expect(streakDatumForDate(streak, viewDate)?.label).toBeUndefined();
     expect(streakDatumForDate(streak, viewDate)?.outline).toBeUndefined();
     expect(streak.data.flat()).toHaveLength(368);

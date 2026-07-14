@@ -128,12 +128,23 @@ function weekStartSunday(date: string): string {
   return addDaysUtc(date, -weekdayRowIndex(date));
 }
 
-function emptyStreakRows(): StreakDatum[][] {
-  return Array.from({ length: WEEKDAY_ROW_COUNT }, () => []);
+function emptyStreakColumns(): StreakDatum[][] {
+  return [];
 }
 
-function addStreakDatum(rows: StreakDatum[][], datum: StreakDatum): void {
-  rows[weekdayRowIndex(datum.date)]!.push(datum);
+function addDailyStreakDatum(columns: StreakDatum[][], datum: StreakDatum): void {
+  const currentColumn = columns.at(-1);
+  const currentWeekStart = currentColumn?.[0] ? weekStartSunday(currentColumn[0].date) : null;
+  const datumWeekStart = weekStartSunday(datum.date);
+  if (!currentColumn || currentWeekStart !== datumWeekStart) {
+    columns.push([datum]);
+    return;
+  }
+  currentColumn.push(datum);
+}
+
+function addWeeklyStreakDatum(columns: StreakDatum[][], datum: StreakDatum): void {
+  columns.push([datum]);
 }
 
 function parsePeriodDays(period: string): number | null {
@@ -279,10 +290,33 @@ export function progressWidget(total: number | null, goal: number | null): Habit
 }
 
 export function historyWidget(
-  history: HabitHistory,
+  history: HabitHistory | null,
   goal: number | null | undefined,
   includeAbsentDaysInAverage = false,
+  heatmap: StreakGraphWithText | null = null,
+  streak: StreakGraphWithText | null = null,
 ): HabitWidget {
+  const body: HabitWidget['body'] = [];
+  if (streak) {
+    body.push(...streakWidget(streak).body);
+  }
+  if (history) {
+    body.push({
+      kind: 'barGraph',
+      data: history.data.user.graphData,
+      ...(goal != null && goal > 0
+        ? { lines: [{ value: goal, label: `Daily goal: ${goal}` }] }
+        : {}),
+    });
+  }
+  if (heatmap) {
+    body.push({ kind: 'streakGraph', graph: streakGraphData(heatmap) });
+  }
+
+  if (!history) {
+    return { title: 'History', body };
+  }
+
   const average = historyAverage(history, includeAbsentDaysInAverage);
   const averageText = average == null ? '—' : String(average);
   return {
@@ -291,15 +325,7 @@ export function historyWidget(
     ...(!includeAbsentDaysInAverage
       ? { titleValueHoverText: historyAverageHoverText(history) }
       : {}),
-    body: [
-      {
-        kind: 'barGraph',
-        data: history.data.user.graphData,
-        ...(goal != null && goal > 0
-          ? { lines: [{ value: goal, label: `Daily goal: ${goal}` }] }
-          : {}),
-      },
-    ],
+    body,
   };
 }
 
@@ -327,13 +353,6 @@ export function streakWidget(streak: StreakGraphWithText): HabitWidget {
         ],
       },
     ],
-  };
-}
-
-export function heatmapWidget(streak: StreakGraphWithText): HabitWidget {
-  return {
-    title: 'Data Visualization',
-    body: [{ kind: 'streakGraph', graph: streakGraphData(streak) }],
   };
 }
 
@@ -988,12 +1007,12 @@ function streakGraphDailyWindow(
   const end = addDaysUtc(viewDate, rightPaddingDays);
   const start = addDaysUtc(weekStartSunday(end), -(DAILY_STREAK_WINDOW_DAYS - WEEKDAY_ROW_COUNT));
   const outlineViewDate = shouldOutlineViewDate(viewDate, today);
-  const data = emptyStreakRows();
+  const data = emptyStreakColumns();
   for (let i = 0; i < DAILY_STREAK_WINDOW_DAYS; i++) {
     const d = addDaysUtc(start, i);
     if (d > end) continue;
     const value = getSelect(user, habitName, d);
-    addStreakDatum(data, {
+    addDailyStreakDatum(data, {
       date: dayFromString(d),
       value,
       fill: dailyStreakFill(value, eligible),
@@ -1021,13 +1040,13 @@ function streakGraphWeeklyWindow(
   const rightPaddingDays = graphRightPaddingDays(viewDate, today);
   const endWeekStart = weekStartMonday(addDaysUtc(viewDate, rightPaddingDays));
   const outlineViewDate = shouldOutlineViewDate(viewDate, today);
-  const data = emptyStreakRows();
+  const data = emptyStreakColumns();
   for (let i = WEEKLY_STREAK_WINDOW_WEEKS - 1; i >= 0; i--) {
     const weekStart = addDaysUtc(endWeekStart, -i * 7);
     const weekEnd = addDaysUtc(weekStart, 6);
     const hits = countEligibleDaysInRange(user, habitName, weekStart, weekEnd, eligible);
     const loggedDays = countLoggedDaysInRange(user, habitName, weekStart, weekEnd);
-    addStreakDatum(data, {
+    addWeeklyStreakDatum(data, {
       date: dayFromString(weekStart),
       value: formatWeekProgressLabel(hits, daysPerWeek),
       fill: weeklyStreakFill(hits, loggedDays, daysPerWeek),
@@ -1062,12 +1081,12 @@ function summationStreakGraphDailyWindow(
   const end = addDaysUtc(viewDate, rightPaddingDays);
   const start = addDaysUtc(weekStartSunday(end), -(DAILY_STREAK_WINDOW_DAYS - WEEKDAY_ROW_COUNT));
   const outlineViewDate = shouldOutlineViewDate(viewDate, today);
-  const data = emptyStreakRows();
+  const data = emptyStreakColumns();
   for (let i = 0; i < DAILY_STREAK_WINDOW_DAYS; i++) {
     const d = addDaysUtc(start, i);
     if (d > end) continue;
     const total = getSummationDayTotal(user, habitName, d);
-    addStreakDatum(data, {
+    addDailyStreakDatum(data, {
       date: dayFromString(d),
       value: total == null ? null : String(total),
       fill: dailySummationStreakFill(total, eligible),
@@ -1101,13 +1120,13 @@ function summationStreakGraphWeeklyWindow(
   const rightPaddingDays = graphRightPaddingDays(viewDate, today);
   const endWeekStart = weekStartMonday(addDaysUtc(viewDate, rightPaddingDays));
   const outlineViewDate = shouldOutlineViewDate(viewDate, today);
-  const data = emptyStreakRows();
+  const data = emptyStreakColumns();
   for (let i = WEEKLY_STREAK_WINDOW_WEEKS - 1; i >= 0; i--) {
     const weekStart = addDaysUtc(endWeekStart, -i * 7);
     const weekEnd = addDaysUtc(weekStart, 6);
     const hits = countEligibleSummationDaysInRange(user, habitName, weekStart, weekEnd, eligible);
     const loggedDays = countLoggedSummationDaysInRange(user, habitName, weekStart, weekEnd);
-    addStreakDatum(data, {
+    addWeeklyStreakDatum(data, {
       date: dayFromString(weekStart),
       value: formatWeekProgressLabel(hits, daysPerWeek),
       fill: weeklyStreakFill(hits, loggedDays, daysPerWeek),

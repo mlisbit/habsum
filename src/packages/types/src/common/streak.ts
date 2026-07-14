@@ -49,7 +49,12 @@ export type LongestStreak = {
   range: string;
 };
 
-/** Streak window grouped into weekday rows. Row 0 is Sunday; row 6 is Saturday. */
+/**
+ * Streak window grouped into display columns from oldest to newest.
+ * Daily streak columns are calendar weeks containing Sunday through Saturday; the newest column
+ * ends on the graph's final day and may contain fewer than seven days. Weekly streak periods use
+ * one cell per column.
+ */
 export type StreakGraphData = {
   data: StreakDatum[][];
   /** Present when `streak.show_longest` is enabled and a longest run exists. */

@@ -56,7 +56,7 @@ describe('PATCH /users/:user/habits summation history', () => {
     expect(barGraph?.data?.[date]?.top).toBe(100);
   });
 
-  it('keeps streak pills separate from the heatmap visualization', async () => {
+  it('combines weekly history, heatmap, and streak pills in one history widget', async () => {
     const user = 'patch-history-heatmap-user';
     writeSummationUserConfig(
       user,
@@ -87,26 +87,45 @@ describe('PATCH /users/:user/habits summation history', () => {
       });
 
     expect(res.status).toBe(200);
-    const streakWidget = res.body.widgets?.find(
-      (widget: { title: string }) => widget.title === 'Streak',
-    );
-    expect(streakWidget?.body?.map((body: { kind: string }) => body.kind)).toEqual(['pills']);
-
     const historyWidget = res.body.widgets?.find(
       (widget: { title: string }) => widget.title === 'History',
     );
-    expect(historyWidget?.body?.map((body: { kind: string }) => body.kind)).toContain('barGraph');
-
-    const dataVisualizationWidget = res.body.widgets?.find(
-      (widget: { title: string }) => widget.title === 'Data Visualization',
-    );
-    expect(dataVisualizationWidget?.body?.map((body: { kind: string }) => body.kind)).toEqual([
+    expect(historyWidget?.body?.map((body: { kind: string }) => body.kind)).toEqual([
+      'pills',
+      'barGraph',
       'streakGraph',
     ]);
     expect(
-      dataVisualizationWidget?.body?.[0]?.graph?.data
-        ?.flat()
+      res.body.widgets?.some(
+        (widget: { title: string }) =>
+          widget.title === 'Data Visualization' || widget.title === 'Streak',
+      ),
+    ).toBe(false);
+    expect(
+      historyWidget?.body
+        ?.find((body: { kind: string }) => body.kind === 'streakGraph')
+        ?.graph?.data?.flat()
         .find((datum: { date: string }) => datum.date === date)?.fill,
     ).toBe(10);
+
+    const listRes = await request(app)
+      .get(`/users/${user}/habits`)
+      .query({ date, tzOffsetMinutes })
+      .set('Cookie', `${SESSION_COOKIE_NAME}=${session}`);
+
+    expect(listRes.status).toBe(200);
+    const listHistoryWidget = listRes.body.habits?.[0]?.widgets?.find(
+      (widget: { title: string }) => widget.title === 'History',
+    );
+    expect(listHistoryWidget?.body?.map((body: { kind: string }) => body.kind)).toEqual([
+      'pills',
+      'barGraph',
+      'streakGraph',
+    ]);
+    expect(
+      listRes.body.habits?.[0]?.widgets?.some(
+        (widget: { title: string }) => widget.title === 'Streak',
+      ),
+    ).toBe(false);
   });
 });
