@@ -21,6 +21,7 @@ import {
 import { habitApiTodayKey } from './server-time.js';
 import { mapSummationEventsToApi } from './summation-event-api.js';
 import { fillDistribution } from './fill-distribution.js';
+import { selectablePillToInt } from './selectable-pill-to-int.js';
 
 type StreakGraphWithText = StreakGraphData & {
   currentText: string;
@@ -996,6 +997,7 @@ function streakGraphDailyWindow(
   viewDate: string,
   today: string,
   eligible: ReadonlySet<string>,
+  selectableValueMap: ReadonlyMap<string, number>,
   omitEmptyViewDate: boolean,
 ): StreakGraphWithText {
   const rightPaddingDays = graphRightPaddingDays(viewDate, today);
@@ -1008,7 +1010,9 @@ function streakGraphDailyWindow(
     const d = addDaysUtc(start, i);
     if (d > end) continue;
     const value = getSelect(user, habitName, d);
-    rawFillValues.push(value == null ? undefined : eligible.has(value) ? 1 : -1);
+    rawFillValues.push(
+      value == null ? undefined : (selectableValueMap.get(value) ?? (eligible.has(value) ? 1 : -1)),
+    );
     addDailyStreakDatum(data, {
       date: dayFromString(d),
       value,
@@ -1162,13 +1166,23 @@ export function streakGraphForConfiguredWindow(
   streakFrequency?: string,
   showLongest = false,
   firstDate: string | null = null,
+  selectableValues: readonly string[] = streakEligibleOptions,
 ): StreakGraphWithText {
   const eligible = new Set(streakEligibleOptions);
+  const selectableValueMap = selectablePillToInt(selectableValues, streakEligibleOptions);
   const today = habitApiTodayKey(at, tzOffsetMinutes);
   const omitEmptyViewPeriod = viewDate === today;
   const daysPerWeek = parseStreakFrequencyDays(streakFrequency);
   const graph = isDailyStreakFrequency(daysPerWeek)
-    ? streakGraphDailyWindow(user, habitName, viewDate, today, eligible, omitEmptyViewPeriod)
+    ? streakGraphDailyWindow(
+        user,
+        habitName,
+        viewDate,
+        today,
+        eligible,
+        selectableValueMap,
+        omitEmptyViewPeriod,
+      )
     : streakGraphWeeklyWindow(
         user,
         habitName,

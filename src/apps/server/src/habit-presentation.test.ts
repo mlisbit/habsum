@@ -283,6 +283,36 @@ describe('streakGraphForConfiguredWindow', () => {
     expect(streakDatumForDate(streak, viewDate)?.fill).toBe(-5);
   });
 
+  it('distributes selectable positions and makes non-streak options negative', () => {
+    const at = new Date('2025-05-21T12:00:00.000Z');
+    const viewDate = dayFromString('2025-05-21');
+    const valuesByDate = new Map([
+      ['2025-05-18', 'none'],
+      ['2025-05-19', 'light'],
+      ['2025-05-20', 'moderate'],
+      ['2025-05-21', 'heavy'],
+    ]);
+    vi.mocked(getSelect).mockImplementation((_u, _h, date) => valuesByDate.get(date) ?? null);
+
+    const streak = streakGraphForConfiguredWindow(
+      user,
+      habit,
+      viewDate,
+      ['none', 'light'],
+      at,
+      undefined,
+      undefined,
+      false,
+      null,
+      ['none', 'light', 'moderate', 'heavy'],
+    );
+
+    expect(streakDatumForDate(streak, dayFromString('2025-05-18'))?.fill).toBe(5);
+    expect(streakDatumForDate(streak, dayFromString('2025-05-19'))?.fill).toBe(3);
+    expect(streakDatumForDate(streak, dayFromString('2025-05-20'))?.fill).toBe(-4);
+    expect(streakDatumForDate(streak, dayFromString('2025-05-21'))?.fill).toBe(-5);
+  });
+
   it('treats an unlogged past view date as breaking the streak', () => {
     const at = new Date('2025-05-21T12:00:00.000Z');
     const viewDate = '2025-05-15';

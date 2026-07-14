@@ -844,12 +844,13 @@ userScopedRouter.get(
                 user,
                 h.name,
                 date,
-                h.options ?? [],
+                h.streak?.options ?? [],
                 at,
                 tzOffsetMinutes,
                 undefined,
                 false,
                 firstDate,
+                h.options ?? [],
               )
             : null;
           const streak = h.streak
@@ -863,6 +864,7 @@ userScopedRouter.get(
                 h.streak.frequency,
                 h.streak.show_longest === true,
                 firstDate,
+                h.options ?? [],
               )
             : null;
           const widgets = habitWidgets([
@@ -1006,12 +1008,13 @@ userScopedRouter.patch(
               user,
               habit,
               date,
-              opts,
+              known.streak?.options ?? [],
               at,
               tzOffsetMinutes,
               undefined,
               false,
               firstDate,
+              opts,
             )
           : null;
         const streak = known.streak
@@ -1025,6 +1028,7 @@ userScopedRouter.patch(
               known.streak.frequency,
               known.streak.show_longest === true,
               firstDate,
+              opts,
             )
           : null;
         const widgets = habitWidgets([
@@ -1057,12 +1061,13 @@ userScopedRouter.patch(
             user,
             habit,
             date,
-            opts,
+            known.streak?.options ?? [],
             at,
             tzOffsetMinutes,
             undefined,
             false,
             firstDate,
+            opts,
           )
         : null;
       const streak = known.streak
@@ -1076,6 +1081,7 @@ userScopedRouter.patch(
             known.streak.frequency,
             known.streak.show_longest === true,
             firstDate,
+            opts,
           )
         : null;
       const widgets = habitWidgets([
