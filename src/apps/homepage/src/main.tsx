@@ -97,9 +97,17 @@ function createStreakWidget(streakTotals: number[], goal: number) {
   return buildWidget()
     .withTitle('Streak')
     .withTitleValue(`${streakTotals.length} days`)
-    .withPills([
-      { label: `Current: ${currentStreak} days`, hover: 'Current streak of reading goal days' },
-      { label: `Longest: ${longestStreak} days`, hover: 'Longest streak in this fake history' },
+    .withInsights([
+      {
+        header: 'Current',
+        description: `${currentStreak} days`,
+        hover: 'Current streak of reading goal days',
+      },
+      {
+        header: 'Longest',
+        description: `${longestStreak} days`,
+        hover: 'Longest streak in this fake history',
+      },
     ])
     .withStreakGraph(fakeStreakData(streakTotals, goal))
     .model();

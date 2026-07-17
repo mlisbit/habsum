@@ -17,16 +17,18 @@ export type HabitWidgetBase = {
   body: HabitWidgetBody[];
 };
 
-export type HabitWidgetPill = {
-  /** HTML-safe display text rendered by the client. */
-  label: string;
+export type HabitWidgetInsight = {
+  /** HTML-safe leading text rendered by the client. */
+  header: string;
+  /** HTML-safe supporting text rendered after the header. */
+  description: string;
   /** Optional HTML-safe hover text rendered by the client. */
   hover?: string;
 };
 
-export type HabitWidgetPillsBody = {
-  kind: 'pills';
-  pills: HabitWidgetPill[];
+export type HabitWidgetInsightsBody = {
+  kind: 'insights';
+  insights: HabitWidgetInsight[];
 };
 
 export type HabitWidgetProgressBody = {
@@ -52,7 +54,7 @@ export type HabitWidgetStreakGraphBody = {
 };
 
 export type HabitWidgetBody =
-  | HabitWidgetPillsBody
+  | HabitWidgetInsightsBody
   | HabitWidgetProgressBody
   | HabitWidgetBarGraphBody
   | HabitWidgetStreakGraphBody;

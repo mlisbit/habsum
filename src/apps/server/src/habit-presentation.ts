@@ -271,19 +271,10 @@ function formatShortHistoryDate(dateKey: string): string {
 function historyAverageRangeText(history: HabitHistory): string {
   const entries = Object.entries(history.data.user.graphData);
   const first = entries.at(0)?.[0];
-  if (first == null) return 'since now';
+  if (first == null) return 'today';
   const outlined = entries.find(([, datum]) => datum.outline === true)?.[0];
-  if (outlined == null) return `since ${formatShortHistoryDate(first)}`;
-  return `from ${formatShortHistoryDate(first)} to ${formatShortHistoryDate(outlined)}`;
-}
-
-function historyAverageHoverText(history: HabitHistory): string {
-  const values = Object.values(history.data.user.graphData);
-  const daysWithData = values.filter((datum) => datum.value != null).length;
-  const daysWithoutData = values.length - daysWithData;
-  return daysWithoutData === 0
-    ? `Average includes all ${values.length} ${values.length === 1 ? 'day' : 'days'} in this history window.`
-    : `Average excludes ${daysWithoutData} ${daysWithoutData === 1 ? 'day' : 'days'} with no data and uses ${daysWithData} ${daysWithData === 1 ? 'day' : 'days'} with logged data.`;
+  const end = outlined == null ? 'today' : formatShortHistoryDate(outlined);
+  return `${formatShortHistoryDate(first)} to ${end}`;
 }
 
 export function progressWidget(total: number | null, goal: number | null): HabitWidget | null {
@@ -314,6 +305,19 @@ export function historyWidget(
     body.push(...streakWidget(streak).body);
   }
   if (history) {
+    const average = historyAverage(history, includeAbsentDaysInAverage);
+    const averageText = average == null ? '—' : String(average);
+    const averageCard = {
+      header: 'Average/day',
+      description: averageText,
+      hover: historyAverageRangeText(history),
+    };
+    const insights = body.find((item) => item.kind === 'insights');
+    if (insights?.kind === 'insights') {
+      insights.insights.push(averageCard);
+    } else {
+      body.push({ kind: 'insights', insights: [averageCard] });
+    }
     body.push({
       kind: 'barGraph',
       data: history.data.user.graphData,
@@ -326,20 +330,7 @@ export function historyWidget(
     body.push({ kind: 'streakGraph', graph: streakGraphData(heatmap) });
   }
 
-  if (!history) {
-    return { title: 'History', body };
-  }
-
-  const average = historyAverage(history, includeAbsentDaysInAverage);
-  const averageText = average == null ? '—' : String(average);
-  return {
-    title: 'History',
-    titleValue: `${averageText}/day average ${historyAverageRangeText(history)}`,
-    ...(!includeAbsentDaysInAverage
-      ? { titleValueHoverText: historyAverageHoverText(history) }
-      : {}),
-    body,
-  };
+  return { title: 'History', body };
 }
 
 function streakGraphData(streak: StreakGraphWithText): StreakGraphData {
@@ -352,14 +343,22 @@ export function streakWidget(streak: StreakGraphWithText): HabitWidget {
     title: 'Streak',
     body: [
       {
-        kind: 'pills',
-        pills: [
-          { label: `Current streak: ${streak.currentText}` },
+        kind: 'insights',
+        insights: [
+          { header: 'Current streak', description: streak.currentText },
           ...(streak.longestStreak
             ? [
                 {
-                  label: `${streak.longestStreak.label}: ${streak.longestStreak.text}`,
-                  hover: streak.longestStreak.range,
+                  header: streak.longestStreak.label,
+                  description: streak.longestStreak.text,
+                  hover: [
+                    streak.longestStreak.range,
+                    streak.longestStreak.qualifier
+                      ? `Includes ${streak.longestStreak.qualifier}`
+                      : null,
+                  ]
+                    .filter(Boolean)
+                    .join('\n'),
                 },
               ]
             : []),
@@ -892,11 +891,11 @@ function longestStreakForConfig(
   const isCurrent = activeRun != null && streakRunsEqual(run, activeRun);
   const text = formatSelectStreakText(run.length, weekly);
   const qualifier = formatLongestStreakQualifier(eligible, daysPerWeek);
-  const qualifiedText = qualifier ? `${text} of ${qualifier}` : text;
   return {
     label: 'Longest streak',
-    text: isCurrent ? `${qualifiedText} (current)` : qualifiedText,
+    text: isCurrent ? `${text} (current)` : text,
     range,
+    ...(qualifier ? { qualifier } : {}),
   };
 }
 
@@ -933,11 +932,11 @@ function longestSummationStreakForConfig(
   const isCurrent = activeRun != null && streakRunsEqual(run, activeRun);
   const text = formatSelectStreakText(run.length, weekly);
   const qualifier = formatLongestStreakQualifier(eligible, daysPerWeek);
-  const qualifiedText = qualifier ? `${text} of ${qualifier}` : text;
   return {
     label: 'Longest streak',
-    text: isCurrent ? `${qualifiedText} (current)` : qualifiedText,
+    text: isCurrent ? `${text} (current)` : text,
     range,
+    ...(qualifier ? { qualifier } : {}),
   };
 }
 

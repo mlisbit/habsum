@@ -56,7 +56,7 @@ describe('PATCH /users/:user/habits summation history', () => {
     expect(barGraph?.data?.[date]?.top).toBe(100);
   });
 
-  it('combines weekly history, heatmap, and streak pills in one history widget', async () => {
+  it('combines weekly history, heatmap, and streak insights in one history widget', async () => {
     const user = 'patch-history-heatmap-user';
     writeSummationUserConfig(
       user,
@@ -91,10 +91,13 @@ describe('PATCH /users/:user/habits summation history', () => {
       (widget: { title: string }) => widget.title === 'History',
     );
     expect(historyWidget?.body?.map((body: { kind: string }) => body.kind)).toEqual([
-      'pills',
+      'insights',
       'barGraph',
       'streakGraph',
     ]);
+    expect(historyWidget?.body?.[0]?.insights).toEqual(
+      expect.arrayContaining([expect.objectContaining({ header: 'Average/day' })]),
+    );
     expect(
       res.body.widgets?.some(
         (widget: { title: string }) =>
@@ -118,7 +121,7 @@ describe('PATCH /users/:user/habits summation history', () => {
       (widget: { title: string }) => widget.title === 'History',
     );
     expect(listHistoryWidget?.body?.map((body: { kind: string }) => body.kind)).toEqual([
-      'pills',
+      'insights',
       'barGraph',
       'streakGraph',
     ]);

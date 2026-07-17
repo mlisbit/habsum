@@ -17,6 +17,7 @@ html[data-theme='dark'] {
   --background-inverse: #bbb8b8;
   --background-warning: #5b333a;
   --background-input: #292b2f;
+  --background-info-card: #292b2f;
   --background-modal-backdrop: rgb(0 0 0 / 45%);
 
   // text colors
@@ -114,6 +115,7 @@ html[data-theme='light'] {
   --background-inverse: #1c1d21;
   --background-warning: var(--accent-red-1);
   --background-input: #e4e4e4;
+  --background-info-card: #e4e4e4;
   --background-modal-backdrop: rgb(0 0 0 / 45%);
 
   // text colors

@@ -2,7 +2,7 @@ import type {
   HabitWidget,
   HabitWidgetBarGraphBody,
   HabitWidgetBody,
-  HabitWidgetPill,
+  HabitWidgetInsight,
   HabitWidgetProgressBody,
   HabitWidgetStreakGraphBody,
 } from '@habsum/types/common/habit';
@@ -27,7 +27,7 @@ type WidgetModelBuilder = {
   withTitleValueHoverText(titleValueHoverText: string | undefined): WidgetModelBuilder;
   withBody(body: HabitWidgetBody[]): WidgetModelBuilder;
   withBodyItem(body: HabitWidgetBody): WidgetModelBuilder;
-  withPills(pills: HabitWidgetPill[]): WidgetModelBuilder;
+  withInsights(insights: HabitWidgetInsight[]): WidgetModelBuilder;
   withProgress(value: number | null, max: number): WidgetModelBuilder;
   withBarGraph(body: Omit<HabitWidgetBarGraphBody, 'kind'>): WidgetModelBuilder;
   withStreakGraph(graph: StreakGraphData): WidgetModelBuilder;
@@ -44,7 +44,7 @@ function builder(state: WidgetModelBuilderState): WidgetModelBuilder {
     withTitleValueHoverText: (titleValueHoverText) => next({ titleValueHoverText }),
     withBody: (body) => next({ body }),
     withBodyItem,
-    withPills: (pills) => withBodyItem({ kind: 'pills', pills }),
+    withInsights: (insights) => withBodyItem({ kind: 'insights', insights }),
     withProgress: (value, max) => withBodyItem({ kind: 'progress', value, max }),
     withBarGraph: ({
       data,

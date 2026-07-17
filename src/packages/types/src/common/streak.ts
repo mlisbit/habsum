@@ -47,9 +47,11 @@ export type StreakDatum = {
 export type LongestStreak = {
   /** Display label for the longest streak row. */
   label: string;
-  /** e.g. `3 days of good` or `2 weeks of 3+ per week: good (current)`. */
+  /** e.g. `3 days` or `2 weeks (current)`. */
   text: string;
   range: string;
+  /** Optional explanation of what values/frequency count toward the streak. */
+  qualifier?: string;
 };
 
 /**

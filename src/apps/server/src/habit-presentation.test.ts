@@ -92,11 +92,18 @@ describe('historyWidget', () => {
 
     const widget = historyWidget(history, 5);
 
-    expect(widget.titleValue).toBe('3/day average since May 15');
-    expect(widget.titleValueHoverText).toBe(
-      'Average excludes 5 days with no data and uses 2 days with logged data.',
-    );
-    expect(widget.body[0]).toMatchObject({
+    expect(widget.titleValue).toBeUndefined();
+    expect(widget.body[0]).toEqual({
+      kind: 'insights',
+      insights: [
+        {
+          header: 'Average/day',
+          description: '3',
+          hover: 'May 15 to today',
+        },
+      ],
+    });
+    expect(widget.body[1]).toMatchObject({
       kind: 'barGraph',
       lines: [{ value: 5, label: 'Daily goal: 5' }],
     });
@@ -123,11 +130,41 @@ describe('historyWidget', () => {
       true,
     );
 
-    expect(widget.titleValue).toBe('1/day average since May 15');
-    expect(widget.titleValueHoverText).toBeUndefined();
-    expect(widget.body[0]).toMatchObject({
+    expect(widget.titleValue).toBeUndefined();
+    expect(widget.body[0]).toEqual({
+      kind: 'insights',
+      insights: [
+        {
+          header: 'Average/day',
+          description: '1',
+          hover: 'May 15 to today',
+        },
+      ],
+    });
+    expect(widget.body[1]).toMatchObject({
       kind: 'barGraph',
       lines: [{ value: 5, label: 'Daily goal: 5' }],
+    });
+  });
+
+  it('uses the configured current graph period in the average card', () => {
+    const graphData = Object.fromEntries(
+      Array.from({ length: 21 }, (_, index) => [
+        `2025-05-${String(index + 1).padStart(2, '0')}`,
+        { value: 0, top: 5, hoverLabel: String(index + 1) },
+      ]),
+    );
+    const widget = historyWidget({ data: { user: { graphData } } }, 5, true);
+
+    expect(widget.body[0]).toEqual({
+      kind: 'insights',
+      insights: [
+        {
+          header: 'Average/day',
+          description: '0',
+          hover: 'May 1 to today',
+        },
+      ],
     });
   });
 
@@ -151,7 +188,17 @@ describe('historyWidget', () => {
       5,
     );
 
-    expect(widget.titleValue).toBe('3/day average from May 15 to May 18');
+    expect(widget.titleValue).toBeUndefined();
+    expect(widget.body[0]).toEqual({
+      kind: 'insights',
+      insights: [
+        {
+          header: 'Average/day',
+          description: '3',
+          hover: 'May 15 to May 18',
+        },
+      ],
+    });
   });
 });
 
@@ -466,8 +513,9 @@ describe('streakGraphForConfiguredWindow (show_longest)', () => {
 
     expect(streak.longestStreak).toEqual({
       label: 'Longest streak',
-      text: '3 days of good (current)',
+      text: '3 days (current)',
       range: expect.stringMatching(/–/),
+      qualifier: 'good',
     });
   });
 
@@ -497,16 +545,17 @@ describe('streakGraphForConfiguredWindow (show_longest)', () => {
       '2025-05-01',
     );
 
-    expect(streak.longestStreak?.text).toBe('4 days of good');
+    expect(streak.longestStreak?.text).toBe('4 days');
     expect(streak.currentText).toBe('1 day');
     expect(streakWidget(streak).titleValue).toBeUndefined();
     expect(streakWidget(streak).body[0]).toEqual({
-      kind: 'pills',
-      pills: [
-        { label: 'Current streak: 1 day' },
+      kind: 'insights',
+      insights: [
+        { header: 'Current streak', description: '1 day' },
         {
-          label: 'Longest streak: 4 days of good',
-          hover: 'Thu, May 1 – Sun, May 4',
+          header: 'Longest streak',
+          description: '4 days',
+          hover: 'Thu, May 1 – Sun, May 4\nIncludes good',
         },
       ],
     });
@@ -532,7 +581,8 @@ describe('streakGraphForConfiguredWindow (show_longest)', () => {
     );
 
     expect(streak.longestStreak?.label).toBe('Longest streak');
-    expect(streak.longestStreak?.text).toBe('1 week of 3+ per week: good (current)');
+    expect(streak.longestStreak?.text).toBe('1 week (current)');
+    expect(streak.longestStreak?.qualifier).toBe('3+ per week: good');
   });
 
   it('omits longestStreak when show_longest is disabled', () => {

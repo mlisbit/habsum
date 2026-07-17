@@ -1,0 +1,23 @@
+@use 'functions';
+
+.habit-module-info-cards {
+  display: flex;
+  flex-wrap: wrap;
+  gap: functions.spacing(1);
+}
+
+.habit-module-info-cards__card {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  padding: functions.spacing(1, 3);
+  border: 1px solid var(--pill-border);
+  border-radius: var(--border-radius-s);
+  background: var(--background-info-card);
+  cursor: default;
+}
+
+.habit-module-info-cards__tooltip {
+  white-space: pre-line;
+}

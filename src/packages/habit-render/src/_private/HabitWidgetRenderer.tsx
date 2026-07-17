@@ -4,7 +4,7 @@ import type { Day } from '@habsum/types/common/day';
 import type { ReactNode } from 'react';
 import { Events } from './modules/Events';
 import { Graph } from './modules/Graph';
-import { Pills } from './modules/Pills';
+import { InfoCards } from './modules/InfoCards';
 import { Progress } from './modules/Progress';
 import { Streak } from './modules/Streak';
 import { Hoverable } from '@habsum/ui/components/Hoverable';
@@ -37,8 +37,8 @@ function WidgetTitleValue({ widget }: { widget: HabitWidget }) {
 
 function renderHabitWidgetBody(habit: Habit, body: HabitWidgetBody): ReactNode {
   switch (body.kind) {
-    case 'pills':
-      return <Pills pills={body.pills} />;
+    case 'insights':
+      return <InfoCards cards={body.insights} />;
     case 'progress':
       return habit.type === 'summation' ? <Progress habitName={habit.name} body={body} /> : null;
     case 'barGraph':
