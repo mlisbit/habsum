@@ -1,12 +1,11 @@
 import type { Response } from 'express';
-import { YamlUserConfigService } from './services/yaml-user-config-service.js';
+import { ConfigService } from './services/config-service.js';
+import { isSafeConfigUserId as isSafeUserConfigId } from './utils/user-config-id.js';
 
-const yamlUserConfigService = new YamlUserConfigService();
+const configService = new ConfigService();
 
 export function isSafeConfigUserId(user: string): boolean {
-  if (user.length === 0 || user.length > 200) return false;
-  if (/[/\\]/.test(user) || user.includes('..')) return false;
-  return true;
+  return isSafeUserConfigId(user);
 }
 
 /** Login route param: YAML username or email address (no path segments). */
@@ -39,13 +38,13 @@ export function parseThemePatchInput(value: unknown): string | null | 'invalid' 
 
 export function loadUserConfigForResponse(user: string, res: Response) {
   try {
-    const config = yamlUserConfigService.loadUserConfig(user);
+    const config = configService.loadUserConfig(user);
     if (!config) {
       res.status(404).json({ error: 'user not found' });
     }
     return config;
   } catch (e) {
-    if (e instanceof YamlUserConfigService.ConfigValidationError) {
+    if (e instanceof ConfigService.ConfigValidationError) {
       res.status(400).json({ error: e.message });
       return null;
     }

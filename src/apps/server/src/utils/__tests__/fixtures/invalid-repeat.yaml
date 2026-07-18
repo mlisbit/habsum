@@ -1,0 +1,5 @@
+habits:
+  reading:
+    type: single_select
+    repeat: [monday, someday]
+    options: [yes, no]

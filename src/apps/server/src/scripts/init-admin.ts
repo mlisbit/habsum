@@ -1,12 +1,12 @@
 import { createInterface } from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
-import { YamlUserConfigService } from '../services/yaml-user-config-service.js';
+import { ConfigService } from '../services/config-service.js';
 import { closeDb, countAdmins, createInitialAdminUser } from '../db.js';
 import { isForbiddenUsername } from '../forbidden-usernames.js';
 import { isSafeConfigUserId } from '../request-helpers.js';
 import { generateTemporaryPassword } from '../temporary-password.js';
 
-const yamlUserConfigService = new YamlUserConfigService();
+const configService = new ConfigService();
 
 async function promptUsername(): Promise<string> {
   const rl = createInterface({ input, output });
@@ -38,7 +38,7 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  yamlUserConfigService.ensureConfigLayout();
+  configService.ensureConfigLayout();
 
   if (countAdmins() > 0) {
     console.log('An admin account already exists. No changes made.');
@@ -49,7 +49,7 @@ async function main(): Promise<void> {
 
   const username = await promptUsername();
 
-  const configResult = yamlUserConfigService.createEmptyUserConfig(username);
+  const configResult = configService.createEmptyUserConfig(username);
   if (!configResult.ok) {
     console.error(`Failed to create user config: ${configResult.error}`);
     process.exit(1);

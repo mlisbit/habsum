@@ -14,7 +14,6 @@ import type {
 } from '@habsum/types/api-responses/security-delete';
 import type { UsersPatchRequest } from '@habsum/types/api-responses/users-patch';
 import { isForbiddenUsername } from '../forbidden-usernames.js';
-import { YamlUserConfigService } from '../services/yaml-user-config-service.js';
 import {
   createUserSession,
   listSessionsForUsername,
@@ -51,7 +50,7 @@ import { accountCreatedAtToApi } from '@habsum/types/common/day';
 import { entitlementsForUser } from '../entitlements.js';
 import { appendSessionCookie, sessionTtlSeconds } from '../session-cookie.js';
 
-const yamlUserConfigService = new YamlUserConfigService();
+const configService = new ConfigService();
 
 function csvCell(value: string | number | null | undefined): string {
   if (value == null) return '';
@@ -247,7 +246,7 @@ userScopedRouter.post(
 
     const config = loadUserConfigForResponse(user, res);
     if (!config) return;
-    ensureUserPins(yamlUserConfigService.listUsers());
+    ensureUserPins(configService.listUsers());
 
     if (!isUserPinValid(user, currentPin)) {
       return res.status(401).json({ error: 'current password is incorrect' });
@@ -328,7 +327,7 @@ userScopedRouter.patch(
 
     const config = loadUserConfigForResponse(user, res);
     if (!config) return;
-    ensureUserPins(yamlUserConfigService.listUsers());
+    ensureUserPins(configService.listUsers());
 
     if (hasDisplayName || hasTheme || hasEmail) {
       try {
@@ -357,7 +356,7 @@ userScopedRouter.patch(
         return res.status(400).json({ error: 'username is unchanged' });
       }
 
-      const out = yamlUserConfigService.renameUserConfigFile(user, renameRaw);
+      const out = configService.renameUserConfig(user, renameRaw);
       if (!out.ok) {
         const status = out.error.includes('already exists')
           ? 409
@@ -390,7 +389,7 @@ userScopedRouter.delete(
       return res.status(400).json({ error: e instanceof Error ? e.message : 'purge failed' });
     }
 
-    const out = yamlUserConfigService.deleteUserConfigFile(user);
+    const out = configService.deleteUserConfig(user);
     if (!out.ok) {
       const status = out.error === 'user not found' ? 404 : 400;
       return res.status(status).json({ error: out.error });
@@ -475,7 +474,7 @@ userScopedRouter.get(
   '/config',
   requireMatchingRouteUser,
   (req: Request<{ user: string }>, res: Response) => {
-    const result = new ConfigService().getUserConfig({ user: req.params.user });
+    const result = configService.getUserConfig({ user: req.params.user });
     res.status(result.status).json(result.body);
   },
 );
@@ -484,7 +483,7 @@ userScopedRouter.put(
   '/config',
   requireMatchingRouteUser,
   (req: Request<{ user: string }>, res: Response) => {
-    const result = new ConfigService().putUserConfig({ user: req.params.user, body: req.body });
+    const result = configService.putUserConfig({ user: req.params.user, body: req.body });
     res.status(result.status).json(result.body);
   },
 );

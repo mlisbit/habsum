@@ -13,7 +13,7 @@ import type { OucLoginRequest, OucLoginResponse } from '@habsum/types/api-respon
 import type { LogoutResponse } from '@habsum/types/common/misc';
 import { isPlausibleEmail, parsePin } from '../request-helpers.js';
 import { accountCreatedAtToApi } from '@habsum/types/common/day';
-import { YamlUserConfigService } from '../services/yaml-user-config-service.js';
+import { ConfigService } from '../services/config-service.js';
 import {
   ensureUserPins,
   getUserProfile,
@@ -47,7 +47,7 @@ import { getOucSessionHeader, resolveActiveSessionId } from '../session-request.
 export const authRouter = Router();
 
 const WEB_VERSION_HEADER = 'x-habsum-web-version';
-const yamlUserConfigService = new YamlUserConfigService();
+const configService = new ConfigService();
 
 function cleanVersion(value: unknown): string | null {
   if (typeof value !== 'string') return null;
@@ -75,7 +75,7 @@ authRouter.get('/auth/me', (req: Request, res: Response) => {
     };
     return res.json(body);
   }
-  ensureUserPins(yamlUserConfigService.listUsers());
+  ensureUserPins(configService.listUsers());
   recordUserLoginMetadata(user, webAndApiVersionForRequest(req));
   const profile = getUserProfile(user);
   const body: MeGetResponse = {

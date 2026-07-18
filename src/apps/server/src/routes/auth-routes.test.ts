@@ -1,12 +1,12 @@
 import request from 'supertest';
 import { describe, expect, it, vi } from 'vitest';
 import { createApp } from '../app.js';
-import { YamlUserConfigService } from '../services/yaml-user-config-service.js';
+import { ConfigService } from '../services/config-service.js';
 import { ensureUserPins, isUserPinValid, patchUserProfile, setUserPin } from '../db.js';
 import { issuePasswordResetToken } from '../password-reset-token.js';
 import * as passwordResetEmail from '../password-reset-email.js';
 
-const yamlUserConfigService = new YamlUserConfigService();
+const configService = new ConfigService();
 
 describe('POST /auth/forgot-password', () => {
   it('returns the same success message whether or not the email is registered', async () => {
@@ -151,9 +151,9 @@ describe('password reset token flow', () => {
   });
 
   it('returns display name for invite tokens and auto-logs in after password set', async () => {
-    yamlUserConfigService.ensureConfigLayout();
+    configService.ensureConfigLayout();
     const app = createApp();
-    yamlUserConfigService.createEmptyUserConfig('invite-setup-user');
+    configService.createEmptyUserConfig('invite-setup-user');
     setUserPin('invite-setup-user', 'temp-secret');
     patchUserProfile('invite-setup-user', { displayName: 'Alex', email: 'alex@example.com' });
 

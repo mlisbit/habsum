@@ -1,0 +1,25 @@
+include_absent_days_in_average: true
+
+habits:
+  mood:
+    type: single_select
+    repeat: [monday, wednesday]
+    options: [great, okay, bad]
+    theme: dark
+    history:
+      display: heatmap
+      period: 3w
+    streak:
+      options: [great]
+      frequency: 3d/1w
+      show_longest: true
+
+  push ups:
+    type: summation
+    goal: 100
+    summation_options: [5, 10, 25]
+    history:
+      displays: [weekly_history, heatmap]
+      period: 2w
+    streak:
+      frequency: 5d/1w

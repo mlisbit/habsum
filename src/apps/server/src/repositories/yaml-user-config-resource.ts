@@ -146,15 +146,17 @@ function getActiveStoredConfig(user: string): HabitConfigRow | null {
   return latest;
 }
 
-const appendUserConfigVersion = configDb.transaction((user: string, content: string): void => {
-  const version = getNextHabitConfigVersionStmt.get(user)?.version ?? 1;
-  insertHabitConfigStmt.run({ user, version, text: content });
-  setActiveHabitConfigVersion(user, version);
-  pruneHabitConfigVersionsStmt.run({
-    user,
-    oldestVersionToKeep: version - PREVIOUS_HABIT_CONFIG_VERSIONS_TO_KEEP,
-  });
-});
+const writeUserConfigTextTransaction = configDb.transaction(
+  (user: string, content: string): void => {
+    const version = getNextHabitConfigVersionStmt.get(user)?.version ?? 1;
+    insertHabitConfigStmt.run({ user, version, text: content });
+    setActiveHabitConfigVersion(user, version);
+    pruneHabitConfigVersionsStmt.run({
+      user,
+      oldestVersionToKeep: version - PREVIOUS_HABIT_CONFIG_VERSIONS_TO_KEEP,
+    });
+  },
+);
 
 export class YamlUserConfigResource {
   ensureLayout(): void {
@@ -168,7 +170,7 @@ export class YamlUserConfigResource {
       .sort();
   }
 
-  readActiveConfigText(user: string): string | null {
+  readUserConfigText(user: string): string | null {
     return getActiveStoredConfig(user)?.text ?? null;
   }
 
@@ -176,8 +178,8 @@ export class YamlUserConfigResource {
     return getActiveStoredConfig(user) != null;
   }
 
-  appendUserConfigVersion(user: string, content: string): void {
-    appendUserConfigVersion(user, content);
+  writeUserConfigText(user: string, content: string): void {
+    writeUserConfigTextTransaction(user, content);
   }
 
   renameUserConfig(fromUser: string, toUser: string): void {

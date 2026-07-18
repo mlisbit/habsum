@@ -1,4 +1,4 @@
-// Service layer for user-scoped config HTTP requests and response orchestration.
+// Service layer for YAML user config persistence plus user-scoped config HTTP orchestration.
 import type {
   UserConfigGetResponse,
   UserConfigPutRequest,
@@ -8,12 +8,15 @@ import {
   buildConfigDeletions,
   buildConfigMigrations,
   configResponseParts,
-  serializeConfigJson,
 } from '../config-editor.js';
 import { deleteDailySelectValue, renameDailySelectValue, renameHabitData } from '../db.js';
-import { isSafeConfigUserId } from '../request-helpers.js';
-import type { HabitDef } from '../types/userConfig.js';
-import { YamlUserConfigService } from './yaml-user-config-service.js';
+import { YamlUserConfigResource } from '../repositories/yaml-user-config-resource.js';
+import type { HabitDef, UserConfig } from '../types/userConfig.js';
+import { YAMLConfigParser } from '../utils/yaml-config-parser.js';
+import { YAMLConfigConvertor } from '../utils/yaml-config-convertor.js';
+import { isSafeConfigUserId } from '../utils/user-config-id.js';
+
+const EMPTY_USER_CONFIG_TEXT = 'habits: {}\n';
 
 type ConfigServiceResult<T> = {
   status: number;
@@ -159,15 +162,98 @@ function applyConfigDataMigrations(
 }
 
 export class ConfigService {
-  constructor(private readonly yamlUserConfigService = new YamlUserConfigService()) {}
+  static readonly ConfigValidationError = YAMLConfigParser.ConfigValidationError;
+
+  constructor(
+    private readonly resource = new YamlUserConfigResource(),
+    private readonly yamlConfigConvertor = new YAMLConfigConvertor(),
+  ) {}
+
+  ensureConfigLayout(): void {
+    this.resource.ensureLayout();
+  }
+
+  listUsers(): string[] {
+    return this.resource.listUsers();
+  }
+
+  readUserConfigText(user: string): string | null {
+    return this.resource.readUserConfigText(user);
+  }
+
+  writeUserConfigText(user: string, content: string): { ok: true } | { ok: false; error: string } {
+    if (!this.resource.hasUserConfig(user)) {
+      return { ok: false, error: 'config file not found' };
+    }
+    const validation = this.validateUserConfigText(user, content);
+    if (!validation.ok) return validation;
+    this.resource.writeUserConfigText(user, content);
+    return { ok: true };
+  }
+
+  validateUserConfigText(
+    user: string,
+    content: string,
+  ): { ok: true; config: UserConfig } | { ok: false; error: string } {
+    try {
+      return { ok: true, config: new YAMLConfigParser(user).parse(content) };
+    } catch (e) {
+      if (e instanceof YAMLConfigParser.ConfigValidationError) {
+        return { ok: false, error: e.message };
+      }
+      return { ok: false, error: e instanceof Error ? e.message : 'invalid config' };
+    }
+  }
+
+  loadUserConfig(user: string): UserConfig | null {
+    const text = this.resource.readUserConfigText(user);
+    if (text == null) return null;
+
+    return new YAMLConfigParser(user).parse(text);
+  }
+
+  createEmptyUserConfig(user: string): { ok: true; user: string } | { ok: false; error: string } {
+    this.ensureConfigLayout();
+
+    if (this.resource.hasUserConfig(user)) {
+      return { ok: false, error: `user "${user}" already exists` };
+    }
+
+    const validation = this.validateUserConfigText(user, EMPTY_USER_CONFIG_TEXT);
+    if (!validation.ok) return validation;
+    this.resource.writeUserConfigText(user, EMPTY_USER_CONFIG_TEXT);
+
+    return { ok: true, user };
+  }
+
+  renameUserConfig(
+    fromUser: string,
+    toUser: string,
+  ): { ok: true; user: string } | { ok: false; error: string } {
+    if (!this.resource.hasUserConfig(fromUser)) return { ok: false, error: 'user not found' };
+
+    if (this.resource.hasUserConfig(toUser)) {
+      return { ok: false, error: `user "${toUser}" already exists` };
+    }
+
+    this.resource.renameUserConfig(fromUser, toUser);
+
+    return { ok: true, user: toUser };
+  }
+
+  deleteUserConfig(user: string): { ok: true; user: string } | { ok: false; error: string } {
+    if (!this.resource.hasUserConfig(user)) return { ok: false, error: 'user not found' };
+    this.resource.deleteUserConfig(user);
+    return { ok: true, user };
+  }
 
   getUserConfig({ user }: GetUserConfigInput): ConfigServiceResult<UserConfigGetResponse> {
     if (!isSafeConfigUserId(user)) {
       return { status: 400, body: { error: 'invalid user' } };
     }
-    const text = this.yamlUserConfigService.readUserConfigFileText(user);
+    const text = this.readUserConfigText(user);
     if (text == null) return { status: 404, body: { error: 'user not found' } };
-    const config = this.yamlUserConfigService.loadUserConfig(user);
+    const config = this.loadUserConfig(user);
     if (!config) return { status: 404, body: { error: 'user not found' } };
     return {
       status: 200,
@@ -191,7 +277,7 @@ export class ConfigService {
       text = body.text;
     } else if (body.config != null) {
       try {
-        text = serializeConfigJson(body.config);
+        text = this.yamlConfigConvertor.convert(body.config as UserConfig);
       } catch (e) {
         return {
           status: 400,
@@ -211,19 +297,19 @@ export class ConfigService {
       return { status: 400, body: { error: 'deletions must be an array of strings' } };
     }
 
-    const previousConfig = this.yamlUserConfigService.loadUserConfig(user);
+    const previousConfig = this.loadUserConfig(user);
     if (!previousConfig) return { status: 404, body: { error: 'user not found' } };
-    const previousText = this.yamlUserConfigService.readUserConfigFileText(user);
+    const previousText = this.readUserConfigText(user);
     if (previousText == null) return { status: 404, body: { error: 'user not found' } };
     const configMigrations = migrations ?? buildConfigMigrations(previousText, text);
     const configDeletions = deletions ?? buildConfigDeletions(previousText, text);
 
-    const out = this.yamlUserConfigService.writeUserConfigFileText(user, text);
+    const out = this.writeUserConfigText(user, text);
     if (!out.ok) {
       return { status: 400, body: { error: out.error } };
     }
     if (configMigrations.length > 0) {
-      const nextConfig = this.yamlUserConfigService.loadUserConfig(user);
+      const nextConfig = this.loadUserConfig(user);
       if (!nextConfig) return { status: 404, body: { error: 'user not found' } };
       applyConfigDataMigrations(user, configMigrations, previousConfig.habits, nextConfig.habits);
     }
