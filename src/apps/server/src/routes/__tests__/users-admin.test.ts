@@ -1,8 +1,8 @@
 import request from 'supertest';
 import { ProductEntitlement } from '@habsum/types/common/entitlement';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createApp } from '../app.js';
-import { ConfigService } from '../services/config-service.js';
+import { createApp } from '../../app.js';
+import { ConfigService } from '../../services/config-service.js';
 import {
   addToTotal,
   countAdmins,
@@ -11,10 +11,10 @@ import {
   ensureUserPins,
   patchUserProfile,
   setSelect,
-} from '../db.js';
-import * as inviteEmail from '../invite-email.js';
-import { SESSION_COOKIE_NAME } from '../session-cookie.js';
-import { PACKAGE_VERSION } from '../version.js';
+} from '../../db.js';
+import * as inviteEmail from '../../invite-email.js';
+import { SESSION_COOKIE_NAME } from '../../session-cookie.js';
+import { PACKAGE_VERSION } from '../../version.js';
 
 const configService = new ConfigService();
 

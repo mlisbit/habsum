@@ -10,7 +10,7 @@ import {
   configResponseParts,
 } from '../config-editor.js';
 import { deleteDailySelectValue, renameDailySelectValue, renameHabitData } from '../db.js';
-import { YamlUserConfigResource } from '../repositories/yaml-user-config-resource.js';
+import { ConfigResource } from '../repositories/config-resource.js';
 import type { HabitDef, UserConfig } from '../types/userConfig.js';
 import { YAMLConfigParser } from '../utils/yaml-config-parser.js';
 import { YAMLConfigConvertor } from '../utils/yaml-config-convertor.js';
@@ -165,7 +165,7 @@ export class ConfigService {
   static readonly ConfigValidationError = YAMLConfigParser.ConfigValidationError;
 
   constructor(
-    private readonly resource = new YamlUserConfigResource(),
+    private readonly resource = new ConfigResource(),
     private readonly yamlConfigConvertor = new YAMLConfigConvertor(),
   ) {}
 

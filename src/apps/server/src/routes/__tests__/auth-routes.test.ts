@@ -1,10 +1,10 @@
 import request from 'supertest';
 import { describe, expect, it, vi } from 'vitest';
-import { createApp } from '../app.js';
-import { ConfigService } from '../services/config-service.js';
-import { ensureUserPins, isUserPinValid, patchUserProfile, setUserPin } from '../db.js';
-import { issuePasswordResetToken } from '../password-reset-token.js';
-import * as passwordResetEmail from '../password-reset-email.js';
+import { createApp } from '../../app.js';
+import { ConfigService } from '../../services/config-service.js';
+import { ensureUserPins, isUserPinValid, patchUserProfile, setUserPin } from '../../db.js';
+import { issuePasswordResetToken } from '../../password-reset-token.js';
+import * as passwordResetEmail from '../../password-reset-email.js';
 
 const configService = new ConfigService();
 

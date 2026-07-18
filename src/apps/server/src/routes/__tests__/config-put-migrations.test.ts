@@ -2,8 +2,8 @@ import { join } from 'node:path';
 import Database from 'better-sqlite3';
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
-import { createApp } from '../app.js';
-import { ConfigService } from '../services/config-service.js';
+import { createApp } from '../../app.js';
+import { ConfigService } from '../../services/config-service.js';
 import {
   createUserSession,
   ensureUserPins,
@@ -11,8 +11,8 @@ import {
   getSelect,
   setSelect,
   setTotal,
-} from '../db.js';
-import { SESSION_COOKIE_NAME } from '../session-cookie.js';
+} from '../../db.js';
+import { SESSION_COOKIE_NAME } from '../../session-cookie.js';
 
 const configService = new ConfigService();
 

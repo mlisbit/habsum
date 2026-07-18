@@ -158,7 +158,7 @@ const writeUserConfigTextTransaction = configDb.transaction(
   },
 );
 
-export class YamlUserConfigResource {
+export class ConfigResource {
   ensureLayout(): void {
     mkdirSync(DATA_DIR, { recursive: true });
   }

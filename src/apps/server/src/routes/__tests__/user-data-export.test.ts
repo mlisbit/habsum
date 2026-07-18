@@ -1,9 +1,9 @@
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
-import { createApp } from '../app.js';
-import { ConfigService } from '../services/config-service.js';
-import { addToTotal, createUserSession, ensureUserPins, setSelect } from '../db.js';
-import { SESSION_COOKIE_NAME } from '../session-cookie.js';
+import { createApp } from '../../app.js';
+import { ConfigService } from '../../services/config-service.js';
+import { addToTotal, createUserSession, ensureUserPins, setSelect } from '../../db.js';
+import { SESSION_COOKIE_NAME } from '../../session-cookie.js';
 
 const configService = new ConfigService();
 
