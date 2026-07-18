@@ -1,3 +1,4 @@
+// Tests for mapping selectable habit values to graph intensity numbers.
 import { describe, expect, it } from 'vitest';
 import { selectablePillToInt } from './selectable-pill-to-int.js';
 

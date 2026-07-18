@@ -1,3 +1,4 @@
+// Tests for distributing streak graph fill values across intensity buckets.
 import { describe, expect, it } from 'vitest';
 import { fillDistribution } from './fill-distribution.js';
 

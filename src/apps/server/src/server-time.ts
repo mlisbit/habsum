@@ -1,14 +1,16 @@
+// Date/time parsing helpers for habit API requests and server snapshots.
+import { dayFromString, type Day } from '@habsum/types/common/day';
 import type { ServerTimeResponse } from '@habsum/types/common/misc';
 import { fromDateKey, toDateKey } from '@habsum/utils/date';
 
 /** `?date=` for GET: `YYYY-MM-DD` or `YYYY-MM-DD|<suffix>`; validates with {@link fromDateKey}. */
-function habitQueryDateKey(raw: string): string | null {
+function habitQueryDateKey(raw: string): Day | null {
   const pipe = raw.indexOf('|');
   if (pipe !== -1 && pipe !== 10) return null;
   const candidate = pipe === 10 ? raw.slice(0, 10) : raw;
   try {
     fromDateKey(candidate, 0);
-    return candidate;
+    return dayFromString(candidate);
   } catch {
     return null;
   }
@@ -39,7 +41,7 @@ export function parseClientCreatedAtIso(value: unknown): string | null {
 /**
  * UTC calendar day when a habit GET omits `?date=` (see {@link resolveHabitApiDateQuery}).
  */
-export function defaultHabitApiDateKey(at: Date): string {
+export function defaultHabitApiDateKey(at: Date): Day {
   return toDateKey(at, 0);
 }
 
@@ -52,12 +54,12 @@ export function parseTzOffsetMinutes(raw: unknown): number | undefined {
 }
 
 /** Client-local calendar “today” for streak omit logic (UTC when offset omitted). */
-export function habitApiTodayKey(at: Date, tzOffsetMinutes?: number): string {
+export function habitApiTodayKey(at: Date, tzOffsetMinutes?: number): Day {
   return toDateKey(at, tzOffsetMinutes ?? 0);
 }
 
 /** Resolved habit `YYYY-MM-DD` for GET handlers (`?date=` optional; otherwise UTC “today”). */
-export function resolveHabitApiDateQuery(rawDate: unknown, at: Date): string {
+export function resolveHabitApiDateQuery(rawDate: unknown, at: Date): Day {
   const key = typeof rawDate === 'string' ? habitQueryDateKey(rawDate) : null;
   return key ?? defaultHabitApiDateKey(at);
 }

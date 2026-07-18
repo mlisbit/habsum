@@ -1,3 +1,4 @@
+// Maps selectable habit values to stable graph intensity numbers.
 /**
  * Assigns selectable-pill values one-based numeric positions for heatmap fill distribution.
  * When streak values are configured, they are positive and ranked best-to-worst from left to

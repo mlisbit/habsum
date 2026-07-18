@@ -1,3 +1,4 @@
+// Central SQLite access layer for persisted user, auth, and habit data.
 import Database from 'better-sqlite3';
 import { randomBytes } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
@@ -915,6 +916,13 @@ const allSelectsStmt = db.prepare<[string, string], SelectSeriesRow>(`
   ORDER BY date ASC
 `);
 
+const selectSeriesStmt = db.prepare<[string, string, string, string], SelectSeriesRow>(`
+  SELECT date, value
+  FROM habit_daily_selects
+  WHERE user = ? AND habit = ? AND date >= ? AND date <= ?
+  ORDER BY date ASC
+`);
+
 const selectValuesWithDataStmt = db.prepare<[string, string], { value: string }>(`
   SELECT DISTINCT value
   FROM habit_daily_selects
@@ -1039,6 +1047,15 @@ export function getSummationEvents(user: string, habit: string, date: string): S
 
 export function getAllSelects(user: string, habit: string): Array<{ date: string; value: string }> {
   return allSelectsStmt.all(user, habit);
+}
+
+export function getSelectSeries(
+  user: string,
+  habit: string,
+  startDate: string,
+  endDate: string,
+): Array<{ date: string; value: string }> {
+  return selectSeriesStmt.all(user, habit, startDate, endDate);
 }
 
 export function getSelectValuesWithData(user: string, habit: string): string[] {

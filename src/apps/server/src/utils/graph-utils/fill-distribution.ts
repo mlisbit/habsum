@@ -1,3 +1,4 @@
+// Balances streak graph fill values across visual intensity buckets.
 import type { StreakFill } from '@habsum/types/common/streak';
 
 /**
