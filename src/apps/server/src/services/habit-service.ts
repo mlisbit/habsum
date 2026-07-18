@@ -5,7 +5,6 @@ import type { PatchHabitResponse } from '@habsum/types/api-responses/habit-patch
 import type { Habit } from '@habsum/types/common/habit';
 import { dasherize } from '@habsum/utils/strings';
 import { HabitResultBuilder } from '../builders/habit-result-builder.js';
-import { HABIT_REPEAT_DAYS, type HabitDef, type UserConfig } from '../config.js';
 import { HabitFactory } from '../factories/habit-factory.js';
 import {
   parseClientCreatedAtIso,
@@ -26,6 +25,8 @@ import {
 } from '../habit-presentation.js';
 import { mapSummationEventsToApi } from '../summation-event-api.js';
 import { HabitResource } from '../repositories/habit-resource.js';
+import type { InterimHabitHistoryRow } from '../types/habit.types.js';
+import { HABIT_REPEAT_DAYS, type HabitDef, type UserConfig } from '../types/userConfig.js';
 
 type HabitListQuery = {
   date?: string;
@@ -72,6 +73,28 @@ function habitRepeatsOnDate(habit: HabitDef, date: string): boolean {
   return habit.repeat.includes(repeatDayForDateKey(date));
 }
 
+function habitFromHistoryRow(habitDef: HabitDef, row: InterimHabitHistoryRow): Habit {
+  if (row.type === 'single_select') {
+    return {
+      name: habitDef.name,
+      type: 'single_select',
+      goal: habitDef.goal,
+      options: habitDef.options ?? [],
+      ...(habitDef.theme ? { theme: habitDef.theme } : {}),
+      value: row.value,
+    } satisfies Habit;
+  }
+
+  return {
+    name: habitDef.name,
+    type: 'summation',
+    goal: habitDef.goal ?? null,
+    total: row.total,
+    events: mapSummationEventsToApi(row.events),
+    ...(habitDef.summationOptions ? { summationOptions: habitDef.summationOptions } : {}),
+  } satisfies Habit;
+}
+
 export class HabitService {
   constructor(private readonly resource = new HabitResource()) {}
 
@@ -108,8 +131,9 @@ export class HabitService {
 
     const habitsByDate = new Map<string, Habit[]>();
     for (const habitDef of habitDefs) {
-      for (const { day, habit } of this.resource.habitRowsForHistory(user, habitDef)) {
-        habitsByDate.set(day, [...(habitsByDate.get(day) ?? []), habit]);
+      for (const row of this.resource.habitRowsForHistory(user, habitDef)) {
+        const habit = habitFromHistoryRow(habitDef, row);
+        habitsByDate.set(row.day, [...(habitsByDate.get(row.day) ?? []), habit]);
       }
     }
 

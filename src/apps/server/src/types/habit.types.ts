@@ -1,6 +1,6 @@
 // Interim habit data types shared between resource, factory, and builder layers.
 import type { Day } from '@habsum/types/common/day';
-import type { HabitDef, UserConfig } from '../config.js';
+import type { HabitDef, UserConfig } from './userConfig.js';
 
 export type HabitDataRange = {
   start: Day;
@@ -32,6 +32,28 @@ export type InterimHabitsData = {
   config: UserConfig;
   habits: InterimHabit[];
 };
+
+export type InterimSummationEvent = {
+  id: number;
+  date: string;
+  amount: number;
+  createdAt: string;
+};
+
+export type InterimHabitHistoryRow =
+  | {
+      day: Day;
+      type: 'single_select';
+      habit: string;
+      value: string;
+    }
+  | {
+      day: Day;
+      type: 'summation';
+      habit: string;
+      total: number;
+      events: InterimSummationEvent[];
+    };
 
 export type HabitDataReader = {
   getSelect(user: string, habit: string, date: Day): string | null;

@@ -1,8 +1,9 @@
-import { listUsers } from './config.js';
+import { YamlUserConfigService } from './services/yaml-user-config-service.js';
 import { isForbiddenUsername } from './forbidden-usernames.js';
 import { isSafeConfigUserId } from './request-helpers.js';
 
 const MAX_USERNAME_LEN = 64;
+const yamlUserConfigService = new YamlUserConfigService();
 
 /** Derives a YAML-safe username stem from the email local part. */
 export function usernameBaseFromEmail(email: string): string {
@@ -22,7 +23,7 @@ function isUsernameAvailable(candidate: string, taken: Set<string>): boolean {
 
 /** Picks a unique config username for a new account with this email. */
 export function allocateUsernameForEmail(email: string): string | null {
-  const taken = new Set(listUsers());
+  const taken = new Set(yamlUserConfigService.listUsers());
   let base = usernameBaseFromEmail(email);
   if (!isUsernameAvailable(base, taken)) {
     base = isForbiddenUsername(base) || !isSafeConfigUserId(base) ? 'user' : base;

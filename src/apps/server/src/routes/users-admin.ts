@@ -5,12 +5,7 @@ import type {
   ListUsersResponse,
 } from '@habsum/types/common/misc';
 import type { CreateOucSessionResponse } from '@habsum/types/api-responses/ouc-post';
-import {
-  createEmptyUserConfig,
-  deleteUserConfigFile,
-  listUsers,
-  loadUserConfig,
-} from '../config.js';
+import { YamlUserConfigService } from '../services/yaml-user-config-service.js';
 import {
   countUserEvents,
   createOucUserSession,
@@ -32,6 +27,8 @@ import { generateTemporaryPassword } from '../temporary-password.js';
 import { allocateUsernameForEmail } from '../username-from-email.js';
 import { entitlementsForUser } from '../entitlements.js';
 
+const yamlUserConfigService = new YamlUserConfigService();
+
 function parseOptionalDisplayName(body: CreateUserRequest | undefined): {
   displayName?: string | null;
   error?: string;
@@ -47,18 +44,18 @@ function parseOptionalDisplayName(body: CreateUserRequest | undefined): {
 }
 
 function rollbackCreatedUser(username: string): void {
-  deleteUserConfigFile(username);
+  yamlUserConfigService.deleteUserConfigFile(username);
   deleteUserPin(username);
 }
 
 function countConfiguredHabits(username: string): number {
-  return loadUserConfig(username)?.habits.length ?? 0;
+  return yamlUserConfigService.loadUserConfig(username)?.habits.length ?? 0;
 }
 
 export const usersAdminRouter = Router();
 
 usersAdminRouter.get('/users', requireAdmin, (_req: Request, res: Response) => {
-  const usernames = listUsers();
+  const usernames = yamlUserConfigService.listUsers();
   ensureUserPins(usernames);
   const rowsByUsername = new Map(listUserRows().map((row) => [row.username, row]));
   const users: ListUsersResponse['users'] = usernames.map((username) => {
@@ -85,7 +82,7 @@ usersAdminRouter.post('/users/ouc', requireAdmin, (req: Request, res: Response) 
     return res.status(400).json({ error: 'invalid user' });
   }
 
-  const existing = listUsers();
+  const existing = yamlUserConfigService.listUsers();
   if (!existing.includes(name)) {
     return res.status(404).json({ error: 'user not found' });
   }
@@ -129,7 +126,7 @@ usersAdminRouter.post(
 
     const password = generateTemporaryPassword();
 
-    const out = createEmptyUserConfig(name);
+    const out = yamlUserConfigService.createEmptyUserConfig(name);
     if (!out.ok) {
       const status = out.error.includes('already exists') ? 409 : 400;
       return res.status(status).json({ error: out.error });
@@ -176,7 +173,7 @@ usersAdminRouter.patch('/users', requireAdmin, (req: Request, res: Response) => 
     return res.status(400).json({ error: 'invalid user' });
   }
 
-  const existing = listUsers();
+  const existing = yamlUserConfigService.listUsers();
   if (!existing.includes(name)) {
     return res.status(404).json({ error: 'user not found' });
   }
@@ -199,7 +196,7 @@ usersAdminRouter.delete('/users', requireAdmin, (req: Request, res: Response) =>
     return res.status(400).json({ error: 'invalid user' });
   }
 
-  const existing = listUsers();
+  const existing = yamlUserConfigService.listUsers();
   if (!existing.includes(name)) {
     return res.status(404).json({ error: 'user not found' });
   }
@@ -210,7 +207,7 @@ usersAdminRouter.delete('/users', requireAdmin, (req: Request, res: Response) =>
     return res.status(400).json({ error: e instanceof Error ? e.message : 'purge failed' });
   }
 
-  const out = deleteUserConfigFile(name);
+  const out = yamlUserConfigService.deleteUserConfigFile(name);
   if (!out.ok) {
     const status = out.error === 'user not found' ? 404 : 400;
     return res.status(status).json({ error: out.error });

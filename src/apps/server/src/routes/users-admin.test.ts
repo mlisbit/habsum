@@ -2,12 +2,7 @@ import request from 'supertest';
 import { ProductEntitlement } from '@habsum/types/common/entitlement';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../app.js';
-import {
-  createEmptyUserConfig,
-  ensureConfigLayout,
-  loadUserConfig,
-  writeUserConfigFileText,
-} from '../config.js';
+import { YamlUserConfigService } from '../services/yaml-user-config-service.js';
 import {
   addToTotal,
   countAdmins,
@@ -21,8 +16,10 @@ import * as inviteEmail from '../invite-email.js';
 import { SESSION_COOKIE_NAME } from '../session-cookie.js';
 import { PACKAGE_VERSION } from '../version.js';
 
+const yamlUserConfigService = new YamlUserConfigService();
+
 function adminSessionCookie(): string {
-  ensureConfigLayout();
+  yamlUserConfigService.ensureConfigLayout();
   ensureUserPins(['admin']);
   if (countAdmins() === 0) {
     createInitialAdminUser('admin', 'secret');
@@ -37,7 +34,7 @@ describe('POST /users', () => {
   });
 
   it('only allows admins to create users', async () => {
-    ensureConfigLayout();
+    yamlUserConfigService.ensureConfigLayout();
     const app = createApp();
 
     await request(app).post('/users').send({ email: 'nobody@example.com' }).expect(401);
@@ -61,7 +58,7 @@ describe('POST /users', () => {
 
     expect(res.status).toBe(201);
     expect(res.body).toMatchObject({ ok: true, user: expect.any(String) });
-    expect(loadUserConfig(res.body.user)?.habits).toEqual([]);
+    expect(yamlUserConfigService.loadUserConfig(res.body.user)?.habits).toEqual([]);
   });
 
   it('stores display name and sends invite email when requested', async () => {
@@ -102,9 +99,9 @@ describe('GET /users', () => {
   });
 
   it('includes null last login until /auth/me resolves, then returns unix seconds', async () => {
-    ensureConfigLayout();
-    createEmptyUserConfig('login-audit-user');
-    writeUserConfigFileText(
+    yamlUserConfigService.ensureConfigLayout();
+    yamlUserConfigService.createEmptyUserConfig('login-audit-user');
+    yamlUserConfigService.writeUserConfigFileText(
       'login-audit-user',
       `habits:
   push ups:

@@ -1,5 +1,7 @@
 import type { Response } from 'express';
-import { loadUserConfig, ConfigValidationError } from './config.js';
+import { YamlUserConfigService } from './services/yaml-user-config-service.js';
+
+const yamlUserConfigService = new YamlUserConfigService();
 
 export function isSafeConfigUserId(user: string): boolean {
   if (user.length === 0 || user.length > 200) return false;
@@ -37,13 +39,13 @@ export function parseThemePatchInput(value: unknown): string | null | 'invalid' 
 
 export function loadUserConfigForResponse(user: string, res: Response) {
   try {
-    const config = loadUserConfig(user);
+    const config = yamlUserConfigService.loadUserConfig(user);
     if (!config) {
       res.status(404).json({ error: 'user not found' });
     }
     return config;
   } catch (e) {
-    if (e instanceof ConfigValidationError) {
+    if (e instanceof YamlUserConfigService.ConfigValidationError) {
       res.status(400).json({ error: e.message });
       return null;
     }

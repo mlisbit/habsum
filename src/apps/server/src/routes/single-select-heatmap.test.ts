@@ -2,16 +2,18 @@ import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { toDateKey } from '@habsum/utils/date';
 import { createApp } from '../app.js';
-import { createEmptyUserConfig, writeUserConfigFileText } from '../config.js';
+import { YamlUserConfigService } from '../services/yaml-user-config-service.js';
 import { createUserSession, ensureUserPins } from '../db.js';
 import { SESSION_COOKIE_NAME } from '../session-cookie.js';
+
+const yamlUserConfigService = new YamlUserConfigService();
 
 describe('single-select heatmap', () => {
   it('returns the heatmap after updating a selection', async () => {
     const user = 'single-select-heatmap-user';
-    const created = createEmptyUserConfig(user);
+    const created = yamlUserConfigService.createEmptyUserConfig(user);
     if (!created.ok) throw new Error(created.error);
-    const written = writeUserConfigFileText(
+    const written = yamlUserConfigService.writeUserConfigFileText(
       user,
       `habits:
   read:

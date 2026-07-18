@@ -1,12 +1,9 @@
-// Express routes for user-scoped API endpoints; habit routes delegate to HabitService.
+// Express routes for user-scoped API endpoints; habit and config routes delegate to services.
 import { Router, type Request, type Response } from 'express';
 import type {
   LoginUserRequest,
   LoginUserResponse,
   PurgeUserDataResponse,
-  UserConfigGetResponse,
-  UserConfigPutRequest,
-  UserConfigPutResponse,
   UserSessionResponse,
 } from '@habsum/types/common/misc';
 import type { UserPasswordChangeRequest } from '@habsum/types/api-responses/user-password-change';
@@ -17,27 +14,12 @@ import type {
 } from '@habsum/types/api-responses/security-delete';
 import type { UsersPatchRequest } from '@habsum/types/api-responses/users-patch';
 import { isForbiddenUsername } from '../forbidden-usernames.js';
-import {
-  deleteUserConfigFile,
-  listUsers,
-  loadUserConfig,
-  readUserConfigFileText,
-  renameUserConfigFile,
-  writeUserConfigFileText,
-  type HabitDef,
-} from '../config.js';
-import {
-  buildConfigDeletions,
-  buildConfigMigrations,
-  configResponseParts,
-  serializeConfigJson,
-} from '../config-editor.js';
+import { YamlUserConfigService } from '../services/yaml-user-config-service.js';
 import {
   createUserSession,
   listSessionsForUsername,
   revokeOtherUserSessions,
   revokeUserSessionByTokenPrefix,
-  deleteDailySelectValue,
   deleteUserPin,
   ensureUserPins,
   getAllDailySelectsForUser,
@@ -49,13 +31,12 @@ import {
   isUserPinValid,
   patchUserProfile,
   purgeUserData,
-  renameDailySelectValue,
-  renameHabitData,
   renameUserPin,
   setUserPin,
   updateLoginPin,
 } from '../db.js';
 import { type PatchBody } from '../habit-presentation.js';
+import { ConfigService } from '../services/config-service.js';
 import { HabitService } from '../services/habit-service.js';
 import { authenticatedSessionId, requireMatchingRouteUser } from '../middleware/auth.js';
 import {
@@ -70,14 +51,7 @@ import { accountCreatedAtToApi } from '@habsum/types/common/day';
 import { entitlementsForUser } from '../entitlements.js';
 import { appendSessionCookie, sessionTtlSeconds } from '../session-cookie.js';
 
-type ConfigMigrationTuple = [string, string];
-
-type ClassifiedConfigMigrations = {
-  habitRenames: ConfigMigrationTuple[];
-  optionRenames: Array<{ habit: string; fromOption: string; toOption: string }>;
-};
-
-type ConfigDeletion = { habit: string; option: string };
+const yamlUserConfigService = new YamlUserConfigService();
 
 function csvCell(value: string | number | null | undefined): string {
   if (value == null) return '';
@@ -105,126 +79,6 @@ function userDataCsv(user: string): string {
   }
 
   return `${lines.join('\n')}\n`;
-}
-
-function parseConfigMigrationTuples(raw: unknown): ConfigMigrationTuple[] | null {
-  if (raw == null) return [];
-  if (!Array.isArray(raw)) return null;
-
-  const migrations: ConfigMigrationTuple[] = [];
-  for (const item of raw) {
-    if (
-      !Array.isArray(item) ||
-      item.length !== 2 ||
-      typeof item[0] !== 'string' ||
-      typeof item[1] !== 'string'
-    ) {
-      return null;
-    }
-    migrations.push([item[0], item[1]]);
-  }
-  return migrations;
-}
-
-function parseConfigDeletions(raw: unknown): string[] | null {
-  if (raw == null) return [];
-  if (!Array.isArray(raw)) return null;
-  return raw.every((item): item is string => typeof item === 'string') ? raw : null;
-}
-
-function optionDeletionForPath(path: string, previousHabits: HabitDef[]): ConfigDeletion | null {
-  for (const habit of previousHabits) {
-    if (habit.type !== 'single_select') continue;
-    for (const option of habit.options ?? []) {
-      if (`${habit.name}.${option}` === path) {
-        return { habit: habit.name, option };
-      }
-    }
-  }
-  return null;
-}
-
-function applyConfigDataDeletions(
-  user: string,
-  deletions: string[],
-  previousHabits: HabitDef[],
-): void {
-  for (const path of deletions) {
-    const deletion = optionDeletionForPath(path, previousHabits);
-    if (!deletion) continue;
-    deleteDailySelectValue(user, deletion.habit, deletion.option);
-  }
-}
-
-function optionMigrationForHabitPair(
-  fromPath: string,
-  toPath: string,
-  previousHabit: HabitDef,
-  nextHabit: HabitDef,
-): { habit: string; fromOption: string; toOption: string } | null {
-  if (previousHabit.type !== 'single_select' || nextHabit.type !== 'single_select') return null;
-
-  for (const fromOption of previousHabit.options ?? []) {
-    if (`${previousHabit.name}.${fromOption}` !== fromPath) continue;
-    for (const toOption of nextHabit.options ?? []) {
-      if (`${nextHabit.name}.${toOption}` === toPath) {
-        return { habit: nextHabit.name, fromOption, toOption };
-      }
-    }
-  }
-
-  return null;
-}
-
-function classifyConfigMigrations(
-  migrations: ConfigMigrationTuple[],
-  previousHabits: HabitDef[],
-  nextHabits: HabitDef[],
-): ClassifiedConfigMigrations {
-  const previousByName = new Map(previousHabits.map((habit) => [habit.name, habit]));
-  const nextByName = new Map(nextHabits.map((habit) => [habit.name, habit]));
-  const habitRenames: ConfigMigrationTuple[] = [];
-  const optionRenames: ClassifiedConfigMigrations['optionRenames'] = [];
-
-  for (const [fromPath, toPath] of migrations) {
-    const previousHabit = previousByName.get(fromPath);
-    const nextHabit = nextByName.get(toPath);
-    if (previousHabit && nextHabit) {
-      habitRenames.push([fromPath, toPath]);
-      continue;
-    }
-
-    for (const oldHabit of previousHabits) {
-      for (const newHabit of nextHabits) {
-        const optionRename = optionMigrationForHabitPair(fromPath, toPath, oldHabit, newHabit);
-        if (optionRename) {
-          optionRenames.push(optionRename);
-        }
-      }
-    }
-  }
-
-  return { habitRenames, optionRenames };
-}
-
-function applyConfigDataMigrations(
-  user: string,
-  migrations: ConfigMigrationTuple[],
-  previousHabits: HabitDef[],
-  nextHabits: HabitDef[],
-): void {
-  const { habitRenames, optionRenames } = classifyConfigMigrations(
-    migrations,
-    previousHabits,
-    nextHabits,
-  );
-
-  for (const [fromHabit, toHabit] of habitRenames) {
-    renameHabitData(user, fromHabit, toHabit);
-  }
-  for (const { habit, fromOption, toOption } of optionRenames) {
-    renameDailySelectValue(user, habit, fromOption, toOption);
-  }
 }
 
 export const userScopedRouter = Router({ mergeParams: true });
@@ -393,7 +247,7 @@ userScopedRouter.post(
 
     const config = loadUserConfigForResponse(user, res);
     if (!config) return;
-    ensureUserPins(listUsers());
+    ensureUserPins(yamlUserConfigService.listUsers());
 
     if (!isUserPinValid(user, currentPin)) {
       return res.status(401).json({ error: 'current password is incorrect' });
@@ -474,7 +328,7 @@ userScopedRouter.patch(
 
     const config = loadUserConfigForResponse(user, res);
     if (!config) return;
-    ensureUserPins(listUsers());
+    ensureUserPins(yamlUserConfigService.listUsers());
 
     if (hasDisplayName || hasTheme || hasEmail) {
       try {
@@ -503,7 +357,7 @@ userScopedRouter.patch(
         return res.status(400).json({ error: 'username is unchanged' });
       }
 
-      const out = renameUserConfigFile(user, renameRaw);
+      const out = yamlUserConfigService.renameUserConfigFile(user, renameRaw);
       if (!out.ok) {
         const status = out.error.includes('already exists')
           ? 409
@@ -536,7 +390,7 @@ userScopedRouter.delete(
       return res.status(400).json({ error: e instanceof Error ? e.message : 'purge failed' });
     }
 
-    const out = deleteUserConfigFile(user);
+    const out = yamlUserConfigService.deleteUserConfigFile(user);
     if (!out.ok) {
       const status = out.error === 'user not found' ? 404 : 400;
       return res.status(status).json({ error: out.error });
@@ -621,77 +475,17 @@ userScopedRouter.get(
   '/config',
   requireMatchingRouteUser,
   (req: Request<{ user: string }>, res: Response) => {
-    const { user } = req.params;
-    if (!isSafeConfigUserId(user)) {
-      return res.status(400).json({ error: 'invalid user' });
-    }
-    const text = readUserConfigFileText(user);
-    if (text == null) return res.status(404).json({ error: 'user not found' });
-    const config = loadUserConfig(user);
-    if (!config) return res.status(404).json({ error: 'user not found' });
-    const body: UserConfigGetResponse = {
-      text,
-      ...configResponseParts(user, text),
-    };
-    res.json(body);
+    const result = new ConfigService().getUserConfig({ user: req.params.user });
+    res.status(result.status).json(result.body);
   },
 );
 
 userScopedRouter.put(
   '/config',
   requireMatchingRouteUser,
-  (req: Request<{ user: string }, unknown, Partial<UserConfigPutRequest>>, res: Response) => {
-    const { user } = req.params;
-    if (!isSafeConfigUserId(user)) {
-      return res.status(400).json({ error: 'invalid user' });
-    }
-    const requestBody = req.body ?? {};
-    let text: string;
-    if (typeof requestBody.text === 'string') {
-      text = requestBody.text;
-    } else if (requestBody.config != null) {
-      try {
-        text = serializeConfigJson(requestBody.config);
-      } catch (e) {
-        return res.status(400).json({ error: e instanceof Error ? e.message : 'invalid config' });
-      }
-    } else {
-      return res.status(400).json({ error: 'text or config is required' });
-    }
-    const migrations =
-      req.body?.migrations == null ? null : parseConfigMigrationTuples(req.body.migrations);
-    if (migrations == null) {
-      if (req.body?.migrations != null) {
-        return res.status(400).json({ error: 'migrations must be an array of string tuples' });
-      }
-    }
-    const deletions = req.body?.deletions == null ? null : parseConfigDeletions(req.body.deletions);
-    if (deletions == null) {
-      if (req.body?.deletions != null) {
-        return res.status(400).json({ error: 'deletions must be an array of strings' });
-      }
-    }
-    const previousConfig = loadUserConfig(user);
-    if (!previousConfig) return res.status(404).json({ error: 'user not found' });
-    const previousText = readUserConfigFileText(user);
-    if (previousText == null) return res.status(404).json({ error: 'user not found' });
-    const configMigrations = migrations ?? buildConfigMigrations(previousText, text);
-    const configDeletions = deletions ?? buildConfigDeletions(previousText, text);
-
-    const out = writeUserConfigFileText(user, text);
-    if (!out.ok) {
-      return res.status(400).json({ error: out.error });
-    }
-    if (configMigrations.length > 0) {
-      const nextConfig = loadUserConfig(user);
-      if (!nextConfig) return res.status(404).json({ error: 'user not found' });
-      applyConfigDataMigrations(user, configMigrations, previousConfig.habits, nextConfig.habits);
-    }
-    if (configDeletions.length > 0) {
-      applyConfigDataDeletions(user, configDeletions, previousConfig.habits);
-    }
-    const body: UserConfigPutResponse = { ok: true, user };
-    res.json(body);
+  (req: Request<{ user: string }>, res: Response) => {
+    const result = new ConfigService().putUserConfig({ user: req.params.user, body: req.body });
+    res.status(result.status).json(result.body);
   },
 );
 

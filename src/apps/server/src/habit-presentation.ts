@@ -15,21 +15,18 @@ import type {
   HabitWidgetInsight,
 } from '@habsum/types/common/habit';
 import { fromDateKey, toDateKey } from '@habsum/utils/date';
-import type { HabitDef } from './config.js';
 import {
   getAllSelects,
-  getAllTotals,
   getSelect as dbGetSelect,
   getSeries as dbGetSeries,
   getSummationDayTotal as dbGetSummationDayTotal,
-  getSummationEvents,
 } from './db.js';
 import type { HabitDataReader } from './types/habit.types.js';
+import type { HabitDef } from './types/userConfig.js';
 import { currentStreakInsight } from './utils/habits/insights/current-streak-insight.js';
 import { longestStreakInsight } from './utils/habits/insights/longest-streak-insight.js';
 import { weeklyAverageInsight } from './utils/habits/insights/weekly-average-insight.js';
 import { habitApiTodayKey } from './server-time.js';
-import { mapSummationEventsToApi } from './summation-event-api.js';
 import { fillDistribution } from './utils/graph-utils/fill-distribution.js';
 import { selectablePillToInt } from './utils/graph-utils/selectable-pill-to-int.js';
 
@@ -107,40 +104,6 @@ export function minDate(dates: Array<string | null>): string | null {
     if (date == null) return min;
     return min == null || date < min ? date : min;
   }, null);
-}
-
-export function habitRowsForHistory(
-  user: string,
-  habitDef: HabitDef,
-): Array<{ day: string; habit: Habit }> {
-  if (habitDef.type === 'single_select') {
-    return getAllSelects(user, habitDef.name).map((r) => ({
-      day: r.date,
-      habit: {
-        name: habitDef.name,
-        type: 'single_select',
-        goal: habitDef.goal,
-        options: habitDef.options ?? [],
-        ...(habitDef.theme ? { theme: habitDef.theme } : {}),
-        value: r.value,
-      } satisfies Habit,
-    }));
-  }
-
-  return getAllTotals(user, habitDef.name).map((r) => {
-    const events = mapSummationEventsToApi(getSummationEvents(user, habitDef.name, r.date));
-    return {
-      day: r.date,
-      habit: {
-        name: habitDef.name,
-        type: 'summation',
-        goal: habitDef.goal ?? null,
-        total: r.total,
-        events,
-        ...(habitDef.summationOptions ? { summationOptions: habitDef.summationOptions } : {}),
-      } satisfies Habit,
-    };
-  });
 }
 
 export function emptyHabitForHistory(habitDef: HabitDef): Habit {

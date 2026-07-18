@@ -2,8 +2,8 @@
 import type { Day } from '@habsum/types/common/day';
 import { isDailyStreakFrequency, parseStreakFrequencyDays } from '@habsum/types/common/streak';
 import { fromDateKey, toDateKey } from '@habsum/utils/date';
-import type { HabitDef } from '../../config.js';
 import type { HabitDataRange } from '../../types/habit.types.js';
+import type { HabitDef } from '../../types/userConfig.js';
 
 const WEEKDAY_ROW_COUNT = 7;
 const DAILY_STREAK_WINDOW_DAYS = 53 * 7;

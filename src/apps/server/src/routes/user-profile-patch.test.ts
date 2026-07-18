@@ -1,15 +1,17 @@
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { createApp } from '../app.js';
-import { createEmptyUserConfig, ensureConfigLayout } from '../config.js';
+import { YamlUserConfigService } from '../services/yaml-user-config-service.js';
 import { createUserSession, getUserProfile, patchUserProfile } from '../db.js';
 import { SESSION_COOKIE_NAME } from '../session-cookie.js';
 
+const yamlUserConfigService = new YamlUserConfigService();
+
 describe('PATCH /users/:user profile', () => {
   it('stores null theme for system default (null body)', async () => {
-    ensureConfigLayout();
+    yamlUserConfigService.ensureConfigLayout();
     const user = 'theme-patch-user';
-    const created = createEmptyUserConfig(user);
+    const created = yamlUserConfigService.createEmptyUserConfig(user);
     expect(created.ok).toBe(true);
     patchUserProfile(user, { theme: 'dark' });
 
@@ -26,9 +28,9 @@ describe('PATCH /users/:user profile', () => {
   });
 
   it('stores null theme when body sends "system"', async () => {
-    ensureConfigLayout();
+    yamlUserConfigService.ensureConfigLayout();
     const user = 'theme-patch-system-user';
-    const created = createEmptyUserConfig(user);
+    const created = yamlUserConfigService.createEmptyUserConfig(user);
     expect(created.ok).toBe(true);
     patchUserProfile(user, { theme: 'dark' });
 

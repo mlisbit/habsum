@@ -5,6 +5,8 @@ import {
   deleteDailySelect,
   deleteSummationEvent,
   deleteSummationEventsForDay,
+  getAllSelects,
+  getAllTotals,
   getFirstDate,
   getHabitFirstDate,
   getSelectSeries,
@@ -15,11 +17,14 @@ import {
   setSelect,
   setTotal,
 } from '../db.js';
-import { HABIT_REPEAT_DAYS, type HabitDef, type UserConfig } from '../config.js';
-import { habitRowsForHistory } from '../habit-presentation.js';
 import { habitApiTodayKey } from '../server-time.js';
 import { habitInsightDataRange } from './_private/habit-data-range.js';
-import type { InterimHabit, InterimHabitsData } from '../types/habit.types.js';
+import type {
+  InterimHabit,
+  InterimHabitHistoryRow,
+  InterimHabitsData,
+} from '../types/habit.types.js';
+import { HABIT_REPEAT_DAYS, type HabitDef, type UserConfig } from '../types/userConfig.js';
 
 type GetHabitsInput = {
   config: UserConfig;
@@ -66,8 +71,23 @@ export class HabitResource {
     return getHabitFirstDate(user, habit);
   }
 
-  habitRowsForHistory(user: string, habit: HabitDef) {
-    return habitRowsForHistory(user, habit);
+  habitRowsForHistory(user: string, habit: HabitDef): InterimHabitHistoryRow[] {
+    if (habit.type === 'single_select') {
+      return getAllSelects(user, habit.name).map((row) => ({
+        day: dayFromString(row.date),
+        type: 'single_select',
+        habit: habit.name,
+        value: row.value,
+      }));
+    }
+
+    return getAllTotals(user, habit.name).map((row) => ({
+      day: dayFromString(row.date),
+      type: 'summation',
+      habit: habit.name,
+      total: row.total,
+      events: getSummationEvents(user, habit.name, row.date),
+    }));
   }
 
   clearDailySelect(user: string, habit: string, date: string): void {

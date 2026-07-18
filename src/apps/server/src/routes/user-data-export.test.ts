@@ -1,14 +1,16 @@
 import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { createApp } from '../app.js';
-import { createEmptyUserConfig, writeUserConfigFileText } from '../config.js';
+import { YamlUserConfigService } from '../services/yaml-user-config-service.js';
 import { addToTotal, createUserSession, ensureUserPins, setSelect } from '../db.js';
 import { SESSION_COOKIE_NAME } from '../session-cookie.js';
 
+const yamlUserConfigService = new YamlUserConfigService();
+
 function writeExportUserConfig(user: string) {
-  const created = createEmptyUserConfig(user);
+  const created = yamlUserConfigService.createEmptyUserConfig(user);
   if (!created.ok) throw new Error(created.error);
-  const written = writeUserConfigFileText(
+  const written = yamlUserConfigService.writeUserConfigFileText(
     user,
     `habits:
   mood:

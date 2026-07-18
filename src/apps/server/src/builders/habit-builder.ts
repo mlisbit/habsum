@@ -1,7 +1,7 @@
 // Builds one API habit row from interim habit data and selected presentation options.
 import type { Habit } from '@habsum/types/common/habit';
-import type { UserConfig } from '../config.js';
 import type { InterimHabit, InterimHabitsData } from '../types/habit.types.js';
+import type { UserConfig } from '../types/userConfig.js';
 import {
   buildHabitWidgets,
   interimHabitTotal,

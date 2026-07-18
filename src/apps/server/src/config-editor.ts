@@ -5,7 +5,9 @@ import type {
   UserConfigJsonHabit,
   UserConfigMigration,
 } from '@habsum/types/common/misc';
-import { validateUserConfigText } from './config.js';
+import { YamlUserConfigService } from './services/yaml-user-config-service.js';
+
+const yamlUserConfigService = new YamlUserConfigService();
 
 type RawHabitEntry = {
   name: string;
@@ -59,7 +61,7 @@ function parseConfigHabitMigrationEntries(text: string): RawHabitEntry[] {
 }
 
 export function parseConfigJson(user: string, text: string): UserConfigJson {
-  const validation = validateUserConfigText(user, text);
+  const validation = yamlUserConfigService.validateUserConfigText(user, text);
   if (!validation.ok) throw new Error(validation.error);
   return validation.config;
 }
