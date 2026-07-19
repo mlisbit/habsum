@@ -7,8 +7,9 @@ import {
   appendClearSessionCookie,
   appendSessionCookie,
   getSessionCookieValue,
-} from '../session-cookie.js';
-import { getOucSessionHeader, resolveActiveSessionId } from '../session-request.js';
+  getOucSessionHeader,
+  resolveActiveSessionId,
+} from '../utils/cookie-session-utils.js';
 
 export const authRouter = Router();
 

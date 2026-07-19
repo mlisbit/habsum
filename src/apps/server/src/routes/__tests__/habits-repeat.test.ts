@@ -3,10 +3,13 @@ import { yamlString } from '@habsum/types/common/misc';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../../app.js';
 import { ConfigService } from '../../services/config-service.js';
-import { createUserSession, ensureUserPins, patchUserProfile, setTotal } from '../../db.js';
-import { SESSION_COOKIE_NAME } from '../../session-cookie.js';
+import { HabitRepository } from '../../repositories/habit-repository.js';
+import { UserAndAuthRepository } from '../../repositories/user-and-auth-repository.js';
+import { SESSION_COOKIE_NAME } from '../../utils/cookie-session-utils.js';
 
 const configService = new ConfigService();
+const habitRepository = new HabitRepository();
+const userAndAuthRepository = new UserAndAuthRepository();
 
 function writeUserConfig(user: string, text: string) {
   const created = configService.createEmptyUserConfig(user);
@@ -32,12 +35,12 @@ describe('GET /users/:user/habits repeat config', () => {
     goal: 10
 `,
     );
-    patchUserProfile(user, { displayName: 'Alex Morgan' });
-    ensureUserPins([user]);
-    setTotal(user, 'every day', '2999-06-01', 1, '2999-06-01 08:00:00');
+    userAndAuthRepository.patchUserProfile(user, { displayName: 'Alex Morgan' });
+    userAndAuthRepository.ensureUserPins([user]);
+    habitRepository.setTotal(user, 'every day', '2999-06-01', 1, '2999-06-01 08:00:00');
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2999-07-01T09:00:00.000Z'));
-    const session = createUserSession(user, 24 * 3600);
+    const session = userAndAuthRepository.createUserSession(user, 24 * 3600);
 
     const morning = await request(createApp())
       .get(`/users/${user}/habits?date=2999-07-01&tzOffsetMinutes=0`)
@@ -115,10 +118,10 @@ describe('GET /users/:user/habits repeat config', () => {
   it('returns a welcome heading for new users', async () => {
     const user = 'habits-new-user-heading';
     writeUserConfig(user, `habits: {}\n`);
-    ensureUserPins([user]);
+    userAndAuthRepository.ensureUserPins([user]);
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2999-07-01T09:00:00.000Z'));
-    const session = createUserSession(user, 24 * 3600);
+    const session = userAndAuthRepository.createUserSession(user, 24 * 3600);
 
     const res = await request(createApp())
       .get(`/users/${user}/habits?date=2999-07-01&tzOffsetMinutes=0`)
@@ -148,8 +151,8 @@ describe('GET /users/:user/habits repeat config', () => {
     repeat: [friday]
 `,
     );
-    ensureUserPins([user]);
-    const session = createUserSession(user, 3600);
+    userAndAuthRepository.ensureUserPins([user]);
+    const session = userAndAuthRepository.createUserSession(user, 3600);
 
     const wednesday = await request(createApp())
       .get(`/users/${user}/habits?date=2026-07-01`)
@@ -183,8 +186,8 @@ describe('GET /users/:user/habits repeat config', () => {
     repeat: [friday]
 `,
     );
-    ensureUserPins([user]);
-    const session = createUserSession(user, 3600);
+    userAndAuthRepository.ensureUserPins([user]);
+    const session = userAndAuthRepository.createUserSession(user, 3600);
 
     const res = await request(createApp())
       .get(`/users/${user}/habits?date=2026-07-01`)
@@ -199,8 +202,8 @@ describe('GET /users/:user/habits repeat config', () => {
   it('sets empty intro when the user has no configured habits', async () => {
     const user = 'habits-empty-config-user';
     writeUserConfig(user, `habits: {}\n`);
-    ensureUserPins([user]);
-    const session = createUserSession(user, 3600);
+    userAndAuthRepository.ensureUserPins([user]);
+    const session = userAndAuthRepository.createUserSession(user, 3600);
 
     const res = await request(createApp())
       .get(`/users/${user}/habits?date=2026-07-01`)
@@ -224,11 +227,11 @@ describe('GET /users/:user/habits repeat config', () => {
     repeat: [friday]
 `,
     );
-    ensureUserPins([user]);
-    setTotal(user, 'midweek reps', '2026-07-01', 12, '2026-07-01 08:00:00');
-    setTotal(user, 'midweek reps', '2026-07-03', 20, '2026-07-03 08:00:00');
-    setTotal(user, 'friday reps', '2026-07-03', 5, '2026-07-03 08:00:00');
-    const session = createUserSession(user, 3600);
+    userAndAuthRepository.ensureUserPins([user]);
+    habitRepository.setTotal(user, 'midweek reps', '2026-07-01', 12, '2026-07-01 08:00:00');
+    habitRepository.setTotal(user, 'midweek reps', '2026-07-03', 20, '2026-07-03 08:00:00');
+    habitRepository.setTotal(user, 'friday reps', '2026-07-03', 5, '2026-07-03 08:00:00');
+    const session = userAndAuthRepository.createUserSession(user, 3600);
 
     const res = await request(createApp())
       .get(`/users/${user}/habits/history?filter=midweek-reps,friday-reps&date=2026-07-03`)

@@ -17,12 +17,12 @@ import type {
 } from '@habsum/types/common/misc';
 import { accountCreatedAtToApi } from '@habsum/types/common/day';
 import { PASSWORD_RESET_TOKEN_TTL_SECONDS } from '../constants.js';
-import { entitlementsForUser } from '../entitlements.js';
 import { isDevelopment } from '../env.js';
 import { isPlausibleEmail, isSafeLoginId, parsePin } from '../request-helpers.js';
 import { PACKAGE_VERSION } from '../version.js';
 import { ConfigService } from './config-service.js';
 import { EmailService } from './email-service.js';
+import { UserService } from './user-service.js';
 import { UserAndAuthRepository } from '../repositories/user-and-auth-repository.js';
 
 type AuthServiceResult<T> = {
@@ -124,6 +124,7 @@ export class AuthService {
     private readonly configService = new ConfigService(),
     private readonly emailService = new EmailService(),
     private readonly userAndAuthRepository = new UserAndAuthRepository(),
+    private readonly userService = new UserService(configService, userAndAuthRepository),
   ) {}
 
   login(loginId: string, body: Partial<LoginUserRequest> | undefined): LoginResult {
@@ -192,7 +193,7 @@ export class AuthService {
         theme: profile.theme,
         email: profile.email ?? '',
         createdAt: accountCreatedAtToApi(profile.createdAt),
-        entitlements: entitlementsForUser(user),
+        entitlements: this.userService.entitlementsForUser(user),
         sessionTokenPrefix: sessionId!.slice(0, 8),
       },
     };

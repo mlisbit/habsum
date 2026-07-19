@@ -1,12 +1,15 @@
 import { createInterface } from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
 import { ConfigService } from '../services/config-service.js';
-import { closeDb, countAdmins, createInitialAdminUser } from '../db.js';
+import { DatabaseRepository } from '../repositories/database-repository.js';
+import { UserAndAuthRepository } from '../repositories/user-and-auth-repository.js';
 import { isForbiddenUsername } from '../forbidden-usernames.js';
 import { isSafeConfigUserId } from '../request-helpers.js';
-import { generateTemporaryPassword } from '../temporary-password.js';
+import { generateTemporaryPassword } from '../utils/password-utils.js';
 
 const configService = new ConfigService();
+const databaseRepository = new DatabaseRepository();
+const userAndAuthRepository = new UserAndAuthRepository();
 
 async function promptUsername(): Promise<string> {
   const rl = createInterface({ input, output });
@@ -40,7 +43,7 @@ async function main(): Promise<void> {
 
   configService.ensureConfigLayout();
 
-  if (countAdmins() > 0) {
+  if (userAndAuthRepository.countAdmins() > 0) {
     console.log('An admin account already exists. No changes made.');
     return;
   }
@@ -56,7 +59,7 @@ async function main(): Promise<void> {
   }
 
   const password = generateTemporaryPassword();
-  createInitialAdminUser(username, password);
+  userAndAuthRepository.createInitialAdminUser(username, password);
 
   console.log('');
   console.log('Initial admin created.');
@@ -72,5 +75,5 @@ main()
     process.exit(1);
   })
   .finally(() => {
-    closeDb();
+    databaseRepository.close();
   });

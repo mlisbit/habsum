@@ -15,14 +15,9 @@ import type {
   HabitWidgetInsight,
 } from '@habsum/types/common/habit';
 import { fromDateKey, toDateKey } from '@habsum/utils/date';
-import {
-  getAllSelects,
-  getSelect as dbGetSelect,
-  getSeries as dbGetSeries,
-  getSummationDayTotal as dbGetSummationDayTotal,
-} from './db.js';
 import type { HabitDataReader } from './types/habit.types.js';
 import type { HabitDef } from './types/userConfig.js';
+import { HabitRepository } from './repositories/habit-repository.js';
 import { currentStreakInsight } from './utils/habits/insights/current-streak-insight.js';
 import { longestStreakInsight } from './utils/habits/insights/longest-streak-insight.js';
 import { weeklyAverageInsight } from './utils/habits/insights/weekly-average-insight.js';
@@ -34,16 +29,7 @@ type StreakGraphWithText = StreakGraphData & {
   currentText: string;
 };
 
-const dbHabitDataReader: HabitDataReader = {
-  getSelect: dbGetSelect,
-  getSummationDayTotal: dbGetSummationDayTotal,
-  getSeries(user, habit, startDate, endDate) {
-    return dbGetSeries(user, habit, startDate, endDate).map((row) => ({
-      date: dayFromString(row.date),
-      total: row.total,
-    }));
-  },
-};
+const defaultHabitDataReader: HabitDataReader = new HabitRepository().habitDataReader();
 
 const WEEKDAY_ROW_COUNT = 7;
 
@@ -227,7 +213,7 @@ export function habitHistoryForConfiguredPeriod(
   goal: number | null | undefined = null,
   at: Date = new Date(),
   tzOffsetMinutes?: number,
-  reader: HabitDataReader = dbHabitDataReader,
+  reader: HabitDataReader = defaultHabitDataReader,
 ): HabitHistory {
   const days = parsePeriodDays(periodSpec) ?? 7;
   const today = habitApiTodayKey(at, tzOffsetMinutes);
@@ -475,11 +461,10 @@ function earliestStreakScanDate(
   user: string,
   habitName: string,
   firstDate: string | null,
+  reader: HabitDataReader,
 ): string | null {
   if (firstDate) return firstDate;
-  const rows = getAllSelects(user, habitName);
-  if (rows.length === 0) return null;
-  return rows.reduce((min, row) => (row.date < min ? row.date : min), rows[0]!.date);
+  return reader.getFirstSelectDate(user, habitName);
 }
 
 function longestDailyStreakRun(
@@ -490,7 +475,7 @@ function longestDailyStreakRun(
   firstDate: string | null,
   reader: HabitDataReader,
 ): StreakRun | null {
-  const scanStart = earliestStreakScanDate(user, habitName, firstDate);
+  const scanStart = earliestStreakScanDate(user, habitName, firstDate, reader);
   if (scanStart == null || scanStart > viewDate) return null;
 
   let best: StreakRun = { length: 0, start: '', end: '' };
@@ -520,7 +505,7 @@ function longestWeeklyStreakRun(
   firstDate: string | null,
   reader: HabitDataReader,
 ): StreakRun | null {
-  const scanStart = earliestStreakScanDate(user, habitName, firstDate);
+  const scanStart = firstDate;
   if (scanStart == null || scanStart > viewDate) return null;
 
   const firstWeek = weekStartMonday(scanStart);
@@ -556,7 +541,7 @@ function longestDailySummationStreakRun(
   firstDate: string | null,
   reader: HabitDataReader,
 ): StreakRun | null {
-  const scanStart = earliestStreakScanDate(user, habitName, firstDate);
+  const scanStart = firstDate;
   if (scanStart == null || scanStart > viewDate) return null;
 
   let best: StreakRun = { length: 0, start: '', end: '' };
@@ -586,7 +571,7 @@ function longestWeeklySummationStreakRun(
   firstDate: string | null,
   reader: HabitDataReader,
 ): StreakRun | null {
-  const scanStart = earliestStreakScanDate(user, habitName, firstDate);
+  const scanStart = firstDate;
   if (scanStart == null || scanStart > viewDate) return null;
 
   const firstWeek = weekStartMonday(scanStart);
@@ -1207,7 +1192,7 @@ export function streakGraphForConfiguredWindow(
   showLongest = false,
   firstDate: string | null = null,
   selectableValues: readonly string[] = streakEligibleOptions,
-  reader: HabitDataReader = dbHabitDataReader,
+  reader: HabitDataReader = defaultHabitDataReader,
 ): StreakGraphWithText {
   const eligible = new Set(streakEligibleOptions);
   const selectableValueMap = selectablePillToInt(selectableValues, streakEligibleOptions);
@@ -1259,7 +1244,7 @@ export function summationStreakGraphForConfiguredWindow(
   streakFrequency?: string,
   showLongest = false,
   firstDate: string | null = null,
-  reader: HabitDataReader = dbHabitDataReader,
+  reader: HabitDataReader = defaultHabitDataReader,
 ): StreakGraphWithText {
   const eligible = new Set(streakEligibleOptions);
   const today = habitApiTodayKey(at, tzOffsetMinutes);

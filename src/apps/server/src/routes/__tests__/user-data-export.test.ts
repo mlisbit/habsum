@@ -3,10 +3,13 @@ import { yamlString } from '@habsum/types/common/misc';
 import { describe, expect, it } from 'vitest';
 import { createApp } from '../../app.js';
 import { ConfigService } from '../../services/config-service.js';
-import { addToTotal, createUserSession, ensureUserPins, setSelect } from '../../db.js';
-import { SESSION_COOKIE_NAME } from '../../session-cookie.js';
+import { HabitRepository } from '../../repositories/habit-repository.js';
+import { UserAndAuthRepository } from '../../repositories/user-and-auth-repository.js';
+import { SESSION_COOKIE_NAME } from '../../utils/cookie-session-utils.js';
 
 const configService = new ConfigService();
+const habitRepository = new HabitRepository();
+const userAndAuthRepository = new UserAndAuthRepository();
 
 function writeExportUserConfig(user: string) {
   const created = configService.createEmptyUserConfig(user);
@@ -28,10 +31,10 @@ describe('GET /users/:user/data', () => {
   it('downloads daily selects and summation events as csv', async () => {
     const user = 'export-data-user';
     writeExportUserConfig(user);
-    ensureUserPins([user]);
-    setSelect(user, 'mood', '2026-01-02', 'tricky, value');
-    addToTotal(user, 'push ups', '2026-01-03', 12, '2026-01-03 08:15:00');
-    const session = createUserSession(user, 3600);
+    userAndAuthRepository.ensureUserPins([user]);
+    habitRepository.setDailySelect(user, 'mood', '2026-01-02', 'tricky, value');
+    habitRepository.addToTotal(user, 'push ups', '2026-01-03', 12, '2026-01-03 08:15:00');
+    const session = userAndAuthRepository.createUserSession(user, 3600);
     const app = createApp();
 
     const res = await request(app)

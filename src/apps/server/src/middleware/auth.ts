@@ -1,12 +1,19 @@
 import type { NextFunction, Request, RequestHandler, Response } from 'express';
-import { getUsernameForSession, isUserAdmin } from '../db.js';
-import { getOucSessionHeader, resolveActiveSessionId } from '../session-request.js';
+import { UserAndAuthRepository } from '../repositories/user-and-auth-repository.js';
+import { getOucSessionHeader, resolveActiveSessionId } from '../utils/cookie-session-utils.js';
+
+let userAndAuthRepository: UserAndAuthRepository | null = null;
+
+function getUserAndAuthRepository(): UserAndAuthRepository {
+  userAndAuthRepository ??= new UserAndAuthRepository();
+  return userAndAuthRepository;
+}
 
 /** Username from operate-under header or session cookie + DB, or null. */
 export function authenticatedUsername(req: Request): string | null {
   const sid = resolveActiveSessionId(req);
   if (!sid) return null;
-  return getUsernameForSession(sid);
+  return getUserAndAuthRepository().getUsernameForSession(sid);
 }
 
 /** Session id for the current request (header or cookie). */
@@ -36,7 +43,7 @@ export const requireAdmin: RequestHandler = (req, res, next) => {
     res.status(401).json({ error: 'not authenticated' });
     return;
   }
-  if (!isUserAdmin(u)) {
+  if (!getUserAndAuthRepository().isUserAdmin(u)) {
     res.status(403).json({ error: 'forbidden' });
     return;
   }

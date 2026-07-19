@@ -6,6 +6,7 @@ import type {
   UserConfigPutResponse,
   UserSessionResponse,
 } from '@habsum/types/common/misc';
+import { ProductEntitlement } from '@habsum/types/common/entitlement';
 import type { UserPasswordChangeRequest } from '@habsum/types/api-responses/user-password-change';
 import type { SecurityGetResponse } from '@habsum/types/api-responses/security-get';
 import type {
@@ -14,7 +15,6 @@ import type {
 } from '@habsum/types/api-responses/security-delete';
 import type { UsersPatchRequest } from '@habsum/types/api-responses/users-patch';
 import { accountCreatedAtToApi } from '@habsum/types/common/day';
-import { entitlementsForUser } from '../entitlements.js';
 import { isForbiddenUsername } from '../forbidden-usernames.js';
 import {
   isPlausibleEmail,
@@ -45,6 +45,16 @@ type LoadUserConfigResult =
   | { ok: true; config: UserConfig }
   | { ok: false; status: number; body: { error: string } };
 
+const MAX_USERNAME_LEN = 64;
+
+function usernameBaseFromEmail(email: string): string {
+  const local = email.split('@')[0]?.trim().toLowerCase() ?? '';
+  let base = local.replace(/[^a-z0-9._-]+/g, '').replace(/^\.+|\.+$/g, '');
+  if (!base) base = 'user';
+  if (base.length > MAX_USERNAME_LEN) base = base.slice(0, MAX_USERNAME_LEN);
+  return base;
+}
+
 export class UserService {
   constructor(
     private readonly configService = new ConfigService(),
@@ -67,6 +77,39 @@ export class UserService {
       }
       throw e;
     }
+  }
+
+  entitlementsForUser(username: string): ProductEntitlement[] {
+    const out: ProductEntitlement[] = [];
+    if (this.userAndAuthRepository.getFirstDate(username) === null) {
+      out.push(ProductEntitlement.NEW_USER);
+    }
+    if (this.userAndAuthRepository.isUserBetaTester(username)) {
+      out.push(ProductEntitlement.BETA_TESTER);
+    }
+    if (this.userAndAuthRepository.isUserAdmin(username)) {
+      out.push(ProductEntitlement.DEVELOPER);
+    }
+    return out;
+  }
+
+  allocateUsernameForEmail(email: string): string | null {
+    const taken = new Set(this.configService.listUsers());
+    let base = usernameBaseFromEmail(email);
+    if (!this.isUsernameAvailable(base, taken)) {
+      base = isForbiddenUsername(base) || !isSafeConfigUserId(base) ? 'user' : base;
+    }
+
+    if (this.isUsernameAvailable(base, taken)) return base;
+
+    for (let n = 2; n < 10_000; n++) {
+      const suffix = String(n);
+      const maxBase = MAX_USERNAME_LEN - suffix.length;
+      const candidate = `${base.slice(0, maxBase)}${suffix}`;
+      if (this.isUsernameAvailable(candidate, taken)) return candidate;
+    }
+
+    return null;
   }
 
   getSecuritySessions(
@@ -150,7 +193,7 @@ export class UserService {
         theme: profile.theme,
         email: profile.email ?? '',
         createdAt: accountCreatedAtToApi(profile.createdAt),
-        entitlements: entitlementsForUser(user),
+        entitlements: this.entitlementsForUser(user),
       },
     };
   }
@@ -285,6 +328,13 @@ export class UserService {
       return { status: 400, body: { error: 'invalid user' } };
     }
     return null;
+  }
+
+  private isUsernameAvailable(candidate: string, taken: Set<string>): boolean {
+    if (!isSafeConfigUserId(candidate)) return false;
+    if (isForbiddenUsername(candidate)) return false;
+    if (taken.has(candidate)) return false;
+    return true;
   }
 
   private parseUserPatchBody(

@@ -57,6 +57,7 @@ export type InterimHabitHistoryRow =
 
 export type HabitDataReader = {
   getSelect(user: string, habit: string, date: Day): string | null;
+  getFirstSelectDate(user: string, habit: string): Day | null;
   getSummationDayTotal(user: string, habit: string, date: Day): number | null;
   getSeries(
     user: string,

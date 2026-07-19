@@ -6,28 +6,17 @@ import type {
 } from '@habsum/types/common/misc';
 import type { CreateOucSessionResponse } from '@habsum/types/api-responses/ouc-post';
 import { ConfigService } from '../services/config-service.js';
-import {
-  countUserEvents,
-  createOucUserSession,
-  deleteUserPin,
-  ensureUserPins,
-  listUserRows,
-  patchUserProfile,
-  purgeUserData,
-  resolveUsernameByLoginId,
-  setUserPin,
-  updateLoginPin,
-} from '../db.js';
 import { requireAdmin } from '../middleware/auth.js';
 import { isPlausibleEmail, isSafeConfigUserId } from '../request-helpers.js';
-import { sessionTtlSeconds } from '../session-cookie.js';
-import { generateTemporaryPassword } from '../temporary-password.js';
-import { allocateUsernameForEmail } from '../username-from-email.js';
-import { entitlementsForUser } from '../entitlements.js';
+import { generateTemporaryPassword } from '../utils/password-utils.js';
+import { UserAndAuthRepository } from '../repositories/user-and-auth-repository.js';
 import { AuthService } from '../services/auth-service.js';
+import { UserService } from '../services/user-service.js';
 
 const configService = new ConfigService();
 const authService = new AuthService();
+const userService = new UserService();
+const userAndAuthRepository = new UserAndAuthRepository();
 
 function parseOptionalDisplayName(body: CreateUserRequest | undefined): {
   displayName?: string | null;
@@ -45,7 +34,7 @@ function parseOptionalDisplayName(body: CreateUserRequest | undefined): {
 
 function rollbackCreatedUser(username: string): void {
   configService.deleteUserConfig(username);
-  deleteUserPin(username);
+  userAndAuthRepository.deleteUserPin(username);
 }
 
 function countConfiguredHabits(username: string): number {
@@ -56,8 +45,10 @@ export const usersAdminRouter = Router();
 
 usersAdminRouter.get('/users', requireAdmin, (_req: Request, res: Response) => {
   const usernames = configService.listUsers();
-  ensureUserPins(usernames);
-  const rowsByUsername = new Map(listUserRows().map((row) => [row.username, row]));
+  userAndAuthRepository.ensureUserPins(usernames);
+  const rowsByUsername = new Map(
+    userAndAuthRepository.listUserRows().map((row) => [row.username, row]),
+  );
   const users: ListUsersResponse['users'] = usernames.map((username) => {
     const row = rowsByUsername.get(username);
     return {
@@ -67,8 +58,8 @@ usersAdminRouter.get('/users', requireAdmin, (_req: Request, res: Response) => {
       lastLoginAt: row?.lastLoginAt ?? null,
       webAndApiVersion: row?.webAndApiVersion ?? null,
       habitCount: countConfiguredHabits(username),
-      eventCount: countUserEvents(username),
-      entitlements: entitlementsForUser(username),
+      eventCount: userAndAuthRepository.countUserEvents(username),
+      entitlements: userService.entitlementsForUser(username),
     };
   });
   const body: ListUsersResponse = { users };
@@ -87,8 +78,8 @@ usersAdminRouter.post('/users/ouc', requireAdmin, (req: Request, res: Response) 
     return res.status(404).json({ error: 'user not found' });
   }
 
-  ensureUserPins(existing);
-  const token = createOucUserSession(name, sessionTtlSeconds());
+  userAndAuthRepository.ensureUserPins(existing);
+  const token = userAndAuthRepository.createOucUserSession(name);
   const body: CreateOucSessionResponse = { ok: true, user: name, token };
   return res.status(201).json(body);
 });
@@ -105,7 +96,7 @@ usersAdminRouter.post(
     if (!isPlausibleEmail(email)) {
       return res.status(400).json({ error: 'invalid email' });
     }
-    if (resolveUsernameByLoginId(email)) {
+    if (userAndAuthRepository.resolveUsernameByLoginId(email)) {
       return res.status(409).json({ error: 'email already in use' });
     }
 
@@ -119,7 +110,7 @@ usersAdminRouter.post(
       return res.status(400).json({ error: 'displayName is required to send invite email' });
     }
 
-    const name = allocateUsernameForEmail(email);
+    const name = userService.allocateUsernameForEmail(email);
     if (!name) {
       return res.status(409).json({ error: 'could not allocate username' });
     }
@@ -132,9 +123,9 @@ usersAdminRouter.post(
       return res.status(status).json({ error: out.error });
     }
 
-    setUserPin(out.user, password);
+    userAndAuthRepository.setUserPin(out.user, password);
     try {
-      patchUserProfile(out.user, {
+      userAndAuthRepository.patchUserProfile(out.user, {
         email,
         ...(displayName !== undefined ? { displayName } : {}),
       });
@@ -178,9 +169,9 @@ usersAdminRouter.patch('/users', requireAdmin, (req: Request, res: Response) => 
 
   const password = generateTemporaryPassword();
 
-  ensureUserPins(existing);
-  if (!updateLoginPin(name, password)) {
-    setUserPin(name, password);
+  userAndAuthRepository.ensureUserPins(existing);
+  if (!userAndAuthRepository.updateLoginPin(name, password)) {
+    userAndAuthRepository.setUserPin(name, password);
   }
 
   const body = { ok: true as const, user: name, password };
@@ -200,7 +191,7 @@ usersAdminRouter.delete('/users', requireAdmin, (req: Request, res: Response) =>
   }
 
   try {
-    purgeUserData(name);
+    userAndAuthRepository.purgeUserData(name);
   } catch (e) {
     return res.status(400).json({ error: e instanceof Error ? e.message : 'purge failed' });
   }
@@ -211,6 +202,6 @@ usersAdminRouter.delete('/users', requireAdmin, (req: Request, res: Response) =>
     return res.status(status).json({ error: out.error });
   }
 
-  deleteUserPin(out.user);
+  userAndAuthRepository.deleteUserPin(out.user);
   return res.json({ ok: true, user: out.user });
 });

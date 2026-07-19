@@ -1,9 +1,10 @@
 import './load-env.js';
 import { join, resolve } from 'node:path';
-import { closeDb } from './db.js';
 import { createApp } from './app.js';
+import { DatabaseRepository } from './repositories/database-repository.js';
 
 const app = createApp();
+const databaseRepository = new DatabaseRepository();
 
 const PORT = Number(process.env.PORT ?? 3001);
 const HOST = process.env.HOST ?? '0.0.0.0';
@@ -28,7 +29,7 @@ async function shutdown(signal: string) {
   });
 
   try {
-    closeDb();
+    databaseRepository.close();
   } catch (e) {
     console.warn('[habsum] error closing db', e);
   }

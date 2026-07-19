@@ -4,10 +4,11 @@ import { describe, expect, it } from 'vitest';
 import { toDateKey, toDateKeyWithTime } from '@habsum/utils/date';
 import { createApp } from '../../app.js';
 import { ConfigService } from '../../services/config-service.js';
-import { createUserSession, ensureUserPins } from '../../db.js';
-import { SESSION_COOKIE_NAME } from '../../session-cookie.js';
+import { UserAndAuthRepository } from '../../repositories/user-and-auth-repository.js';
+import { SESSION_COOKIE_NAME } from '../../utils/cookie-session-utils.js';
 
 const configService = new ConfigService();
+const userAndAuthRepository = new UserAndAuthRepository();
 
 function writeSummationUserConfig(user: string, historyBlock = '    history:\n      period: 1w') {
   const created = configService.createEmptyUserConfig(user);
@@ -28,8 +29,8 @@ describe('PATCH /users/:user/habits summation history', () => {
   it('returns history for the view day after the total is updated', async () => {
     const user = 'patch-history-user';
     writeSummationUserConfig(user);
-    ensureUserPins([user]);
-    const session = createUserSession(user, 3600);
+    userAndAuthRepository.ensureUserPins([user]);
+    const session = userAndAuthRepository.createUserSession(user, 3600);
     const app = createApp();
 
     const tzOffsetMinutes = new Date().getTimezoneOffset();
@@ -70,8 +71,8 @@ describe('PATCH /users/:user/habits summation history', () => {
       options: ['100']
       show_longest: true`,
     );
-    ensureUserPins([user]);
-    const session = createUserSession(user, 3600);
+    userAndAuthRepository.ensureUserPins([user]);
+    const session = userAndAuthRepository.createUserSession(user, 3600);
     const app = createApp();
 
     const tzOffsetMinutes = new Date().getTimezoneOffset();

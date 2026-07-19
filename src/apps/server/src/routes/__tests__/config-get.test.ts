@@ -3,10 +3,11 @@ import { yamlString } from '@habsum/types/common/misc';
 import { describe, expect, it } from 'vitest';
 import { createApp } from '../../app.js';
 import { ConfigService } from '../../services/config-service.js';
-import { createUserSession, ensureUserPins } from '../../db.js';
-import { SESSION_COOKIE_NAME } from '../../session-cookie.js';
+import { UserAndAuthRepository } from '../../repositories/user-and-auth-repository.js';
+import { SESSION_COOKIE_NAME } from '../../utils/cookie-session-utils.js';
 
 const configService = new ConfigService();
+const userAndAuthRepository = new UserAndAuthRepository();
 
 function writeUserConfig(user: string, text: string) {
   const created = configService.createEmptyUserConfig(user);
@@ -29,8 +30,8 @@ describe('GET /users/:user/config', () => {
     type: summation
 `,
     );
-    ensureUserPins([user]);
-    const session = createUserSession(user, 3600);
+    userAndAuthRepository.ensureUserPins([user]);
+    const session = userAndAuthRepository.createUserSession(user, 3600);
 
     const res = await request(createApp())
       .get(`/users/${user}/config`)
@@ -69,8 +70,8 @@ habits:
     type: summation
 `,
     );
-    ensureUserPins([user]);
-    const session = createUserSession(user, 3600);
+    userAndAuthRepository.ensureUserPins([user]);
+    const session = userAndAuthRepository.createUserSession(user, 3600);
 
     await request(createApp())
       .put(`/users/${user}/config`)

@@ -1,4 +1,5 @@
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
+import { UserAndAuthRepository } from '../repositories/user-and-auth-repository.js';
 
 /** HttpOnly cookie name for server-side logged-in sessions. */
 export const SESSION_COOKIE_NAME = 'habsum_sid';
@@ -58,4 +59,40 @@ export function appendSessionCookie(res: Response, sessionId: string): void {
 export function appendClearSessionCookie(res: Response): void {
   const line = `${SESSION_COOKIE_NAME}=; Path=/; Max-Age=0; ${cookieBaseAttrs()}`;
   res.append('Set-Cookie', line);
+}
+
+// Session request utilities
+
+export const OUC_SESSION_HEADER = 'x-habsum-ouc-session';
+let userAndAuthRepository: UserAndAuthRepository | null = null;
+
+function getUserAndAuthRepository(): UserAndAuthRepository {
+  userAndAuthRepository ??= new UserAndAuthRepository();
+  return userAndAuthRepository;
+}
+
+export function getOucSessionHeader(req: Request): string | undefined {
+  const raw = req.headers[OUC_SESSION_HEADER];
+  if (typeof raw !== 'string') return undefined;
+  const token = raw.trim();
+  return token || undefined;
+}
+
+/** Active session id: operate-under header wins over the HttpOnly cookie when valid. */
+export function resolveActiveSessionId(req: Request): string | null {
+  const ouc = getOucSessionHeader(req);
+  if (
+    ouc &&
+    getUserAndAuthRepository().isOucSessionId(ouc) &&
+    getUserAndAuthRepository().getUsernameForSession(ouc)
+  ) {
+    return ouc;
+  }
+
+  const sid = getSessionCookieValue(req.headers.cookie);
+  if (sid && getUserAndAuthRepository().getUsernameForSession(sid)) {
+    return sid;
+  }
+
+  return null;
 }

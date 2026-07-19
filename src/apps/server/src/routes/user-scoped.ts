@@ -9,7 +9,7 @@ import { buildUserDataCsv } from '../services/data-export-service.js';
 import { HabitService } from '../services/habit-service.js';
 import { UserService } from '../services/user-service.js';
 import { authenticatedSessionId, requireMatchingRouteUser } from '../middleware/auth.js';
-import { appendSessionCookie } from '../session-cookie.js';
+import { appendSessionCookie } from '../utils/cookie-session-utils.js';
 import type { UserConfig } from '../types/userConfig.js';
 
 const authService = new AuthService();

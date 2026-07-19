@@ -27,6 +27,14 @@ function readerForInterimHabit(interimHabit: InterimHabit): HabitDataReader {
       if (interimHabit.type !== 'single_select' || interimHabit.config.name !== habit) return null;
       return interimHabit.values.find((row) => row.date === date)?.value ?? null;
     },
+    getFirstSelectDate(_user, habit) {
+      if (interimHabit.type !== 'single_select' || interimHabit.config.name !== habit) return null;
+      if (interimHabit.values.length === 0) return null;
+      return interimHabit.values.reduce(
+        (min, row) => (row.date < min ? row.date : min),
+        interimHabit.values[0]!.date,
+      );
+    },
     getSummationDayTotal(_user, habit, date) {
       if (interimHabit.type !== 'summation' || interimHabit.config.name !== habit) return null;
       return interimHabit.totals.find((row) => row.date === date)?.total ?? null;

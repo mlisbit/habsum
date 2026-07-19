@@ -1,15 +1,27 @@
 // Repository for user, profile, session, and auth persistence operations.
+import { createHash, randomBytes } from 'node:crypto';
 import {
+  countAdmins,
+  createInitialAdminUser,
+  countUserEvents,
   createUserSession,
+  createOucUserSession,
   deleteUserPin,
   ensureUserPins,
+  findValidPasswordResetToken,
+  getFirstDate,
   getUserProfile,
   getUsernameForSession,
+  insertPasswordResetToken,
+  invalidateActivePasswordResetTokens,
   isEmailUsedByOtherUser,
   isOucSessionId,
   isUserAdmin,
+  isUserBetaTester,
   isUserPinValid,
+  listUserRows,
   listSessionsForUsername,
+  markPasswordResetTokenUsed,
   passwordResetRetryAfterSeconds,
   patchUserProfile,
   purgeUserData,
@@ -22,18 +34,38 @@ import {
   revokeUserSessionByTokenPrefix,
   setUserPin,
   updateLoginPin,
-} from '../db.js';
+} from './_private/db.js';
 import {
-  consumePasswordResetToken,
-  issuePasswordResetToken,
-  lookupValidPasswordResetToken,
-} from '../password-reset-token.js';
-import { isNewLoginPasswordAllowed, resetLoginPassword } from '../reset-login-password.js';
-import { sessionTtlSeconds } from '../session-cookie.js';
+  INVITE_TOKEN_TTL_SECONDS,
+  PASSWORD_RESET_TOKEN_BYTES,
+  PASSWORD_RESET_TOKEN_TTL_SECONDS,
+  type PasswordResetTokenPurpose,
+} from '../constants.js';
+import { sessionTtlSeconds } from '../utils/cookie-session-utils.js';
+
+function hashPasswordResetToken(token: string): string {
+  return createHash('sha256').update(token).digest('base64url');
+}
+
+function generatePasswordResetToken(): string {
+  return randomBytes(PASSWORD_RESET_TOKEN_BYTES).toString('base64url');
+}
+
+function tokenTtlSeconds(purpose: PasswordResetTokenPurpose): number {
+  return purpose === 'invite' ? INVITE_TOKEN_TTL_SECONDS : PASSWORD_RESET_TOKEN_TTL_SECONDS;
+}
 
 export class UserAndAuthRepository {
   resolveUsernameByLoginId(loginId: string): string | null {
     return resolveUsernameByLoginId(loginId);
+  }
+
+  countAdmins(): number {
+    return countAdmins();
+  }
+
+  createInitialAdminUser(username: string, pin: string): void {
+    createInitialAdminUser(username, pin);
   }
 
   ensureUserPins(usernames: string[]): void {
@@ -45,7 +77,7 @@ export class UserAndAuthRepository {
   }
 
   isNewLoginPasswordAllowed(userId: string, newPin: string): boolean {
-    return isNewLoginPasswordAllowed(userId, newPin);
+    return !isUserPinValid(userId, newPin);
   }
 
   setUserPin(username: string, pin: string): void {
@@ -57,7 +89,10 @@ export class UserAndAuthRepository {
   }
 
   resetLoginPassword(userId: string, newPin: string): void {
-    resetLoginPassword(userId, newPin);
+    const updated = updateLoginPin(userId, newPin);
+    if (!updated) {
+      setUserPin(userId, newPin);
+    }
   }
 
   renameUserPin(fromUsername: string, toUsername: string): void {
@@ -68,8 +103,12 @@ export class UserAndAuthRepository {
     deleteUserPin(username);
   }
 
-  createUserSession(username: string): string {
-    return createUserSession(username, sessionTtlSeconds());
+  createUserSession(username: string, ttlSeconds = sessionTtlSeconds()): string {
+    return createUserSession(username, ttlSeconds);
+  }
+
+  createOucUserSession(username: string, ttlSeconds = sessionTtlSeconds()): string {
+    return createOucUserSession(username, ttlSeconds);
   }
 
   getUsernameForSession(sessionId: string): string | null {
@@ -86,6 +125,14 @@ export class UserAndAuthRepository {
 
   listSessionsForUsername(username: string) {
     return listSessionsForUsername(username);
+  }
+
+  listUserRows() {
+    return listUserRows();
+  }
+
+  countUserEvents(username: string): number {
+    return countUserEvents(username);
   }
 
   revokeOtherUserSessions(username: string, exceptSessionId: string): number {
@@ -119,6 +166,14 @@ export class UserAndAuthRepository {
     return isUserAdmin(username);
   }
 
+  isUserBetaTester(username: string): boolean {
+    return isUserBetaTester(username);
+  }
+
+  getFirstDate(username: string): string | null {
+    return getFirstDate(username);
+  }
+
   purgeUserData(user: string): void {
     purgeUserData(user);
   }
@@ -135,15 +190,41 @@ export class UserAndAuthRepository {
     recordPasswordResetRequest(username);
   }
 
-  issuePasswordResetToken(userId: string, purpose: 'reset' | 'invite') {
-    return issuePasswordResetToken(userId, purpose);
+  issuePasswordResetToken(
+    userId: string,
+    purpose: PasswordResetTokenPurpose,
+    nowSec = Math.floor(Date.now() / 1000),
+  ): { token: string; expiresAt: number; id: number } {
+    invalidateActivePasswordResetTokens(userId, purpose, nowSec);
+    const token = generatePasswordResetToken();
+    const tokenHash = hashPasswordResetToken(token);
+    const expiresAt = nowSec + tokenTtlSeconds(purpose);
+    const id = insertPasswordResetToken({
+      userId,
+      tokenHash,
+      expiresAt,
+      createdAt: nowSec,
+      purpose,
+    });
+    return { token, expiresAt, id };
   }
 
-  lookupValidPasswordResetToken(token: string) {
-    return lookupValidPasswordResetToken(token);
+  lookupValidPasswordResetToken(
+    token: string,
+    nowSec = Math.floor(Date.now() / 1000),
+  ): { id: number; userId: string; purpose: PasswordResetTokenPurpose } | null {
+    const trimmed = token.trim();
+    if (!trimmed) return null;
+    const row = findValidPasswordResetToken(hashPasswordResetToken(trimmed), nowSec);
+    if (!row) return null;
+    return {
+      id: row.id,
+      userId: row.userId,
+      purpose: row.purpose === 'invite' ? 'invite' : 'reset',
+    };
   }
 
-  consumePasswordResetToken(id: number): boolean {
-    return consumePasswordResetToken(id);
+  consumePasswordResetToken(id: number, nowSec = Math.floor(Date.now() / 1000)): boolean {
+    return markPasswordResetTokenUsed(id, nowSec);
   }
 }

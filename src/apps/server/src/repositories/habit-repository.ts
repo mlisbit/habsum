@@ -3,23 +3,30 @@ import { dayFromString, type Day } from '@habsum/types/common/day';
 import {
   addToTotal,
   deleteDailySelect,
+  deleteDailySelectValue,
   deleteSummationEvent,
   deleteSummationEventsForDay,
+  getAllDailySelectsForUser,
   getAllSelects,
+  getAllSummationEventsForUser,
   getAllTotals,
   getFirstDate,
   getHabitFirstDate,
+  getSelect,
   getSelectSeries,
   getSeries,
   getSummationDayTotal,
   getSummationEvents,
   getUserProfile,
+  renameDailySelectValue,
+  renameHabitData,
   setSelect,
   setTotal,
-} from '../db.js';
+} from './_private/db.js';
 import { habitApiTodayKey } from '../server-time.js';
 import { habitInsightDataRange } from './_private/habit-data-range.js';
 import type {
+  HabitDataReader,
   InterimHabit,
   InterimHabitHistoryRow,
   InterimHabitsData,
@@ -71,6 +78,26 @@ export class HabitRepository {
     return getHabitFirstDate(user, habit);
   }
 
+  habitDataReader(): HabitDataReader {
+    return {
+      getSelect,
+      getFirstSelectDate(user, habit) {
+        const rows = getAllSelects(user, habit);
+        if (rows.length === 0) return null;
+        return dayFromString(
+          rows.reduce((min, row) => (row.date < min ? row.date : min), rows[0]!.date),
+        );
+      },
+      getSummationDayTotal,
+      getSeries(user, habit, startDate, endDate) {
+        return getSeries(user, habit, startDate, endDate).map((row) => ({
+          date: dayFromString(row.date),
+          total: row.total,
+        }));
+      },
+    };
+  }
+
   habitRowsForHistory(user: string, habit: HabitDef): InterimHabitHistoryRow[] {
     if (habit.type === 'single_select') {
       return getAllSelects(user, habit.name).map((row) => ({
@@ -94,8 +121,24 @@ export class HabitRepository {
     deleteDailySelect(user, habit, date);
   }
 
+  deleteDailySelectValue(user: string, habit: string, value: string): void {
+    deleteDailySelectValue(user, habit, value);
+  }
+
+  renameDailySelectValue(user: string, habit: string, fromValue: string, toValue: string): void {
+    renameDailySelectValue(user, habit, fromValue, toValue);
+  }
+
+  renameHabitData(user: string, fromHabit: string, toHabit: string): void {
+    renameHabitData(user, fromHabit, toHabit);
+  }
+
   setDailySelect(user: string, habit: string, date: string, value: string): string {
     return setSelect(user, habit, date, value);
+  }
+
+  getDailySelect(user: string, habit: string, date: string): string | null {
+    return getSelect(user, habit, date);
   }
 
   getSummationEvents(user: string, habit: string, date: string) {
@@ -104,6 +147,10 @@ export class HabitRepository {
 
   getSummationDayTotal(user: string, habit: string, date: string): number | null {
     return getSummationDayTotal(user, habit, date);
+  }
+
+  getAllTotals(user: string, habit: string) {
+    return getAllTotals(user, habit);
   }
 
   deleteSummationEvent(user: string, habit: string, date: string, eventId: number): boolean {
@@ -120,6 +167,14 @@ export class HabitRepository {
 
   setTotal(user: string, habit: string, date: string, total: number, createdAt: string): number {
     return setTotal(user, habit, date, total, createdAt);
+  }
+
+  getAllDailySelectsForUser(user: string) {
+    return getAllDailySelectsForUser(user);
+  }
+
+  getAllSummationEventsForUser(user: string) {
+    return getAllSummationEventsForUser(user);
   }
 
   getHabits({ config, date, at = new Date(), tzOffsetMinutes }: GetHabitsInput): InterimHabitsData {

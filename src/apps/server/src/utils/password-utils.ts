@@ -1,5 +1,21 @@
 import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 
+// Temporary password generation
+
+const ALPHABET = 'abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+/** Generates a one-time login password for admin-provisioned accounts. */
+export function generateTemporaryPassword(length = 14): string {
+  const bytes = randomBytes(length);
+  let out = '';
+  for (let i = 0; i < length; i++) {
+    out += ALPHABET[bytes[i]! % ALPHABET.length]!;
+  }
+  return out;
+}
+
+// Password hashing
+
 const SCRYPT_PREFIX = '$scrypt$v1$';
 const SALT_LEN = 16;
 const KEY_LEN = 64;

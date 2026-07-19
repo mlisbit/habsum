@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isPasswordHashed } from './password-hash.js';
+import { isPasswordHashed } from '../../utils/password-utils.js';
 import {
   createInitialAdminUser,
   db,

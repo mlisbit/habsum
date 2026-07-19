@@ -5,27 +5,22 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../../app.js';
 import { AuthService } from '../../services/auth-service.js';
 import { ConfigService } from '../../services/config-service.js';
-import {
-  addToTotal,
-  countAdmins,
-  createInitialAdminUser,
-  createUserSession,
-  ensureUserPins,
-  patchUserProfile,
-  setSelect,
-} from '../../db.js';
-import { SESSION_COOKIE_NAME } from '../../session-cookie.js';
+import { HabitRepository } from '../../repositories/habit-repository.js';
+import { UserAndAuthRepository } from '../../repositories/user-and-auth-repository.js';
+import { SESSION_COOKIE_NAME } from '../../utils/cookie-session-utils.js';
 import { PACKAGE_VERSION } from '../../version.js';
 
 const configService = new ConfigService();
+const habitRepository = new HabitRepository();
+const userAndAuthRepository = new UserAndAuthRepository();
 
 function adminSessionCookie(): string {
   configService.ensureConfigLayout();
-  ensureUserPins(['admin']);
-  if (countAdmins() === 0) {
-    createInitialAdminUser('admin', 'secret');
+  userAndAuthRepository.ensureUserPins(['admin']);
+  if (userAndAuthRepository.countAdmins() === 0) {
+    userAndAuthRepository.createInitialAdminUser('admin', 'secret');
   }
-  const adminSession = createUserSession('admin', 3600);
+  const adminSession = userAndAuthRepository.createUserSession('admin', 3600);
   return `${SESSION_COOKIE_NAME}=${adminSession}`;
 }
 
@@ -40,8 +35,8 @@ describe('POST /users', () => {
 
     await request(app).post('/users').send({ email: 'nobody@example.com' }).expect(401);
 
-    ensureUserPins(['regular']);
-    const regularSession = createUserSession('regular', 3600);
+    userAndAuthRepository.ensureUserPins(['regular']);
+    const regularSession = userAndAuthRepository.createUserSession('regular', 3600);
 
     await request(app)
       .post('/users')
@@ -49,8 +44,8 @@ describe('POST /users', () => {
       .send({ email: 'regular@example.com' })
       .expect(403);
 
-    createInitialAdminUser('admin', 'secret');
-    const adminSession = createUserSession('admin', 3600);
+    userAndAuthRepository.createInitialAdminUser('admin', 'secret');
+    const adminSession = userAndAuthRepository.createUserSession('admin', 3600);
 
     const res = await request(app)
       .post('/users')
@@ -112,13 +107,13 @@ describe('GET /users', () => {
     options: [none, light, moderate, heavy]
 `),
     );
-    ensureUserPins(['login-audit-user']);
-    patchUserProfile('login-audit-user', {
+    userAndAuthRepository.ensureUserPins(['login-audit-user']);
+    userAndAuthRepository.patchUserProfile('login-audit-user', {
       displayName: 'Login Audit',
       email: 'login-audit@example.com',
     });
-    addToTotal('login-audit-user', 'push ups', '2026-05-28', 10, "datetime('now')");
-    setSelect('login-audit-user', 'soda consumption', '2026-05-28', 'none');
+    habitRepository.addToTotal('login-audit-user', 'push ups', '2026-05-28', 10, "datetime('now')");
+    habitRepository.setDailySelect('login-audit-user', 'soda consumption', '2026-05-28', 'none');
     const app = createApp();
 
     const beforeLoginRes = await request(app).get('/users').set('Cookie', adminSessionCookie());
@@ -134,7 +129,7 @@ describe('GET /users', () => {
       entitlements: [ProductEntitlement.BETA_TESTER],
     });
 
-    const userSession = createUserSession('login-audit-user', 3600);
+    const userSession = userAndAuthRepository.createUserSession('login-audit-user', 3600);
     vi.spyOn(Date, 'now').mockReturnValue(1_900_000_000_000);
 
     await request(app)

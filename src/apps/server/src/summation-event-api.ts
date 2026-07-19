@@ -1,5 +1,5 @@
 import type { SummationEvent } from '@habsum/types/common/habit';
-import type { SummationEventRow } from './db.js';
+import type { InterimSummationEvent } from './types/habit.types.js';
 
 /**
  * Split SQLite `datetime('now')` style value (`YYYY-MM-DD HH:MM:SS` or date-only)
@@ -15,11 +15,11 @@ export function splitSqliteCreatedAt(createdAt: string): { day: string; time: st
   return { day: s.slice(0, space), time: s.slice(space + 1).trim() };
 }
 
-export function toApiSummationEvent(row: SummationEventRow): SummationEvent {
+export function toApiSummationEvent(row: InterimSummationEvent): SummationEvent {
   const { day, time } = splitSqliteCreatedAt(row.createdAt);
   return { id: row.id, amount: row.amount, createdAt: { day, time } };
 }
 
-export function mapSummationEventsToApi(rows: SummationEventRow[]): SummationEvent[] {
+export function mapSummationEventsToApi(rows: InterimSummationEvent[]): SummationEvent[] {
   return rows.map(toApiSummationEvent);
 }

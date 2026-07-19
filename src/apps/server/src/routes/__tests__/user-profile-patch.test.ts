@@ -2,10 +2,11 @@ import request from 'supertest';
 import { describe, expect, it } from 'vitest';
 import { createApp } from '../../app.js';
 import { ConfigService } from '../../services/config-service.js';
-import { createUserSession, getUserProfile, patchUserProfile } from '../../db.js';
-import { SESSION_COOKIE_NAME } from '../../session-cookie.js';
+import { UserAndAuthRepository } from '../../repositories/user-and-auth-repository.js';
+import { SESSION_COOKIE_NAME } from '../../utils/cookie-session-utils.js';
 
 const configService = new ConfigService();
+const userAndAuthRepository = new UserAndAuthRepository();
 
 describe('PATCH /users/:user profile', () => {
   it('stores null theme for system default (null body)', async () => {
@@ -13,10 +14,10 @@ describe('PATCH /users/:user profile', () => {
     const user = 'theme-patch-user';
     const created = configService.createEmptyUserConfig(user);
     expect(created.ok).toBe(true);
-    patchUserProfile(user, { theme: 'dark' });
+    userAndAuthRepository.patchUserProfile(user, { theme: 'dark' });
 
     const app = createApp();
-    const sid = createUserSession(user, 3600);
+    const sid = userAndAuthRepository.createUserSession(user, 3600);
 
     const res = await request(app)
       .patch(`/users/${user}`)
@@ -24,7 +25,7 @@ describe('PATCH /users/:user profile', () => {
       .send({ theme: null });
 
     expect(res.status).toBe(200);
-    expect(getUserProfile(user).theme).toBe(null);
+    expect(userAndAuthRepository.getUserProfile(user).theme).toBe(null);
   });
 
   it('stores null theme when body sends "system"', async () => {
@@ -32,10 +33,10 @@ describe('PATCH /users/:user profile', () => {
     const user = 'theme-patch-system-user';
     const created = configService.createEmptyUserConfig(user);
     expect(created.ok).toBe(true);
-    patchUserProfile(user, { theme: 'dark' });
+    userAndAuthRepository.patchUserProfile(user, { theme: 'dark' });
 
     const app = createApp();
-    const sid = createUserSession(user, 3600);
+    const sid = userAndAuthRepository.createUserSession(user, 3600);
 
     const res = await request(app)
       .patch(`/users/${user}`)
@@ -43,6 +44,6 @@ describe('PATCH /users/:user profile', () => {
       .send({ theme: 'system' });
 
     expect(res.status).toBe(200);
-    expect(getUserProfile(user).theme).toBe(null);
+    expect(userAndAuthRepository.getUserProfile(user).theme).toBe(null);
   });
 });

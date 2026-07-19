@@ -5,17 +5,13 @@ import { yamlString } from '@habsum/types/common/misc';
 import { describe, expect, it } from 'vitest';
 import { createApp } from '../../app.js';
 import { ConfigService } from '../../services/config-service.js';
-import {
-  createUserSession,
-  ensureUserPins,
-  getAllTotals,
-  getSelect,
-  setSelect,
-  setTotal,
-} from '../../db.js';
-import { SESSION_COOKIE_NAME } from '../../session-cookie.js';
+import { HabitRepository } from '../../repositories/habit-repository.js';
+import { UserAndAuthRepository } from '../../repositories/user-and-auth-repository.js';
+import { SESSION_COOKIE_NAME } from '../../utils/cookie-session-utils.js';
 
 const configService = new ConfigService();
+const habitRepository = new HabitRepository();
+const userAndAuthRepository = new UserAndAuthRepository();
 
 function writeUserConfig(user: string, text: string) {
   const created = configService.createEmptyUserConfig(user);
@@ -35,12 +31,12 @@ describe('PUT /users/:user/config migrations', () => {
 `,
     );
 
-    const session = createUserSession(user, 3600);
+    const session = userAndAuthRepository.createUserSession(user, 3600);
     await request(createApp())
       .get(`/users/${user}/config`)
       .set('Cookie', `${SESSION_COOKIE_NAME}=${session}`)
       .expect(200);
-    ensureUserPins([user]);
+    userAndAuthRepository.ensureUserPins([user]);
 
     const sqlite = new Database(join(process.env.HABSUM_CONFIG_DIR!, 'habsum.db'));
     try {
@@ -62,8 +58,8 @@ describe('PUT /users/:user/config migrations', () => {
     type: summation
 `,
     );
-    ensureUserPins([user]);
-    const session = createUserSession(user, 3600);
+    userAndAuthRepository.ensureUserPins([user]);
+    const session = userAndAuthRepository.createUserSession(user, 3600);
 
     for (const habit of ['second', 'third', 'fourth']) {
       await request(createApp())
@@ -127,11 +123,11 @@ describe('PUT /users/:user/config migrations', () => {
     options: [blackout, okay]
 `,
     );
-    ensureUserPins([user]);
-    setTotal(user, 'push ups', '2025-01-01', 12, '2025-01-01 10:00:00');
-    setSelect(user, 'mood', '2025-01-01', 'blackout');
+    userAndAuthRepository.ensureUserPins([user]);
+    habitRepository.setTotal(user, 'push ups', '2025-01-01', 12, '2025-01-01 10:00:00');
+    habitRepository.setDailySelect(user, 'mood', '2025-01-01', 'blackout');
 
-    const session = createUserSession(user, 3600);
+    const session = userAndAuthRepository.createUserSession(user, 3600);
     const nextText = `habits:
   pushups:
     type: summation
@@ -153,9 +149,11 @@ describe('PUT /users/:user/config migrations', () => {
       })
       .expect(200);
 
-    expect(getAllTotals(user, 'push ups')).toEqual([]);
-    expect(getAllTotals(user, 'pushups')).toEqual([{ date: '2025-01-01', total: 12 }]);
-    expect(getSelect(user, 'mood', '2025-01-01')).toBe('wrecked');
+    expect(habitRepository.getAllTotals(user, 'push ups')).toEqual([]);
+    expect(habitRepository.getAllTotals(user, 'pushups')).toEqual([
+      { date: '2025-01-01', total: 12 },
+    ]);
+    expect(habitRepository.getDailySelect(user, 'mood', '2025-01-01')).toBe('wrecked');
   });
 
   it('deletes historical option data for config deletions', async () => {
@@ -168,11 +166,11 @@ describe('PUT /users/:user/config migrations', () => {
     options: [blackout, okay]
 `,
     );
-    ensureUserPins([user]);
-    setSelect(user, 'mood', '2025-01-01', 'blackout');
-    setSelect(user, 'mood', '2025-01-02', 'okay');
+    userAndAuthRepository.ensureUserPins([user]);
+    habitRepository.setDailySelect(user, 'mood', '2025-01-01', 'blackout');
+    habitRepository.setDailySelect(user, 'mood', '2025-01-02', 'okay');
 
-    const session = createUserSession(user, 3600);
+    const session = userAndAuthRepository.createUserSession(user, 3600);
     const nextText = `habits:
   mood:
     type: single_select
@@ -189,7 +187,7 @@ describe('PUT /users/:user/config migrations', () => {
       })
       .expect(200);
 
-    expect(getSelect(user, 'mood', '2025-01-01')).toBeNull();
-    expect(getSelect(user, 'mood', '2025-01-02')).toBe('okay');
+    expect(habitRepository.getDailySelect(user, 'mood', '2025-01-01')).toBeNull();
+    expect(habitRepository.getDailySelect(user, 'mood', '2025-01-02')).toBe('okay');
   });
 });

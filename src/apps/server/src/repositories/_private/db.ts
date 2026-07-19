@@ -3,9 +3,9 @@ import Database from 'better-sqlite3';
 import { randomBytes } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { hashPassword, isPasswordHashed, verifyPassword } from './password-hash.js';
-import { PASSWORD_RESET_COOLDOWN_SECONDS } from './constants.js';
-import { isAllowedUiTheme, isPlausibleEmail } from './request-helpers.js';
+import { hashPassword, isPasswordHashed, verifyPassword } from '../../utils/password-utils.js';
+import { PASSWORD_RESET_COOLDOWN_SECONDS } from '../../constants.js';
+import { isAllowedUiTheme, isPlausibleEmail } from '../../request-helpers.js';
 
 const rawDir = process.env.HABSUM_CONFIG_DIR;
 if (!rawDir) {

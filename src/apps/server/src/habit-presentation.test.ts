@@ -2,13 +2,20 @@ import { describe, expect, it, vi } from 'vitest';
 import { dayFromString } from '@habsum/types/common/day';
 import type { StreakDatum, StreakGraphData } from '@habsum/types/common/streak';
 
-vi.mock('./db.js', () => ({
+const habitReaderMocks = vi.hoisted(() => ({
   getSeries: vi.fn(),
   getSelect: vi.fn(),
+  getFirstSelectDate: vi.fn(),
   getSummationDayTotal: vi.fn(),
 }));
 
-import { getSelect, getSeries, getSummationDayTotal } from './db.js';
+vi.mock('./repositories/habit-repository.js', () => ({
+  HabitRepository: vi.fn().mockImplementation(() => ({
+    habitDataReader: () => habitReaderMocks,
+  })),
+}));
+
+const { getSelect, getSeries, getSummationDayTotal } = habitReaderMocks;
 import {
   formatSelectStreakText,
   habitHistoryForConfiguredPeriod,
