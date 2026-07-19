@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { dayFromString } from '@habsum/types/common/day';
 import { ProductEntitlement } from '@habsum/types/common/entitlement';
 import { HabitRepository } from '../repositories/habit-repository.js';
 import { UserAndAuthRepository } from '../repositories/user-and-auth-repository.js';
@@ -19,7 +20,13 @@ describe('UserService.entitlementsForUser', () => {
   it('omits NEW_USER after a daily selection is stored', () => {
     const username = 'entitlements-returning-user-test';
     userAndAuthRepository.ensureUserPins([username]);
-    habitRepository.setDailySelect(username, 'test-habit', '2020-01-01', 'yes');
+    habitRepository.applyHabitMutation({
+      kind: 'set_select',
+      user: username,
+      habit: 'test-habit',
+      date: dayFromString('2020-01-01'),
+      value: 'yes',
+    });
 
     expect(userService.entitlementsForUser(username)).not.toContain(ProductEntitlement.NEW_USER);
   });

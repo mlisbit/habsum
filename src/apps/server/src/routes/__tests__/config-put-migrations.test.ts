@@ -1,6 +1,7 @@
 import { join } from 'node:path';
 import Database from 'better-sqlite3';
 import request from 'supertest';
+import { dayFromString } from '@habsum/types/common/day';
 import { yamlString } from '@habsum/types/common/misc';
 import { describe, expect, it } from 'vitest';
 import { createApp } from '../../app.js';
@@ -18,6 +19,16 @@ function writeUserConfig(user: string, text: string) {
   if (!created.ok) throw new Error(created.error);
   const written = configService.writeUserConfigText(user, yamlString(text));
   if (!written.ok) throw new Error(written.error);
+}
+
+function hydratedSelectValue(user: string, habit: string, date: string): string | null {
+  const config = configService.loadUserConfig(user);
+  if (!config) throw new Error(`missing config for ${user}`);
+  const interimHabit = habitRepository
+    .getHabits({ config, date: dayFromString(date) })
+    .habits.find((candidate) => candidate.config.name === habit);
+  if (!interimHabit || interimHabit.type !== 'single_select') return null;
+  return interimHabit.values.find((row) => row.date === date)?.value ?? null;
 }
 
 describe('PUT /users/:user/config migrations', () => {
@@ -124,8 +135,21 @@ describe('PUT /users/:user/config migrations', () => {
 `,
     );
     userAndAuthRepository.ensureUserPins([user]);
-    habitRepository.setTotal(user, 'push ups', '2025-01-01', 12, '2025-01-01 10:00:00');
-    habitRepository.setDailySelect(user, 'mood', '2025-01-01', 'blackout');
+    habitRepository.applyHabitMutation({
+      kind: 'set_total',
+      user,
+      habit: 'push ups',
+      date: dayFromString('2025-01-01'),
+      total: 12,
+      createdAt: '2025-01-01 10:00:00',
+    });
+    habitRepository.applyHabitMutation({
+      kind: 'set_select',
+      user,
+      habit: 'mood',
+      date: dayFromString('2025-01-01'),
+      value: 'blackout',
+    });
 
     const session = userAndAuthRepository.createUserSession(user, 3600);
     const nextText = `habits:
@@ -149,11 +173,14 @@ describe('PUT /users/:user/config migrations', () => {
       })
       .expect(200);
 
-    expect(habitRepository.getAllTotals(user, 'push ups')).toEqual([]);
-    expect(habitRepository.getAllTotals(user, 'pushups')).toEqual([
-      { date: '2025-01-01', total: 12 },
-    ]);
-    expect(habitRepository.getDailySelect(user, 'mood', '2025-01-01')).toBe('wrecked');
+    const summationEvents = habitRepository.getDataExport(user).summationEvents;
+    expect(summationEvents.filter((event) => event.habit === 'push ups')).toEqual([]);
+    expect(summationEvents).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ habit: 'pushups', date: '2025-01-01', amount: 12 }),
+      ]),
+    );
+    expect(hydratedSelectValue(user, 'mood', '2025-01-01')).toBe('wrecked');
   });
 
   it('deletes historical option data for config deletions', async () => {
@@ -167,8 +194,20 @@ describe('PUT /users/:user/config migrations', () => {
 `,
     );
     userAndAuthRepository.ensureUserPins([user]);
-    habitRepository.setDailySelect(user, 'mood', '2025-01-01', 'blackout');
-    habitRepository.setDailySelect(user, 'mood', '2025-01-02', 'okay');
+    habitRepository.applyHabitMutation({
+      kind: 'set_select',
+      user,
+      habit: 'mood',
+      date: dayFromString('2025-01-01'),
+      value: 'blackout',
+    });
+    habitRepository.applyHabitMutation({
+      kind: 'set_select',
+      user,
+      habit: 'mood',
+      date: dayFromString('2025-01-02'),
+      value: 'okay',
+    });
 
     const session = userAndAuthRepository.createUserSession(user, 3600);
     const nextText = `habits:
@@ -187,7 +226,7 @@ describe('PUT /users/:user/config migrations', () => {
       })
       .expect(200);
 
-    expect(habitRepository.getDailySelect(user, 'mood', '2025-01-01')).toBeNull();
-    expect(habitRepository.getDailySelect(user, 'mood', '2025-01-02')).toBe('okay');
+    expect(hydratedSelectValue(user, 'mood', '2025-01-01')).toBeNull();
+    expect(hydratedSelectValue(user, 'mood', '2025-01-02')).toBe('okay');
   });
 });

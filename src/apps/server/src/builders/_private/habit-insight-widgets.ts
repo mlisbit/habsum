@@ -1,14 +1,12 @@
 // Builds habit widgets and insight visuals from a full interim habit.
 import type { HabitWidget } from '@habsum/types/common/habit';
+import type { HabitDataReader, InterimHabit, InterimHabitsData } from '../../types/habit.types.js';
+import { habitHistoryForConfiguredPeriod } from '../../utils/habits/history-utils.js';
 import {
-  habitHistoryForConfiguredPeriod,
-  habitWidgets,
-  historyWidget,
-  progressWidget,
   streakGraphForConfiguredWindow,
   summationStreakGraphForConfiguredWindow,
-} from '../../habit-presentation.js';
-import type { HabitDataReader, InterimHabit, InterimHabitsData } from '../../types/habit.types.js';
+} from '../../utils/habits/streak-utils.js';
+import { habitWidgets, historyWidget, progressWidget } from '../../utils/habits/widget-utils.js';
 
 type HabitInsightWidgetInput = {
   data: InterimHabitsData;
@@ -34,10 +32,6 @@ function readerForInterimHabit(interimHabit: InterimHabit): HabitDataReader {
         (min, row) => (row.date < min ? row.date : min),
         interimHabit.values[0]!.date,
       );
-    },
-    getSummationDayTotal(_user, habit, date) {
-      if (interimHabit.type !== 'summation' || interimHabit.config.name !== habit) return null;
-      return interimHabit.totals.find((row) => row.date === date)?.total ?? null;
     },
     getSeries(_user, habit, startDate, endDate) {
       if (interimHabit.type !== 'summation' || interimHabit.config.name !== habit) return [];

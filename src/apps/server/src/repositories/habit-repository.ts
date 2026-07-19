@@ -7,17 +7,10 @@ import {
   deleteSummationEvent,
   deleteSummationEventsForDay,
   getAllDailySelectsForUser,
-  getAllSelects,
   getAllSummationEventsForUser,
-  getAllTotals,
-  getFirstDate,
-  getHabitFirstDate,
-  getSelect,
-  getSelectSeries,
-  getSeries,
-  getSummationDayTotal,
-  getSummationEvents,
-  getUserProfile,
+  getDailySelectSeriesForUser,
+  getHabitHydrationMetadata,
+  getSummationEventSeriesForUser,
   renameDailySelectValue,
   renameHabitData,
   setSelect,
@@ -25,29 +18,37 @@ import {
 } from './_private/db.js';
 import { habitApiTodayKey } from '../server-time.js';
 import { habitInsightDataRange } from './_private/habit-data-range.js';
-import type {
-  HabitDataReader,
-  InterimHabit,
-  InterimHabitHistoryRow,
-  InterimHabitsData,
-} from '../types/habit.types.js';
-import { HABIT_REPEAT_DAYS, type HabitDef, type UserConfig } from '../types/userConfig.js';
+import type { HabitDataRange, InterimHabit, InterimHabitsData } from '../types/habit.types.js';
+import type { UserConfig } from '../types/userConfig.js';
+
+type HabitDataScope = 'configured' | 'all';
 
 type GetHabitsInput = {
   config: UserConfig;
   date: Day;
   at?: Date;
   tzOffsetMinutes?: number;
+  dataScope?: HabitDataScope;
 };
 
-function repeatDayForDateKey(date: Day): string {
-  const dayIndex = new Date(`${date}T00:00:00.000Z`).getUTCDay();
-  return HABIT_REPEAT_DAYS[dayIndex === 0 ? 6 : dayIndex - 1];
-}
+export type HabitMutation =
+  | { kind: 'set_select'; user: string; habit: string; date: Day; value: string }
+  | { kind: 'clear_select'; user: string; habit: string; date: Day }
+  | {
+      kind: 'add_total' | 'set_total';
+      user: string;
+      habit: string;
+      date: Day;
+      total: number;
+      createdAt: string;
+    }
+  | { kind: 'clear_total'; user: string; habit: string; date: Day }
+  | { kind: 'delete_event'; user: string; habit: string; date: Day; eventId: number };
 
-function habitRepeatsOnDate(habit: HabitDef, date: Day): boolean {
-  return habit.repeat.includes(repeatDayForDateKey(date));
-}
+export type HabitConfigMutation =
+  | { kind: 'delete_select_value'; user: string; habit: string; value: string }
+  | { kind: 'rename_select_value'; user: string; habit: string; from: string; to: string }
+  | { kind: 'rename_habit'; user: string; from: string; to: string };
 
 function selectValuesFromSeries(rows: Array<{ date: string; value: string }>) {
   return rows.map((row) => ({
@@ -56,158 +57,176 @@ function selectValuesFromSeries(rows: Array<{ date: string; value: string }>) {
   }));
 }
 
-function totalsFromSeries(rows: Array<{ date: string; total: number }>) {
-  return rows.map((row) => ({
-    date: dayFromString(row.date),
-    total: row.total,
+function eventsFromRows(
+  rows: Array<{ id: number; date: string; amount: number; createdAt: string }>,
+) {
+  return rows.map(({ id, date, amount, createdAt }) => ({
+    id,
+    date: dayFromString(date),
+    amount,
+    createdAt,
   }));
 }
 
+function totalsFromEvents(events: Array<{ date: Day; amount: number }>) {
+  const totals = new Map<Day, number>();
+  for (const event of events) {
+    totals.set(event.date, (totals.get(event.date) ?? 0) + event.amount);
+  }
+  return Array.from(totals, ([date, total]) => ({ date, total }));
+}
+
+function rangeForDates(fallback: Day, dates: Day[]) {
+  return {
+    start: dates[0] ?? fallback,
+    end: dates.at(-1) ?? fallback,
+  };
+}
+
+function encompassingRange(ranges: HabitDataRange[]): HabitDataRange | null {
+  if (ranges.length === 0) return null;
+  return ranges.reduce((result, range) => ({
+    start: range.start < result.start ? range.start : result.start,
+    end: range.end > result.end ? range.end : result.end,
+  }));
+}
+
+function dateIsInRange(date: string, range: HabitDataRange): boolean {
+  return date >= range.start && date <= range.end;
+}
+
 export class HabitRepository {
-  getFamiliarName(user: string): string {
-    const displayName = getUserProfile(user).displayName?.trim();
-    if (!displayName) return user;
-    return displayName.split(/\s+/)[0] ?? user;
+  applyConfigMutation(mutation: HabitConfigMutation): void {
+    switch (mutation.kind) {
+      case 'delete_select_value':
+        deleteDailySelectValue(mutation.user, mutation.habit, mutation.value);
+        return;
+      case 'rename_select_value':
+        renameDailySelectValue(mutation.user, mutation.habit, mutation.from, mutation.to);
+        return;
+      case 'rename_habit':
+        renameHabitData(mutation.user, mutation.from, mutation.to);
+    }
   }
 
-  firstDate(user: string): string | null {
-    return getFirstDate(user);
+  applyHabitMutation(mutation: HabitMutation): boolean {
+    const { user, habit, date } = mutation;
+    switch (mutation.kind) {
+      case 'set_select':
+        setSelect(user, habit, date, mutation.value);
+        return true;
+      case 'clear_select':
+        deleteDailySelect(user, habit, date);
+        return true;
+      case 'add_total':
+        addToTotal(user, habit, date, mutation.total, mutation.createdAt);
+        return true;
+      case 'set_total':
+        setTotal(user, habit, date, mutation.total, mutation.createdAt);
+        return true;
+      case 'clear_total':
+        deleteSummationEventsForDay(user, habit, date);
+        return true;
+      case 'delete_event':
+        return deleteSummationEvent(user, habit, date, mutation.eventId);
+    }
   }
 
-  habitFirstDate(user: string, habit: string): string | null {
-    return getHabitFirstDate(user, habit);
-  }
-
-  habitDataReader(): HabitDataReader {
+  getDataExport(user: string) {
     return {
-      getSelect,
-      getFirstSelectDate(user, habit) {
-        const rows = getAllSelects(user, habit);
-        if (rows.length === 0) return null;
-        return dayFromString(
-          rows.reduce((min, row) => (row.date < min ? row.date : min), rows[0]!.date),
-        );
-      },
-      getSummationDayTotal,
-      getSeries(user, habit, startDate, endDate) {
-        return getSeries(user, habit, startDate, endDate).map((row) => ({
-          date: dayFromString(row.date),
-          total: row.total,
-        }));
-      },
+      dailySelects: getAllDailySelectsForUser(user),
+      summationEvents: getAllSummationEventsForUser(user),
     };
   }
 
-  habitRowsForHistory(user: string, habit: HabitDef): InterimHabitHistoryRow[] {
-    if (habit.type === 'single_select') {
-      return getAllSelects(user, habit.name).map((row) => ({
-        day: dayFromString(row.date),
-        type: 'single_select',
-        habit: habit.name,
-        value: row.value,
-      }));
-    }
-
-    return getAllTotals(user, habit.name).map((row) => ({
-      day: dayFromString(row.date),
-      type: 'summation',
-      habit: habit.name,
-      total: row.total,
-      events: getSummationEvents(user, habit.name, row.date),
-    }));
-  }
-
-  clearDailySelect(user: string, habit: string, date: string): void {
-    deleteDailySelect(user, habit, date);
-  }
-
-  deleteDailySelectValue(user: string, habit: string, value: string): void {
-    deleteDailySelectValue(user, habit, value);
-  }
-
-  renameDailySelectValue(user: string, habit: string, fromValue: string, toValue: string): void {
-    renameDailySelectValue(user, habit, fromValue, toValue);
-  }
-
-  renameHabitData(user: string, fromHabit: string, toHabit: string): void {
-    renameHabitData(user, fromHabit, toHabit);
-  }
-
-  setDailySelect(user: string, habit: string, date: string, value: string): string {
-    return setSelect(user, habit, date, value);
-  }
-
-  getDailySelect(user: string, habit: string, date: string): string | null {
-    return getSelect(user, habit, date);
-  }
-
-  getSummationEvents(user: string, habit: string, date: string) {
-    return getSummationEvents(user, habit, date);
-  }
-
-  getSummationDayTotal(user: string, habit: string, date: string): number | null {
-    return getSummationDayTotal(user, habit, date);
-  }
-
-  getAllTotals(user: string, habit: string) {
-    return getAllTotals(user, habit);
-  }
-
-  deleteSummationEvent(user: string, habit: string, date: string, eventId: number): boolean {
-    return deleteSummationEvent(user, habit, date, eventId);
-  }
-
-  clearSummationDay(user: string, habit: string, date: string): void {
-    deleteSummationEventsForDay(user, habit, date);
-  }
-
-  addToTotal(user: string, habit: string, date: string, total: number, createdAt: string) {
-    return addToTotal(user, habit, date, total, createdAt);
-  }
-
-  setTotal(user: string, habit: string, date: string, total: number, createdAt: string): number {
-    return setTotal(user, habit, date, total, createdAt);
-  }
-
-  getAllDailySelectsForUser(user: string) {
-    return getAllDailySelectsForUser(user);
-  }
-
-  getAllSummationEventsForUser(user: string) {
-    return getAllSummationEventsForUser(user);
-  }
-
-  getHabits({ config, date, at = new Date(), tzOffsetMinutes }: GetHabitsInput): InterimHabitsData {
+  getHabits({
+    config,
+    date,
+    at = new Date(),
+    tzOffsetMinutes,
+    dataScope = 'configured',
+  }: GetHabitsInput): InterimHabitsData {
     const today = habitApiTodayKey(at, tzOffsetMinutes);
-    const firstDate = getFirstDate(config.user);
+    const { firstDate, displayName: rawDisplayName } = getHabitHydrationMetadata(config.user);
     const typedFirstDate = firstDate == null ? null : dayFromString(firstDate);
-    const habits = config.habits
-      .filter((habit) => habitRepeatsOnDate(habit, date))
-      .map((habit): InterimHabit => {
-        const range = habitInsightDataRange(habit, date, today, typedFirstDate);
-        if (habit.type === 'single_select') {
-          return {
-            type: 'single_select',
-            config: habit,
-            dataStart: range.start,
-            dataEnd: range.end,
-            values: selectValuesFromSeries(
-              getSelectSeries(config.user, habit.name, range.start, range.end),
-            ),
-          };
-        }
-
+    const displayName = rawDisplayName?.trim();
+    const familiarName = displayName?.split(/\s+/)[0] || config.user;
+    const configuredRanges = new Map(
+      config.habits.map((habit) => [
+        habit.name,
+        habitInsightDataRange(habit, date, today, typedFirstDate),
+      ]),
+    );
+    const hydrationRange = encompassingRange(Array.from(configuredRanges.values()));
+    const hasSelectHabits = config.habits.some((habit) => habit.type === 'single_select');
+    const hasSummationHabits = config.habits.some((habit) => habit.type === 'summation');
+    const selectRows = !hasSelectHabits
+      ? []
+      : dataScope === 'all'
+        ? getAllDailySelectsForUser(config.user)
+        : hydrationRange
+          ? getDailySelectSeriesForUser(config.user, hydrationRange.start, hydrationRange.end)
+          : [];
+    const eventRows = !hasSummationHabits
+      ? []
+      : dataScope === 'all'
+        ? getAllSummationEventsForUser(config.user)
+        : hydrationRange
+          ? getSummationEventSeriesForUser(config.user, hydrationRange.start, hydrationRange.end)
+          : [];
+    const habits = config.habits.map((habit): InterimHabit => {
+      const configuredRange = configuredRanges.get(habit.name)!;
+      if (habit.type === 'single_select') {
+        const values = selectValuesFromSeries(
+          selectRows.filter(
+            (row) =>
+              row.habit === habit.name &&
+              (dataScope === 'all' || dateIsInRange(row.date, configuredRange)),
+          ),
+        );
+        const range =
+          dataScope === 'all'
+            ? rangeForDates(
+                date,
+                values.map((row) => row.date),
+              )
+            : configuredRange;
         return {
-          type: 'summation',
+          type: 'single_select',
           config: habit,
           dataStart: range.start,
           dataEnd: range.end,
-          totals: totalsFromSeries(getSeries(config.user, habit.name, range.start, range.end)),
+          values,
         };
-      });
+      }
+
+      const events = eventsFromRows(
+        eventRows.filter(
+          (row) =>
+            row.habit === habit.name &&
+            (dataScope === 'all' || dateIsInRange(row.date, configuredRange)),
+        ),
+      );
+      const range =
+        dataScope === 'all'
+          ? rangeForDates(
+              date,
+              events.map((event) => event.date),
+            )
+          : configuredRange;
+      return {
+        type: 'summation',
+        config: habit,
+        dataStart: range.start,
+        dataEnd: range.end,
+        totals: totalsFromEvents(events),
+        events,
+      };
+    });
 
     return {
       user: config.user,
+      familiarName,
       date,
       today,
       firstDate: typedFirstDate,

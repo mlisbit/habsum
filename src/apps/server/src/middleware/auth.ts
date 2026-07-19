@@ -21,17 +21,6 @@ export function authenticatedSessionId(req: Request): string | null {
   return resolveActiveSessionId(req);
 }
 
-/** 401 unless logged in; sets `res.locals.sessionUser`. */
-export const requireAuthenticated: RequestHandler = (req, res, next) => {
-  const u = authenticatedUsername(req);
-  if (!u) {
-    res.status(401).json({ error: 'not authenticated' });
-    return;
-  }
-  res.locals.sessionUser = u;
-  next();
-};
-
 /** 401 / 403 unless logged-in admin; sets `res.locals.sessionUser`. */
 export const requireAdmin: RequestHandler = (req, res, next) => {
   if (getOucSessionHeader(req)) {

@@ -259,9 +259,10 @@ export type SummationEventExportRow = SummationEventRow & {
 
 type TotalRow = { total: number; eventCount: number };
 type FirstDateRow = { date: string };
-type SeriesRow = { date: string; total: number };
-type SelectRow = { value: string };
-type SelectSeriesRow = { date: string; value: string };
+type HabitHydrationMetadataRow = {
+  displayName: string | null;
+  firstDate: string | null;
+};
 type UserPinRow = { pin: string };
 type UserAdminRow = { admin: number };
 type UserBetaTesterRow = { beta_tester: number };
@@ -759,10 +760,6 @@ export type RevokeSessionByPrefixError =
   | 'ambiguous session token'
   | 'cannot revoke active session';
 
-export function isValidSessionTokenPrefix(token: string): boolean {
-  return normalizeSessionTokenPrefix(token) != null;
-}
-
 export function revokeUserSessionByTokenPrefix(
   username: string,
   tokenPrefix: string,
@@ -886,48 +883,34 @@ const firstDateStmt = db.prepare<[string, string], FirstDateRow>(`
   )
 `);
 
-const seriesStmt = db.prepare<[string, string, string, string], SeriesRow>(`
-  SELECT date, SUM(amount) AS total
+const habitHydrationMetadataStmt = db.prepare<[string, string, string], HabitHydrationMetadataRow>(`
+  SELECT
+    (SELECT display_name FROM users WHERE username = ?) AS displayName,
+    (
+      SELECT MIN(date)
+      FROM (
+        SELECT date FROM habit_summation_events WHERE user = ?
+        UNION ALL
+        SELECT date FROM habit_daily_selects WHERE user = ?
+      )
+    ) AS firstDate
+`);
+
+const summationEventSeriesForUserStmt = db.prepare<
+  [string, string, string],
+  SummationEventExportRow
+>(`
+  SELECT habit, id, date, amount, created_at AS createdAt
   FROM habit_summation_events
-  WHERE user = ? AND habit = ? AND date >= ? AND date <= ?
-  GROUP BY date
-  ORDER BY date ASC
+  WHERE user = ? AND date >= ? AND date <= ?
+  ORDER BY date ASC, habit ASC, id ASC
 `);
 
-const allTotalsStmt = db.prepare<[string, string], SeriesRow>(`
-  SELECT date, SUM(amount) AS total
-  FROM habit_summation_events
-  WHERE user = ? AND habit = ?
-  GROUP BY date
-  ORDER BY date ASC
-`);
-
-const summationEventsForDayStmt = db.prepare<[string, string, string], SummationEventRow>(`
-  SELECT id, date, amount, created_at AS createdAt
-  FROM habit_summation_events
-  WHERE user = ? AND habit = ? AND date = ?
-  ORDER BY id ASC
-`);
-
-const allSelectsStmt = db.prepare<[string, string], SelectSeriesRow>(`
-  SELECT date, value
+const dailySelectSeriesForUserStmt = db.prepare<[string, string, string], DailySelectExportRow>(`
+  SELECT habit, date, value, updated_at AS updatedAt
   FROM habit_daily_selects
-  WHERE user = ? AND habit = ?
-  ORDER BY date ASC
-`);
-
-const selectSeriesStmt = db.prepare<[string, string, string, string], SelectSeriesRow>(`
-  SELECT date, value
-  FROM habit_daily_selects
-  WHERE user = ? AND habit = ? AND date >= ? AND date <= ?
-  ORDER BY date ASC
-`);
-
-const selectValuesWithDataStmt = db.prepare<[string, string], { value: string }>(`
-  SELECT DISTINCT value
-  FROM habit_daily_selects
-  WHERE user = ? AND habit = ?
-  ORDER BY value ASC
+  WHERE user = ? AND date >= ? AND date <= ?
+  ORDER BY date ASC, habit ASC
 `);
 
 const allDailySelectsForUserStmt = db.prepare<[string], DailySelectExportRow>(`
@@ -944,18 +927,18 @@ const allSummationEventsForUserStmt = db.prepare<[string], SummationEventExportR
   ORDER BY date ASC, habit ASC, id ASC
 `);
 
-const habitFirstDateStmt = db.prepare<[string, string, string, string], FirstDateRow>(`
-  SELECT MIN(date) AS date
-  FROM (
-    SELECT date FROM habit_summation_events WHERE user = ? AND habit = ?
-    UNION ALL
-    SELECT date FROM habit_daily_selects WHERE user = ? AND habit = ?
-  )
-`);
-
 export function getFirstDate(user: string): string | null {
   const row = firstDateStmt.get(user, user);
   return row?.date ?? null;
+}
+
+export function getHabitHydrationMetadata(user: string): HabitHydrationMetadataRow {
+  return (
+    habitHydrationMetadataStmt.get(user, user, user) ?? {
+      displayName: null,
+      firstDate: null,
+    }
+  );
 }
 
 /** Stored total for that calendar day, or `null` when no row exists. */
@@ -1028,38 +1011,20 @@ export function deleteSummationEvent(
   return result.changes > 0;
 }
 
-export function getSeries(
+export function getSummationEventSeriesForUser(
   user: string,
-  habit: string,
   startDate: string,
   endDate: string,
-): Array<{ date: string; total: number }> {
-  return seriesStmt.all(user, habit, startDate, endDate);
+): SummationEventExportRow[] {
+  return summationEventSeriesForUserStmt.all(user, startDate, endDate);
 }
 
-export function getAllTotals(user: string, habit: string): Array<{ date: string; total: number }> {
-  return allTotalsStmt.all(user, habit);
-}
-
-export function getSummationEvents(user: string, habit: string, date: string): SummationEventRow[] {
-  return summationEventsForDayStmt.all(user, habit, date);
-}
-
-export function getAllSelects(user: string, habit: string): Array<{ date: string; value: string }> {
-  return allSelectsStmt.all(user, habit);
-}
-
-export function getSelectSeries(
+export function getDailySelectSeriesForUser(
   user: string,
-  habit: string,
   startDate: string,
   endDate: string,
-): Array<{ date: string; value: string }> {
-  return selectSeriesStmt.all(user, habit, startDate, endDate);
-}
-
-export function getSelectValuesWithData(user: string, habit: string): string[] {
-  return selectValuesWithDataStmt.all(user, habit).map((row) => row.value);
+): DailySelectExportRow[] {
+  return dailySelectSeriesForUserStmt.all(user, startDate, endDate);
 }
 
 export function getAllDailySelectsForUser(user: string): DailySelectExportRow[] {
@@ -1069,15 +1034,6 @@ export function getAllDailySelectsForUser(user: string): DailySelectExportRow[] 
 export function getAllSummationEventsForUser(user: string): SummationEventExportRow[] {
   return allSummationEventsForUserStmt.all(user);
 }
-
-export function getHabitFirstDate(user: string, habit: string): string | null {
-  const row = habitFirstDateStmt.get(user, habit, user, habit);
-  return row?.date ?? null;
-}
-
-const getSelectStmt = db.prepare<[string, string, string], SelectRow>(
-  'SELECT value FROM habit_daily_selects WHERE user = ? AND habit = ? AND date = ?',
-);
 
 const upsertSelectStmt = db.prepare<{
   user: string;
@@ -1091,11 +1047,6 @@ const upsertSelectStmt = db.prepare<{
     value = excluded.value,
     updated_at = excluded.updated_at
 `);
-
-export function getSelect(user: string, habit: string, date: string): string | null {
-  const row = getSelectStmt.get(user, habit, date);
-  return row?.value ?? null;
-}
 
 export function setSelect(user: string, habit: string, date: string, value: string): string {
   upsertSelectStmt.run({ user, habit, date, value });

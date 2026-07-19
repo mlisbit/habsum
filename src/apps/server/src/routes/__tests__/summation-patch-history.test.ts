@@ -50,6 +50,7 @@ describe('PATCH /users/:user/habits summation history', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.total).toBe(5);
+    expect(res.body.events).toEqual([expect.objectContaining({ amount: 5 })]);
     const historyWidget = res.body.widgets?.find(
       (widget: { title: string }) => widget.title === 'History',
     );

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   ensureUserPins,
-  getSelect,
+  getDailySelectSeriesForUser,
   getSummationDayTotal,
   renameUserPin,
   setSelect,
@@ -21,7 +21,13 @@ describe('renameUserPin', () => {
 
     expect(getSummationDayTotal(to, 'push ups', '2025-01-01')).toBe(10);
     expect(getSummationDayTotal(from, 'push ups', '2025-01-01')).toBeNull();
-    expect(getSelect(to, 'mood', '2025-01-01')).toBe('good');
-    expect(getSelect(from, 'mood', '2025-01-01')).toBeNull();
+    expect(
+      getDailySelectSeriesForUser(to, '2025-01-01', '2025-01-01').map(({ habit, date, value }) => ({
+        habit,
+        date,
+        value,
+      })),
+    ).toEqual([{ habit: 'mood', date: '2025-01-01', value: 'good' }]);
+    expect(getDailySelectSeriesForUser(from, '2025-01-01', '2025-01-01')).toEqual([]);
   });
 });

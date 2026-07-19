@@ -22,10 +22,12 @@ export type InterimHabit =
       type: 'summation';
       config: HabitDef;
       totals: Array<{ date: Day; total: number }>;
+      events: InterimSummationEvent[];
     });
 
 export type InterimHabitsData = {
   user: string;
+  familiarName: string;
   date: Day;
   today: Day;
   firstDate: Day | null;
@@ -35,30 +37,14 @@ export type InterimHabitsData = {
 
 export type InterimSummationEvent = {
   id: number;
-  date: string;
+  date: Day;
   amount: number;
   createdAt: string;
 };
 
-export type InterimHabitHistoryRow =
-  | {
-      day: Day;
-      type: 'single_select';
-      habit: string;
-      value: string;
-    }
-  | {
-      day: Day;
-      type: 'summation';
-      habit: string;
-      total: number;
-      events: InterimSummationEvent[];
-    };
-
 export type HabitDataReader = {
   getSelect(user: string, habit: string, date: Day): string | null;
   getFirstSelectDate(user: string, habit: string): Day | null;
-  getSummationDayTotal(user: string, habit: string, date: Day): number | null;
   getSeries(
     user: string,
     habit: string,

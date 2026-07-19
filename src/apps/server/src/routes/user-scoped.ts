@@ -3,7 +3,7 @@ import { Router, type Request, type Response } from 'express';
 import type { LoginUserRequest } from '@habsum/types/common/misc';
 import type { UserPasswordChangeRequest } from '@habsum/types/api-responses/user-password-change';
 import type { UsersPatchRequest } from '@habsum/types/api-responses/users-patch';
-import { type PatchBody } from '../habit-presentation.js';
+import { type PatchBody } from '../services/habit-service.utils.js';
 import { AuthService } from '../services/auth-service.js';
 import { buildUserDataCsv } from '../services/data-export-service.js';
 import { HabitService } from '../services/habit-service.js';

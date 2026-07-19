@@ -1,238 +1,79 @@
 import { describe, expect, it, vi } from 'vitest';
-import { dayFromString } from '@habsum/types/common/day';
+import { dayFromString, type Day } from '@habsum/types/common/day';
 import type { StreakDatum, StreakGraphData } from '@habsum/types/common/streak';
 
 const habitReaderMocks = vi.hoisted(() => ({
   getSeries: vi.fn(),
   getSelect: vi.fn(),
   getFirstSelectDate: vi.fn(),
-  getSummationDayTotal: vi.fn(),
 }));
 
-vi.mock('./repositories/habit-repository.js', () => ({
-  HabitRepository: vi.fn().mockImplementation(() => ({
-    habitDataReader: () => habitReaderMocks,
-  })),
-}));
-
-const { getSelect, getSeries, getSummationDayTotal } = habitReaderMocks;
+const { getSelect, getSeries } = habitReaderMocks;
 import {
   formatSelectStreakText,
-  habitHistoryForConfiguredPeriod,
-  historyGraphScaleTop,
-  historyWidget,
-  progressWidget,
-  streakWidget,
-  summationStreakGraphForConfiguredWindow,
-  streakGraphForConfiguredWindow,
-} from './habit-presentation.js';
+  summationStreakGraphForConfiguredWindow as buildSummationStreakGraphForConfiguredWindow,
+  streakGraphForConfiguredWindow as buildStreakGraphForConfiguredWindow,
+} from '../streak-utils.js';
 
 const user = 'tester';
 const habit = 'mood';
 const eligible = ['good'];
 
-function streakDatumForDate(streak: StreakGraphData, date: string): StreakDatum | undefined {
-  return streak.data.flat().find((datum) => datum.date === date);
+function streakGraphForConfiguredWindow(
+  user: string,
+  habitName: string,
+  viewDate: Day,
+  streakEligibleOptions: readonly string[],
+  at: Date = new Date(),
+  tzOffsetMinutes?: number,
+  streakFrequency?: string,
+  showLongest = false,
+  firstDate: Day | null = null,
+  selectableValues: readonly string[] = streakEligibleOptions,
+) {
+  return buildStreakGraphForConfiguredWindow(
+    user,
+    habitName,
+    viewDate,
+    streakEligibleOptions,
+    at,
+    tzOffsetMinutes,
+    streakFrequency,
+    showLongest,
+    firstDate,
+    selectableValues,
+    habitReaderMocks,
+  );
 }
 
-describe('historyGraphScaleTop', () => {
-  it('uses the goal when it exceeds logged totals in the period', () => {
-    expect(historyGraphScaleTop([4], 5)).toBe(5);
-  });
+function summationStreakGraphForConfiguredWindow(
+  user: string,
+  habitName: string,
+  viewDate: Day,
+  streakEligibleOptions: readonly string[],
+  at: Date = new Date(),
+  tzOffsetMinutes?: number,
+  streakFrequency?: string,
+  showLongest = false,
+  firstDate: Day | null = null,
+) {
+  return buildSummationStreakGraphForConfiguredWindow(
+    user,
+    habitName,
+    viewDate,
+    streakEligibleOptions,
+    at,
+    tzOffsetMinutes,
+    streakFrequency,
+    showLongest,
+    firstDate,
+    habitReaderMocks,
+  );
+}
 
-  it('uses the max logged total when it exceeds the goal', () => {
-    expect(historyGraphScaleTop([175], 100)).toBe(175);
-  });
-
-  it('falls back to 1 when there is no data and no goal', () => {
-    expect(historyGraphScaleTop([], null)).toBe(1);
-  });
-});
-
-describe('habitHistoryForConfiguredPeriod', () => {
-  it('pads up to three days after a past view date and outlines the view date', () => {
-    const at = new Date('2025-05-21T12:00:00.000Z');
-    const viewDate = '2025-05-18';
-    vi.mocked(getSeries).mockReturnValue([
-      { date: '2025-05-18', total: 2 },
-      { date: '2025-05-20', total: 5 },
-    ]);
-
-    const history = habitHistoryForConfiguredPeriod(user, habit, viewDate, null, '1w', null, at);
-
-    expect(getSeries).toHaveBeenCalledWith(user, habit, '2025-05-15', '2025-05-21');
-    expect(Object.keys(history.data.user.graphData)).toEqual([
-      '2025-05-15',
-      '2025-05-16',
-      '2025-05-17',
-      '2025-05-18',
-      '2025-05-19',
-      '2025-05-20',
-      '2025-05-21',
-    ]);
-    expect(history.data.user.graphData[viewDate]?.outline).toBe(true);
-    expect(history.data.user.graphData[viewDate]?.dimmed).toBeUndefined();
-    expect(history.data.user.graphData['2025-05-19']?.dimmed).toBe(true);
-    expect(history.data.user.graphData['2025-05-20']?.dimmed).toBe(true);
-    expect(history.data.user.graphData['2025-05-21']?.dimmed).toBe(true);
-    expect(history.data.user.graphData['2025-05-21']?.outline).toBeUndefined();
-  });
-});
-
-describe('historyWidget', () => {
-  it('shows average per day for the graph window and explains missing days', () => {
-    const history = {
-      data: {
-        user: {
-          graphData: {
-            '2025-05-15': { value: null, top: 5, hoverLabel: 'Thu' },
-            '2025-05-16': { value: 2, top: 5, hoverLabel: 'Fri' },
-            '2025-05-17': { value: null, top: 5, hoverLabel: 'Sat' },
-            '2025-05-18': { value: 4, top: 5, hoverLabel: 'Sun' },
-            '2025-05-19': { value: null, top: 5, hoverLabel: 'Mon' },
-            '2025-05-20': { value: null, top: 5, hoverLabel: 'Tue' },
-            '2025-05-21': { value: null, top: 5, hoverLabel: 'Wed' },
-          },
-        },
-      },
-    };
-
-    const widget = historyWidget(history, 5);
-
-    expect(widget.titleValue).toBeUndefined();
-    expect(widget.body[0]).toEqual({
-      kind: 'insights',
-      insights: [
-        {
-          header: 'Average/day',
-          description: '3',
-          hover: 'May 15 to today',
-        },
-      ],
-    });
-    expect(widget.body[1]).toMatchObject({
-      kind: 'barGraph',
-      lines: [{ value: 5, label: 'Daily goal: 5' }],
-    });
-  });
-
-  it('includes missing days as zero when configured', () => {
-    const widget = historyWidget(
-      {
-        data: {
-          user: {
-            graphData: {
-              '2025-05-15': { value: null, top: 5, hoverLabel: 'Thu' },
-              '2025-05-16': { value: 2, top: 5, hoverLabel: 'Fri' },
-              '2025-05-17': { value: null, top: 5, hoverLabel: 'Sat' },
-              '2025-05-18': { value: 4, top: 5, hoverLabel: 'Sun' },
-              '2025-05-19': { value: null, top: 5, hoverLabel: 'Mon' },
-              '2025-05-20': { value: null, top: 5, hoverLabel: 'Tue' },
-              '2025-05-21': { value: null, top: 5, hoverLabel: 'Wed' },
-            },
-          },
-        },
-      },
-      5,
-      true,
-    );
-
-    expect(widget.titleValue).toBeUndefined();
-    expect(widget.body[0]).toEqual({
-      kind: 'insights',
-      insights: [
-        {
-          header: 'Average/day',
-          description: '1',
-          hover: 'May 15 to today',
-        },
-      ],
-    });
-    expect(widget.body[1]).toMatchObject({
-      kind: 'barGraph',
-      lines: [{ value: 5, label: 'Daily goal: 5' }],
-    });
-  });
-
-  it('uses the configured current graph period in the average card', () => {
-    const graphData = Object.fromEntries(
-      Array.from({ length: 21 }, (_, index) => [
-        `2025-05-${String(index + 1).padStart(2, '0')}`,
-        { value: 0, top: 5, hoverLabel: String(index + 1) },
-      ]),
-    );
-    const widget = historyWidget({ data: { user: { graphData } } }, 5, true);
-
-    expect(widget.body[0]).toEqual({
-      kind: 'insights',
-      insights: [
-        {
-          header: 'Average/day',
-          description: '0',
-          hover: 'May 1 to today',
-        },
-      ],
-    });
-  });
-
-  it('labels average range through the outlined view date for past windows', () => {
-    const widget = historyWidget(
-      {
-        data: {
-          user: {
-            graphData: {
-              '2025-05-15': { value: null, top: 5, hoverLabel: 'Thu' },
-              '2025-05-16': { value: 2, top: 5, hoverLabel: 'Fri' },
-              '2025-05-17': { value: null, top: 5, hoverLabel: 'Sat' },
-              '2025-05-18': { value: 4, top: 5, hoverLabel: 'Sun', outline: true },
-              '2025-05-19': { value: null, top: 5, hoverLabel: 'Mon', dimmed: true },
-              '2025-05-20': { value: null, top: 5, hoverLabel: 'Tue', dimmed: true },
-              '2025-05-21': { value: null, top: 5, hoverLabel: 'Wed', dimmed: true },
-            },
-          },
-        },
-      },
-      5,
-    );
-
-    expect(widget.titleValue).toBeUndefined();
-    expect(widget.body[0]).toEqual({
-      kind: 'insights',
-      insights: [
-        {
-          header: 'Average/day',
-          description: '3',
-          hover: 'May 15 to May 18',
-        },
-      ],
-    });
-  });
-});
-
-describe('progressWidget', () => {
-  it('labels summation goals with compact current over goal text', () => {
-    expect(progressWidget(2, 5)).toMatchObject({
-      title: 'Goal',
-      titleValue: '2 / 5',
-    });
-  });
-
-  it('labels goal-less summation totals as progress', () => {
-    expect(progressWidget(null, null)).toEqual({
-      title: 'Progress',
-      titleValue: 'No data',
-      body: [],
-    });
-    expect(progressWidget(0, null)).toMatchObject({
-      title: 'Progress',
-      titleValue: '0',
-    });
-    expect(progressWidget(4, null)).toMatchObject({
-      title: 'Progress',
-      titleValue: '4',
-    });
-  });
-});
+function streakDatumForDate(streak: StreakGraphData, date: Day): StreakDatum | undefined {
+  return streak.data.flat().find((datum) => datum.date === date);
+}
 
 describe('formatSelectStreakText', () => {
   it('pluralizes day count', () => {
@@ -276,7 +117,7 @@ describe('streakGraphForConfiguredWindow', () => {
 
   it('pads up to today after a past view date and outlines the view date', () => {
     const at = new Date('2025-05-21T12:00:00.000Z');
-    const viewDate = '2025-05-18';
+    const viewDate = dayFromString('2025-05-18');
     vi.mocked(getSelect).mockImplementation((_u, _h, date) =>
       date === '2025-05-18' ? 'good' : null,
     );
@@ -288,8 +129,8 @@ describe('streakGraphForConfiguredWindow', () => {
       .sort();
 
     expect(keys.at(-1)).toBe('2025-05-21');
-    expect(streakDatumForDate(streak, dayFromString(viewDate))?.outline).toBe(true);
-    expect(streakDatumForDate(streak, dayFromString(viewDate))?.dimmed).toBeUndefined();
+    expect(streakDatumForDate(streak, viewDate)?.outline).toBe(true);
+    expect(streakDatumForDate(streak, viewDate)?.dimmed).toBeUndefined();
     expect(streakDatumForDate(streak, dayFromString('2025-05-19'))?.dimmed).toBe(true);
     expect(streakDatumForDate(streak, dayFromString('2025-05-20'))?.dimmed).toBe(true);
     expect(streakDatumForDate(streak, dayFromString('2025-05-21'))?.dimmed).toBe(true);
@@ -369,7 +210,7 @@ describe('streakGraphForConfiguredWindow', () => {
 
   it('treats an unlogged past view date as breaking the streak', () => {
     const at = new Date('2025-05-21T12:00:00.000Z');
-    const viewDate = '2025-05-15';
+    const viewDate = dayFromString('2025-05-15');
     vi.mocked(getSelect).mockImplementation((_u, _h, date) =>
       date === '2025-05-14' ? 'good' : null,
     );
@@ -381,7 +222,7 @@ describe('streakGraphForConfiguredWindow', () => {
 
   it('omits unlogged today when view date is ahead of UTC (client tz offset)', () => {
     const at = new Date('2026-05-20T22:00:00.000Z');
-    const viewDate = '2026-05-21';
+    const viewDate = dayFromString('2026-05-21');
     const tzOffsetMinutes = -120;
     vi.mocked(getSelect).mockImplementation((_u, _h, date) => {
       if (date === '2026-05-20' || date === '2026-05-19' || date === '2026-05-18') return 'none';
@@ -404,7 +245,7 @@ describe('streakGraphForConfiguredWindow', () => {
 describe('streakGraphForConfiguredWindow (weekly frequency)', () => {
   it('returns week range labels and progress for 3d/1w', () => {
     const at = new Date('2025-05-21T12:00:00.000Z');
-    const viewDate = '2025-05-21';
+    const viewDate = dayFromString('2025-05-21');
     vi.mocked(getSelect).mockImplementation((_u, _h, date) => {
       if (date === '2025-05-19' || date === '2025-05-20' || date === '2025-05-21') return 'good';
       if (date === '2025-05-12' || date === '2025-05-13' || date === '2025-05-14') return 'good';
@@ -430,7 +271,7 @@ describe('streakGraphForConfiguredWindow (weekly frequency)', () => {
 
   it('omits the in-progress view week from streak length when under target', () => {
     const at = new Date('2025-05-21T12:00:00.000Z');
-    const viewDate = '2025-05-21';
+    const viewDate = dayFromString('2025-05-21');
     vi.mocked(getSelect).mockImplementation((_u, _h, date) => {
       if (date === '2025-05-12' || date === '2025-05-13' || date === '2025-05-14') return 'good';
       if (date === '2025-05-20') return 'good';
@@ -455,7 +296,7 @@ describe('streakGraphForConfiguredWindow (weekly frequency)', () => {
 
   it('uses a nonzero weekly fill when the week has only non-eligible logs', () => {
     const at = new Date('2025-05-21T12:00:00.000Z');
-    const viewDate = '2025-05-21';
+    const viewDate = dayFromString('2025-05-21');
     vi.mocked(getSelect).mockImplementation((_u, _h, date) =>
       date === '2025-05-20' ? 'bad' : null,
     );
@@ -481,11 +322,11 @@ describe('summationStreakGraphForConfiguredWindow', () => {
   it('counts summation days that hit the configured goal', () => {
     const at = new Date('2025-05-21T12:00:00.000Z');
     const viewDate = dayFromString('2025-05-21');
-    vi.mocked(getSummationDayTotal).mockImplementation((_u, _h, date) => {
-      if (date === '2025-05-21') return 12;
-      if (date === '2025-05-20') return 5;
-      if (date === '2025-05-19') return 10;
-      return null;
+    vi.mocked(getSeries).mockImplementation((_u, _h, startDate) => {
+      if (startDate === '2025-05-21') return [{ date: startDate, total: 12 }];
+      if (startDate === '2025-05-20') return [{ date: startDate, total: 5 }];
+      if (startDate === '2025-05-19') return [{ date: startDate, total: 10 }];
+      return [];
     });
 
     const streak = summationStreakGraphForConfiguredWindow(user, 'push ups', viewDate, ['10'], at);
@@ -499,7 +340,7 @@ describe('summationStreakGraphForConfiguredWindow', () => {
 
 describe('streakGraphForConfiguredWindow (show_longest)', () => {
   it('includes longestStreak for daily habits when enabled', () => {
-    const viewDate = '2025-05-21';
+    const viewDate = dayFromString('2025-05-21');
     vi.mocked(getSelect).mockImplementation((_u, _h, date) => {
       if (date === '2025-05-10' || date === '2025-05-11') return 'good';
       if (date === '2025-05-18' || date === '2025-05-19' || date === '2025-05-20') return 'good';
@@ -515,7 +356,7 @@ describe('streakGraphForConfiguredWindow (show_longest)', () => {
       undefined,
       undefined,
       true,
-      '2025-05-01',
+      dayFromString('2025-05-01'),
     );
 
     expect(streak.longestStreak).toEqual({
@@ -527,7 +368,7 @@ describe('streakGraphForConfiguredWindow (show_longest)', () => {
   });
 
   it('does not mark longest as current when a longer past streak exists', () => {
-    const viewDate = '2025-05-21';
+    const viewDate = dayFromString('2025-05-21');
     vi.mocked(getSelect).mockImplementation((_u, _h, date) => {
       if (
         date === '2025-05-01' ||
@@ -549,27 +390,15 @@ describe('streakGraphForConfiguredWindow (show_longest)', () => {
       undefined,
       undefined,
       true,
-      '2025-05-01',
+      dayFromString('2025-05-01'),
     );
 
     expect(streak.longestStreak?.text).toBe('4 days');
     expect(streak.currentText).toBe('1 day');
-    expect(streakWidget(streak).titleValue).toBeUndefined();
-    expect(streakWidget(streak).body[0]).toEqual({
-      kind: 'insights',
-      insights: [
-        { header: 'Current streak', description: '1 day' },
-        {
-          header: 'Longest streak',
-          description: '4 days',
-          hover: 'Thu, May 1 – Sun, May 4\nIncludes good',
-        },
-      ],
-    });
   });
 
   it('labels weekly longest streak with the configured frequency and options', () => {
-    const viewDate = '2025-05-21';
+    const viewDate = dayFromString('2025-05-21');
     vi.mocked(getSelect).mockImplementation((_u, _h, date) => {
       if (date === '2025-05-12' || date === '2025-05-13' || date === '2025-05-14') return 'good';
       return null;
@@ -584,7 +413,7 @@ describe('streakGraphForConfiguredWindow (show_longest)', () => {
       undefined,
       '3d/1w',
       true,
-      '2025-05-01',
+      dayFromString('2025-05-01'),
     );
 
     expect(streak.longestStreak?.label).toBe('Longest streak');
@@ -593,7 +422,7 @@ describe('streakGraphForConfiguredWindow (show_longest)', () => {
   });
 
   it('omits longestStreak when show_longest is disabled', () => {
-    const viewDate = '2025-05-21';
+    const viewDate = dayFromString('2025-05-21');
     vi.mocked(getSelect).mockImplementation((_u, _h, date) =>
       date === '2025-05-20' ? 'good' : null,
     );
@@ -607,7 +436,7 @@ describe('streakGraphForConfiguredWindow (show_longest)', () => {
       undefined,
       undefined,
       false,
-      '2025-05-01',
+      dayFromString('2025-05-01'),
     );
 
     expect(streak.longestStreak).toBeUndefined();

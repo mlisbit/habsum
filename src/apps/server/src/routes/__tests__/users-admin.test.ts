@@ -1,4 +1,5 @@
 import request from 'supertest';
+import { dayFromString } from '@habsum/types/common/day';
 import { ProductEntitlement } from '@habsum/types/common/entitlement';
 import { yamlString } from '@habsum/types/common/misc';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -112,8 +113,21 @@ describe('GET /users', () => {
       displayName: 'Login Audit',
       email: 'login-audit@example.com',
     });
-    habitRepository.addToTotal('login-audit-user', 'push ups', '2026-05-28', 10, "datetime('now')");
-    habitRepository.setDailySelect('login-audit-user', 'soda consumption', '2026-05-28', 'none');
+    habitRepository.applyHabitMutation({
+      kind: 'add_total',
+      user: 'login-audit-user',
+      habit: 'push ups',
+      date: dayFromString('2026-05-28'),
+      total: 10,
+      createdAt: "datetime('now')",
+    });
+    habitRepository.applyHabitMutation({
+      kind: 'set_select',
+      user: 'login-audit-user',
+      habit: 'soda consumption',
+      date: dayFromString('2026-05-28'),
+      value: 'none',
+    });
     const app = createApp();
 
     const beforeLoginRes = await request(app).get('/users').set('Cookie', adminSessionCookie());

@@ -1,4 +1,5 @@
 import request from 'supertest';
+import { dayFromString } from '@habsum/types/common/day';
 import { yamlString } from '@habsum/types/common/misc';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../../app.js';
@@ -37,7 +38,14 @@ describe('GET /users/:user/habits repeat config', () => {
     );
     userAndAuthRepository.patchUserProfile(user, { displayName: 'Alex Morgan' });
     userAndAuthRepository.ensureUserPins([user]);
-    habitRepository.setTotal(user, 'every day', '2999-06-01', 1, '2999-06-01 08:00:00');
+    habitRepository.applyHabitMutation({
+      kind: 'set_total',
+      user,
+      habit: 'every day',
+      date: dayFromString('2999-06-01'),
+      total: 1,
+      createdAt: '2999-06-01 08:00:00',
+    });
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2999-07-01T09:00:00.000Z'));
     const session = userAndAuthRepository.createUserSession(user, 24 * 3600);
@@ -228,9 +236,30 @@ describe('GET /users/:user/habits repeat config', () => {
 `,
     );
     userAndAuthRepository.ensureUserPins([user]);
-    habitRepository.setTotal(user, 'midweek reps', '2026-07-01', 12, '2026-07-01 08:00:00');
-    habitRepository.setTotal(user, 'midweek reps', '2026-07-03', 20, '2026-07-03 08:00:00');
-    habitRepository.setTotal(user, 'friday reps', '2026-07-03', 5, '2026-07-03 08:00:00');
+    habitRepository.applyHabitMutation({
+      kind: 'set_total',
+      user,
+      habit: 'midweek reps',
+      date: dayFromString('2026-07-01'),
+      total: 12,
+      createdAt: '2026-07-01 08:00:00',
+    });
+    habitRepository.applyHabitMutation({
+      kind: 'set_total',
+      user,
+      habit: 'midweek reps',
+      date: dayFromString('2026-07-03'),
+      total: 20,
+      createdAt: '2026-07-03 08:00:00',
+    });
+    habitRepository.applyHabitMutation({
+      kind: 'set_total',
+      user,
+      habit: 'friday reps',
+      date: dayFromString('2026-07-03'),
+      total: 5,
+      createdAt: '2026-07-03 08:00:00',
+    });
     const session = userAndAuthRepository.createUserSession(user, 3600);
 
     const res = await request(createApp())

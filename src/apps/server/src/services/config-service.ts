@@ -89,7 +89,12 @@ function applyConfigDataDeletions(
   for (const path of deletions) {
     const deletion = optionDeletionForPath(path, previousHabits);
     if (!deletion) continue;
-    habitRepository.deleteDailySelectValue(user, deletion.habit, deletion.option);
+    habitRepository.applyConfigMutation({
+      kind: 'delete_select_value',
+      user,
+      habit: deletion.habit,
+      value: deletion.option,
+    });
   }
 }
 
@@ -158,10 +163,21 @@ function applyConfigDataMigrations(
   );
 
   for (const [fromHabit, toHabit] of habitRenames) {
-    habitRepository.renameHabitData(user, fromHabit, toHabit);
+    habitRepository.applyConfigMutation({
+      kind: 'rename_habit',
+      user,
+      from: fromHabit,
+      to: toHabit,
+    });
   }
   for (const { habit, fromOption, toOption } of optionRenames) {
-    habitRepository.renameDailySelectValue(user, habit, fromOption, toOption);
+    habitRepository.applyConfigMutation({
+      kind: 'rename_select_value',
+      user,
+      habit,
+      from: fromOption,
+      to: toOption,
+    });
   }
 }
 

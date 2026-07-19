@@ -1,6 +1,5 @@
-// Presentation helpers for habit history, streak graphs, and widget render models.
-import type { BarGraphData } from '@habsum/types/common/bar-chart';
-import { dayFromString, type Day } from '@habsum/types/common/day';
+// Streak calculations and heatmap graph construction from hydrated habit data.
+import type { Day } from '@habsum/types/common/day';
 import {
   isDailyStreakFrequency,
   parseStreakFrequencyDays,
@@ -8,130 +7,66 @@ import {
   type StreakDatum,
   type StreakGraphData,
 } from '@habsum/types/common/streak';
-import type {
-  Habit,
-  HabitHistory,
-  HabitWidget,
-  HabitWidgetInsight,
-} from '@habsum/types/common/habit';
-import { fromDateKey, toDateKey } from '@habsum/utils/date';
-import type { HabitDataReader } from './types/habit.types.js';
-import type { HabitDef } from './types/userConfig.js';
-import { HabitRepository } from './repositories/habit-repository.js';
-import { currentStreakInsight } from './utils/habits/insights/current-streak-insight.js';
-import { longestStreakInsight } from './utils/habits/insights/longest-streak-insight.js';
-import { weeklyAverageInsight } from './utils/habits/insights/weekly-average-insight.js';
-import { habitApiTodayKey } from './server-time.js';
-import { fillDistribution } from './utils/graph-utils/fill-distribution.js';
-import { selectablePillToInt } from './utils/graph-utils/selectable-pill-to-int.js';
+import { fromDateKey } from '@habsum/utils/date';
+import { habitApiTodayKey } from '../../server-time.js';
+import type { HabitDataReader } from '../../types/habit.types.js';
+import { fillDistribution } from '../graph-utils/fill-distribution.js';
+import { selectablePillToInt } from '../graph-utils/selectable-pill-to-int.js';
+import {
+  addDaysUtc,
+  formatHistoryDayHoverLabel,
+  graphRightPaddingDays,
+  shouldOutlineViewDate,
+} from './date-utils.js';
 
-type StreakGraphWithText = StreakGraphData & {
+export type StreakGraphWithText = StreakGraphData & {
   currentText: string;
 };
 
-const defaultHabitDataReader: HabitDataReader = new HabitRepository().habitDataReader();
-
 const WEEKDAY_ROW_COUNT = 7;
 
+/** Ensures streak builders received the reader backed by an interim habit. */
+function requireHabitDataReader(reader: HabitDataReader | undefined): HabitDataReader {
+  if (!reader) throw new Error('habit presentation requires hydrated interim habit data');
+  return reader;
+}
+
+/** Reads a single-select value for one branded calendar day. */
 function readerGetSelect(
   reader: HabitDataReader,
   user: string,
   habitName: string,
-  date: string,
+  date: Day,
 ): string | null {
-  return reader.getSelect(user, habitName, dayFromString(date));
+  return reader.getSelect(user, habitName, date);
 }
 
+/** Reads a summation total for one branded calendar day. */
 function readerGetSummationDayTotal(
   reader: HabitDataReader,
   user: string,
   habitName: string,
-  date: string,
+  date: Day,
 ): number | null {
-  return reader.getSummationDayTotal(user, habitName, dayFromString(date));
+  return reader.getSeries(user, habitName, date, date)[0]?.total ?? null;
 }
 
-function readerGetSeries(
-  reader: HabitDataReader,
-  user: string,
-  habitName: string,
-  start: string,
-  end: string,
-) {
-  return reader.getSeries(user, habitName, dayFromString(start), dayFromString(end));
-}
-
-export type PatchBody = {
-  habit?: unknown;
-  total?: unknown;
-  action?: unknown;
-  value?: unknown;
-  date?: unknown;
-  clientCreatedAt?: unknown;
-  eventId?: unknown;
-  tzOffsetMinutes?: unknown;
-};
-
-export function parseHabitFilter(value: unknown): string[] {
-  if (typeof value !== 'string') return [];
-  const seen = new Set<string>();
-  return value
-    .split(',')
-    .map((x) => x.trim())
-    .filter((x) => {
-      if (!x || seen.has(x)) return false;
-      seen.add(x);
-      return true;
-    });
-}
-
-export function minDate(dates: Array<string | null>): string | null {
-  return dates.reduce<string | null>((min, date) => {
-    if (date == null) return min;
-    return min == null || date < min ? date : min;
-  }, null);
-}
-
-export function emptyHabitForHistory(habitDef: HabitDef): Habit {
-  if (habitDef.type === 'single_select') {
-    return {
-      name: habitDef.name,
-      type: 'single_select',
-      goal: habitDef.goal,
-      options: habitDef.options ?? [],
-      ...(habitDef.theme ? { theme: habitDef.theme } : {}),
-      value: null,
-    } satisfies Habit;
-  }
-
-  return {
-    name: habitDef.name,
-    type: 'summation',
-    goal: habitDef.goal ?? null,
-    total: null,
-    events: [],
-    ...(habitDef.summationOptions ? { summationOptions: habitDef.summationOptions } : {}),
-  } satisfies Habit;
-}
-
-function addDaysUtc(date: string, delta: number) {
-  const dt = fromDateKey(date, 0);
-  const next = new Date(dt.getTime() + delta * 86_400_000);
-  return toDateKey(next, 0);
-}
-
-function weekdayRowIndex(date: string): number {
+/** Returns the UTC weekday index used by Sunday-first heatmap rows. */
+function weekdayRowIndex(date: Day): number {
   return fromDateKey(date, 0).getUTCDay();
 }
 
-function weekStartSunday(date: string): string {
+/** Returns the Sunday beginning the heatmap week containing `date`. */
+function weekStartSunday(date: Day): Day {
   return addDaysUtc(date, -weekdayRowIndex(date));
 }
 
+/** Creates an empty column collection for a streak heatmap. */
 function emptyStreakColumns(): StreakDatum[][] {
   return [];
 }
 
+/** Adds a daily datum to its Sunday-through-Saturday heatmap column. */
 function addDailyStreakDatum(columns: StreakDatum[][], datum: StreakDatum): void {
   const currentColumn = columns.at(-1);
   const currentWeekStart = currentColumn?.[0] ? weekStartSunday(currentColumn[0].date) : null;
@@ -143,10 +78,12 @@ function addDailyStreakDatum(columns: StreakDatum[][], datum: StreakDatum): void
   currentColumn.push(datum);
 }
 
+/** Adds a weekly datum as its own heatmap column. */
 function addWeeklyStreakDatum(columns: StreakDatum[][], datum: StreakDatum): void {
   columns.push([datum]);
 }
 
+/** Normalizes raw success values into the signed heatmap fill scale. */
 function applyStreakFillDistribution(
   columns: StreakDatum[][],
   values: ReadonlyArray<number | undefined>,
@@ -158,162 +95,6 @@ function applyStreakFillDistribution(
   });
 }
 
-function parsePeriodDays(period: string): number | null {
-  const m = period.match(/^(\d+)([dw])$/);
-  if (!m) return null;
-  const n = Number(m[1]);
-  if (!Number.isFinite(n) || n <= 0) return null;
-  const unit = m[2];
-  return unit === 'w' ? n * 7 : n;
-}
-
-function formatHistoryDayHoverLabel(dateKey: string): string {
-  const [ys, ms, ds] = dateKey.split('-');
-  const y = Number(ys);
-  const m = Number(ms);
-  const d = Number(ds);
-  if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return dateKey;
-  const dt = new Date(y, m - 1, d);
-  if (Number.isNaN(dt.getTime())) return dateKey;
-  return dt.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
-}
-
-/** Y-axis max for history bars: at least 1, the period max logged total, and the habit goal when set. */
-export function historyGraphScaleTop(
-  values: readonly number[],
-  goal: number | null | undefined,
-): number {
-  const maxValue = values.length === 0 ? 0 : Math.max(...values);
-  const goalFloor = goal != null && goal > 0 ? goal : 0;
-  return Math.max(1, maxValue, goalFloor);
-}
-
-const GRAPH_RIGHT_PADDING_DAYS = 3;
-
-function graphRightPaddingDays(viewDate: string, today: string): number {
-  if (viewDate >= today) return 0;
-  const diff = Math.round(
-    (fromDateKey(today, 0).getTime() - fromDateKey(viewDate, 0).getTime()) / 86_400_000,
-  );
-  if (!Number.isFinite(diff) || diff <= 0) return 0;
-  return Math.min(GRAPH_RIGHT_PADDING_DAYS, diff);
-}
-
-function shouldOutlineViewDate(viewDate: string, today: string): boolean {
-  return viewDate !== today;
-}
-
-/** Builds `HabitHistory` for the view date window (`period` from config, e.g. `1w` → 7 daily bars). */
-export function habitHistoryForConfiguredPeriod(
-  user: string,
-  habitName: string,
-  viewDate: string,
-  firstDate: string | null,
-  periodSpec: string,
-  goal: number | null | undefined = null,
-  at: Date = new Date(),
-  tzOffsetMinutes?: number,
-  reader: HabitDataReader = defaultHabitDataReader,
-): HabitHistory {
-  const days = parsePeriodDays(periodSpec) ?? 7;
-  const today = habitApiTodayKey(at, tzOffsetMinutes);
-  const rightPaddingDays = graphRightPaddingDays(viewDate, today);
-  const end = addDaysUtc(viewDate, rightPaddingDays);
-  const start = addDaysUtc(end, -(days - 1));
-  const outlineViewDate = shouldOutlineViewDate(viewDate, today);
-  const rows = readerGetSeries(reader, user, habitName, start, end);
-  const byDate = new Map(rows.map((r) => [r.date, r.total]));
-  const series = Array.from({ length: days }, (_, i) => {
-    const d = addDaysUtc(start, i);
-    if (firstDate && d < firstDate) return null;
-    if (!byDate.has(d)) return null;
-    return byDate.get(d)!;
-  });
-  const numericForTop = series.filter((v): v is number => v != null);
-  const top = historyGraphScaleTop(numericForTop, goal);
-  const graphData: BarGraphData = {};
-  for (let i = 0; i < days; i++) {
-    const d = addDaysUtc(start, i);
-    graphData[d] = {
-      value: series[i]!,
-      top,
-      hoverLabel: formatHistoryDayHoverLabel(d),
-      ...(outlineViewDate && d === viewDate ? { outline: true } : {}),
-      ...(outlineViewDate && d > viewDate ? { dimmed: true } : {}),
-    };
-  }
-  return {
-    data: { user: { graphData } },
-  };
-}
-
-export function progressWidget(total: number | null, goal: number | null): HabitWidget | null {
-  if (goal == null) {
-    return {
-      title: 'Progress',
-      titleValue: total == null ? 'No data' : String(total),
-      body: [],
-    };
-  }
-
-  return {
-    title: 'Goal',
-    titleValue: `${total == null ? '—' : total} / ${goal}`,
-    body: [{ kind: 'progress', value: total, max: goal }],
-  };
-}
-
-export function historyWidget(
-  history: HabitHistory | null,
-  goal: number | null | undefined,
-  includeAbsentDaysInAverage = false,
-  heatmap: StreakGraphWithText | null = null,
-  streak: StreakGraphWithText | null = null,
-): HabitWidget {
-  const body: HabitWidget['body'] = [];
-  const insights = compactInsights([
-    currentStreakInsight(streak),
-    longestStreakInsight(streak),
-    weeklyAverageInsight(history, includeAbsentDaysInAverage),
-  ]);
-  if (insights.length > 0) body.push({ kind: 'insights', insights });
-  if (history) {
-    body.push({
-      kind: 'barGraph',
-      data: history.data.user.graphData,
-      ...(goal != null && goal > 0
-        ? { lines: [{ value: goal, label: `Daily goal: ${goal}` }] }
-        : {}),
-    });
-  }
-  if (heatmap) {
-    body.push({ kind: 'streakGraph', graph: streakGraphData(heatmap) });
-  }
-
-  return { title: 'History', body };
-}
-
-function streakGraphData(streak: StreakGraphWithText): StreakGraphData {
-  const { currentText: _omit, ...graph } = streak;
-  return graph;
-}
-
-function compactInsights(insights: Array<HabitWidgetInsight | null>): HabitWidgetInsight[] {
-  return insights.filter((insight): insight is HabitWidgetInsight => insight != null);
-}
-
-export function streakWidget(streak: StreakGraphWithText): HabitWidget {
-  const insights = compactInsights([currentStreakInsight(streak), longestStreakInsight(streak)]);
-  return {
-    title: 'Streak',
-    body: insights.length > 0 ? [{ kind: 'insights', insights }] : [],
-  };
-}
-
-export function habitWidgets(widgets: Array<HabitWidget | null | undefined>): HabitWidget[] {
-  return widgets.filter((widget): widget is HabitWidget => widget != null);
-}
-
 /** Daily streak heatmaps show a contribution-calendar year: 53 Sunday-Saturday columns. */
 const DAILY_STREAK_WINDOW_DAYS = 53 * 7;
 
@@ -323,10 +104,12 @@ const WEEKLY_STREAK_WINDOW_WEEKS = 126;
 /** Max days to scan backward when computing `current` (handles multi-year streaks without an unbounded loop). */
 const MAX_STREAK_BACKTRACK_DAYS = 10 * 366;
 
+/** Returns whether a selected option counts toward the configured streak. */
 function dayCountsTowardStreak(value: string | null, eligible: ReadonlySet<string>): boolean {
   return value != null && eligible.has(value);
 }
 
+/** Returns whether a summation total reaches any configured numeric streak threshold. */
 function totalCountsTowardStreak(total: number | null, eligible: ReadonlySet<string>): boolean {
   if (total == null) return false;
   for (const option of eligible) {
@@ -336,6 +119,7 @@ function totalCountsTowardStreak(total: number | null, eligible: ReadonlySet<str
   return false;
 }
 
+/** Formats a streak length as a singular or plural day/week label. */
 export function formatSelectStreakText(current: number, weekly = false): string {
   if (weekly) {
     return current === 1 ? '1 week' : `${current} weeks`;
@@ -343,22 +127,25 @@ export function formatSelectStreakText(current: number, weekly = false): string 
   return current === 1 ? '1 day' : `${current} days`;
 }
 
-function weekStartMonday(dateKey: string): string {
+/** Returns the Monday beginning the streak week containing `dateKey`. */
+function weekStartMonday(dateKey: Day): Day {
   const dt = fromDateKey(dateKey, 0);
   const weekday = dt.getUTCDay();
   const daysFromMonday = (weekday + 6) % 7;
   return addDaysUtc(dateKey, -daysFromMonday);
 }
 
-function formatWeekRangeLabel(weekStart: string, weekEnd: string): string {
+/** Formats an inclusive branded week range for display. */
+function formatWeekRangeLabel(weekStart: Day, weekEnd: Day): string {
   return `${formatHistoryDayHoverLabel(weekStart)} – ${formatHistoryDayHoverLabel(weekEnd)}`;
 }
 
+/** Counts streak-eligible single-select days in an inclusive range. */
 function countEligibleDaysInRange(
   user: string,
   habitName: string,
-  start: string,
-  end: string,
+  start: Day,
+  end: Day,
   eligible: ReadonlySet<string>,
   reader: HabitDataReader,
 ): number {
@@ -369,11 +156,12 @@ function countEligibleDaysInRange(
   return count;
 }
 
+/** Counts all logged single-select days in an inclusive range. */
 function countLoggedDaysInRange(
   user: string,
   habitName: string,
-  start: string,
-  end: string,
+  start: Day,
+  end: Day,
   reader: HabitDataReader,
 ): number {
   let count = 0;
@@ -383,11 +171,12 @@ function countLoggedDaysInRange(
   return count;
 }
 
+/** Counts streak-eligible summation days in an inclusive range. */
 function countEligibleSummationDaysInRange(
   user: string,
   habitName: string,
-  start: string,
-  end: string,
+  start: Day,
+  end: Day,
   eligible: ReadonlySet<string>,
   reader: HabitDataReader,
 ): number {
@@ -399,11 +188,12 @@ function countEligibleSummationDaysInRange(
   return count;
 }
 
+/** Counts all logged summation days in an inclusive range. */
 function countLoggedSummationDaysInRange(
   user: string,
   habitName: string,
-  start: string,
-  end: string,
+  start: Day,
+  end: Day,
   reader: HabitDataReader,
 ): number {
   let count = 0;
@@ -413,10 +203,11 @@ function countLoggedSummationDaysInRange(
   return count;
 }
 
+/** Tests whether a single-select week reaches its required eligible-day frequency. */
 function weekMeetsFrequency(
   user: string,
   habitName: string,
-  weekStart: string,
+  weekStart: Day,
   daysPerWeek: number,
   eligible: ReadonlySet<string>,
   reader: HabitDataReader,
@@ -427,10 +218,11 @@ function weekMeetsFrequency(
   );
 }
 
+/** Tests whether a summation week reaches its required eligible-day frequency. */
 function summationWeekMeetsFrequency(
   user: string,
   habitName: string,
-  weekStart: string,
+  weekStart: Day,
   daysPerWeek: number,
   eligible: ReadonlySet<string>,
   reader: HabitDataReader,
@@ -442,44 +234,49 @@ function summationWeekMeetsFrequency(
   );
 }
 
+/** Formats weekly progress as `hits/required`, or null when nothing qualified. */
 function formatWeekProgressLabel(hits: number, daysPerWeek: number): string | null {
   if (hits <= 0) return null;
   return `${hits}/${daysPerWeek}`;
 }
 
-function formatDayRangeLabel(start: string, end: string): string {
+/** Formats an inclusive branded day range for display. */
+function formatDayRangeLabel(start: Day, end: Day): string {
   return `${formatHistoryDayHoverLabel(start)} – ${formatHistoryDayHoverLabel(end)}`;
 }
 
-type StreakRun = { length: number; start: string; end: string };
+type StreakRun = { length: number; start: Day; end: Day };
 
+/** Keeps whichever completed streak run is longer. */
 function finalizeLongestRun(current: StreakRun, best: StreakRun): StreakRun {
   return current.length > best.length ? { ...current } : best;
 }
 
+/** Resolves the first branded day available for a select-streak history scan. */
 function earliestStreakScanDate(
   user: string,
   habitName: string,
-  firstDate: string | null,
+  firstDate: Day | null,
   reader: HabitDataReader,
-): string | null {
+): Day | null {
   if (firstDate) return firstDate;
   return reader.getFirstSelectDate(user, habitName);
 }
 
+/** Finds the longest qualifying daily single-select streak through `viewDate`. */
 function longestDailyStreakRun(
   user: string,
   habitName: string,
-  viewDate: string,
+  viewDate: Day,
   eligible: ReadonlySet<string>,
-  firstDate: string | null,
+  firstDate: Day | null,
   reader: HabitDataReader,
 ): StreakRun | null {
   const scanStart = earliestStreakScanDate(user, habitName, firstDate, reader);
   if (scanStart == null || scanStart > viewDate) return null;
 
-  let best: StreakRun = { length: 0, start: '', end: '' };
-  let current: StreakRun = { length: 0, start: '', end: '' };
+  let best: StreakRun = { length: 0, start: scanStart, end: scanStart };
+  let current: StreakRun = { length: 0, start: scanStart, end: scanStart };
 
   for (let d = scanStart; d <= viewDate; d = addDaysUtc(d, 1)) {
     if (dayCountsTowardStreak(readerGetSelect(reader, user, habitName, d), eligible)) {
@@ -488,7 +285,7 @@ function longestDailyStreakRun(
       current.end = d;
     } else if (current.length > 0) {
       best = finalizeLongestRun(current, best);
-      current = { length: 0, start: '', end: '' };
+      current = { length: 0, start: d, end: d };
     }
   }
 
@@ -496,13 +293,14 @@ function longestDailyStreakRun(
   return best.length > 0 ? best : null;
 }
 
+/** Finds the longest qualifying weekly single-select streak through `viewDate`. */
 function longestWeeklyStreakRun(
   user: string,
   habitName: string,
-  viewDate: string,
+  viewDate: Day,
   daysPerWeek: number,
   eligible: ReadonlySet<string>,
-  firstDate: string | null,
+  firstDate: Day | null,
   reader: HabitDataReader,
 ): StreakRun | null {
   const scanStart = firstDate;
@@ -510,8 +308,8 @@ function longestWeeklyStreakRun(
 
   const firstWeek = weekStartMonday(scanStart);
   const viewWeek = weekStartMonday(viewDate);
-  let best: StreakRun = { length: 0, start: '', end: '' };
-  let current: StreakRun = { length: 0, start: '', end: '' };
+  let best: StreakRun = { length: 0, start: firstWeek, end: firstWeek };
+  let current: StreakRun = { length: 0, start: firstWeek, end: firstWeek };
 
   for (let weekStart = firstWeek; weekStart <= viewWeek; weekStart = addDaysUtc(weekStart, 7)) {
     if (weekMeetsFrequency(user, habitName, weekStart, daysPerWeek, eligible, reader)) {
@@ -525,7 +323,7 @@ function longestWeeklyStreakRun(
       current.length++;
     } else if (current.length > 0) {
       best = finalizeLongestRun(current, best);
-      current = { length: 0, start: '', end: '' };
+      current = { length: 0, start: weekStart, end: weekStart };
     }
   }
 
@@ -533,19 +331,20 @@ function longestWeeklyStreakRun(
   return best.length > 0 ? best : null;
 }
 
+/** Finds the longest qualifying daily summation streak through `viewDate`. */
 function longestDailySummationStreakRun(
   user: string,
   habitName: string,
-  viewDate: string,
+  viewDate: Day,
   eligible: ReadonlySet<string>,
-  firstDate: string | null,
+  firstDate: Day | null,
   reader: HabitDataReader,
 ): StreakRun | null {
   const scanStart = firstDate;
   if (scanStart == null || scanStart > viewDate) return null;
 
-  let best: StreakRun = { length: 0, start: '', end: '' };
-  let current: StreakRun = { length: 0, start: '', end: '' };
+  let best: StreakRun = { length: 0, start: scanStart, end: scanStart };
+  let current: StreakRun = { length: 0, start: scanStart, end: scanStart };
 
   for (let d = scanStart; d <= viewDate; d = addDaysUtc(d, 1)) {
     if (totalCountsTowardStreak(readerGetSummationDayTotal(reader, user, habitName, d), eligible)) {
@@ -554,7 +353,7 @@ function longestDailySummationStreakRun(
       current.end = d;
     } else if (current.length > 0) {
       best = finalizeLongestRun(current, best);
-      current = { length: 0, start: '', end: '' };
+      current = { length: 0, start: d, end: d };
     }
   }
 
@@ -562,13 +361,14 @@ function longestDailySummationStreakRun(
   return best.length > 0 ? best : null;
 }
 
+/** Finds the longest qualifying weekly summation streak through `viewDate`. */
 function longestWeeklySummationStreakRun(
   user: string,
   habitName: string,
-  viewDate: string,
+  viewDate: Day,
   daysPerWeek: number,
   eligible: ReadonlySet<string>,
-  firstDate: string | null,
+  firstDate: Day | null,
   reader: HabitDataReader,
 ): StreakRun | null {
   const scanStart = firstDate;
@@ -576,8 +376,8 @@ function longestWeeklySummationStreakRun(
 
   const firstWeek = weekStartMonday(scanStart);
   const viewWeek = weekStartMonday(viewDate);
-  let best: StreakRun = { length: 0, start: '', end: '' };
-  let current: StreakRun = { length: 0, start: '', end: '' };
+  let best: StreakRun = { length: 0, start: firstWeek, end: firstWeek };
+  let current: StreakRun = { length: 0, start: firstWeek, end: firstWeek };
 
   for (let weekStart = firstWeek; weekStart <= viewWeek; weekStart = addDaysUtc(weekStart, 7)) {
     if (summationWeekMeetsFrequency(user, habitName, weekStart, daysPerWeek, eligible, reader)) {
@@ -591,7 +391,7 @@ function longestWeeklySummationStreakRun(
       current.length++;
     } else if (current.length > 0) {
       best = finalizeLongestRun(current, best);
-      current = { length: 0, start: '', end: '' };
+      current = { length: 0, start: weekStart, end: weekStart };
     }
   }
 
@@ -599,10 +399,12 @@ function longestWeeklySummationStreakRun(
   return best.length > 0 ? best : null;
 }
 
+/** Compares two streak runs by length and inclusive date range. */
 function streakRunsEqual(a: StreakRun, b: StreakRun): boolean {
   return a.length === b.length && a.start === b.start && a.end === b.end;
 }
 
+/** Describes the option values and optional weekly frequency that qualify a streak. */
 function formatLongestStreakQualifier(eligible: ReadonlySet<string>, daysPerWeek: number): string {
   const options = [...eligible].join(', ');
   if (!options) return '';
@@ -614,7 +416,7 @@ function formatLongestStreakQualifier(eligible: ReadonlySet<string>, daysPerWeek
 function currentSelectStreakLength(
   user: string,
   habitName: string,
-  viewDate: string,
+  viewDate: Day,
   eligible: ReadonlySet<string>,
   omitEmptyViewDate: boolean,
   reader: HabitDataReader,
@@ -632,10 +434,11 @@ function currentSelectStreakLength(
   return n;
 }
 
+/** Returns the active daily single-select streak and its inclusive branded range. */
 function currentDailyStreakRun(
   user: string,
   habitName: string,
-  viewDate: string,
+  viewDate: Day,
   eligible: ReadonlySet<string>,
   omitEmptyViewDate: boolean,
   reader: HabitDataReader,
@@ -661,10 +464,11 @@ function currentDailyStreakRun(
   };
 }
 
+/** Counts consecutive qualifying single-select weeks ending near `viewDate`. */
 function currentSelectStreakWeeks(
   user: string,
   habitName: string,
-  viewDate: string,
+  viewDate: Day,
   daysPerWeek: number,
   eligible: ReadonlySet<string>,
   omitIncompleteViewWeek: boolean,
@@ -689,10 +493,11 @@ function currentSelectStreakWeeks(
   return n;
 }
 
+/** Returns the active weekly single-select streak and its inclusive branded range. */
 function currentWeeklyStreakRun(
   user: string,
   habitName: string,
-  viewDate: string,
+  viewDate: Day,
   daysPerWeek: number,
   eligible: ReadonlySet<string>,
   omitIncompleteViewWeek: boolean,
@@ -725,10 +530,11 @@ function currentWeeklyStreakRun(
   };
 }
 
+/** Counts consecutive qualifying summation days ending near `viewDate`. */
 function currentSummationStreakLength(
   user: string,
   habitName: string,
-  viewDate: string,
+  viewDate: Day,
   eligible: ReadonlySet<string>,
   omitEmptyViewDate: boolean,
   reader: HabitDataReader,
@@ -746,10 +552,11 @@ function currentSummationStreakLength(
   return n;
 }
 
+/** Returns the active daily summation streak and its inclusive branded range. */
 function currentDailySummationStreakRun(
   user: string,
   habitName: string,
-  viewDate: string,
+  viewDate: Day,
   eligible: ReadonlySet<string>,
   omitEmptyViewDate: boolean,
   reader: HabitDataReader,
@@ -775,10 +582,11 @@ function currentDailySummationStreakRun(
   };
 }
 
+/** Counts consecutive qualifying summation weeks ending near `viewDate`. */
 function currentSummationStreakWeeks(
   user: string,
   habitName: string,
-  viewDate: string,
+  viewDate: Day,
   daysPerWeek: number,
   eligible: ReadonlySet<string>,
   omitIncompleteViewWeek: boolean,
@@ -804,10 +612,11 @@ function currentSummationStreakWeeks(
   return n;
 }
 
+/** Returns the active weekly summation streak and its inclusive branded range. */
 function currentWeeklySummationStreakRun(
   user: string,
   habitName: string,
-  viewDate: string,
+  viewDate: Day,
   daysPerWeek: number,
   eligible: ReadonlySet<string>,
   omitIncompleteViewWeek: boolean,
@@ -840,13 +649,14 @@ function currentWeeklySummationStreakRun(
   };
 }
 
+/** Builds the longest-streak API metadata for a single-select habit. */
 function longestStreakForConfig(
   user: string,
   habitName: string,
-  viewDate: string,
+  viewDate: Day,
   eligible: ReadonlySet<string>,
   daysPerWeek: number,
-  firstDate: string | null,
+  firstDate: Day | null,
   omitEmptyViewPeriod: boolean,
   reader: HabitDataReader,
 ): LongestStreak | undefined {
@@ -883,13 +693,14 @@ function longestStreakForConfig(
   };
 }
 
+/** Builds the longest-streak API metadata for a summation habit. */
 function longestSummationStreakForConfig(
   user: string,
   habitName: string,
-  viewDate: string,
+  viewDate: Day,
   eligible: ReadonlySet<string>,
   daysPerWeek: number,
-  firstDate: string | null,
+  firstDate: Day | null,
   omitEmptyViewPeriod: boolean,
   reader: HabitDataReader,
 ): LongestStreak | undefined {
@@ -941,15 +752,16 @@ function longestSummationStreakForConfig(
   };
 }
 
+/** Adds optional longest-streak metadata to a single-select graph. */
 function attachLongestStreak(
   graph: StreakGraphWithText,
   user: string,
   habitName: string,
-  viewDate: string,
+  viewDate: Day,
   eligible: ReadonlySet<string>,
   daysPerWeek: number,
   showLongest: boolean,
-  firstDate: string | null,
+  firstDate: Day | null,
   omitEmptyViewPeriod: boolean,
   reader: HabitDataReader,
 ): StreakGraphWithText {
@@ -968,15 +780,16 @@ function attachLongestStreak(
   return { ...graph, longestStreak };
 }
 
+/** Adds optional longest-streak metadata to a summation graph. */
 function attachLongestSummationStreak(
   graph: StreakGraphWithText,
   user: string,
   habitName: string,
-  viewDate: string,
+  viewDate: Day,
   eligible: ReadonlySet<string>,
   daysPerWeek: number,
   showLongest: boolean,
-  firstDate: string | null,
+  firstDate: Day | null,
   omitEmptyViewPeriod: boolean,
   reader: HabitDataReader,
 ): StreakGraphWithText {
@@ -995,11 +808,12 @@ function attachLongestSummationStreak(
   return { ...graph, longestStreak };
 }
 
+/** Builds the 53-week daily heatmap window for a single-select habit. */
 function streakGraphDailyWindow(
   user: string,
   habitName: string,
-  viewDate: string,
-  today: string,
+  viewDate: Day,
+  today: Day,
   eligible: ReadonlySet<string>,
   selectableValueMap: ReadonlyMap<string, number>,
   omitEmptyViewDate: boolean,
@@ -1019,7 +833,7 @@ function streakGraphDailyWindow(
       value == null ? undefined : (selectableValueMap.get(value) ?? (eligible.has(value) ? 1 : -1)),
     );
     addDailyStreakDatum(data, {
-      date: dayFromString(d),
+      date: d,
       value,
       ...(outlineViewDate && d === viewDate ? { outline: true } : {}),
       ...(d > viewDate ? { dimmed: true } : {}),
@@ -1040,11 +854,12 @@ function streakGraphDailyWindow(
   };
 }
 
+/** Builds the 126-bucket weekly heatmap window for a single-select habit. */
 function streakGraphWeeklyWindow(
   user: string,
   habitName: string,
-  viewDate: string,
-  today: string,
+  viewDate: Day,
+  today: Day,
   daysPerWeek: number,
   eligible: ReadonlySet<string>,
   omitIncompleteViewWeek: boolean,
@@ -1063,7 +878,7 @@ function streakGraphWeeklyWindow(
     const loggedDays = countLoggedDaysInRange(user, habitName, weekStart, weekEnd, reader);
     rawFillValues.push(loggedDays === 0 ? undefined : hits === 0 ? -1 : hits);
     addWeeklyStreakDatum(data, {
-      date: dayFromString(weekStart),
+      date: weekStart,
       value: formatWeekProgressLabel(hits, daysPerWeek),
       label: formatWeekRangeLabel(weekStart, weekEnd),
       ...(outlineViewDate && weekStart === viewWeekStart ? { outline: true } : {}),
@@ -1086,11 +901,12 @@ function streakGraphWeeklyWindow(
   };
 }
 
+/** Builds the 53-week daily heatmap window for a summation habit. */
 function summationStreakGraphDailyWindow(
   user: string,
   habitName: string,
-  viewDate: string,
-  today: string,
+  viewDate: Day,
+  today: Day,
   eligible: ReadonlySet<string>,
   omitEmptyViewDate: boolean,
   reader: HabitDataReader,
@@ -1107,7 +923,7 @@ function summationStreakGraphDailyWindow(
     const total = readerGetSummationDayTotal(reader, user, habitName, d);
     rawFillValues.push(total ?? undefined);
     addDailyStreakDatum(data, {
-      date: dayFromString(d),
+      date: d,
       value: total == null ? null : String(total),
       ...(outlineViewDate && d === viewDate ? { outline: true } : {}),
       ...(d > viewDate ? { dimmed: true } : {}),
@@ -1128,11 +944,12 @@ function summationStreakGraphDailyWindow(
   };
 }
 
+/** Builds the 126-bucket weekly heatmap window for a summation habit. */
 function summationStreakGraphWeeklyWindow(
   user: string,
   habitName: string,
-  viewDate: string,
-  today: string,
+  viewDate: Day,
+  today: Day,
   daysPerWeek: number,
   eligible: ReadonlySet<string>,
   omitIncompleteViewWeek: boolean,
@@ -1158,7 +975,7 @@ function summationStreakGraphWeeklyWindow(
     const loggedDays = countLoggedSummationDaysInRange(user, habitName, weekStart, weekEnd, reader);
     rawFillValues.push(loggedDays === 0 ? undefined : hits === 0 ? -1 : hits);
     addWeeklyStreakDatum(data, {
-      date: dayFromString(weekStart),
+      date: weekStart,
       value: formatWeekProgressLabel(hits, daysPerWeek),
       label: formatWeekRangeLabel(weekStart, weekEnd),
       ...(outlineViewDate && weekStart === viewWeekStart ? { outline: true } : {}),
@@ -1181,19 +998,24 @@ function summationStreakGraphWeeklyWindow(
   };
 }
 
+/**
+ * Builds a select streak graph around `viewDate`.
+ * `streakFrequency` uses `<days>d/1w` (for example `3d/1w`).
+ */
 export function streakGraphForConfiguredWindow(
   user: string,
   habitName: string,
-  viewDate: string,
+  viewDate: Day,
   streakEligibleOptions: readonly string[],
   at: Date = new Date(),
   tzOffsetMinutes?: number,
   streakFrequency?: string,
   showLongest = false,
-  firstDate: string | null = null,
+  firstDate: Day | null = null,
   selectableValues: readonly string[] = streakEligibleOptions,
-  reader: HabitDataReader = defaultHabitDataReader,
+  reader?: HabitDataReader,
 ): StreakGraphWithText {
+  const dataReader = requireHabitDataReader(reader);
   const eligible = new Set(streakEligibleOptions);
   const selectableValueMap = selectablePillToInt(selectableValues, streakEligibleOptions);
   const today = habitApiTodayKey(at, tzOffsetMinutes);
@@ -1208,7 +1030,7 @@ export function streakGraphForConfiguredWindow(
         eligible,
         selectableValueMap,
         omitEmptyViewPeriod,
-        reader,
+        dataReader,
       )
     : streakGraphWeeklyWindow(
         user,
@@ -1218,7 +1040,7 @@ export function streakGraphForConfiguredWindow(
         daysPerWeek,
         eligible,
         omitEmptyViewPeriod,
-        reader,
+        dataReader,
       );
   return attachLongestStreak(
     graph,
@@ -1230,22 +1052,27 @@ export function streakGraphForConfiguredWindow(
     showLongest,
     firstDate,
     omitEmptyViewPeriod,
-    reader,
+    dataReader,
   );
 }
 
+/**
+ * Builds a summation streak graph around `viewDate`.
+ * Eligible options are numeric threshold strings and frequency uses `<days>d/1w`.
+ */
 export function summationStreakGraphForConfiguredWindow(
   user: string,
   habitName: string,
-  viewDate: string,
+  viewDate: Day,
   streakEligibleOptions: readonly string[],
   at: Date = new Date(),
   tzOffsetMinutes?: number,
   streakFrequency?: string,
   showLongest = false,
-  firstDate: string | null = null,
-  reader: HabitDataReader = defaultHabitDataReader,
+  firstDate: Day | null = null,
+  reader?: HabitDataReader,
 ): StreakGraphWithText {
+  const dataReader = requireHabitDataReader(reader);
   const eligible = new Set(streakEligibleOptions);
   const today = habitApiTodayKey(at, tzOffsetMinutes);
   const omitEmptyViewPeriod = viewDate === today;
@@ -1258,7 +1085,7 @@ export function summationStreakGraphForConfiguredWindow(
         today,
         eligible,
         omitEmptyViewPeriod,
-        reader,
+        dataReader,
       )
     : summationStreakGraphWeeklyWindow(
         user,
@@ -1268,7 +1095,7 @@ export function summationStreakGraphForConfiguredWindow(
         daysPerWeek,
         eligible,
         omitEmptyViewPeriod,
-        reader,
+        dataReader,
       );
   return attachLongestSummationStreak(
     graph,
@@ -1280,6 +1107,6 @@ export function summationStreakGraphForConfiguredWindow(
     showLongest,
     firstDate,
     omitEmptyViewPeriod,
-    reader,
+    dataReader,
   );
 }

@@ -1,4 +1,5 @@
 import request from 'supertest';
+import { dayFromString } from '@habsum/types/common/day';
 import { yamlString } from '@habsum/types/common/misc';
 import { describe, expect, it } from 'vitest';
 import { createApp } from '../../app.js';
@@ -32,8 +33,21 @@ describe('GET /users/:user/data', () => {
     const user = 'export-data-user';
     writeExportUserConfig(user);
     userAndAuthRepository.ensureUserPins([user]);
-    habitRepository.setDailySelect(user, 'mood', '2026-01-02', 'tricky, value');
-    habitRepository.addToTotal(user, 'push ups', '2026-01-03', 12, '2026-01-03 08:15:00');
+    habitRepository.applyHabitMutation({
+      kind: 'set_select',
+      user,
+      habit: 'mood',
+      date: dayFromString('2026-01-02'),
+      value: 'tricky, value',
+    });
+    habitRepository.applyHabitMutation({
+      kind: 'add_total',
+      user,
+      habit: 'push ups',
+      date: dayFromString('2026-01-03'),
+      total: 12,
+      createdAt: '2026-01-03 08:15:00',
+    });
     const session = userAndAuthRepository.createUserSession(user, 3600);
     const app = createApp();
 

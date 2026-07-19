@@ -2,6 +2,7 @@
 import type { HabitsResponse } from '@habsum/types/api-responses/habits-get';
 import type { HistoryGetResponse } from '@habsum/types/api-responses/history-get';
 import type { PatchHabitResponse } from '@habsum/types/api-responses/habit-patch';
+import { dayFromString, type Day } from '@habsum/types/common/day';
 import type { Habit } from '@habsum/types/common/habit';
 import { dasherize } from '@habsum/utils/strings';
 import { HabitResultBuilder } from '../builders/habit-result-builder.js';
@@ -12,20 +13,14 @@ import {
   resolveHabitApiDateQuery,
 } from '../server-time.js';
 import {
-  habitHistoryForConfiguredPeriod,
-  habitWidgets,
-  historyWidget,
   emptyHabitForHistory,
   minDate,
   parseHabitFilter,
-  progressWidget,
-  streakGraphForConfiguredWindow,
-  summationStreakGraphForConfiguredWindow,
   type PatchBody,
-} from '../habit-presentation.js';
+} from './habit-service.utils.js';
 import { mapSummationEventsToApi } from '../summation-event-api.js';
 import { HabitRepository } from '../repositories/habit-repository.js';
-import type { InterimHabitHistoryRow } from '../types/habit.types.js';
+import type { InterimHabit } from '../types/habit.types.js';
 import { HABIT_REPEAT_DAYS, type HabitDef, type UserConfig } from '../types/userConfig.js';
 
 type HabitListQuery = {
@@ -64,24 +59,35 @@ type PatchHabitInput = {
   at?: Date;
 };
 
-function repeatDayForDateKey(date: string): string {
+/** Maps a branded `YYYY-MM-DD` day to the repeat-rule weekday name. */
+function repeatDayForDateKey(date: Day): string {
   const dayIndex = new Date(`${date}T00:00:00.000Z`).getUTCDay();
   return HABIT_REPEAT_DAYS[dayIndex === 0 ? 6 : dayIndex - 1];
 }
 
-function habitRepeatsOnDate(habit: HabitDef, date: string): boolean {
+/** Returns whether a habit's repeat rule includes the supplied calendar day. */
+function habitRepeatsOnDate(habit: HabitDef, date: Day): boolean {
   return habit.repeat.includes(repeatDayForDateKey(date));
 }
 
-function habitFromHistoryRow(habitDef: HabitDef, row: InterimHabitHistoryRow): Habit {
-  if (row.type === 'single_select') {
+/** Collects every branded day represented by a hydrated interim habit. */
+function interimHabitDates(habit: InterimHabit): Day[] {
+  return habit.type === 'single_select'
+    ? habit.values.map((row) => row.date)
+    : habit.totals.map((row) => row.date);
+}
+
+/** Projects one day of hydrated interim data into the public habit shape. */
+function habitFromInterimDay(habit: InterimHabit, day: Day): Habit {
+  const habitDef = habit.config;
+  if (habit.type === 'single_select') {
     return {
       name: habitDef.name,
       type: 'single_select',
       goal: habitDef.goal,
       options: habitDef.options ?? [],
       ...(habitDef.theme ? { theme: habitDef.theme } : {}),
-      value: row.value,
+      value: habit.values.find((row) => row.date === day)?.value ?? null,
     } satisfies Habit;
   }
 
@@ -89,8 +95,8 @@ function habitFromHistoryRow(habitDef: HabitDef, row: InterimHabitHistoryRow): H
     name: habitDef.name,
     type: 'summation',
     goal: habitDef.goal ?? null,
-    total: row.total,
-    events: mapSummationEventsToApi(row.events),
+    total: habit.totals.find((row) => row.date === day)?.total ?? null,
+    events: mapSummationEventsToApi(habit.events.filter((event) => event.date === day)),
     ...(habitDef.summationOptions ? { summationOptions: habitDef.summationOptions } : {}),
   } satisfies Habit;
 }
@@ -102,12 +108,21 @@ export class HabitService {
     const date = resolveHabitApiDateQuery(query.date, at);
     const tzOffsetMinutes = parseTzOffsetMinutes(query.tzOffsetMinutes);
     const data = this.repository.getHabits({ config, date, at, tzOffsetMinutes });
-    const familiarName = this.repository.getFamiliarName(config.user);
-    const habits = new HabitFactory({ data, at, tzOffsetMinutes })
+    const visibleData = {
+      ...data,
+      habits: data.habits.filter((habit) => habitRepeatsOnDate(habit.config, date)),
+    };
+    const habits = new HabitFactory({ data: visibleData, at, tzOffsetMinutes })
       .builders()
       .map((builder) => builder.build());
 
-    return new HabitResultBuilder({ data, habits, familiarName, at, tzOffsetMinutes }).build();
+    return new HabitResultBuilder({
+      data: visibleData,
+      habits,
+      familiarName: visibleData.familiarName,
+      at,
+      tzOffsetMinutes,
+    }).build();
   }
 
   getHabitHistory({
@@ -129,11 +144,17 @@ export class HabitService {
       habitDefs.push(habitDef);
     }
 
-    const habitsByDate = new Map<string, Habit[]>();
-    for (const habitDef of habitDefs) {
-      for (const row of this.repository.habitRowsForHistory(user, habitDef)) {
-        const habit = habitFromHistoryRow(habitDef, row);
-        habitsByDate.set(row.day, [...(habitsByDate.get(row.day) ?? []), habit]);
+    const historyData = this.repository.getHabits({
+      config: { ...config, habits: habitDefs },
+      date: inspectDate,
+      at,
+      dataScope: 'all',
+    });
+    const habitsByDate = new Map<Day, Habit[]>();
+    for (const interimHabit of historyData.habits) {
+      for (const day of interimHabitDates(interimHabit)) {
+        const habit = habitFromInterimDay(interimHabit, day);
+        habitsByDate.set(day, [...(habitsByDate.get(day) ?? []), habit]);
       }
     }
 
@@ -160,9 +181,7 @@ export class HabitService {
         habits: Object.fromEntries(
           config.habits.map((habitDef) => [dasherize(habitDef.name), habitDef.name]),
         ),
-        firstDate: minDate(
-          habitDefs.map((habitDef) => this.repository.habitFirstDate(user, habitDef.name)),
-        ),
+        firstDate: minDate(historyData.habits.flatMap(interimHabitDates)),
         data,
         history: {
           user: Array.from(habitsByDate.entries())
@@ -185,6 +204,7 @@ export class HabitService {
     if (date == null) {
       return { status: 400, body: { error: 'body.date is required (YYYY-MM-DD)' } };
     }
+    const day = dayFromString(date);
 
     const { habit, total, action, value, clientCreatedAt } = body;
     if (typeof habit !== 'string' || habit.length === 0) {
@@ -200,15 +220,18 @@ export class HabitService {
       const tzOffsetMinutes = parseTzOffsetMinutes(body.tzOffsetMinutes);
       const mode = typeof action === 'string' ? action : undefined;
       if (mode === 'clear') {
-        this.repository.clearDailySelect(user, habit, date);
+        this.repository.applyHabitMutation({
+          kind: 'clear_select',
+          user,
+          habit,
+          date: day,
+        });
         return {
           status: 200,
-          body: this.singleSelectPatchResponse({
-            user,
-            date,
+          body: this.patchResponse({
+            config,
+            date: day,
             habit,
-            value: null,
-            known,
             at,
             tzOffsetMinutes,
           }),
@@ -223,18 +246,16 @@ export class HabitService {
         return { status: 400, body: { error: 'invalid option' } };
       }
 
-      const next = this.repository.setDailySelect(user, habit, date, value);
+      this.repository.applyHabitMutation({
+        kind: 'set_select',
+        user,
+        habit,
+        date: day,
+        value,
+      });
       return {
         status: 200,
-        body: this.singleSelectPatchResponse({
-          user,
-          date,
-          habit,
-          value: next,
-          known,
-          at,
-          tzOffsetMinutes,
-        }),
+        body: this.patchResponse({ config, date: day, habit, at, tzOffsetMinutes }),
       };
     }
 
@@ -247,43 +268,27 @@ export class HabitService {
       if (!Number.isInteger(eventId) || eventId <= 0) {
         return { status: 400, body: { error: 'eventId is required (positive integer)' } };
       }
-      const removed = this.repository.deleteSummationEvent(user, habit, date, eventId);
+      const removed = this.repository.applyHabitMutation({
+        kind: 'delete_event',
+        user,
+        habit,
+        date: day,
+        eventId,
+      });
       if (!removed) {
         return { status: 404, body: { error: 'summation event not found' } };
       }
-      const events = this.repository.getSummationEvents(user, habit, date);
-      const nextTotal = this.repository.getSummationDayTotal(user, habit, date);
       return {
         status: 200,
-        body: this.summationPatchResponse({
-          user,
-          date,
-          habit,
-          total: nextTotal,
-          events,
-          known,
-          config,
-          at,
-          tzOffsetMinutes,
-        }),
+        body: this.patchResponse({ config, date: day, habit, at, tzOffsetMinutes }),
       };
     }
 
     if (mode === 'clear') {
-      this.repository.clearSummationDay(user, habit, date);
+      this.repository.applyHabitMutation({ kind: 'clear_total', user, habit, date: day });
       return {
         status: 200,
-        body: this.summationPatchResponse({
-          user,
-          date,
-          habit,
-          total: null,
-          events: [],
-          known,
-          config,
-          at,
-          tzOffsetMinutes,
-        }),
+        body: this.patchResponse({ config, date: day, habit, at, tzOffsetMinutes }),
       };
     }
 
@@ -303,174 +308,78 @@ export class HabitService {
       };
     }
 
-    let next: number | null;
-    let events = this.repository.getSummationEvents(user, habit, date);
     if (mode === 'add') {
-      const result = this.repository.addToTotal(user, habit, date, numericTotal, createdAtSql);
-      next = result.total;
-      events = result.event ? [...events, result.event] : events;
+      this.repository.applyHabitMutation({
+        kind: 'add_total',
+        user,
+        habit,
+        date: day,
+        total: numericTotal,
+        createdAt: createdAtSql,
+      });
     } else if (mode === 'set') {
-      next = this.repository.setTotal(user, habit, date, numericTotal, createdAtSql);
-      events = this.repository.getSummationEvents(user, habit, date);
+      this.repository.applyHabitMutation({
+        kind: 'set_total',
+        user,
+        habit,
+        date: day,
+        total: numericTotal,
+        createdAt: createdAtSql,
+      });
     } else {
       return { status: 400, body: { error: `unknown action "${mode}"` } };
     }
 
     return {
       status: 200,
-      body: this.summationPatchResponse({
-        user,
-        date,
-        habit,
-        total: next,
-        events,
-        known,
-        config,
-        at,
-        tzOffsetMinutes,
-      }),
+      body: this.patchResponse({ config, date: day, habit, at, tzOffsetMinutes }),
     };
   }
 
-  private singleSelectPatchResponse({
-    user,
-    date,
-    habit,
-    value,
-    known,
-    at,
-    tzOffsetMinutes,
-  }: {
-    user: string;
-    date: string;
-    habit: string;
-    value: string | null;
-    known: UserConfig['habits'][number];
-    at: Date;
-    tzOffsetMinutes?: number;
-  }): PatchHabitResponse {
-    const opts = known.options ?? [];
-    const firstDate = this.repository.firstDate(user);
-    const heatmap = known.history?.displays.includes('heatmap')
-      ? streakGraphForConfiguredWindow(
-          user,
-          habit,
-          date,
-          known.streak?.options ?? [],
-          at,
-          tzOffsetMinutes,
-          undefined,
-          false,
-          firstDate,
-          opts,
-        )
-      : null;
-    const streak = known.streak
-      ? streakGraphForConfiguredWindow(
-          user,
-          habit,
-          date,
-          known.streak.options,
-          at,
-          tzOffsetMinutes,
-          known.streak.frequency,
-          known.streak.show_longest === true,
-          firstDate,
-          opts,
-        )
-      : null;
-    const widgets = habitWidgets([
-      heatmap || streak ? historyWidget(null, known.goal, false, heatmap, streak) : null,
-    ]);
-    return {
-      user,
-      date,
-      habit,
-      value,
-      type: 'single_select',
-      options: opts,
-      ...(known.theme ? { theme: known.theme } : {}),
-      ...(widgets.length > 0 ? { widgets } : {}),
-    };
-  }
-
-  private summationPatchResponse({
-    user,
-    date,
-    habit,
-    total,
-    events,
-    known,
+  private patchResponse({
     config,
+    date,
+    habit,
     at,
     tzOffsetMinutes,
   }: {
-    user: string;
-    date: string;
-    habit: string;
-    total: number | null;
-    events: Parameters<typeof mapSummationEventsToApi>[0];
-    known: UserConfig['habits'][number];
     config: UserConfig;
+    date: Day;
+    habit: string;
     at: Date;
     tzOffsetMinutes?: number;
   }): PatchHabitResponse {
-    const firstDate = this.repository.firstDate(user);
-    const history = known.history?.displays.includes('weekly_history')
-      ? habitHistoryForConfiguredPeriod(
-          user,
-          known.name,
-          date,
-          firstDate,
-          known.history.period,
-          known.goal,
-          at,
-          tzOffsetMinutes,
-        )
-      : null;
-    const heatmap =
-      known.history?.displays.includes('heatmap') && known.goal != null
-        ? summationStreakGraphForConfiguredWindow(
-            user,
-            known.name,
-            date,
-            [String(known.goal)],
-            at,
-            tzOffsetMinutes,
-            undefined,
-            false,
-            firstDate,
-          )
-        : null;
-    const streak = known.streak
-      ? summationStreakGraphForConfiguredWindow(
-          user,
-          habit,
-          date,
-          known.streak.options,
-          at,
-          tzOffsetMinutes,
-          known.streak.frequency,
-          known.streak.show_longest === true,
-          firstDate,
-        )
-      : null;
-    const widgets = habitWidgets([
-      progressWidget(total, known.goal),
-      history || heatmap || streak
-        ? historyWidget(history, known.goal, config.includeAbsentDaysInAverage, heatmap, streak)
-        : null,
-    ]);
+    const data = this.repository.getHabits({ config, date, at, tzOffsetMinutes });
+    const habitIndex = data.habits.findIndex((candidate) => candidate.config.name === habit);
+    const interimHabit = data.habits[habitIndex];
+    const builder = new HabitFactory({ data, at, tzOffsetMinutes }).builders()[habitIndex];
+    if (!interimHabit || !builder) throw new Error(`failed to hydrate configured habit "${habit}"`);
 
-    return {
-      user,
-      date,
-      habit,
-      total,
-      events: mapSummationEventsToApi(events),
-      type: 'summation',
-      goal: known.goal,
-      ...(widgets.length > 0 ? { widgets } : {}),
-    };
+    const result = builder.build();
+    if (result.type === 'single_select' && interimHabit.type === 'single_select') {
+      return {
+        user: data.user,
+        date,
+        habit: result.name,
+        value: result.value,
+        type: result.type,
+        options: result.options,
+        ...(result.theme ? { theme: result.theme } : {}),
+        ...(result.widgets ? { widgets: result.widgets } : {}),
+      };
+    }
+    if (result.type === 'summation' && interimHabit.type === 'summation') {
+      return {
+        user: data.user,
+        date,
+        habit: result.name,
+        total: result.total,
+        events: mapSummationEventsToApi(interimHabit.events.filter((event) => event.date === date)),
+        type: result.type,
+        goal: result.goal,
+        ...(result.widgets ? { widgets: result.widgets } : {}),
+      };
+    }
+    throw new Error(`hydrated habit type mismatch for "${habit}"`);
   }
 }
