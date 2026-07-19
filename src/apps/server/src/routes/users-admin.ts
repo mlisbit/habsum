@@ -22,12 +22,13 @@ import { requireAdmin } from '../middleware/auth.js';
 import { isPlausibleEmail, isSafeConfigUserId } from '../request-helpers.js';
 import { consumePasswordResetToken, issuePasswordResetToken } from '../password-reset-token.js';
 import { sessionTtlSeconds } from '../session-cookie.js';
-import { sendInviteEmail } from '../invite-email.js';
 import { generateTemporaryPassword } from '../temporary-password.js';
 import { allocateUsernameForEmail } from '../username-from-email.js';
 import { entitlementsForUser } from '../entitlements.js';
+import { EmailService } from '../services/email-service.js';
 
 const configService = new ConfigService();
+const emailService = new EmailService();
 
 function parseOptionalDisplayName(body: CreateUserRequest | undefined): {
   displayName?: string | null;
@@ -147,7 +148,7 @@ usersAdminRouter.post(
     if (sendInviteEmailFlag) {
       const { token, id: tokenId } = issuePasswordResetToken(out.user, 'invite');
       try {
-        await sendInviteEmail(email, displayName!, token);
+        await emailService.sendInviteEmail(email, displayName!, token);
       } catch (e) {
         consumePasswordResetToken(tokenId);
         rollbackCreatedUser(out.user);

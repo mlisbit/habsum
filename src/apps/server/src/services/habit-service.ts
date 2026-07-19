@@ -24,7 +24,7 @@ import {
   type PatchBody,
 } from '../habit-presentation.js';
 import { mapSummationEventsToApi } from '../summation-event-api.js';
-import { HabitResource } from '../repositories/habit-resource.js';
+import { HabitRepository } from '../repositories/habit-repository.js';
 import type { InterimHabitHistoryRow } from '../types/habit.types.js';
 import { HABIT_REPEAT_DAYS, type HabitDef, type UserConfig } from '../types/userConfig.js';
 
@@ -96,13 +96,13 @@ function habitFromHistoryRow(habitDef: HabitDef, row: InterimHabitHistoryRow): H
 }
 
 export class HabitService {
-  constructor(private readonly resource = new HabitResource()) {}
+  constructor(private readonly repository = new HabitRepository()) {}
 
   getHabits({ config, query = {}, at = new Date() }: GetHabitsInput): HabitsResponse {
     const date = resolveHabitApiDateQuery(query.date, at);
     const tzOffsetMinutes = parseTzOffsetMinutes(query.tzOffsetMinutes);
-    const data = this.resource.getHabits({ config, date, at, tzOffsetMinutes });
-    const familiarName = this.resource.getFamiliarName(config.user);
+    const data = this.repository.getHabits({ config, date, at, tzOffsetMinutes });
+    const familiarName = this.repository.getFamiliarName(config.user);
     const habits = new HabitFactory({ data, at, tzOffsetMinutes })
       .builders()
       .map((builder) => builder.build());
@@ -131,7 +131,7 @@ export class HabitService {
 
     const habitsByDate = new Map<string, Habit[]>();
     for (const habitDef of habitDefs) {
-      for (const row of this.resource.habitRowsForHistory(user, habitDef)) {
+      for (const row of this.repository.habitRowsForHistory(user, habitDef)) {
         const habit = habitFromHistoryRow(habitDef, row);
         habitsByDate.set(row.day, [...(habitsByDate.get(row.day) ?? []), habit]);
       }
@@ -161,7 +161,7 @@ export class HabitService {
           config.habits.map((habitDef) => [dasherize(habitDef.name), habitDef.name]),
         ),
         firstDate: minDate(
-          habitDefs.map((habitDef) => this.resource.habitFirstDate(user, habitDef.name)),
+          habitDefs.map((habitDef) => this.repository.habitFirstDate(user, habitDef.name)),
         ),
         data,
         history: {
@@ -200,7 +200,7 @@ export class HabitService {
       const tzOffsetMinutes = parseTzOffsetMinutes(body.tzOffsetMinutes);
       const mode = typeof action === 'string' ? action : undefined;
       if (mode === 'clear') {
-        this.resource.clearDailySelect(user, habit, date);
+        this.repository.clearDailySelect(user, habit, date);
         return {
           status: 200,
           body: this.singleSelectPatchResponse({
@@ -223,7 +223,7 @@ export class HabitService {
         return { status: 400, body: { error: 'invalid option' } };
       }
 
-      const next = this.resource.setDailySelect(user, habit, date, value);
+      const next = this.repository.setDailySelect(user, habit, date, value);
       return {
         status: 200,
         body: this.singleSelectPatchResponse({
@@ -247,12 +247,12 @@ export class HabitService {
       if (!Number.isInteger(eventId) || eventId <= 0) {
         return { status: 400, body: { error: 'eventId is required (positive integer)' } };
       }
-      const removed = this.resource.deleteSummationEvent(user, habit, date, eventId);
+      const removed = this.repository.deleteSummationEvent(user, habit, date, eventId);
       if (!removed) {
         return { status: 404, body: { error: 'summation event not found' } };
       }
-      const events = this.resource.getSummationEvents(user, habit, date);
-      const nextTotal = this.resource.getSummationDayTotal(user, habit, date);
+      const events = this.repository.getSummationEvents(user, habit, date);
+      const nextTotal = this.repository.getSummationDayTotal(user, habit, date);
       return {
         status: 200,
         body: this.summationPatchResponse({
@@ -270,7 +270,7 @@ export class HabitService {
     }
 
     if (mode === 'clear') {
-      this.resource.clearSummationDay(user, habit, date);
+      this.repository.clearSummationDay(user, habit, date);
       return {
         status: 200,
         body: this.summationPatchResponse({
@@ -304,14 +304,14 @@ export class HabitService {
     }
 
     let next: number | null;
-    let events = this.resource.getSummationEvents(user, habit, date);
+    let events = this.repository.getSummationEvents(user, habit, date);
     if (mode === 'add') {
-      const result = this.resource.addToTotal(user, habit, date, numericTotal, createdAtSql);
+      const result = this.repository.addToTotal(user, habit, date, numericTotal, createdAtSql);
       next = result.total;
       events = result.event ? [...events, result.event] : events;
     } else if (mode === 'set') {
-      next = this.resource.setTotal(user, habit, date, numericTotal, createdAtSql);
-      events = this.resource.getSummationEvents(user, habit, date);
+      next = this.repository.setTotal(user, habit, date, numericTotal, createdAtSql);
+      events = this.repository.getSummationEvents(user, habit, date);
     } else {
       return { status: 400, body: { error: `unknown action "${mode}"` } };
     }
@@ -350,7 +350,7 @@ export class HabitService {
     tzOffsetMinutes?: number;
   }): PatchHabitResponse {
     const opts = known.options ?? [];
-    const firstDate = this.resource.firstDate(user);
+    const firstDate = this.repository.firstDate(user);
     const heatmap = known.history?.displays.includes('heatmap')
       ? streakGraphForConfiguredWindow(
           user,
@@ -415,7 +415,7 @@ export class HabitService {
     at: Date;
     tzOffsetMinutes?: number;
   }): PatchHabitResponse {
-    const firstDate = this.resource.firstDate(user);
+    const firstDate = this.repository.firstDate(user);
     const history = known.history?.displays.includes('weekly_history')
       ? habitHistoryForConfiguredPeriod(
           user,

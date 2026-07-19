@@ -2,9 +2,9 @@ import request from 'supertest';
 import { describe, expect, it, vi } from 'vitest';
 import { createApp } from '../../app.js';
 import { ConfigService } from '../../services/config-service.js';
+import { EmailService } from '../../services/email-service.js';
 import { ensureUserPins, isUserPinValid, patchUserProfile, setUserPin } from '../../db.js';
 import { issuePasswordResetToken } from '../../password-reset-token.js';
-import * as passwordResetEmail from '../../password-reset-email.js';
 
 const configService = new ConfigService();
 
@@ -12,7 +12,7 @@ describe('POST /auth/forgot-password', () => {
   it('returns the same success message whether or not the email is registered', async () => {
     const app = createApp();
     const sendSpy = vi
-      .spyOn(passwordResetEmail, 'sendPasswordResetEmail')
+      .spyOn(EmailService.prototype, 'sendPasswordResetEmail')
       .mockResolvedValue(undefined);
 
     ensureUserPins(['forgot-password-user']);
@@ -58,7 +58,7 @@ describe('POST /auth/forgot-password', () => {
   it('rate limits repeat reset requests for the same user', async () => {
     const app = createApp();
     const sendSpy = vi
-      .spyOn(passwordResetEmail, 'sendPasswordResetEmail')
+      .spyOn(EmailService.prototype, 'sendPasswordResetEmail')
       .mockResolvedValue(undefined);
     const now = 1_700_000_000_000;
     vi.spyOn(Date, 'now').mockReturnValue(now);
@@ -92,7 +92,7 @@ describe('POST /auth/forgot-password', () => {
 
   it('returns an error to the client when email delivery fails for a known user', async () => {
     const app = createApp();
-    vi.spyOn(passwordResetEmail, 'sendPasswordResetEmail').mockRejectedValue(
+    vi.spyOn(EmailService.prototype, 'sendPasswordResetEmail').mockRejectedValue(
       new Error('RESEND_API_KEY is not configured'),
     );
 

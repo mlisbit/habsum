@@ -1,4 +1,4 @@
-// Repository/resource layer that owns habit DB access and interim habit hydration.
+// Repository that owns habit DB access and interim habit hydration.
 import { dayFromString, type Day } from '@habsum/types/common/day';
 import {
   addToTotal,
@@ -56,7 +56,7 @@ function totalsFromSeries(rows: Array<{ date: string; total: number }>) {
   }));
 }
 
-export class HabitResource {
+export class HabitRepository {
   getFamiliarName(user: string): string {
     const displayName = getUserProfile(user).displayName?.trim();
     if (!displayName) return user;

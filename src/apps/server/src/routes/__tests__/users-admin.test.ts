@@ -3,6 +3,7 @@ import { ProductEntitlement } from '@habsum/types/common/entitlement';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../../app.js';
 import { ConfigService } from '../../services/config-service.js';
+import { EmailService } from '../../services/email-service.js';
 import {
   addToTotal,
   countAdmins,
@@ -12,7 +13,6 @@ import {
   patchUserProfile,
   setSelect,
 } from '../../db.js';
-import * as inviteEmail from '../../invite-email.js';
 import { SESSION_COOKIE_NAME } from '../../session-cookie.js';
 import { PACKAGE_VERSION } from '../../version.js';
 
@@ -63,7 +63,7 @@ describe('POST /users', () => {
 
   it('stores display name and sends invite email when requested', async () => {
     const app = createApp();
-    const sendInviteEmail = vi.spyOn(inviteEmail, 'sendInviteEmail').mockResolvedValue();
+    const sendInviteEmail = vi.spyOn(EmailService.prototype, 'sendInviteEmail').mockResolvedValue();
 
     const res = await request(app).post('/users').set('Cookie', adminSessionCookie()).send({
       email: 'invited@example.com',

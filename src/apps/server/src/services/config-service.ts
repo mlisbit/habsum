@@ -10,7 +10,7 @@ import {
   configResponseParts,
 } from '../config-editor.js';
 import { deleteDailySelectValue, renameDailySelectValue, renameHabitData } from '../db.js';
-import { ConfigResource } from '../repositories/config-resource.js';
+import { ConfigRepository } from '../repositories/config-repository.js';
 import type { HabitDef, UserConfig } from '../types/userConfig.js';
 import { YAMLConfigParser } from '../utils/yaml-config-parser.js';
 import { YAMLConfigConvertor } from '../utils/yaml-config-convertor.js';
@@ -165,29 +165,29 @@ export class ConfigService {
   static readonly ConfigValidationError = YAMLConfigParser.ConfigValidationError;
 
   constructor(
-    private readonly resource = new ConfigResource(),
+    private readonly repository = new ConfigRepository(),
     private readonly yamlConfigConvertor = new YAMLConfigConvertor(),
   ) {}
 
   ensureConfigLayout(): void {
-    this.resource.ensureLayout();
+    this.repository.ensureLayout();
   }
 
   listUsers(): string[] {
-    return this.resource.listUsers();
+    return this.repository.listUsers();
   }
 
   readUserConfigText(user: string): string | null {
-    return this.resource.readUserConfigText(user);
+    return this.repository.readUserConfigText(user);
   }
 
   writeUserConfigText(user: string, content: string): { ok: true } | { ok: false; error: string } {
-    if (!this.resource.hasUserConfig(user)) {
+    if (!this.repository.hasUserConfig(user)) {
       return { ok: false, error: 'config file not found' };
     }
     const validation = this.validateUserConfigText(user, content);
     if (!validation.ok) return validation;
-    this.resource.writeUserConfigText(user, content);
+    this.repository.writeUserConfigText(user, content);
     return { ok: true };
   }
 
@@ -206,7 +206,7 @@ export class ConfigService {
   }
 
   loadUserConfig(user: string): UserConfig | null {
-    const text = this.resource.readUserConfigText(user);
+    const text = this.repository.readUserConfigText(user);
     if (text == null) return null;
 
     return new YAMLConfigParser(user).parse(text);
@@ -215,13 +215,13 @@ export class ConfigService {
   createEmptyUserConfig(user: string): { ok: true; user: string } | { ok: false; error: string } {
     this.ensureConfigLayout();
 
-    if (this.resource.hasUserConfig(user)) {
+    if (this.repository.hasUserConfig(user)) {
       return { ok: false, error: `user "${user}" already exists` };
     }
 
     const validation = this.validateUserConfigText(user, EMPTY_USER_CONFIG_TEXT);
     if (!validation.ok) return validation;
-    this.resource.writeUserConfigText(user, EMPTY_USER_CONFIG_TEXT);
+    this.repository.writeUserConfigText(user, EMPTY_USER_CONFIG_TEXT);
 
     return { ok: true, user };
   }
@@ -230,20 +230,20 @@ export class ConfigService {
     fromUser: string,
     toUser: string,
   ): { ok: true; user: string } | { ok: false; error: string } {
-    if (!this.resource.hasUserConfig(fromUser)) return { ok: false, error: 'user not found' };
+    if (!this.repository.hasUserConfig(fromUser)) return { ok: false, error: 'user not found' };
 
-    if (this.resource.hasUserConfig(toUser)) {
+    if (this.repository.hasUserConfig(toUser)) {
       return { ok: false, error: `user "${toUser}" already exists` };
     }
 
-    this.resource.renameUserConfig(fromUser, toUser);
+    this.repository.renameUserConfig(fromUser, toUser);
 
     return { ok: true, user: toUser };
   }
 
   deleteUserConfig(user: string): { ok: true; user: string } | { ok: false; error: string } {
-    if (!this.resource.hasUserConfig(user)) return { ok: false, error: 'user not found' };
-    this.resource.deleteUserConfig(user);
+    if (!this.repository.hasUserConfig(user)) return { ok: false, error: 'user not found' };
+    this.repository.deleteUserConfig(user);
     return { ok: true, user };
   }
 

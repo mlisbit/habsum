@@ -18,10 +18,10 @@ import type {
 import { accountCreatedAtToApi } from '@habsum/types/common/day';
 import { entitlementsForUser } from '../entitlements.js';
 import { isDevelopment } from '../env.js';
-import { sendPasswordResetEmail } from '../password-reset-email.js';
 import { isPlausibleEmail, isSafeLoginId, parsePin } from '../request-helpers.js';
 import { PACKAGE_VERSION } from '../version.js';
 import { ConfigService } from './config-service.js';
+import { EmailService } from './email-service.js';
 import { UserAndAuthRepository } from '../repositories/user-and-auth-repository.js';
 
 type AuthServiceResult<T> = {
@@ -57,6 +57,7 @@ function webAndApiVersionForHeader(value: unknown): string {
 export class AuthService {
   constructor(
     private readonly configService = new ConfigService(),
+    private readonly emailService = new EmailService(),
     private readonly userAndAuthRepository = new UserAndAuthRepository(),
   ) {}
 
@@ -170,7 +171,7 @@ export class AuthService {
       'reset',
     );
     try {
-      await sendPasswordResetEmail(resolvedUsername, email, token);
+      await this.emailService.sendPasswordResetEmail(resolvedUsername, email, token);
       this.userAndAuthRepository.recordPasswordResetRequest(resolvedUsername);
     } catch (e) {
       this.userAndAuthRepository.consumePasswordResetToken(tokenId);

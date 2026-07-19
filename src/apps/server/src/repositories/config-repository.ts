@@ -1,4 +1,4 @@
-// Repository/resource layer that owns persisted YAML user config versions in SQLite.
+// Repository that owns persisted YAML user config versions in SQLite.
 import { mkdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import Database from 'better-sqlite3';
@@ -158,7 +158,7 @@ const writeUserConfigTextTransaction = configDb.transaction(
   },
 );
 
-export class ConfigResource {
+export class ConfigRepository {
   ensureLayout(): void {
     mkdirSync(DATA_DIR, { recursive: true });
   }
