@@ -6,6 +6,7 @@ import {
   parseStreakFrequencyDays,
 } from '@habsum/types/common/streak';
 import yaml from 'js-yaml';
+import type { YAMLString } from '@habsum/types/common/misc';
 import {
   HABIT_REPEAT_DAYS,
   type HabitDef,
@@ -202,7 +203,7 @@ export class YAMLConfigParser {
 
   constructor(private readonly user: string) {}
 
-  parse(content: string): UserConfig {
+  parse(content: YAMLString): UserConfig {
     if (!content.trim()) {
       throw new YAMLConfigValidationError('config cannot be empty');
     }

@@ -1,8 +1,10 @@
 // Service layer for YAML user config persistence plus user-scoped config HTTP orchestration.
-import type {
-  UserConfigGetResponse,
-  UserConfigPutRequest,
-  UserConfigPutResponse,
+import {
+  yamlString,
+  type UserConfigGetResponse,
+  type UserConfigPutRequest,
+  type UserConfigPutResponse,
+  type YAMLString,
 } from '@habsum/types/common/misc';
 import {
   buildConfigDeletions,
@@ -16,7 +18,7 @@ import { YAMLConfigParser } from '../utils/yaml-config-parser.js';
 import { YAMLConfigConvertor } from '../utils/yaml-config-convertor.js';
 import { isSafeConfigUserId } from '../utils/user-config-id.js';
 
-const EMPTY_USER_CONFIG_TEXT = 'habits: {}\n';
+const EMPTY_USER_CONFIG_TEXT = yamlString('habits: {}\n');
 
 type ConfigServiceResult<T> = {
   status: number;
@@ -177,11 +179,14 @@ export class ConfigService {
     return this.repository.listUsers();
   }
 
-  readUserConfigText(user: string): string | null {
+  readUserConfigText(user: string): YAMLString | null {
     return this.repository.readUserConfigText(user);
   }
 
-  writeUserConfigText(user: string, content: string): { ok: true } | { ok: false; error: string } {
+  writeUserConfigText(
+    user: string,
+    content: YAMLString,
+  ): { ok: true } | { ok: false; error: string } {
     if (!this.repository.hasUserConfig(user)) {
       return { ok: false, error: 'config file not found' };
     }
@@ -193,7 +198,7 @@ export class ConfigService {
 
   validateUserConfigText(
     user: string,
-    content: string,
+    content: YAMLString,
   ): { ok: true; config: UserConfig } | { ok: false; error: string } {
     try {
       return { ok: true, config: new YAMLConfigParser(user).parse(content) };
@@ -272,9 +277,9 @@ export class ConfigService {
       return { status: 400, body: { error: 'invalid user' } };
     }
 
-    let text: string;
+    let text: YAMLString;
     if (typeof body.text === 'string') {
-      text = body.text;
+      text = yamlString(body.text);
     } else if (body.config != null) {
       try {
         text = this.yamlConfigConvertor.convert(body.config as UserConfig);

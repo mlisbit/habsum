@@ -1,7 +1,13 @@
 // exclusive-bem-block: config-page
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useBlocker } from '@remix-run/react';
-import { getUserConfig, putUserConfig, type UserConfigJson } from '~/api.client';
+import {
+  getUserConfig,
+  putUserConfig,
+  yamlString,
+  type UserConfigJson,
+  type YAMLString,
+} from '~/api.client';
 import { ConfigGuiEditor } from './ConfigGuiEditor';
 import { ConfigYamlEditor } from './ConfigYamlEditor';
 import { UnsavedChangesModal } from '~/components/UnsavedChangesModal';
@@ -34,8 +40,8 @@ type ConfigSettingsProps = {
 };
 
 export function ConfigSettings({ user, mode, renderCard }: ConfigSettingsProps) {
-  const [text, setText] = useState('');
-  const [initialText, setInitialText] = useState('');
+  const [text, setText] = useState<YAMLString>(() => yamlString(''));
+  const [initialText, setInitialText] = useState<YAMLString>(() => yamlString(''));
   const [config, setConfig] = useState<UserConfigJson | null>(null);
   const [initialConfig, setInitialConfig] = useState<UserConfigJson | null>(null);
   const [habitOrder, setHabitOrder] = useState<string[]>([]);

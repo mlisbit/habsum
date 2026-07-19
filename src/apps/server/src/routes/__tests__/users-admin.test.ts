@@ -1,9 +1,10 @@
 import request from 'supertest';
 import { ProductEntitlement } from '@habsum/types/common/entitlement';
+import { yamlString } from '@habsum/types/common/misc';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../../app.js';
+import { AuthService } from '../../services/auth-service.js';
 import { ConfigService } from '../../services/config-service.js';
-import { EmailService } from '../../services/email-service.js';
 import {
   addToTotal,
   countAdmins,
@@ -63,7 +64,7 @@ describe('POST /users', () => {
 
   it('stores display name and sends invite email when requested', async () => {
     const app = createApp();
-    const sendInviteEmail = vi.spyOn(EmailService.prototype, 'sendInviteEmail').mockResolvedValue();
+    const sendInviteEmail = vi.spyOn(AuthService.prototype, 'sendInviteEmail').mockResolvedValue();
 
     const res = await request(app).post('/users').set('Cookie', adminSessionCookie()).send({
       email: 'invited@example.com',
@@ -77,7 +78,7 @@ describe('POST /users', () => {
       user: expect.any(String),
       inviteEmailSent: true,
     });
-    expect(sendInviteEmail).toHaveBeenCalledWith('invited@example.com', 'Alex', expect.any(String));
+    expect(sendInviteEmail).toHaveBeenCalledWith(res.body.user, 'invited@example.com', 'Alex');
   });
 
   it('requires display name to send invite email', async () => {
@@ -103,13 +104,13 @@ describe('GET /users', () => {
     configService.createEmptyUserConfig('login-audit-user');
     configService.writeUserConfigText(
       'login-audit-user',
-      `habits:
+      yamlString(`habits:
   push ups:
     type: summation
   soda consumption:
     type: single_select
     options: [none, light, moderate, heavy]
-`,
+`),
     );
     ensureUserPins(['login-audit-user']);
     patchUserProfile('login-audit-user', {

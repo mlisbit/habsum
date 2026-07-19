@@ -1,4 +1,5 @@
 import request from 'supertest';
+import { yamlString } from '@habsum/types/common/misc';
 import { describe, expect, it } from 'vitest';
 import { toDateKey, toDateKeyWithTime } from '@habsum/utils/date';
 import { createApp } from '../../app.js';
@@ -13,12 +14,12 @@ function writeSummationUserConfig(user: string, historyBlock = '    history:\n  
   if (!created.ok) throw new Error(created.error);
   const written = configService.writeUserConfigText(
     user,
-    `habits:
+    yamlString(`habits:
   push ups:
     type: summation
     goal: 100
 ${historyBlock}
-`,
+`),
   );
   if (!written.ok) throw new Error(written.error);
 }

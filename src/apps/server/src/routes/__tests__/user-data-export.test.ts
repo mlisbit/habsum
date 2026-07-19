@@ -1,4 +1,5 @@
 import request from 'supertest';
+import { yamlString } from '@habsum/types/common/misc';
 import { describe, expect, it } from 'vitest';
 import { createApp } from '../../app.js';
 import { ConfigService } from '../../services/config-service.js';
@@ -12,13 +13,13 @@ function writeExportUserConfig(user: string) {
   if (!created.ok) throw new Error(created.error);
   const written = configService.writeUserConfigText(
     user,
-    `habits:
+    yamlString(`habits:
   mood:
     type: single_select
     options: ['good', 'tricky, value']
   push ups:
     type: summation
-`,
+`),
   );
   if (!written.ok) throw new Error(written.error);
 }

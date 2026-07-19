@@ -1,6 +1,7 @@
 import { join } from 'node:path';
 import Database from 'better-sqlite3';
 import request from 'supertest';
+import { yamlString } from '@habsum/types/common/misc';
 import { describe, expect, it } from 'vitest';
 import { createApp } from '../../app.js';
 import { ConfigService } from '../../services/config-service.js';
@@ -19,7 +20,7 @@ const configService = new ConfigService();
 function writeUserConfig(user: string, text: string) {
   const created = configService.createEmptyUserConfig(user);
   if (!created.ok) throw new Error(created.error);
-  const written = configService.writeUserConfigText(user, text);
+  const written = configService.writeUserConfigText(user, yamlString(text));
   if (!written.ok) throw new Error(written.error);
 }
 

@@ -1,4 +1,5 @@
 import request from 'supertest';
+import { yamlString } from '@habsum/types/common/misc';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../../app.js';
 import { ConfigService } from '../../services/config-service.js';
@@ -10,7 +11,7 @@ const configService = new ConfigService();
 function writeUserConfig(user: string, text: string) {
   const created = configService.createEmptyUserConfig(user);
   if (!created.ok) throw new Error(created.error);
-  const written = configService.writeUserConfigText(user, text);
+  const written = configService.writeUserConfigText(user, yamlString(text));
   if (!written.ok) throw new Error(written.error);
 }
 

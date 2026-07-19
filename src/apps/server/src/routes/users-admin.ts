@@ -20,15 +20,14 @@ import {
 } from '../db.js';
 import { requireAdmin } from '../middleware/auth.js';
 import { isPlausibleEmail, isSafeConfigUserId } from '../request-helpers.js';
-import { consumePasswordResetToken, issuePasswordResetToken } from '../password-reset-token.js';
 import { sessionTtlSeconds } from '../session-cookie.js';
 import { generateTemporaryPassword } from '../temporary-password.js';
 import { allocateUsernameForEmail } from '../username-from-email.js';
 import { entitlementsForUser } from '../entitlements.js';
-import { EmailService } from '../services/email-service.js';
+import { AuthService } from '../services/auth-service.js';
 
 const configService = new ConfigService();
-const emailService = new EmailService();
+const authService = new AuthService();
 
 function parseOptionalDisplayName(body: CreateUserRequest | undefined): {
   displayName?: string | null;
@@ -146,11 +145,9 @@ usersAdminRouter.post(
     }
 
     if (sendInviteEmailFlag) {
-      const { token, id: tokenId } = issuePasswordResetToken(out.user, 'invite');
       try {
-        await emailService.sendInviteEmail(email, displayName!, token);
+        await authService.sendInviteEmail(out.user, email, displayName!);
       } catch (e) {
-        consumePasswordResetToken(tokenId);
         rollbackCreatedUser(out.user);
         const msg = e instanceof Error ? e.message : 'failed to send invite email';
         return res.status(500).json({ error: msg });

@@ -4,6 +4,7 @@ import CodeMirror from '@uiw/react-codemirror';
 import { autocompletion, type Completion, type CompletionContext } from '@codemirror/autocomplete';
 import { yaml } from '@codemirror/lang-yaml';
 import { oneDark } from '@codemirror/theme-one-dark';
+import { yamlString, type YAMLString } from '~/api.client';
 import { getMediaQuerySnapshot, subscribeToMediaQuery } from '~/utils/media-query-store';
 
 const HABIT_TYPE_COMPLETIONS: Completion[] = [
@@ -45,8 +46,8 @@ function usePrefersDark() {
 }
 
 type ConfigYamlEditorProps = {
-  text: string;
-  onChange: (text: string) => void;
+  text: YAMLString;
+  onChange: (text: YAMLString) => void;
 };
 
 export function ConfigYamlEditor({ text, onChange }: ConfigYamlEditorProps) {
@@ -56,7 +57,7 @@ export function ConfigYamlEditor({ text, onChange }: ConfigYamlEditorProps) {
     <div className="config-yaml-editor">
       <CodeMirror
         value={text}
-        onChange={onChange}
+        onChange={(next) => onChange(yamlString(next))}
         extensions={[yaml(), autocompletion({ override: [habitTypeCompletion] })]}
         height="100%"
         minHeight="min(60vh, 640px)"

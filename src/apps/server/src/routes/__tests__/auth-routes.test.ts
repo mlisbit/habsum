@@ -11,9 +11,7 @@ const configService = new ConfigService();
 describe('POST /auth/forgot-password', () => {
   it('returns the same success message whether or not the email is registered', async () => {
     const app = createApp();
-    const sendSpy = vi
-      .spyOn(EmailService.prototype, 'sendPasswordResetEmail')
-      .mockResolvedValue(undefined);
+    const sendSpy = vi.spyOn(EmailService.prototype, 'sendEmail').mockResolvedValue(undefined);
 
     ensureUserPins(['forgot-password-user']);
     patchUserProfile('forgot-password-user', { email: 'known@example.com' });
@@ -40,9 +38,10 @@ describe('POST /auth/forgot-password', () => {
     });
     expect(sendSpy).toHaveBeenCalledOnce();
     expect(sendSpy).toHaveBeenCalledWith(
-      'forgot-password-user',
-      'known@example.com',
-      expect.any(String),
+      expect.objectContaining({
+        deliveryName: 'password reset email',
+        to: 'known@example.com',
+      }),
     );
 
     sendSpy.mockRestore();
@@ -57,9 +56,7 @@ describe('POST /auth/forgot-password', () => {
 
   it('rate limits repeat reset requests for the same user', async () => {
     const app = createApp();
-    const sendSpy = vi
-      .spyOn(EmailService.prototype, 'sendPasswordResetEmail')
-      .mockResolvedValue(undefined);
+    const sendSpy = vi.spyOn(EmailService.prototype, 'sendEmail').mockResolvedValue(undefined);
     const now = 1_700_000_000_000;
     vi.spyOn(Date, 'now').mockReturnValue(now);
 
@@ -92,7 +89,7 @@ describe('POST /auth/forgot-password', () => {
 
   it('returns an error to the client when email delivery fails for a known user', async () => {
     const app = createApp();
-    vi.spyOn(EmailService.prototype, 'sendPasswordResetEmail').mockRejectedValue(
+    vi.spyOn(EmailService.prototype, 'sendEmail').mockRejectedValue(
       new Error('RESEND_API_KEY is not configured'),
     );
 

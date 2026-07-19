@@ -2,6 +2,14 @@ import type { DayWithTime } from './day.js';
 import type { ProductEntitlement } from './entitlement.js';
 import type { SummationOptions } from './habit.js';
 
+declare const yamlStringBrand: unique symbol;
+
+export type YAMLString = string & { readonly [yamlStringBrand]: 'YAMLString' };
+
+export function yamlString(value: string): YAMLString {
+  return value as YAMLString;
+}
+
 /** JSON error body for 4xx/5xx responses that include `{ error: string }` */
 export type ApiErrorBody = { error: string };
 
@@ -93,7 +101,7 @@ export type UserConfigJson = {
 };
 
 export type UserConfigGetResponse = {
-  text: string;
+  text: YAMLString;
   config: UserConfigJson;
 };
 
@@ -101,7 +109,7 @@ export type UserConfigMigration = [from: string, to: string];
 export type UserConfigDeletion = string;
 
 export type UserConfigPutRequest = {
-  text?: string;
+  text?: YAMLString;
   config?: UserConfigJson;
   migrations?: UserConfigMigration[];
   deletions?: UserConfigDeletion[];

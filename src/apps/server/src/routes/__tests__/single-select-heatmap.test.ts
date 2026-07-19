@@ -1,4 +1,5 @@
 import request from 'supertest';
+import { yamlString } from '@habsum/types/common/misc';
 import { describe, expect, it } from 'vitest';
 import { toDateKey } from '@habsum/utils/date';
 import { createApp } from '../../app.js';
@@ -15,14 +16,14 @@ describe('single-select heatmap', () => {
     if (!created.ok) throw new Error(created.error);
     const written = configService.writeUserConfigText(
       user,
-      `habits:
+      yamlString(`habits:
   read:
     type: single_select
     options: [yes, no]
     history:
       displays: [heatmap]
       period: 3w
-`,
+`),
     );
     if (!written.ok) throw new Error(written.error);
 

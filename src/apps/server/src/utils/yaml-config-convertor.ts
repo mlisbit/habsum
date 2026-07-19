@@ -1,5 +1,6 @@
 // Converts the server UserConfig model into persisted YAML habit config text.
 import yaml from 'js-yaml';
+import { yamlString, type YAMLString } from '@habsum/types/common/misc';
 import type { UserConfig, HabitDef } from '../types/userConfig.js';
 
 const YAML_DUMP_OPTS = { lineWidth: -1, noRefs: true };
@@ -94,7 +95,7 @@ function dumpHabitBlock(habit: HabitDef): string {
 }
 
 export class YAMLConfigConvertor {
-  convert(config: UserConfig): string {
+  convert(config: UserConfig): YAMLString {
     const rootEntries: Record<string, unknown> = {};
     if (config.includeAbsentDaysInAverage) {
       rootEntries.include_absent_days_in_average = true;
@@ -103,9 +104,9 @@ export class YAMLConfigConvertor {
     const habitBlocks = config.habits.map(dumpHabitBlock);
     const habitsYaml = `habits:\n${habitBlocks.join('\n\n')}`;
     const restEntries = Object.entries(rootEntries);
-    if (restEntries.length === 0) return `${habitsYaml}\n`;
+    if (restEntries.length === 0) return yamlString(`${habitsYaml}\n`);
 
     const restYaml = yaml.dump(Object.fromEntries(restEntries), YAML_DUMP_OPTS).trimEnd();
-    return `${restYaml}\n\n${habitsYaml}\n`;
+    return yamlString(`${restYaml}\n\n${habitsYaml}\n`);
   }
 }

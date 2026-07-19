@@ -2,6 +2,7 @@
 import { mkdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import Database from 'better-sqlite3';
+import { yamlString, type YAMLString } from '@habsum/types/common/misc';
 
 const rawDir = process.env.HABSUM_CONFIG_DIR;
 if (!rawDir) {
@@ -147,7 +148,7 @@ function getActiveStoredConfig(user: string): HabitConfigRow | null {
 }
 
 const writeUserConfigTextTransaction = configDb.transaction(
-  (user: string, content: string): void => {
+  (user: string, content: YAMLString): void => {
     const version = getNextHabitConfigVersionStmt.get(user)?.version ?? 1;
     insertHabitConfigStmt.run({ user, version, text: content });
     setActiveHabitConfigVersion(user, version);
@@ -170,15 +171,16 @@ export class ConfigRepository {
       .sort();
   }
 
-  readUserConfigText(user: string): string | null {
-    return getActiveStoredConfig(user)?.text ?? null;
+  readUserConfigText(user: string): YAMLString | null {
+    const text = getActiveStoredConfig(user)?.text;
+    return text == null ? null : yamlString(text);
   }
 
   hasUserConfig(user: string): boolean {
     return getActiveStoredConfig(user) != null;
   }
 
-  writeUserConfigText(user: string, content: string): void {
+  writeUserConfigText(user: string, content: YAMLString): void {
     writeUserConfigTextTransaction(user, content);
   }
 

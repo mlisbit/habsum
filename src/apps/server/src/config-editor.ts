@@ -3,6 +3,7 @@ import type {
   UserConfigDeletion,
   UserConfigJson,
   UserConfigMigration,
+  YAMLString,
 } from '@habsum/types/common/misc';
 import { YAMLConfigParser } from './utils/yaml-config-parser.js';
 
@@ -16,7 +17,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return value != null && typeof value === 'object' && !Array.isArray(value);
 }
 
-function parseConfigRoot(text: string): Record<string, unknown> {
+function parseConfigRoot(text: YAMLString): Record<string, unknown> {
   let parsed: unknown;
   try {
     parsed = yaml.load(text);
@@ -34,7 +35,7 @@ function parseHabitType(def: Record<string, unknown>): 'summation' | 'single_sel
   return def.type === 'single_select' ? 'single_select' : 'summation';
 }
 
-function parseConfigHabitMigrationEntries(text: string): RawHabitEntry[] {
+function parseConfigHabitMigrationEntries(text: YAMLString): RawHabitEntry[] {
   const parsed = parseConfigRoot(text);
   const habits = parsed.habits;
   if (habits == null) return [];
@@ -54,7 +55,7 @@ function parseConfigHabitMigrationEntries(text: string): RawHabitEntry[] {
   });
 }
 
-export function parseConfigJson(user: string, text: string): UserConfigJson {
+export function parseConfigJson(user: string, text: YAMLString): UserConfigJson {
   try {
     return new YAMLConfigParser(user).parse(text);
   } catch (e) {
@@ -65,7 +66,7 @@ export function parseConfigJson(user: string, text: string): UserConfigJson {
 
 export function configResponseParts(
   user: string,
-  text: string,
+  text: YAMLString,
 ): {
   config: UserConfigJson;
 } {
@@ -74,7 +75,7 @@ export function configResponseParts(
   };
 }
 
-function parseConfigMigrationEntries(text: string): RawHabitEntry[] {
+function parseConfigMigrationEntries(text: YAMLString): RawHabitEntry[] {
   return parseConfigHabitMigrationEntries(text);
 }
 
@@ -149,8 +150,8 @@ function removedOptionsWithoutRename(
 }
 
 export function buildConfigMigrations(
-  previousText: string,
-  nextText: string,
+  previousText: YAMLString,
+  nextText: YAMLString,
 ): UserConfigMigration[] {
   const previousEntries = parseConfigMigrationEntries(previousText);
   const nextEntries = parseConfigMigrationEntries(nextText);
@@ -170,7 +171,10 @@ export function buildConfigMigrations(
   return migrations;
 }
 
-export function buildConfigDeletions(previousText: string, nextText: string): UserConfigDeletion[] {
+export function buildConfigDeletions(
+  previousText: YAMLString,
+  nextText: YAMLString,
+): UserConfigDeletion[] {
   const previousEntries = parseConfigMigrationEntries(previousText);
   const nextEntries = parseConfigMigrationEntries(nextText);
   const nextByName = new Map(nextEntries.map((entry) => [entry.name, entry]));

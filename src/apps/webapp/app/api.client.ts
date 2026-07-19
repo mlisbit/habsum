@@ -29,7 +29,9 @@ import type {
   UserConfigPutRequest,
   UserConfigPutResponse,
   UserSessionResponse,
+  YAMLString,
 } from '@habsum/types/common/misc';
+import { yamlString } from '@habsum/types/common/misc';
 import type {
   ForgotPasswordRequest,
   ForgotPasswordResponse,
@@ -68,7 +70,9 @@ export type {
   UserConfigPutRequest,
   UserConfigPutResponse,
   UserSessionResponse,
+  YAMLString,
 } from '@habsum/types/common/misc';
+export { yamlString } from '@habsum/types/common/misc';
 export type {
   Habit,
   HabitHistory,
@@ -365,7 +369,7 @@ export async function getUserConfig(user: string) {
 
 export async function putUserConfig(
   user: string,
-  payload: { text: string } | { config: UserConfigJson },
+  payload: { text: YAMLString } | { config: UserConfigJson },
 ) {
   const body: UserConfigPutRequest = payload;
   return request<UserConfigPutResponse>(`/users/${encodeURIComponent(user)}/config`, {
