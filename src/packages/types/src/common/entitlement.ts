@@ -1,5 +1,5 @@
 /**
- * Product entitlements granted per account (session and `GET /auth/me`).
+ * Product entitlements granted per account (session and `GET /users/me`).
  * Wire values are stable API contract strings.
  */
 export const ProductEntitlement = {

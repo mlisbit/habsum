@@ -1,4 +1,4 @@
-// Service layer for YAML user config persistence plus user-scoped config HTTP orchestration.
+// Service layer for YAML user config persistence and configuration request orchestration.
 import {
   yamlString,
   type UserConfigGetResponse,

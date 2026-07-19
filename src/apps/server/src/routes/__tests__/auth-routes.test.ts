@@ -8,6 +8,33 @@ import { UserAndAuthRepository } from '../../repositories/user-and-auth-reposito
 const configService = new ConfigService();
 const userAndAuthRepository = new UserAndAuthRepository();
 
+describe('session routes', () => {
+  it('logs in through /auth/login, resolves /users/me, and logs out through /auth/logout', async () => {
+    configService.ensureConfigLayout();
+    configService.createEmptyUserConfig('session-route-user');
+    userAndAuthRepository.setUserPin('session-route-user', 'correct-password');
+    const app = createApp();
+
+    const loginRes = await request(app)
+      .post('/auth/login')
+      .send({ user: 'session-route-user', pin: 'correct-password' })
+      .expect(200);
+    const sessionCookie = loginRes.headers['set-cookie']?.[0]?.split(';')[0];
+
+    expect(sessionCookie).toMatch(/^habsum_sid=/);
+    const meRes = await request(app).get('/users/me').set('Cookie', sessionCookie!).expect(200);
+    expect(meRes.body).toMatchObject({ username: 'session-route-user', admin: false });
+
+    await request(app).post('/auth/logout').set('Cookie', sessionCookie!).send({}).expect(200);
+
+    const loggedOutMeRes = await request(app)
+      .get('/users/me')
+      .set('Cookie', sessionCookie!)
+      .expect(200);
+    expect(loggedOutMeRes.body.username).toBeNull();
+  });
+});
+
 describe('POST /auth/forgot-password', () => {
   it('returns the same success message whether or not the email is registered', async () => {
     const app = createApp();
@@ -180,7 +207,7 @@ describe('password reset token flow', () => {
     expect(sessionCookie).toMatch(/^habsum_sid=/);
     expect(userAndAuthRepository.isUserPinValid('invite-setup-user', 'chosen-secret')).toBe(true);
 
-    const meRes = await request(app).get('/auth/me').set('Cookie', sessionCookie!).expect(200);
+    const meRes = await request(app).get('/users/me').set('Cookie', sessionCookie!).expect(200);
 
     expect(meRes.body).toMatchObject({ username: 'invite-setup-user', displayName: 'Alex' });
   });

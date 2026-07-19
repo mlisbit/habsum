@@ -192,6 +192,7 @@ export class AuthService {
         displayName: profile.displayName,
         theme: profile.theme,
         email: profile.email ?? '',
+        admin: this.userAndAuthRepository.isUserAdmin(user),
         createdAt: accountCreatedAtToApi(profile.createdAt),
         entitlements: this.userService.entitlementsForUser(user),
         sessionTokenPrefix: sessionId!.slice(0, 8),

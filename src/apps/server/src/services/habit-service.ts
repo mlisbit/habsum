@@ -1,4 +1,4 @@
-// Service layer for user-scoped habit HTTP requests and response orchestration.
+// Service layer for habit HTTP requests and response orchestration.
 import type { HabitsResponse } from '@habsum/types/api-responses/habits-get';
 import type { HistoryGetResponse } from '@habsum/types/api-responses/history-get';
 import type { PatchHabitResponse } from '@habsum/types/api-responses/habit-patch';

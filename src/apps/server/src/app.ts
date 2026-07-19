@@ -1,9 +1,12 @@
 import express from 'express';
 import cors from 'cors';
-import { authRouter } from './routes/auth-routes.js';
-import { publicRouter } from './routes/public.js';
-import { userScopedRouter } from './routes/user-scoped.js';
-import { usersAdminRouter } from './routes/users-admin.js';
+import { authRouter } from './routes/auth.routes.js';
+import { publicRouter } from './routes/public.routes.js';
+import { usersRouter } from './routes/users.routes.js';
+import { configRouter } from './routes/users/config.routes.js';
+import { dataRouter } from './routes/users/data.routes.js';
+import { habitsRouter } from './routes/users/habits.routes.js';
+import { securityRouter } from './routes/users/security.routes.js';
 
 export function createApp(): express.Application {
   const app = express();
@@ -17,8 +20,11 @@ export function createApp(): express.Application {
 
   app.use(publicRouter);
   app.use(authRouter);
-  app.use(usersAdminRouter);
-  app.use('/users/:user', userScopedRouter);
+  app.use(usersRouter);
+  app.use(securityRouter);
+  app.use(habitsRouter);
+  app.use(configRouter);
+  app.use(dataRouter);
 
   return app;
 }

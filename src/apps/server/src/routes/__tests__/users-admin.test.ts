@@ -95,7 +95,7 @@ describe('GET /users', () => {
     vi.restoreAllMocks();
   });
 
-  it('includes null last login until /auth/me resolves, then returns unix seconds', async () => {
+  it('includes null last login until /users/me resolves, then returns unix seconds', async () => {
     configService.ensureConfigLayout();
     configService.createEmptyUserConfig('login-audit-user');
     configService.writeUserConfigText(
@@ -147,7 +147,7 @@ describe('GET /users', () => {
     vi.spyOn(Date, 'now').mockReturnValue(1_900_000_000_000);
 
     await request(app)
-      .get('/auth/me')
+      .get('/users/me')
       .set('Cookie', `${SESSION_COOKIE_NAME}=${userSession}`)
       .set('x-habsum-web-version', PACKAGE_VERSION)
       .expect(200);

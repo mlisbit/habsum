@@ -1,9 +1,9 @@
 import { Link, Outlet, useLocation, useNavigate, useParams } from '@remix-run/react';
 import type { MetaFunction } from '@remix-run/node';
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { getUserSession, logout } from '~/api.client';
+import { logout } from '~/api.client';
 import { useUser } from '~/context/user';
-import { ensureUserSessionForRoute } from '~/utils/user-session-guard';
+import { ensureUserSessionForRoute, isMeLoggedIn } from '~/utils/user-session-guard';
 import { Button } from '@habsum/ui/components/Button';
 import { Icon } from '@habsum/ui/components/Icon';
 import { Footer } from '~/components/Footer';
@@ -38,7 +38,7 @@ export default function UserSettingsLayout() {
   const location = useLocation();
   const path = location.pathname;
   const base = `/users/${encodeURIComponent(user ?? '')}/settings`;
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const isAdmin = userLoading ? null : isMeLoggedIn(me) && me.username === user ? me.admin : false;
   const isWide = useWideSettingsLayout();
   const [navOpen, setNavOpen] = useState(false);
   const activeSection = useMemo(() => activeSettingsSectionLabel(path), [path]);
@@ -48,22 +48,6 @@ export default function UserSettingsLayout() {
     if (!user || userLoading) return;
     ensureUserSessionForRoute(user, me, { navigate });
   }, [user, me, userLoading, navigate]);
-
-  useEffect(() => {
-    if (!user) return;
-    let cancelled = false;
-    setIsAdmin(null);
-    getUserSession(user)
-      .then((res) => {
-        if (!cancelled) setIsAdmin(res.admin);
-      })
-      .catch(() => {
-        if (!cancelled) setIsAdmin(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [user]);
 
   useEffect(() => {
     if (path.endsWith('/developer') && isAdmin === false) {

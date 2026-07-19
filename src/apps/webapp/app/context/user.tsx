@@ -26,7 +26,7 @@ const LOGGED_OUT_ME: MeGetResponse = {
 type UserContextValue = {
   me: MeGetResponse;
   loading: boolean;
-  /** Re-fetches `GET /auth/me` (e.g. after the user logs their first habit event). */
+  /** Re-fetches `GET /users/me` (e.g. after the user logs their first habit event). */
   refresh: () => Promise<void>;
   isNewUser: boolean;
   /** Whether this account has dismissed the new-user intro toast this app session. */

@@ -21,14 +21,12 @@ import type {
   ListUsersResponse,
   LoginUserResponse,
   LogoutResponse,
-  PurgeUserDataResponse,
   UserConfigDeletion,
   UserConfigGetResponse,
   UserConfigJson,
   UserConfigMigration,
   UserConfigPutRequest,
   UserConfigPutResponse,
-  UserSessionResponse,
   YAMLString,
 } from '@habsum/types/common/misc';
 import { yamlString } from '@habsum/types/common/misc';
@@ -60,7 +58,6 @@ export type {
   ListUsersResponse,
   LoginUserResponse,
   LogoutResponse,
-  PurgeUserDataResponse,
   ServerTimeResponse,
   UserConfigDeletion,
   UserConfigGetResponse,
@@ -69,7 +66,6 @@ export type {
   UserConfigMigration,
   UserConfigPutRequest,
   UserConfigPutResponse,
-  UserSessionResponse,
   YAMLString,
 } from '@habsum/types/common/misc';
 export { yamlString } from '@habsum/types/common/misc';
@@ -110,7 +106,6 @@ const API_PREFIX = OVERRIDE_SERVER_URL ? '' : '/api';
 const SERVER_URL = OVERRIDE_SERVER_URL ?? '';
 const habitHistoryRequests = new Map<string, Promise<HistoryGetResponse>>();
 const userConfigRequests = new Map<string, Promise<UserConfigGetResponse>>();
-const userSessionRequests = new Map<string, Promise<UserSessionResponse>>();
 
 export class ApiRequestError extends Error {
   readonly status: number;
@@ -166,7 +161,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export async function getAuthMe() {
-  return request<MeGetResponse>('/auth/me');
+  return request<MeGetResponse>('/users/me');
 }
 
 export async function requestForgotPassword(email: string) {
@@ -189,7 +184,7 @@ export async function submitResetPassword(body: ResetPasswordRequest) {
 }
 
 export async function logout() {
-  return request<LogoutResponse>('/logout', { method: 'POST', body: JSON.stringify({}) });
+  return request<LogoutResponse>('/auth/logout', { method: 'POST', body: JSON.stringify({}) });
 }
 
 export async function logoutOuc() {
@@ -250,22 +245,10 @@ export async function adminDeleteUser(name: string) {
 }
 
 export async function loginUser(user: string, pin: string) {
-  return request<LoginUserResponse>(`/users/${encodeURIComponent(user)}/login`, {
+  return request<LoginUserResponse>('/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ pin }),
+    body: JSON.stringify({ user, pin }),
   });
-}
-
-export async function getUserSession(user: string) {
-  const path = `/users/${encodeURIComponent(user)}/session`;
-  const pending = userSessionRequests.get(path);
-  if (pending) return pending;
-
-  const next = request<UserSessionResponse>(path).finally(() => {
-    userSessionRequests.delete(path);
-  });
-  userSessionRequests.set(path, next);
-  return next;
 }
 
 export async function getUserSecurity(user: string) {
@@ -398,18 +381,4 @@ export async function downloadUserDataCsv(user: string): Promise<Blob> {
     throw new ApiRequestError(res.status, message);
   }
   return new Blob([bodyText], { type: 'text/csv;charset=utf-8' });
-}
-
-export async function purgeUserData(user: string) {
-  const qs = '';
-  const res = await fetch(
-    `${SERVER_URL}${API_PREFIX}/users/${encodeURIComponent(user)}/data${qs}`,
-    {
-      method: 'DELETE',
-      credentials: 'include',
-      headers: oucSessionRequestHeaders(),
-    },
-  );
-  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-  return (await res.json()) as PurgeUserDataResponse;
 }

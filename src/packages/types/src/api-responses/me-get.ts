@@ -1,7 +1,7 @@
 import type { ProductEntitlement } from '../common/entitlement.js';
 import type { DayWithTime } from '../common/day.js';
 
-/** Logged-out payload for `GET /auth/me` (no session cookie). */
+/** Logged-out payload for `GET /users/me` (no session cookie). */
 export type MeGetLoggedOut = {
   username: null;
   displayName: null;
@@ -12,10 +12,12 @@ export type MeGetLoggedOut = {
   entitlements: [];
 };
 
-/** Authenticated payload for `GET /auth/me`. */
+/** Authenticated payload for `GET /users/me`. */
 export type MeGetLoggedIn = {
   /** Login id / YAML config id (same key as `PATCH /users/:user` body for renames). */
   username: string;
+  /** Whether the account may perform administrator-only operations. */
+  admin: boolean;
   /** Friendly name when set; `null` if unset. */
   displayName: string | null;
   /** Login email (unique); also accepted on the login form instead of username. */
@@ -37,6 +39,6 @@ export type MeGetLoggedIn = {
 };
 
 /**
- * GET /auth/me — current session from HttpOnly cookie (`MeGetLoggedOut` when unauthenticated).
+ * GET /users/me — current session from HttpOnly cookie (`MeGetLoggedOut` when unauthenticated).
  */
 export type MeGetResponse = MeGetLoggedOut | MeGetLoggedIn;

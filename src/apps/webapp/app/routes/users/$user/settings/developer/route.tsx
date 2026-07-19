@@ -7,7 +7,6 @@ import {
   createOucSession,
   createUser,
   getDeveloper,
-  getUserSession,
   listUsers,
   type DeveloperGetResponse,
 } from '~/api.client';
@@ -20,6 +19,8 @@ import { InfoText } from '@habsum/ui/components/InfoText';
 import { Input } from '@habsum/ui/components/Input';
 import { ModalBody, ModalFooter, ModalHeader, useModal } from '@habsum/ui/contexts/modal';
 import { useToast } from '@habsum/ui/contexts/toast';
+import { useUser } from '~/context/user';
+import { isMeLoggedIn } from '~/utils/user-session-guard';
 
 const clockFormat: Intl.DateTimeFormatOptions = {
   weekday: 'long',
@@ -515,12 +516,17 @@ function UserRowIconAction({ tooltip, icon, ariaLabel, onClick }: UserRowIconAct
 export default function UserSettingsDeveloper() {
   const navigate = useNavigate();
   const { user } = useParams();
+  const { me, loading: userLoading } = useUser();
   const [developerData, setDeveloperData] = useState<DeveloperGetResponse | null>(null);
   const [developerError, setDeveloperError] = useState<string | null>(null);
   const [browserNow, setBrowserNow] = useState(() => new Date());
   const [users, setUsers] = useState<ListUserItem[] | null>(null);
   const [usersError, setUsersError] = useState<string | null>(null);
-  const [canViewDeveloper, setCanViewDeveloper] = useState<boolean | null>(null);
+  const canViewDeveloper = userLoading
+    ? null
+    : isMeLoggedIn(me) && me.username === user
+      ? me.admin
+      : false;
   const { present, closeModal } = useModal();
   const { showToast } = useToast();
 
@@ -536,28 +542,10 @@ export default function UserSettingsDeveloper() {
   }, []);
 
   useEffect(() => {
-    if (!user) return;
-    let cancelled = false;
-    setCanViewDeveloper(null);
-    getUserSession(user)
-      .then((res) => {
-        if (!cancelled) {
-          setCanViewDeveloper(res.admin);
-          if (!res.admin) {
-            navigate(`/users/${encodeURIComponent(user)}/settings/account`);
-          }
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setCanViewDeveloper(false);
-          navigate(`/users/${encodeURIComponent(user)}/settings/account`);
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [navigate, user]);
+    if (user && canViewDeveloper === false) {
+      navigate(`/users/${encodeURIComponent(user)}/settings/account`);
+    }
+  }, [canViewDeveloper, navigate, user]);
 
   useEffect(() => {
     let cancelled = false;

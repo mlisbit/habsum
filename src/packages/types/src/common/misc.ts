@@ -25,9 +25,9 @@ export type ListUserItem = {
   username: string;
   displayName: string | null;
   email: string;
-  /** Unix timestamp in seconds. `null` means `/auth/me` has never resolved for this user. */
+  /** Unix timestamp in seconds. `null` means `/users/me` has never resolved for this user. */
   lastLoginAt: number | null;
-  /** Last API/web version pair observed when `/auth/me` resolved for this user. */
+  /** Last API/web version pair observed when `/users/me` resolved for this user. */
   webAndApiVersion: string | null;
   /** Number of habits currently configured in the user's YAML. */
   habitCount: number;
@@ -55,24 +55,11 @@ export type CreateUserResponse = {
 /** PATCH /users?name=… — admin generates a new temporary login password. */
 export type AdminResetUserPasswordResponse = { ok: true; user: string; password: string };
 
-export type LoginUserRequest = { pin?: string };
+export type LoginUserRequest = { user?: string; pin?: string };
 
 export type LoginUserResponse = { ok: true; user: string };
 
 export type LogoutResponse = { ok: true };
-
-export type UserSessionResponse = {
-  /** Login id; aligned with `GET /auth/me` (`MeGetLoggedIn.username`). */
-  username: string;
-  admin: boolean;
-  displayName: string | null;
-  email: string;
-  theme: string | null;
-  /** Account creation time as UTC day + time. */
-  createdAt: DayWithTime;
-  /** Same entitlement list as `GET /auth/me` (see `MeGetLoggedIn['entitlements']`). */
-  entitlements: ProductEntitlement[];
-};
 
 export type UserConfigJsonHabit = {
   name: string;

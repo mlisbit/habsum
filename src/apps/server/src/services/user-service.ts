@@ -1,10 +1,8 @@
-// Service layer for user-scoped profile, security, config, and data-management requests.
+// Service layer for user profile, security, configuration, and data-management requests.
 import type {
-  PurgeUserDataResponse,
   UserConfigGetResponse,
   UserConfigPutRequest,
   UserConfigPutResponse,
-  UserSessionResponse,
 } from '@habsum/types/common/misc';
 import { ProductEntitlement } from '@habsum/types/common/entitlement';
 import type { UserPasswordChangeRequest } from '@habsum/types/api-responses/user-password-change';
@@ -175,29 +173,6 @@ export class UserService {
     return { status: 200, body: { ok: true } };
   }
 
-  getSession(user: string): UserServiceResult<UserSessionResponse> {
-    const invalid = this.validateUserId(user);
-    if (invalid) return invalid;
-
-    const config = this.loadUserConfig(user);
-    if (!config.ok) return config;
-    this.userAndAuthRepository.ensureUserPins([user]);
-
-    const profile = this.userAndAuthRepository.getUserProfile(user);
-    return {
-      status: 200,
-      body: {
-        username: user,
-        admin: this.userAndAuthRepository.isUserAdmin(user),
-        displayName: profile.displayName,
-        theme: profile.theme,
-        email: profile.email ?? '',
-        createdAt: accountCreatedAtToApi(profile.createdAt),
-        entitlements: this.entitlementsForUser(user),
-      },
-    };
-  }
-
   changePassword(
     user: string,
     body: Partial<UserPasswordChangeRequest> | undefined,
@@ -313,14 +288,6 @@ export class UserService {
     body: Partial<UserConfigPutRequest> | undefined,
   ): UserServiceResult<UserConfigPutResponse> {
     return this.configService.putUserConfig({ user, body });
-  }
-
-  deleteUserData(user: string): UserServiceResult<PurgeUserDataResponse> {
-    const config = this.loadUserConfig(user);
-    if (!config.ok) return config;
-
-    this.userAndAuthRepository.purgeUserData(user);
-    return { status: 200, body: { ok: true, user } };
   }
 
   private validateUserId(user: string): UserServiceResult<never> | null {

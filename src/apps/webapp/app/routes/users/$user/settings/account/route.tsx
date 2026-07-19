@@ -7,7 +7,6 @@ import type { ProductEntitlement } from '@habsum/types/common/entitlement';
 import {
   deleteUser,
   downloadUserDataCsv,
-  getUserSession,
   logout,
   patchUser,
   type UsersPatchRequest,
@@ -19,6 +18,7 @@ import { Input } from '@habsum/ui/components/Input';
 import { useModal } from '@habsum/ui/contexts/modal';
 import { useToast } from '@habsum/ui/contexts/toast';
 import { useUser } from '~/context/user';
+import { isMeLoggedIn } from '~/utils/user-session-guard';
 import { UnsavedChangesModal } from '~/components/UnsavedChangesModal';
 import {
   accountServerErrorToFieldMap,
@@ -95,7 +95,7 @@ function SaveFieldErrors({
 
 export default function UserSettingsAccount() {
   const navigate = useNavigate();
-  const { refresh } = useUser();
+  const { me, refresh } = useUser();
   const { user: routeUser } = useParams();
   const [saved, setSaved] = useState<AccountSnapshot | null>(null);
   const [draftUsername, setDraftUsername] = useState('');
@@ -114,8 +114,8 @@ export default function UserSettingsAccount() {
   }, [saved]);
 
   const loadAccount = useCallback(async () => {
-    if (!routeUser) return;
-    const res = await getUserSession(routeUser);
+    if (!routeUser || !isMeLoggedIn(me) || me.username !== routeUser) return;
+    const res = me;
     const display = res.displayName ?? '';
     const email = res.email ?? '';
     const theme: UiThemePreference =
@@ -135,7 +135,7 @@ export default function UserSettingsAccount() {
     setDraftTheme(theme);
     syncTheme(theme);
     setSaveFieldErrors({});
-  }, [routeUser]);
+  }, [me, routeUser]);
 
   useEffect(() => {
     if (!routeUser) return;
