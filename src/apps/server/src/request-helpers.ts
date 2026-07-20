@@ -9,10 +9,10 @@ export function isSafeLoginId(loginId: string): boolean {
   return isSafeConfigUserId(loginId);
 }
 
-export function parsePin(value: unknown): string | null {
+export function parsePassword(value: unknown): string | null {
   if (typeof value !== 'string') return null;
-  const pin = value.trim();
-  return pin.length > 0 ? pin : null;
+  const password = value.trim();
+  return password.length > 0 ? password : null;
 }
 
 /** Stored as plain strings; extend as new themes ship. */

@@ -17,7 +17,6 @@ const userAndAuthRepository = new UserAndAuthRepository();
 
 function adminSessionCookie(): string {
   configService.ensureConfigLayout();
-  userAndAuthRepository.ensureUserPins(['admin']);
   if (userAndAuthRepository.countAdmins() === 0) {
     userAndAuthRepository.createInitialAdminUser('admin', 'secret');
   }
@@ -36,7 +35,7 @@ describe('POST /users', () => {
 
     await request(app).post('/users').send({ email: 'nobody@example.com' }).expect(401);
 
-    userAndAuthRepository.ensureUserPins(['regular']);
+    userAndAuthRepository.setUserPassword('regular', 'test-password');
     const regularSession = userAndAuthRepository.createUserSession('regular', 3600);
 
     await request(app)
@@ -97,6 +96,7 @@ describe('GET /users', () => {
 
   it('includes null last login until /users/me resolves, then returns unix seconds', async () => {
     configService.ensureConfigLayout();
+    configService.createEmptyUserConfig('config-without-account');
     configService.createEmptyUserConfig('login-audit-user');
     configService.writeUserConfigText(
       'login-audit-user',
@@ -108,7 +108,7 @@ describe('GET /users', () => {
     options: [none, light, moderate, heavy]
 `),
     );
-    userAndAuthRepository.ensureUserPins(['login-audit-user']);
+    userAndAuthRepository.setUserPassword('login-audit-user', 'test-password');
     userAndAuthRepository.patchUserProfile('login-audit-user', {
       displayName: 'Login Audit',
       email: 'login-audit@example.com',
@@ -132,6 +132,11 @@ describe('GET /users', () => {
 
     const beforeLoginRes = await request(app).get('/users').set('Cookie', adminSessionCookie());
     expect(beforeLoginRes.status).toBe(200);
+    expect(
+      beforeLoginRes.body.users.some(
+        (user: { username: string }) => user.username === 'config-without-account',
+      ),
+    ).toBe(false);
     expect(beforeLoginRes.body.users).toContainEqual({
       username: 'login-audit-user',
       displayName: 'Login Audit',

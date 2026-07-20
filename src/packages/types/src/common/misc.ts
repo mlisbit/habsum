@@ -55,7 +55,7 @@ export type CreateUserResponse = {
 /** PATCH /users?name=… — admin generates a new temporary login password. */
 export type AdminResetUserPasswordResponse = { ok: true; user: string; password: string };
 
-export type LoginUserRequest = { user?: string; pin?: string };
+export type LoginUserRequest = { user?: string; password?: string };
 
 export type LoginUserResponse = { ok: true; user: string };
 

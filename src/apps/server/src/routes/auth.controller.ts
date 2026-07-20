@@ -5,6 +5,11 @@ import type { LoginUserRequest } from '@habsum/types/common/misc';
 import type { Request, Response } from 'express';
 import { AuthService } from '../services/auth-service.js';
 import {
+  sendAsyncServiceResult,
+  sendServiceError,
+  sendServiceResult,
+} from './controller-errors.js';
+import {
   appendClearSessionCookie,
   appendSessionCookie,
   getOucSessionHeader,
@@ -15,40 +20,45 @@ const authService = new AuthService();
 
 export const authController = {
   postLogin(req: Request<unknown, unknown, LoginUserRequest>, res: Response) {
-    const result = authService.login(req.body?.user ?? '', req.body);
-    if (result.sessionId) appendSessionCookie(res, result.sessionId);
-    return res.status(result.status).json(result.body);
+    try {
+      const result = authService.login(req.body?.user ?? '', req.body);
+      appendSessionCookie(res, result.sessionId);
+      return res.json(result.data);
+    } catch (error) {
+      return sendServiceError(error, res);
+    }
   },
 
   async postForgotPassword(req: Request<unknown, unknown, ForgotPasswordRequest>, res: Response) {
-    const result = await authService.forgotPassword(req.body);
-    return res.status(result.status).json(result.body);
+    return sendAsyncServiceResult(res, () => authService.forgotPassword(req.body));
   },
 
   getResetPassword(req: Request, res: Response) {
-    const result = authService.validateResetPassword(req.query.token);
-    return res.status(result.status).json(result.body);
+    return sendServiceResult(res, () => authService.validateResetPassword(req.query.token));
   },
 
   postResetPassword(req: Request<unknown, unknown, ResetPasswordRequest>, res: Response) {
-    const result = authService.resetPassword(req.body);
-    if (result.sessionId) appendSessionCookie(res, result.sessionId);
-    return res.status(result.status).json(result.body);
+    try {
+      const result = authService.resetPassword(req.body);
+      if (result.sessionId) appendSessionCookie(res, result.sessionId);
+      return res.json(result.data);
+    } catch (error) {
+      return sendServiceError(error, res);
+    }
   },
 
   postOuc(req: Request<unknown, unknown, OucLoginRequest>, res: Response) {
-    const result = authService.loginWithOuc(req.body);
-    return res.status(result.status).json(result.body);
+    return sendServiceResult(res, () => authService.loginWithOuc(req.body));
   },
 
   postOucLogout(req: Request, res: Response) {
-    const result = authService.logoutOuc(getOucSessionHeader(req) ?? null);
-    return res.status(result.status).json(result.body);
+    authService.logoutOuc(getOucSessionHeader(req) ?? null);
+    return res.json({ ok: true });
   },
 
   postLogout(req: Request, res: Response) {
-    const result = authService.logout(getSessionCookieValue(req.headers.cookie) ?? null);
+    authService.logout(getSessionCookieValue(req.headers.cookie) ?? null);
     appendClearSessionCookie(res);
-    return res.status(result.status).json(result.body);
+    return res.json({ ok: true });
   },
 };

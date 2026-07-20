@@ -29,7 +29,7 @@ describe('PATCH /users/:user/habits summation history', () => {
   it('returns history for the view day after the total is updated', async () => {
     const user = 'patch-history-user';
     writeSummationUserConfig(user);
-    userAndAuthRepository.ensureUserPins([user]);
+    userAndAuthRepository.setUserPassword(user, 'test-password');
     const session = userAndAuthRepository.createUserSession(user, 3600);
     const app = createApp();
 
@@ -72,7 +72,7 @@ describe('PATCH /users/:user/habits summation history', () => {
       options: ['100']
       show_longest: true`,
     );
-    userAndAuthRepository.ensureUserPins([user]);
+    userAndAuthRepository.setUserPassword(user, 'test-password');
     const session = userAndAuthRepository.createUserSession(user, 3600);
     const app = createApp();
 

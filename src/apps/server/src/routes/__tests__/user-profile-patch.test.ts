@@ -14,6 +14,7 @@ describe('PATCH /users/:user profile', () => {
     const user = 'theme-patch-user';
     const created = configService.createEmptyUserConfig(user);
     expect(created.ok).toBe(true);
+    userAndAuthRepository.setUserPassword(user, 'test-password');
     userAndAuthRepository.patchUserProfile(user, { theme: 'dark' });
 
     const app = createApp();
@@ -33,6 +34,7 @@ describe('PATCH /users/:user profile', () => {
     const user = 'theme-patch-system-user';
     const created = configService.createEmptyUserConfig(user);
     expect(created.ok).toBe(true);
+    userAndAuthRepository.setUserPassword(user, 'test-password');
     userAndAuthRepository.patchUserProfile(user, { theme: 'dark' });
 
     const app = createApp();

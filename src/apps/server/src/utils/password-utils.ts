@@ -25,14 +25,14 @@ export function isPasswordHashed(stored: string): boolean {
   return stored.startsWith(SCRYPT_PREFIX);
 }
 
-/** Returns a salted scrypt hash suitable for storing in `users.pin`. */
+/** Returns a salted scrypt password hash for persistent storage. */
 export function hashPassword(plain: string): string {
   const salt = randomBytes(SALT_LEN);
   const hash = scryptSync(plain, salt, KEY_LEN, SCRYPT_OPTIONS);
   return `${SCRYPT_PREFIX}${salt.toString('base64url')}$${hash.toString('base64url')}`;
 }
 
-/** Compares a plain password to a stored hash (or legacy plain-text pin). */
+/** Compares a plain password to a stored hash or a legacy plain-text password. */
 export function verifyPassword(plain: string, stored: string): boolean {
   if (!isPasswordHashed(stored)) {
     return plain === stored;

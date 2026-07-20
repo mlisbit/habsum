@@ -1,47 +1,24 @@
-// Service layer for auth route decisions, validation, and auth-related DB mutations.
-import type { MeGetResponse } from '@habsum/types/api-responses/me-get';
-import type {
-  ForgotPasswordRequest,
-  ForgotPasswordResponse,
-} from '@habsum/types/api-responses/forgot-password-post';
-import type { ResetPasswordValidateResponse } from '@habsum/types/api-responses/reset-password-get';
-import type {
-  ResetPasswordRequest,
-  ResetPasswordResponse,
-} from '@habsum/types/api-responses/reset-password-post';
-import type { OucLoginRequest, OucLoginResponse } from '@habsum/types/api-responses/ouc-post';
-import type {
-  LoginUserRequest,
-  LoginUserResponse,
-  LogoutResponse,
-} from '@habsum/types/common/misc';
+// Domain operations for authentication, sessions, and password recovery.
 import { accountCreatedAtToApi } from '@habsum/types/common/day';
 import { PASSWORD_RESET_TOKEN_TTL_SECONDS } from '../constants.js';
 import { isDevelopment } from '../env.js';
-import { isPlausibleEmail, isSafeLoginId, parsePin } from '../request-helpers.js';
+import { isPlausibleEmail, isSafeLoginId, parsePassword } from '../request-helpers.js';
 import { PACKAGE_VERSION } from '../version.js';
 import { ConfigService } from './config-service.js';
 import { EmailService } from './email-service.js';
 import { UserService } from './user-service.js';
 import { UserAndAuthRepository } from '../repositories/user-and-auth-repository.js';
+import { ServiceError } from '../service-error.js';
 
-type AuthServiceResult<T> = {
-  status: number;
-  body: T | { error: string };
-};
+type LoginInput = { password?: unknown };
+type ForgotPasswordInput = { email?: unknown };
+type ResetPasswordInput = { token?: unknown; newPassword?: unknown };
+type OucLoginInput = { token?: unknown };
 
-type ResetPasswordResult = AuthServiceResult<ResetPasswordResponse> & {
-  sessionId?: string;
-};
-
-type LoginResult = AuthServiceResult<LoginUserResponse> & {
-  sessionId?: string;
-};
-
-const GENERIC_FORGOT_PASSWORD_RESPONSE: ForgotPasswordResponse = {
+const GENERIC_FORGOT_PASSWORD_RESULT = {
   ok: true,
   message: 'If an account exists for that email, reset instructions will be sent shortly.',
-};
+} as const;
 
 function resetPasswordUrl(token: string): string {
   const base = (process.env.HABSUM_WEBAPP_URL ?? 'http://localhost:3000').replace(/\/$/, '');
@@ -127,89 +104,79 @@ export class AuthService {
     private readonly userService = new UserService(configService, userAndAuthRepository),
   ) {}
 
-  login(loginId: string, body: Partial<LoginUserRequest> | undefined): LoginResult {
+  login(loginId: string, body: LoginInput | undefined) {
     if (!isSafeLoginId(loginId)) {
-      return { status: 400, body: { error: 'invalid login' } };
+      throw new ServiceError('bad_request', 'invalid login');
     }
 
-    const pin = parsePin(body?.pin);
-    if (pin == null) {
-      return { status: 400, body: { error: 'pin is required' } };
+    const password = parsePassword(body?.password);
+    if (password == null) {
+      throw new ServiceError('bad_request', 'password is required');
     }
 
     const user = this.userAndAuthRepository.resolveUsernameByLoginId(loginId);
     if (!user) {
-      return { status: 401, body: { error: 'invalid password' } };
+      throw new ServiceError('unauthorized', 'invalid password');
     }
 
     try {
       const config = this.configService.loadUserConfig(user);
       if (!config) {
-        return { status: 404, body: { error: 'user not found' } };
+        throw new ServiceError('not_found', 'user not found');
       }
     } catch (e) {
       if (e instanceof ConfigService.ConfigValidationError) {
-        return { status: 400, body: { error: e.message } };
+        throw new ServiceError('bad_request', e.message);
       }
       throw e;
     }
 
-    this.userAndAuthRepository.ensureUserPins([user]);
-    if (!this.userAndAuthRepository.isUserPinValid(user, pin)) {
-      return { status: 401, body: { error: 'invalid password' } };
+    if (!this.userAndAuthRepository.isUserPasswordValid(user, password)) {
+      throw new ServiceError('unauthorized', 'invalid password');
     }
 
     const sessionId = this.userAndAuthRepository.createUserSession(user);
-    return { status: 200, body: { ok: true, user }, sessionId };
+    return { data: { ok: true as const, user }, sessionId };
   }
 
-  getMe(sessionId: string | null, webVersionHeader: unknown): AuthServiceResult<MeGetResponse> {
+  getMe(sessionId: string | null, webVersionHeader: unknown) {
     const user = sessionId ? this.userAndAuthRepository.getUsernameForSession(sessionId) : null;
     if (!user) {
       return {
-        status: 200,
-        body: {
-          username: null,
-          displayName: null,
-          theme: null,
-          email: null,
-          createdAt: null,
-          entitlements: [],
-        },
+        username: null,
+        displayName: null,
+        theme: null,
+        email: null,
+        createdAt: null,
+        entitlements: [] as [],
       };
     }
 
-    this.userAndAuthRepository.ensureUserPins(this.configService.listUsers());
     this.userAndAuthRepository.recordUserLoginMetadata(
       user,
       webAndApiVersionForHeader(webVersionHeader),
     );
     const profile = this.userAndAuthRepository.getUserProfile(user);
     return {
-      status: 200,
-      body: {
-        username: user,
-        displayName: profile.displayName,
-        theme: profile.theme,
-        email: profile.email ?? '',
-        admin: this.userAndAuthRepository.isUserAdmin(user),
-        createdAt: accountCreatedAtToApi(profile.createdAt),
-        entitlements: this.userService.entitlementsForUser(user),
-        sessionTokenPrefix: sessionId!.slice(0, 8),
-      },
+      username: user,
+      displayName: profile.displayName,
+      theme: profile.theme,
+      email: profile.email ?? '',
+      admin: this.userAndAuthRepository.isUserAdmin(user),
+      createdAt: accountCreatedAtToApi(profile.createdAt),
+      entitlements: this.userService.entitlementsForUser(user),
+      sessionTokenPrefix: sessionId!.slice(0, 8),
     };
   }
 
-  async forgotPassword(
-    body: Partial<ForgotPasswordRequest> | undefined,
-  ): Promise<AuthServiceResult<ForgotPasswordResponse>> {
+  async forgotPassword(body: ForgotPasswordInput | undefined) {
     const rawEmail = body?.email;
     if (typeof rawEmail !== 'string') {
-      return { status: 400, body: { error: 'email is required' } };
+      throw new ServiceError('bad_request', 'email is required');
     }
     const email = rawEmail.trim().toLowerCase();
     if (!isPlausibleEmail(email)) {
-      return { status: 400, body: { error: 'invalid email' } };
+      throw new ServiceError('bad_request', 'invalid email');
     }
 
     const resolvedUsername = this.resolveUsernameForPasswordReset(email);
@@ -217,19 +184,16 @@ export class AuthService {
       console.log(`[habsum] forgot-password: no account for ${email} (generic success returned)`);
     }
     if (!resolvedUsername) {
-      return { status: 200, body: GENERIC_FORGOT_PASSWORD_RESPONSE };
+      return GENERIC_FORGOT_PASSWORD_RESULT;
     }
 
     const retryAfterSeconds =
       this.userAndAuthRepository.passwordResetRetryAfterSeconds(resolvedUsername);
     if (retryAfterSeconds > 0) {
       return {
-        status: 200,
-        body: {
-          ok: true,
-          message: 'please wait a little while longer',
-          timeout: retryAfterSeconds,
-        },
+        ok: true as const,
+        message: 'please wait a little while longer',
+        timeout: retryAfterSeconds,
       };
     }
 
@@ -243,97 +207,90 @@ export class AuthService {
     } catch (e) {
       this.userAndAuthRepository.consumePasswordResetToken(tokenId);
       console.error('[habsum] failed to send password reset email', e);
-      return { status: 503, body: { error: 'Something went wrong with your request' } };
+      throw new ServiceError('unavailable', 'Something went wrong with your request');
     }
 
-    return { status: 200, body: GENERIC_FORGOT_PASSWORD_RESPONSE };
+    return GENERIC_FORGOT_PASSWORD_RESULT;
   }
 
-  validateResetPassword(token: unknown): AuthServiceResult<ResetPasswordValidateResponse> {
+  validateResetPassword(token: unknown) {
     const normalizedToken = typeof token === 'string' ? token.trim() : '';
     if (!normalizedToken) {
-      return { status: 400, body: { error: 'token is required' } };
+      throw new ServiceError('bad_request', 'token is required');
     }
 
     const row = this.userAndAuthRepository.lookupValidPasswordResetToken(normalizedToken);
     if (!row) {
-      return { status: 400, body: { error: 'invalid or expired reset link' } };
+      throw new ServiceError('bad_request', 'invalid or expired reset link');
     }
 
     return {
-      status: 200,
-      body: {
-        ok: true,
-        purpose: row.purpose,
-        ...(row.purpose === 'invite'
-          ? { displayName: this.userAndAuthRepository.getUserProfile(row.userId).displayName }
-          : {}),
-      },
+      ok: true,
+      purpose: row.purpose,
+      ...(row.purpose === 'invite'
+        ? { displayName: this.userAndAuthRepository.getUserProfile(row.userId).displayName }
+        : {}),
     };
   }
 
-  resetPassword(body: Partial<ResetPasswordRequest> | undefined): ResetPasswordResult {
+  resetPassword(body: ResetPasswordInput | undefined) {
     const token = typeof body?.token === 'string' ? body.token.trim() : '';
     if (!token) {
-      return { status: 400, body: { error: 'token is required' } };
+      throw new ServiceError('bad_request', 'token is required');
     }
 
-    const newPin = parsePin(body?.newPin);
-    if (newPin == null) {
-      return { status: 400, body: { error: 'new password is required' } };
+    const newPassword = parsePassword(body?.newPassword);
+    if (newPassword == null) {
+      throw new ServiceError('bad_request', 'new password is required');
     }
 
     const row = this.userAndAuthRepository.lookupValidPasswordResetToken(token);
     if (!row) {
-      return { status: 400, body: { error: 'invalid or expired reset link' } };
+      throw new ServiceError('bad_request', 'invalid or expired reset link');
     }
 
-    if (!this.userAndAuthRepository.isNewLoginPasswordAllowed(row.userId, newPin)) {
-      return {
-        status: 400,
-        body: { error: 'new password must be different from the current one' },
-      };
+    if (!this.userAndAuthRepository.isNewLoginPasswordAllowed(row.userId, newPassword)) {
+      throw new ServiceError('bad_request', 'new password must be different from the current one');
     }
 
     if (!this.userAndAuthRepository.consumePasswordResetToken(row.id)) {
-      return { status: 400, body: { error: 'invalid or expired reset link' } };
+      throw new ServiceError('bad_request', 'invalid or expired reset link');
     }
 
-    this.userAndAuthRepository.resetLoginPassword(row.userId, newPin);
+    if (!this.userAndAuthRepository.resetLoginPassword(row.userId, newPassword)) {
+      throw new ServiceError('bad_request', 'account no longer exists');
+    }
 
     if (row.purpose === 'invite') {
-      this.userAndAuthRepository.ensureUserPins([row.userId]);
       const sessionId = this.userAndAuthRepository.createUserSession(row.userId);
-      return { status: 200, body: { ok: true, user: row.userId }, sessionId };
+      return { data: { ok: true as const, user: row.userId }, sessionId };
     }
 
-    return { status: 200, body: { ok: true } };
+    return { data: { ok: true as const } };
   }
 
-  loginWithOuc(body: Partial<OucLoginRequest> | undefined): AuthServiceResult<OucLoginResponse> {
+  loginWithOuc(body: OucLoginInput | undefined) {
     const token = typeof body?.token === 'string' ? body.token.trim() : '';
     if (!token || !this.userAndAuthRepository.isOucSessionId(token)) {
-      return { status: 400, body: { error: 'invalid token' } };
+      throw new ServiceError('bad_request', 'invalid token');
     }
 
     const user = this.userAndAuthRepository.getUsernameForSession(token);
     if (!user) {
-      return { status: 401, body: { error: 'invalid or expired token' } };
+      throw new ServiceError('unauthorized', 'invalid or expired token');
     }
 
-    return { status: 200, body: { ok: true, user } };
+    return { ok: true as const, user };
   }
 
-  logoutOuc(token: string | null): AuthServiceResult<LogoutResponse> {
+  logoutOuc(token: string | null): void {
     if (token && this.userAndAuthRepository.isOucSessionId(token)) {
       this.userAndAuthRepository.revokeUserSession(token);
     }
-    return { status: 200, body: { ok: true } };
   }
 
-  logout(sessionId: string | null): AuthServiceResult<LogoutResponse> {
+  logout(sessionId: string | null): void {
     if (sessionId) this.userAndAuthRepository.revokeUserSession(sessionId);
-    return { status: 200, body: { ok: true } };
   }
 
   async sendInviteEmail(user: string, email: string, displayName: string): Promise<void> {

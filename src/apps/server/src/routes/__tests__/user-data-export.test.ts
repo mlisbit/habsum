@@ -32,7 +32,7 @@ describe('GET /users/:user/data', () => {
   it('downloads daily selects and summation events as csv', async () => {
     const user = 'export-data-user';
     writeExportUserConfig(user);
-    userAndAuthRepository.ensureUserPins([user]);
+    userAndAuthRepository.setUserPassword(user, 'test-password');
     habitRepository.applyHabitMutation({
       kind: 'set_select',
       user,

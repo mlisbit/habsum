@@ -1,6 +1,6 @@
-/** POST /users/:user/new-password — set login PIN when `forcePasswordReset` is active. */
+/** POST /users/:user/new-password — set a login password when `forcePasswordReset` is active. */
 export type UserNewPasswordRequest = {
-  newPin: string;
+  newPassword: string;
 };
 
 export type UserNewPasswordResponse = { ok: true };

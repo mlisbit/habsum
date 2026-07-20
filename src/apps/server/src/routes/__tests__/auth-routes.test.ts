@@ -12,12 +12,12 @@ describe('session routes', () => {
   it('logs in through /auth/login, resolves /users/me, and logs out through /auth/logout', async () => {
     configService.ensureConfigLayout();
     configService.createEmptyUserConfig('session-route-user');
-    userAndAuthRepository.setUserPin('session-route-user', 'correct-password');
+    userAndAuthRepository.setUserPassword('session-route-user', 'correct-password');
     const app = createApp();
 
     const loginRes = await request(app)
       .post('/auth/login')
-      .send({ user: 'session-route-user', pin: 'correct-password' })
+      .send({ user: 'session-route-user', password: 'correct-password' })
       .expect(200);
     const sessionCookie = loginRes.headers['set-cookie']?.[0]?.split(';')[0];
 
@@ -40,7 +40,7 @@ describe('POST /auth/forgot-password', () => {
     const app = createApp();
     const sendSpy = vi.spyOn(EmailService.prototype, 'sendEmail').mockResolvedValue(undefined);
 
-    userAndAuthRepository.ensureUserPins(['forgot-password-user']);
+    userAndAuthRepository.setUserPassword('forgot-password-user', 'test-password');
     userAndAuthRepository.patchUserProfile('forgot-password-user', { email: 'known@example.com' });
 
     const unknownRes = await request(app)
@@ -87,7 +87,7 @@ describe('POST /auth/forgot-password', () => {
     const now = 1_700_000_000_000;
     vi.spyOn(Date, 'now').mockReturnValue(now);
 
-    userAndAuthRepository.ensureUserPins(['rate-limit-user']);
+    userAndAuthRepository.setUserPassword('rate-limit-user', 'test-password');
     userAndAuthRepository.patchUserProfile('rate-limit-user', { email: 'ratelimit@example.com' });
 
     await request(app)
@@ -120,7 +120,7 @@ describe('POST /auth/forgot-password', () => {
       new Error('RESEND_API_KEY is not configured'),
     );
 
-    userAndAuthRepository.ensureUserPins(['email-fail-user']);
+    userAndAuthRepository.setUserPassword('email-fail-user', 'test-password');
     userAndAuthRepository.patchUserProfile('email-fail-user', { email: 'fail@example.com' });
 
     const res = await request(app)
@@ -137,8 +137,8 @@ describe('POST /auth/forgot-password', () => {
 describe('password reset token flow', () => {
   it('validates and consumes a reset token to change the password', async () => {
     const app = createApp();
-    userAndAuthRepository.ensureUserPins(['reset-token-user']);
-    userAndAuthRepository.setUserPin('reset-token-user', 'old-secret');
+    userAndAuthRepository.setUserPassword('reset-token-user', 'test-password');
+    userAndAuthRepository.setUserPassword('reset-token-user', 'old-secret');
 
     const { token } = userAndAuthRepository.issuePasswordResetToken('reset-token-user', 'reset');
 
@@ -150,18 +150,18 @@ describe('password reset token flow', () => {
 
     await request(app)
       .post('/auth/reset-password')
-      .send({ token, newPin: 'new-secret' })
+      .send({ token, newPassword: 'new-secret' })
       .expect(200);
 
-    expect(userAndAuthRepository.isUserPinValid('reset-token-user', 'new-secret')).toBe(true);
-    expect(userAndAuthRepository.isUserPinValid('reset-token-user', 'old-secret')).toBe(false);
+    expect(userAndAuthRepository.isUserPasswordValid('reset-token-user', 'new-secret')).toBe(true);
+    expect(userAndAuthRepository.isUserPasswordValid('reset-token-user', 'old-secret')).toBe(false);
 
     await request(app).get('/auth/reset-password').query({ token }).expect(400);
   });
 
   it('rejects expired reset tokens', async () => {
     const app = createApp();
-    userAndAuthRepository.ensureUserPins(['expired-token-user']);
+    userAndAuthRepository.setUserPassword('expired-token-user', 'test-password');
     const now = 1_700_000_000_000;
     vi.spyOn(Date, 'now').mockReturnValue(now * 1000);
 
@@ -182,7 +182,7 @@ describe('password reset token flow', () => {
     configService.ensureConfigLayout();
     const app = createApp();
     configService.createEmptyUserConfig('invite-setup-user');
-    userAndAuthRepository.setUserPin('invite-setup-user', 'temp-secret');
+    userAndAuthRepository.setUserPassword('invite-setup-user', 'temp-secret');
     userAndAuthRepository.patchUserProfile('invite-setup-user', {
       displayName: 'Alex',
       email: 'alex@example.com',
@@ -199,13 +199,15 @@ describe('password reset token flow', () => {
 
     const resetRes = await request(app)
       .post('/auth/reset-password')
-      .send({ token, newPin: 'chosen-secret' })
+      .send({ token, newPassword: 'chosen-secret' })
       .expect(200);
 
     expect(resetRes.body).toEqual({ ok: true, user: 'invite-setup-user' });
     const sessionCookie = resetRes.headers['set-cookie']?.[0]?.split(';')[0];
     expect(sessionCookie).toMatch(/^habsum_sid=/);
-    expect(userAndAuthRepository.isUserPinValid('invite-setup-user', 'chosen-secret')).toBe(true);
+    expect(userAndAuthRepository.isUserPasswordValid('invite-setup-user', 'chosen-secret')).toBe(
+      true,
+    );
 
     const meRes = await request(app).get('/users/me').set('Cookie', sessionCookie!).expect(200);
 

@@ -28,7 +28,7 @@ describe('single-select heatmap', () => {
     );
     if (!written.ok) throw new Error(written.error);
 
-    userAndAuthRepository.ensureUserPins([user]);
+    userAndAuthRepository.setUserPassword(user, 'test-password');
     const session = userAndAuthRepository.createUserSession(user, 3600);
     const app = createApp();
     const tzOffsetMinutes = new Date().getTimezoneOffset();

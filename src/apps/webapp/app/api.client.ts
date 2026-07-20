@@ -244,10 +244,10 @@ export async function adminDeleteUser(name: string) {
   return request<{ ok: true; user: string }>(`/users${qs}`, { method: 'DELETE' });
 }
 
-export async function loginUser(user: string, pin: string) {
+export async function loginUser(user: string, password: string) {
   return request<LoginUserResponse>('/auth/login', {
     method: 'POST',
-    body: JSON.stringify({ user, pin }),
+    body: JSON.stringify({ user, password }),
   });
 }
 

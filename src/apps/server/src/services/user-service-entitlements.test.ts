@@ -12,14 +12,14 @@ const userService = new UserService();
 describe('UserService.entitlementsForUser', () => {
   it('grants NEW_USER when the account has no habit events', () => {
     const username = 'entitlements-new-user-test';
-    userAndAuthRepository.ensureUserPins([username]);
+    userAndAuthRepository.setUserPassword(username, 'test-password');
 
     expect(userService.entitlementsForUser(username)).toContain(ProductEntitlement.NEW_USER);
   });
 
   it('omits NEW_USER after a daily selection is stored', () => {
     const username = 'entitlements-returning-user-test';
-    userAndAuthRepository.ensureUserPins([username]);
+    userAndAuthRepository.setUserPassword(username, 'test-password');
     habitRepository.applyHabitMutation({
       kind: 'set_select',
       user: username,

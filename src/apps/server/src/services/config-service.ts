@@ -1,15 +1,9 @@
-// Service layer for YAML user config persistence and configuration request orchestration.
-import {
-  yamlString,
-  type UserConfigGetResponse,
-  type UserConfigPutRequest,
-  type UserConfigPutResponse,
-  type YAMLString,
-} from '@habsum/types/common/misc';
+// Domain operations for YAML user configuration persistence and migrations.
+import { yamlString, type YAMLString } from '@habsum/types/common/misc';
 import {
   buildConfigDeletions,
   buildConfigMigrations,
-  configResponseParts,
+  userConfigJsonFromText,
 } from '../config-editor.js';
 import { ConfigRepository } from '../repositories/config-repository.js';
 import { HabitRepository } from '../repositories/habit-repository.js';
@@ -17,13 +11,9 @@ import type { HabitDef, UserConfig } from '../types/userConfig.js';
 import { YAMLConfigParser } from '../utils/yaml-config-parser.js';
 import { YAMLConfigConvertor } from '../utils/yaml-config-convertor.js';
 import { isSafeConfigUserId } from '../request-helpers.js';
+import { ServiceError } from '../service-error.js';
 
 const EMPTY_USER_CONFIG_TEXT = yamlString('habits: {}\n');
-
-type ConfigServiceResult<T> = {
-  status: number;
-  body: T | { error: string };
-};
 
 type GetUserConfigInput = {
   user: string;
@@ -31,7 +21,12 @@ type GetUserConfigInput = {
 
 type PutUserConfigInput = {
   user: string;
-  body?: Partial<UserConfigPutRequest>;
+  body?: {
+    text?: unknown;
+    config?: unknown;
+    migrations?: unknown;
+    deletions?: unknown;
+  };
 };
 
 type ConfigMigrationTuple = [string, string];
@@ -194,8 +189,8 @@ export class ConfigService {
     this.repository.ensureLayout();
   }
 
-  listUsers(): string[] {
-    return this.repository.listUsers();
+  listConfiguredUsers(): string[] {
+    return this.repository.listConfiguredUsers();
   }
 
   readUserConfigText(user: string): YAMLString | null {
@@ -207,7 +202,7 @@ export class ConfigService {
     content: YAMLString,
   ): { ok: true } | { ok: false; error: string } {
     if (!this.repository.hasUserConfig(user)) {
-      return { ok: false, error: 'config file not found' };
+      return { ok: false, error: 'habit config not found' };
     }
     const validation = this.validateUserConfigText(user, content);
     if (!validation.ok) return validation;
@@ -271,29 +266,23 @@ export class ConfigService {
     return { ok: true, user };
   }
 
-  getUserConfig({ user }: GetUserConfigInput): ConfigServiceResult<UserConfigGetResponse> {
+  getUserConfig({ user }: GetUserConfigInput) {
     if (!isSafeConfigUserId(user)) {
-      return { status: 400, body: { error: 'invalid user' } };
+      throw new ServiceError('bad_request', 'invalid user');
     }
     const text = this.readUserConfigText(user);
-    if (text == null) return { status: 404, body: { error: 'user not found' } };
+    if (text == null) throw new ServiceError('not_found', 'user not found');
     const config = this.loadUserConfig(user);
-    if (!config) return { status: 404, body: { error: 'user not found' } };
+    if (!config) throw new ServiceError('not_found', 'user not found');
     return {
-      status: 200,
-      body: {
-        text,
-        ...configResponseParts(user, text),
-      },
+      text,
+      config: userConfigJsonFromText(user, text),
     };
   }
 
-  putUserConfig({
-    user,
-    body = {},
-  }: PutUserConfigInput): ConfigServiceResult<UserConfigPutResponse> {
+  putUserConfig({ user, body = {} }: PutUserConfigInput) {
     if (!isSafeConfigUserId(user)) {
-      return { status: 400, body: { error: 'invalid user' } };
+      throw new ServiceError('bad_request', 'invalid user');
     }
 
     let text: YAMLString;
@@ -303,38 +292,35 @@ export class ConfigService {
       try {
         text = this.yamlConfigConvertor.convert(body.config as UserConfig);
       } catch (e) {
-        return {
-          status: 400,
-          body: { error: e instanceof Error ? e.message : 'invalid config' },
-        };
+        throw new ServiceError('bad_request', e instanceof Error ? e.message : 'invalid config');
       }
     } else {
-      return { status: 400, body: { error: 'text or config is required' } };
+      throw new ServiceError('bad_request', 'text or config is required');
     }
 
     const migrations = body.migrations == null ? null : parseConfigMigrationTuples(body.migrations);
     if (migrations == null && body.migrations != null) {
-      return { status: 400, body: { error: 'migrations must be an array of string tuples' } };
+      throw new ServiceError('bad_request', 'migrations must be an array of string tuples');
     }
     const deletions = body.deletions == null ? null : parseConfigDeletions(body.deletions);
     if (deletions == null && body.deletions != null) {
-      return { status: 400, body: { error: 'deletions must be an array of strings' } };
+      throw new ServiceError('bad_request', 'deletions must be an array of strings');
     }
 
     const previousConfig = this.loadUserConfig(user);
-    if (!previousConfig) return { status: 404, body: { error: 'user not found' } };
+    if (!previousConfig) throw new ServiceError('not_found', 'user not found');
     const previousText = this.readUserConfigText(user);
-    if (previousText == null) return { status: 404, body: { error: 'user not found' } };
+    if (previousText == null) throw new ServiceError('not_found', 'user not found');
     const configMigrations = migrations ?? buildConfigMigrations(previousText, text);
     const configDeletions = deletions ?? buildConfigDeletions(previousText, text);
 
     const out = this.writeUserConfigText(user, text);
     if (!out.ok) {
-      return { status: 400, body: { error: out.error } };
+      throw new ServiceError('bad_request', out.error);
     }
     if (configMigrations.length > 0) {
       const nextConfig = this.loadUserConfig(user);
-      if (!nextConfig) return { status: 404, body: { error: 'user not found' } };
+      if (!nextConfig) throw new ServiceError('not_found', 'user not found');
       applyConfigDataMigrations(
         user,
         configMigrations,
@@ -347,6 +333,6 @@ export class ConfigService {
       applyConfigDataDeletions(user, configDeletions, previousConfig.habits, this.habitRepository);
     }
 
-    return { status: 200, body: { ok: true, user } };
+    return { ok: true as const, user };
   }
 }

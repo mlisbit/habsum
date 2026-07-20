@@ -1,7 +1,4 @@
-// Service layer for habit HTTP requests and response orchestration.
-import type { HabitsResponse } from '@habsum/types/api-responses/habits-get';
-import type { HistoryGetResponse } from '@habsum/types/api-responses/history-get';
-import type { PatchHabitResponse } from '@habsum/types/api-responses/habit-patch';
+// Domain operations for reading habit data and applying habit mutations.
 import { dayFromString, type Day } from '@habsum/types/common/day';
 import type { Habit } from '@habsum/types/common/habit';
 import { dasherize } from '@habsum/utils/strings';
@@ -22,6 +19,7 @@ import { mapSummationEventsToApi } from '../summation-event-api.js';
 import { HabitRepository } from '../repositories/habit-repository.js';
 import type { InterimHabit } from '../types/habit.types.js';
 import { HABIT_REPEAT_DAYS, type HabitDef, type UserConfig } from '../types/userConfig.js';
+import { ServiceError } from '../service-error.js';
 
 type HabitListQuery = {
   date?: string;
@@ -45,11 +43,6 @@ type GetHabitHistoryInput = {
   config: UserConfig;
   query?: HabitHistoryQuery;
   at?: Date;
-};
-
-type HabitServiceResult<T> = {
-  status: number;
-  body: T | { error: string };
 };
 
 type PatchHabitInput = {
@@ -104,7 +97,7 @@ function habitFromInterimDay(habit: InterimHabit, day: Day): Habit {
 export class HabitService {
   constructor(private readonly repository = new HabitRepository()) {}
 
-  getHabits({ config, query = {}, at = new Date() }: GetHabitsInput): HabitsResponse {
+  getHabits({ config, query = {}, at = new Date() }: GetHabitsInput) {
     const date = resolveHabitApiDateQuery(query.date, at);
     const tzOffsetMinutes = parseTzOffsetMinutes(query.tzOffsetMinutes);
     const data = this.repository.getHabits({ config, date, at, tzOffsetMinutes });
@@ -125,21 +118,16 @@ export class HabitService {
     }).build();
   }
 
-  getHabitHistory({
-    user,
-    config,
-    query = {},
-    at = new Date(),
-  }: GetHabitHistoryInput): HabitServiceResult<HistoryGetResponse> {
+  getHabitHistory({ user, config, query = {}, at = new Date() }: GetHabitHistoryInput) {
     const habitIds = parseHabitFilter(query.filter ?? query.habitId);
-    if (habitIds.length === 0) return { status: 400, body: { error: 'filter is required' } };
+    if (habitIds.length === 0) throw new ServiceError('bad_request', 'filter is required');
 
     const inspectDate = resolveHabitApiDateQuery(query.date, at);
     const habitDefs = [];
     for (const habitId of habitIds) {
       const habitDef = config.habits.find((h) => dasherize(h.name) === habitId);
       if (!habitDef) {
-        return { status: 404, body: { error: `habit not configured: ${habitId}` } };
+        throw new ServiceError('not_found', `habit not configured: ${habitId}`);
       }
       habitDefs.push(habitDef);
     }
@@ -175,45 +163,37 @@ export class HabitService {
       .map((habitDef) => inspectMap?.get(habitDef.name) ?? emptyHabitForHistory(habitDef));
 
     return {
-      status: 200,
-      body: {
-        user,
-        habits: Object.fromEntries(
-          config.habits.map((habitDef) => [dasherize(habitDef.name), habitDef.name]),
-        ),
-        firstDate: minDate(historyData.habits.flatMap(interimHabitDates)),
-        data,
-        history: {
-          user: Array.from(habitsByDate.entries())
-            .map(([day, habits]) => ({ day, habits }))
-            .sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : 0)),
-        },
-        serverTime: at.toISOString(),
+      user,
+      habits: Object.fromEntries(
+        config.habits.map((habitDef) => [dasherize(habitDef.name), habitDef.name]),
+      ),
+      firstDate: minDate(historyData.habits.flatMap(interimHabitDates)),
+      data,
+      history: {
+        user: Array.from(habitsByDate.entries())
+          .map(([day, habits]) => ({ day, habits }))
+          .sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : 0)),
       },
+      serverTime: at.toISOString(),
     };
   }
 
-  patchHabit({
-    user,
-    config,
-    body = {},
-    at = new Date(),
-  }: PatchHabitInput): HabitServiceResult<PatchHabitResponse> {
+  patchHabit({ user, config, body = {}, at = new Date() }: PatchHabitInput) {
     const date =
       typeof body.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.date) ? body.date : null;
     if (date == null) {
-      return { status: 400, body: { error: 'body.date is required (YYYY-MM-DD)' } };
+      throw new ServiceError('bad_request', 'body.date is required (YYYY-MM-DD)');
     }
     const day = dayFromString(date);
 
     const { habit, total, action, value, clientCreatedAt } = body;
     if (typeof habit !== 'string' || habit.length === 0) {
-      return { status: 400, body: { error: 'habit is required' } };
+      throw new ServiceError('bad_request', 'habit is required');
     }
 
     const known = config.habits.find((h) => h.name === habit);
     if (!known) {
-      return { status: 404, body: { error: `habit "${habit}" not configured` } };
+      throw new ServiceError('not_found', `habit "${habit}" not configured`);
     }
 
     if (known.type === 'single_select') {
@@ -226,24 +206,21 @@ export class HabitService {
           habit,
           date: day,
         });
-        return {
-          status: 200,
-          body: this.patchResponse({
-            config,
-            date: day,
-            habit,
-            at,
-            tzOffsetMinutes,
-          }),
-        };
+        return this.updatedHabit({
+          config,
+          date: day,
+          habit,
+          at,
+          tzOffsetMinutes,
+        });
       }
 
       if (typeof value !== 'string' || value.length === 0) {
-        return { status: 400, body: { error: 'value is required' } };
+        throw new ServiceError('bad_request', 'value is required');
       }
       const opts = known.options ?? [];
       if (opts.length && !opts.includes(value)) {
-        return { status: 400, body: { error: 'invalid option' } };
+        throw new ServiceError('bad_request', 'invalid option');
       }
 
       this.repository.applyHabitMutation({
@@ -253,10 +230,7 @@ export class HabitService {
         date: day,
         value,
       });
-      return {
-        status: 200,
-        body: this.patchResponse({ config, date: day, habit, at, tzOffsetMinutes }),
-      };
+      return this.updatedHabit({ config, date: day, habit, at, tzOffsetMinutes });
     }
 
     const mode = typeof action === 'string' ? action : 'add';
@@ -266,7 +240,7 @@ export class HabitService {
       const rawId = body.eventId;
       const eventId = typeof rawId === 'number' ? rawId : Number(rawId);
       if (!Number.isInteger(eventId) || eventId <= 0) {
-        return { status: 400, body: { error: 'eventId is required (positive integer)' } };
+        throw new ServiceError('bad_request', 'eventId is required (positive integer)');
       }
       const removed = this.repository.applyHabitMutation({
         kind: 'delete_event',
@@ -276,36 +250,27 @@ export class HabitService {
         eventId,
       });
       if (!removed) {
-        return { status: 404, body: { error: 'summation event not found' } };
+        throw new ServiceError('not_found', 'summation event not found');
       }
-      return {
-        status: 200,
-        body: this.patchResponse({ config, date: day, habit, at, tzOffsetMinutes }),
-      };
+      return this.updatedHabit({ config, date: day, habit, at, tzOffsetMinutes });
     }
 
     if (mode === 'clear') {
       this.repository.applyHabitMutation({ kind: 'clear_total', user, habit, date: day });
-      return {
-        status: 200,
-        body: this.patchResponse({ config, date: day, habit, at, tzOffsetMinutes }),
-      };
+      return this.updatedHabit({ config, date: day, habit, at, tzOffsetMinutes });
     }
 
     const numericTotal = Number(total);
     if (!Number.isFinite(numericTotal)) {
-      return { status: 400, body: { error: 'total must be a number' } };
+      throw new ServiceError('bad_request', 'total must be a number');
     }
 
     const createdAtSql = parseClientCreatedAtIso(clientCreatedAt);
     if (createdAtSql == null) {
-      return {
-        status: 400,
-        body: {
-          error:
-            'body.clientCreatedAt is required for summation add/set (YYYY-MM-DD HH:MM:SS client wall clock)',
-        },
-      };
+      throw new ServiceError(
+        'bad_request',
+        'body.clientCreatedAt is required for summation add/set (YYYY-MM-DD HH:MM:SS client wall clock)',
+      );
     }
 
     if (mode === 'add') {
@@ -327,16 +292,13 @@ export class HabitService {
         createdAt: createdAtSql,
       });
     } else {
-      return { status: 400, body: { error: `unknown action "${mode}"` } };
+      throw new ServiceError('bad_request', `unknown action "${mode}"`);
     }
 
-    return {
-      status: 200,
-      body: this.patchResponse({ config, date: day, habit, at, tzOffsetMinutes }),
-    };
+    return this.updatedHabit({ config, date: day, habit, at, tzOffsetMinutes });
   }
 
-  private patchResponse({
+  private updatedHabit({
     config,
     date,
     habit,
@@ -348,7 +310,7 @@ export class HabitService {
     habit: string;
     at: Date;
     tzOffsetMinutes?: number;
-  }): PatchHabitResponse {
+  }) {
     const data = this.repository.getHabits({ config, date, at, tzOffsetMinutes });
     const habitIndex = data.habits.findIndex((candidate) => candidate.config.name === habit);
     const interimHabit = data.habits[habitIndex];

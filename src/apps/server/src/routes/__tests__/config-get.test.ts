@@ -30,7 +30,7 @@ describe('GET /users/:user/config', () => {
     type: summation
 `,
     );
-    userAndAuthRepository.ensureUserPins([user]);
+    userAndAuthRepository.setUserPassword(user, 'test-password');
     const session = userAndAuthRepository.createUserSession(user, 3600);
 
     const res = await request(createApp())
@@ -70,7 +70,7 @@ habits:
     type: summation
 `,
     );
-    userAndAuthRepository.ensureUserPins([user]);
+    userAndAuthRepository.setUserPassword(user, 'test-password');
     const session = userAndAuthRepository.createUserSession(user, 3600);
 
     await request(createApp())

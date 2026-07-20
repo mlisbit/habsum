@@ -1,47 +1,41 @@
-// Service layer for user profile, security, configuration, and data-management requests.
-import type {
-  UserConfigGetResponse,
-  UserConfigPutRequest,
-  UserConfigPutResponse,
-} from '@habsum/types/common/misc';
+// Domain operations for user profiles, security, configuration, and data management.
 import { ProductEntitlement } from '@habsum/types/common/entitlement';
-import type { UserPasswordChangeRequest } from '@habsum/types/api-responses/user-password-change';
-import type { SecurityGetResponse } from '@habsum/types/api-responses/security-get';
-import type {
-  SecuritySessionDeleteResponse,
-  SecuritySessionsDeleteOthersResponse,
-} from '@habsum/types/api-responses/security-delete';
-import type { UsersPatchRequest } from '@habsum/types/api-responses/users-patch';
 import { accountCreatedAtToApi } from '@habsum/types/common/day';
 import { isForbiddenUsername } from '../forbidden-usernames.js';
 import {
   isPlausibleEmail,
   isSafeConfigUserId,
-  parsePin,
+  parsePassword,
   parseThemePatchInput,
 } from '../request-helpers.js';
 import type { UserConfig } from '../types/userConfig.js';
 import { ConfigService } from './config-service.js';
 import { UserAndAuthRepository } from '../repositories/user-and-auth-repository.js';
+import { ServiceError } from '../service-error.js';
 
-type UserServiceResult<T> = {
-  status: number;
-  body: T | { error: string };
-};
-
-type UserPatchResponse = {
+type UserPatchResult = {
   ok: true;
   username: string;
 };
 
-type UserDeleteResponse = {
+type UserDeleteResult = {
   ok: true;
   username: string;
 };
 
-type LoadUserConfigResult =
-  | { ok: true; config: UserConfig }
-  | { ok: false; status: number; body: { error: string } };
+type PasswordChangeInput = { currentPassword?: unknown; newPassword?: unknown };
+type UserPatchInput = {
+  username?: unknown;
+  displayName?: unknown;
+  theme?: unknown;
+  email?: unknown;
+};
+type UserConfigInput = {
+  text?: unknown;
+  config?: unknown;
+  migrations?: unknown;
+  deletions?: unknown;
+};
 
 const MAX_USERNAME_LEN = 64;
 
@@ -59,19 +53,18 @@ export class UserService {
     private readonly userAndAuthRepository = new UserAndAuthRepository(),
   ) {}
 
-  loadUserConfig(user: string): LoadUserConfigResult {
-    const invalid = this.validateUserId(user);
-    if (invalid) return { ok: false, status: invalid.status, body: invalid.body };
+  loadUserConfig(user: string): UserConfig {
+    this.assertValidUserId(user);
 
     try {
       const config = this.configService.loadUserConfig(user);
       if (!config) {
-        return { ok: false, status: 404, body: { error: 'user not found' } };
+        throw new ServiceError('not_found', 'user not found');
       }
-      return { ok: true, config };
+      return config;
     } catch (e) {
       if (e instanceof ConfigService.ConfigValidationError) {
-        return { ok: false, status: 400, body: { error: e.message } };
+        throw new ServiceError('bad_request', e.message);
       }
       throw e;
     }
@@ -92,7 +85,10 @@ export class UserService {
   }
 
   allocateUsernameForEmail(email: string): string | null {
-    const taken = new Set(this.configService.listUsers());
+    const taken = new Set([
+      ...this.configService.listConfiguredUsers(),
+      ...this.userAndAuthRepository.listUserRows().map((row) => row.username),
+    ]);
     let base = usernameBaseFromEmail(email);
     if (!this.isUsernameAvailable(base, taken)) {
       base = isForbiddenUsername(base) || !isSafeConfigUserId(base) ? 'user' : base;
@@ -110,12 +106,8 @@ export class UserService {
     return null;
   }
 
-  getSecuritySessions(
-    user: string,
-    currentSessionId?: string,
-  ): UserServiceResult<SecurityGetResponse> {
-    const invalid = this.validateUserId(user);
-    if (invalid) return invalid;
+  getSecuritySessions(user: string, currentSessionId?: string) {
+    this.assertValidUserId(user);
 
     const now = Date.now();
     const sessions = this.userAndAuthRepository.listSessionsForUsername(user).map((row) => ({
@@ -128,30 +120,21 @@ export class UserService {
         new Date(row.expires_at).getTime() > now,
     }));
 
-    return { status: 200, body: { sessions } };
+    return { sessions };
   }
 
-  deleteOtherSecuritySessions(
-    user: string,
-    currentSessionId: string | null,
-  ): UserServiceResult<SecuritySessionsDeleteOthersResponse> {
-    const invalid = this.validateUserId(user);
-    if (invalid) return invalid;
+  deleteOtherSecuritySessions(user: string, currentSessionId: string | null) {
+    this.assertValidUserId(user);
     if (currentSessionId == null) {
-      return { status: 400, body: { error: 'no active session' } };
+      throw new ServiceError('bad_request', 'no active session');
     }
 
     const revoked = this.userAndAuthRepository.revokeOtherUserSessions(user, currentSessionId);
-    return { status: 200, body: { ok: true, revoked } };
+    return { ok: true as const, revoked };
   }
 
-  deleteSecuritySession(
-    user: string,
-    token: string,
-    currentSessionId?: string,
-  ): UserServiceResult<SecuritySessionDeleteResponse> {
-    const invalid = this.validateUserId(user);
-    if (invalid) return invalid;
+  deleteSecuritySession(user: string, token: string, currentSessionId?: string) {
+    this.assertValidUserId(user);
 
     const result = this.userAndAuthRepository.revokeUserSessionByTokenPrefix(
       user,
@@ -159,72 +142,52 @@ export class UserService {
       currentSessionId,
     );
     if (!result.ok) {
-      const status =
+      const kind =
         result.error === 'invalid token'
-          ? 400
+          ? 'bad_request'
           : result.error === 'session not found'
-            ? 404
+            ? 'not_found'
             : result.error === 'ambiguous session token'
-              ? 409
-              : 403;
-      return { status, body: { error: result.error } };
+              ? 'conflict'
+              : 'forbidden';
+      throw new ServiceError(kind, result.error);
     }
 
-    return { status: 200, body: { ok: true } };
+    return { ok: true as const };
   }
 
-  changePassword(
-    user: string,
-    body: Partial<UserPasswordChangeRequest> | undefined,
-  ): UserServiceResult<{ ok: true }> {
-    const invalid = this.validateUserId(user);
-    if (invalid) return invalid;
+  changePassword(user: string, body: PasswordChangeInput | undefined) {
+    this.assertValidUserId(user);
 
-    const currentPin = parsePin(body?.currentPin);
-    const newPin = parsePin(body?.newPin);
-    if (currentPin == null) {
-      return { status: 400, body: { error: 'current password is required' } };
+    const currentPassword = parsePassword(body?.currentPassword);
+    const newPassword = parsePassword(body?.newPassword);
+    if (currentPassword == null) {
+      throw new ServiceError('bad_request', 'current password is required');
     }
-    if (newPin == null) {
-      return { status: 400, body: { error: 'new password is required' } };
+    if (newPassword == null) {
+      throw new ServiceError('bad_request', 'new password is required');
     }
-    if (currentPin === newPin) {
-      return {
-        status: 400,
-        body: { error: 'new password must be different from the current one' },
-      };
+    if (currentPassword === newPassword) {
+      throw new ServiceError('bad_request', 'new password must be different from the current one');
     }
 
-    const config = this.loadUserConfig(user);
-    if (!config.ok) return config;
-    this.userAndAuthRepository.ensureUserPins(this.configService.listUsers());
-
-    if (!this.userAndAuthRepository.isUserPinValid(user, currentPin)) {
-      return { status: 401, body: { error: 'current password is incorrect' } };
+    this.loadUserConfig(user);
+    if (!this.userAndAuthRepository.isUserPasswordValid(user, currentPassword)) {
+      throw new ServiceError('unauthorized', 'current password is incorrect');
     }
 
-    const updated = this.userAndAuthRepository.updateLoginPin(user, newPin);
-    if (!updated) {
-      this.userAndAuthRepository.setUserPin(user, newPin);
+    if (!this.userAndAuthRepository.updateLoginPassword(user, newPassword)) {
+      throw new ServiceError('not_found', 'user not found');
     }
 
-    return { status: 200, body: { ok: true } };
+    return { ok: true as const };
   }
 
-  patchUser(
-    user: string,
-    body: Partial<UsersPatchRequest> | undefined,
-  ): UserServiceResult<UserPatchResponse> {
-    const invalid = this.validateUserId(user);
-    if (invalid) return invalid;
+  patchUser(user: string, body: UserPatchInput | undefined): UserPatchResult {
+    this.assertValidUserId(user);
 
     const parsed = this.parseUserPatchBody(user, body ?? {});
-    if ('status' in parsed) return parsed;
-
-    const config = this.loadUserConfig(user);
-    if (!config.ok) return config;
-    this.userAndAuthRepository.ensureUserPins(this.configService.listUsers());
-
+    this.loadUserConfig(user);
     if (parsed.hasDisplayName || parsed.hasTheme || parsed.hasEmail) {
       try {
         this.userAndAuthRepository.patchUserProfile(user, {
@@ -235,66 +198,63 @@ export class UserService {
       } catch (e) {
         const msg = e instanceof Error ? e.message : '';
         if (msg === 'invalid email') {
-          return { status: 400, body: { error: 'invalid email' } };
+          throw new ServiceError('bad_request', 'invalid email');
         }
-        return { status: 500, body: { error: 'failed to update profile' } };
+        throw new ServiceError('internal', 'failed to update profile');
       }
     }
 
     if (parsed.wantsRename) {
       const out = this.configService.renameUserConfig(user, parsed.rename);
       if (!out.ok) {
-        const status = out.error.includes('already exists')
-          ? 409
+        const kind = out.error.includes('already exists')
+          ? 'conflict'
           : out.error === 'user not found'
-            ? 404
-            : 400;
-        return { status, body: { error: out.error } };
+            ? 'not_found'
+            : 'bad_request';
+        throw new ServiceError(kind, out.error);
       }
 
-      this.userAndAuthRepository.renameUserPin(user, out.user);
-      return { status: 200, body: { ok: true, username: out.user } };
+      this.userAndAuthRepository.renameUserAuthRecord(user, out.user);
+      return { ok: true, username: out.user };
     }
 
-    return { status: 200, body: { ok: true, username: user } };
+    return { ok: true, username: user };
   }
 
-  deleteUser(user: string): UserServiceResult<UserDeleteResponse> {
-    const invalid = this.validateUserId(user);
-    if (invalid) return invalid;
+  deleteUser(user: string): UserDeleteResult {
+    this.assertValidUserId(user);
 
     try {
       this.userAndAuthRepository.purgeUserData(user);
     } catch (e) {
-      return { status: 400, body: { error: e instanceof Error ? e.message : 'purge failed' } };
+      throw new ServiceError('bad_request', e instanceof Error ? e.message : 'purge failed');
     }
 
     const out = this.configService.deleteUserConfig(user);
     if (!out.ok) {
-      const status = out.error === 'user not found' ? 404 : 400;
-      return { status, body: { error: out.error } };
+      throw new ServiceError(
+        out.error === 'user not found' ? 'not_found' : 'bad_request',
+        out.error,
+      );
     }
 
-    this.userAndAuthRepository.deleteUserPin(out.user);
-    return { status: 200, body: { ok: true, username: out.user } };
+    this.userAndAuthRepository.deleteUserAuthRecord(out.user);
+    return { ok: true, username: out.user };
   }
 
-  getUserConfig(user: string): UserServiceResult<UserConfigGetResponse> {
+  getUserConfig(user: string) {
     return this.configService.getUserConfig({ user });
   }
 
-  putUserConfig(
-    user: string,
-    body: Partial<UserConfigPutRequest> | undefined,
-  ): UserServiceResult<UserConfigPutResponse> {
+  putUserConfig(user: string, body: UserConfigInput | undefined) {
     return this.configService.putUserConfig({ user, body });
   }
 
-  private validateUserId(user: string): UserServiceResult<never> | null {
+  private assertValidUserId(user: string): void {
     if (!isSafeConfigUserId(user)) {
-      return { status: 400, body: { error: 'invalid user' } };
+      throw new ServiceError('bad_request', 'invalid user');
     }
-    return null;
   }
 
   private isUsernameAvailable(candidate: string, taken: Set<string>): boolean {
@@ -306,19 +266,17 @@ export class UserService {
 
   private parseUserPatchBody(
     user: string,
-    body: Partial<UsersPatchRequest>,
-  ):
-    | {
-        wantsRename: boolean;
-        rename: string;
-        hasDisplayName: boolean;
-        displayName: string | null | undefined;
-        hasTheme: boolean;
-        theme: string | null | undefined;
-        hasEmail: boolean;
-        email: string | undefined;
-      }
-    | UserServiceResult<never> {
+    body: UserPatchInput,
+  ): {
+    wantsRename: boolean;
+    rename: string;
+    hasDisplayName: boolean;
+    displayName: string | null | undefined;
+    hasTheme: boolean;
+    theme: string | null | undefined;
+    hasEmail: boolean;
+    email: string | undefined;
+  } {
     const rename = typeof body.username === 'string' ? body.username.trim() : '';
     const wantsRename = rename.length > 0;
 
@@ -331,7 +289,7 @@ export class UserService {
       } else if (typeof body.displayName === 'string') {
         displayName = body.displayName.trim() || null;
       } else {
-        return { status: 400, body: { error: 'displayName must be a string or null' } };
+        throw new ServiceError('bad_request', 'displayName must be a string or null');
       }
     }
 
@@ -341,7 +299,7 @@ export class UserService {
       hasTheme = true;
       const parsed = parseThemePatchInput(body.theme);
       if (parsed === 'invalid') {
-        return { status: 400, body: { error: 'invalid theme' } };
+        throw new ServiceError('bad_request', 'invalid theme');
       }
       theme = parsed;
     }
@@ -351,37 +309,37 @@ export class UserService {
     if ('email' in body) {
       hasEmail = true;
       if (body.email === null) {
-        return { status: 400, body: { error: 'email is required' } };
+        throw new ServiceError('bad_request', 'email is required');
       }
       if (typeof body.email !== 'string') {
-        return { status: 400, body: { error: 'email must be a string' } };
+        throw new ServiceError('bad_request', 'email must be a string');
       }
       const t = body.email.trim().toLowerCase();
       if (t === '') {
-        return { status: 400, body: { error: 'email is required' } };
+        throw new ServiceError('bad_request', 'email is required');
       }
       if (!isPlausibleEmail(t)) {
-        return { status: 400, body: { error: 'invalid email' } };
+        throw new ServiceError('bad_request', 'invalid email');
       }
       if (this.userAndAuthRepository.isEmailUsedByOtherUser(t, user)) {
-        return { status: 409, body: { error: 'email already in use' } };
+        throw new ServiceError('conflict', 'email already in use');
       }
       email = t;
     }
 
     if (!wantsRename && !hasDisplayName && !hasTheme && !hasEmail) {
-      return { status: 400, body: { error: 'no updates provided' } };
+      throw new ServiceError('bad_request', 'no updates provided');
     }
 
     if (wantsRename) {
       if (!isSafeConfigUserId(rename)) {
-        return { status: 400, body: { error: 'invalid user' } };
+        throw new ServiceError('bad_request', 'invalid user');
       }
       if (isForbiddenUsername(rename)) {
-        return { status: 400, body: { error: 'invalid username' } };
+        throw new ServiceError('bad_request', 'invalid username');
       }
       if (rename === user) {
-        return { status: 400, body: { error: 'username is unchanged' } };
+        throw new ServiceError('bad_request', 'username is unchanged');
       }
     }
 

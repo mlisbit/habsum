@@ -134,10 +134,10 @@ export default function UserSettingsSecurityPassword() {
     setSaveFieldErrors({});
 
     setSaveBusy(true);
-    const curPin = pwdCurrent.trim();
-    const newPin = pwdNew.trim();
+    const currentPassword = pwdCurrent.trim();
+    const newPassword = pwdNew.trim();
     try {
-      await changeUserPassword(routeUser, { currentPin: curPin, newPin });
+      await changeUserPassword(routeUser, { currentPassword, newPassword });
       setPwdCurrent('');
       setPwdNew('');
       setPwdConfirm('');

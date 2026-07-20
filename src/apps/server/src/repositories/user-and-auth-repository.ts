@@ -6,8 +6,7 @@ import {
   countUserEvents,
   createUserSession,
   createOucUserSession,
-  deleteUserPin,
-  ensureUserPins,
+  deleteUserAuthRecord,
   findValidPasswordResetToken,
   getFirstDate,
   getUserProfile,
@@ -18,7 +17,7 @@ import {
   isOucSessionId,
   isUserAdmin,
   isUserBetaTester,
-  isUserPinValid,
+  isUserPasswordValid,
   listUserRows,
   listSessionsForUsername,
   markPasswordResetTokenUsed,
@@ -27,13 +26,13 @@ import {
   purgeUserData,
   recordPasswordResetRequest,
   recordUserLoginMetadata,
-  renameUserPin,
+  renameUserAuthRecord,
   resolveUsernameByLoginId,
   revokeOtherUserSessions,
   revokeUserSession,
   revokeUserSessionByTokenPrefix,
-  setUserPin,
-  updateLoginPin,
+  setUserPassword,
+  updateLoginPassword,
 } from './_private/db.js';
 import {
   INVITE_TOKEN_TTL_SECONDS,
@@ -64,43 +63,36 @@ export class UserAndAuthRepository {
     return countAdmins();
   }
 
-  createInitialAdminUser(username: string, pin: string): void {
-    createInitialAdminUser(username, pin);
+  createInitialAdminUser(username: string, password: string): void {
+    createInitialAdminUser(username, password);
   }
 
-  ensureUserPins(usernames: string[]): void {
-    ensureUserPins(usernames);
+  isUserPasswordValid(username: string, password: string): boolean {
+    return isUserPasswordValid(username, password);
   }
 
-  isUserPinValid(username: string, pin: string): boolean {
-    return isUserPinValid(username, pin);
+  isNewLoginPasswordAllowed(userId: string, newPassword: string): boolean {
+    return !isUserPasswordValid(userId, newPassword);
   }
 
-  isNewLoginPasswordAllowed(userId: string, newPin: string): boolean {
-    return !isUserPinValid(userId, newPin);
+  setUserPassword(username: string, password: string): void {
+    setUserPassword(username, password);
   }
 
-  setUserPin(username: string, pin: string): void {
-    setUserPin(username, pin);
+  updateLoginPassword(username: string, password: string): boolean {
+    return updateLoginPassword(username, password);
   }
 
-  updateLoginPin(username: string, pin: string): boolean {
-    return updateLoginPin(username, pin);
+  resetLoginPassword(userId: string, newPassword: string): boolean {
+    return updateLoginPassword(userId, newPassword);
   }
 
-  resetLoginPassword(userId: string, newPin: string): void {
-    const updated = updateLoginPin(userId, newPin);
-    if (!updated) {
-      setUserPin(userId, newPin);
-    }
+  renameUserAuthRecord(fromUsername: string, toUsername: string): void {
+    renameUserAuthRecord(fromUsername, toUsername);
   }
 
-  renameUserPin(fromUsername: string, toUsername: string): void {
-    renameUserPin(fromUsername, toUsername);
-  }
-
-  deleteUserPin(username: string): void {
-    deleteUserPin(username);
+  deleteUserAuthRecord(username: string): void {
+    deleteUserAuthRecord(username);
   }
 
   createUserSession(username: string, ttlSeconds = sessionTtlSeconds()): string {

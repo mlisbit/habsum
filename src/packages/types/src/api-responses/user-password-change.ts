@@ -1,7 +1,7 @@
-/** POST /users/:user/password — change login PIN; session cookie unchanged. */
+/** POST /users/:user/password — change the login password; session cookie unchanged. */
 export type UserPasswordChangeRequest = {
-  currentPin: string;
-  newPin: string;
+  currentPassword: string;
+  newPassword: string;
 };
 
 export type UserPasswordChangeResponse = { ok: true };

@@ -125,17 +125,18 @@ function migrateUsersThemeToNullable(): void {
       beta_tester INTEGER NOT NULL DEFAULT 1,
       force_password_reset INTEGER NOT NULL DEFAULT 0,
       last_login_at INTEGER,
-      web_and_api_version TEXT
+      web_and_api_version TEXT,
+      active_habit_config_version INTEGER
     );
 
     INSERT INTO users_theme_nullable (
       username, pin, admin, display_name, theme, email, created_at, beta_tester,
-      force_password_reset, last_login_at, web_and_api_version
+      force_password_reset, last_login_at, web_and_api_version, active_habit_config_version
     )
     SELECT
       username, pin, admin, display_name, theme, email, created_at,
       COALESCE(beta_tester, 1), COALESCE(force_password_reset, 0), last_login_at,
-      web_and_api_version
+      web_and_api_version, active_habit_config_version
     FROM users;
 
     DROP TABLE users;
@@ -145,24 +146,30 @@ function migrateUsersThemeToNullable(): void {
 
 migrateUsersThemeToNullable();
 
-const migratePlainTextPinStmt = db.prepare<{ username: string; pin: string }>(`
-  UPDATE users SET pin = @pin WHERE username = @username
+const migratePlainTextPasswordStmt = db.prepare<{
+  username: string;
+  passwordHash: string;
+}>(`
+  UPDATE users SET pin = @passwordHash WHERE username = @username
 `);
 
-/** Re-hash any legacy plain-text pins left in the database. */
-function migratePlainTextPins(): void {
-  const rows = db.prepare('SELECT username, pin FROM users').all() as Array<{
+/** Re-hash passwords left in plain text by versions that predate password hashing. */
+function migratePlainTextPasswords(): void {
+  const rows = db.prepare('SELECT username, pin AS passwordHash FROM users').all() as Array<{
     username: string;
-    pin: string;
+    passwordHash: string;
   }>;
   for (const row of rows) {
-    if (!isPasswordHashed(row.pin)) {
-      migratePlainTextPinStmt.run({ username: row.username, pin: hashPassword(row.pin) });
+    if (!isPasswordHashed(row.passwordHash)) {
+      migratePlainTextPasswordStmt.run({
+        username: row.username,
+        passwordHash: hashPassword(row.passwordHash),
+      });
     }
   }
 }
 
-migratePlainTextPins();
+migratePlainTextPasswords();
 
 db.exec(`
   CREATE UNIQUE INDEX IF NOT EXISTS users_email_unique
@@ -263,7 +270,7 @@ type HabitHydrationMetadataRow = {
   displayName: string | null;
   firstDate: string | null;
 };
-type UserPinRow = { pin: string };
+type UserPasswordRow = { passwordHash: string };
 type UserAdminRow = { admin: number };
 type UserBetaTesterRow = { beta_tester: number };
 type UserProfileCols = {
@@ -282,29 +289,21 @@ type UserListRow = {
 
 const insertUserStmt = db.prepare<{
   username: string;
-  pin: string;
+  passwordHash: string;
   admin: number;
   createdAt: string;
 }>(`
   INSERT INTO users (username, pin, admin, display_name, theme, email, created_at)
-  VALUES (@username, @pin, @admin, NULL, NULL, NULL, @createdAt)
+  VALUES (@username, @passwordHash, @admin, NULL, NULL, NULL, @createdAt)
   ON CONFLICT(username) DO UPDATE SET
     pin = excluded.pin,
     admin = excluded.admin,
     created_at = coalesce(nullif(trim(created_at), ''), excluded.created_at)
 `);
 
-const ensureUserStmt = db.prepare<{
-  username: string;
-  pin: string;
-  admin: number;
-  createdAt: string;
-}>(`
-  INSERT OR IGNORE INTO users (username, pin, admin, display_name, theme, email, created_at)
-  VALUES (@username, @pin, @admin, NULL, NULL, NULL, @createdAt)
-`);
-
-const getUserPinStmt = db.prepare<[string], UserPinRow>('SELECT pin FROM users WHERE username = ?');
+const getUserPasswordStmt = db.prepare<[string], UserPasswordRow>(
+  'SELECT pin AS passwordHash FROM users WHERE username = ?',
+);
 
 const getUsernameByEmailStmt = db.prepare<[string], { username: string }>(
   `SELECT username FROM users WHERE lower(trim(email)) = lower(trim(?))`,
@@ -368,8 +367,8 @@ const getUserProfileStmt = db.prepare<[string], UserProfileCols>(
    FROM users WHERE username = ?`,
 );
 
-const updateLoginPinStmt = db.prepare<{ username: string; pin: string }>(`
-  UPDATE users SET pin = @pin WHERE username = @username
+const updateLoginPasswordStmt = db.prepare<{ username: string; passwordHash: string }>(`
+  UPDATE users SET pin = @passwordHash WHERE username = @username
 `);
 
 const getUserAdminStmt = db.prepare<[string], UserAdminRow>(
@@ -380,13 +379,15 @@ const getUserBetaTesterStmt = db.prepare<[string], UserBetaTesterRow>(
   'SELECT beta_tester FROM users WHERE username = ?',
 );
 
-const renameUserPinStmt = db.prepare<{ fromUsername: string; toUsername: string }>(`
+const renameUserAuthRecordStmt = db.prepare<{ fromUsername: string; toUsername: string }>(`
   UPDATE users
   SET username = @toUsername
   WHERE username = @fromUsername
 `);
 
-const deleteUserPinStmt = db.prepare<[string], unknown>('DELETE FROM users WHERE username = ?');
+const deleteUserAuthRecordStmt = db.prepare<[string], unknown>(
+  'DELETE FROM users WHERE username = ?',
+);
 
 const recordUserLoginMetadataStmt = db.prepare<{
   username: string;
@@ -434,25 +435,11 @@ function backfillActiveHabitConfigVersion(username: string): void {
   backfillActiveHabitConfigVersionStmt.run({ username, version: latest.version });
 }
 
-export function ensureUserPins(usernames: string[], defaultPin = '0'): void {
-  const createdAt = new Date().toISOString();
-  const storedPin = hashPassword(defaultPin);
-  for (const username of usernames) {
-    ensureUserStmt.run({
-      username,
-      pin: storedPin,
-      admin: 0,
-      createdAt,
-    });
-    backfillActiveHabitConfigVersion(username);
-  }
-}
-
-export function setUserPin(username: string, pin: string): void {
+export function setUserPassword(username: string, password: string): void {
   const existing = getUserAdminStmt.get(username);
   insertUserStmt.run({
     username,
-    pin: hashPassword(pin),
+    passwordHash: hashPassword(password),
     admin: existing?.admin ?? 0,
     createdAt: new Date().toISOString(),
   });
@@ -464,46 +451,53 @@ export function countAdmins(): number {
   return row.n;
 }
 
-const createInitialAdminUserStmt = db.prepare<{ username: string; pin: string; createdAt: string }>(
+const createInitialAdminUserStmt = db.prepare<{
+  username: string;
+  passwordHash: string;
+  createdAt: string;
+}>(
   `
   INSERT INTO users (username, pin, admin, display_name, theme, email, created_at)
-  VALUES (@username, @pin, 1, NULL, 'dark', NULL, @createdAt)
+  VALUES (@username, @passwordHash, 1, NULL, 'dark', NULL, @createdAt)
 `,
 );
 
 /** Creates the first admin account (call only when {@link countAdmins} is zero). */
-export function createInitialAdminUser(username: string, pin: string): void {
+export function createInitialAdminUser(username: string, password: string): void {
   createInitialAdminUserStmt.run({
     username,
-    pin: hashPassword(pin),
+    passwordHash: hashPassword(password),
     createdAt: new Date().toISOString(),
   });
   backfillActiveHabitConfigVersion(username);
 }
 
-/** Updates stored login PIN only; preserves `admin`. Returns whether a row existed. */
-export function updateLoginPin(username: string, pin: string): boolean {
-  const result = updateLoginPinStmt.run({ username, pin: hashPassword(pin) });
+/** Updates the stored login password only; preserves `admin`. Returns whether a row existed. */
+export function updateLoginPassword(username: string, password: string): boolean {
+  const result = updateLoginPasswordStmt.run({
+    username,
+    passwordHash: hashPassword(password),
+  });
   return result.changes > 0;
 }
 
-export function renameUserPin(fromUsername: string, toUsername: string): void {
-  renameUserPinStmt.run({ fromUsername, toUsername });
+export function renameUserAuthRecord(fromUsername: string, toUsername: string): void {
+  renameUserAuthRecordStmt.run({ fromUsername, toUsername });
   renameSessionsUsername(fromUsername, toUsername);
   renameUserHabitData(fromUsername, toUsername);
 }
 
-export function deleteUserPin(username: string): void {
+export function deleteUserAuthRecord(username: string): void {
   deleteSessionsForUsername(username);
-  deleteUserPinStmt.run(username);
+  deleteUserAuthRecordStmt.run(username);
 }
 
-export function isUserPinValid(username: string, pin: string): boolean {
-  const row = getUserPinStmt.get(username);
+export function isUserPasswordValid(username: string, password: string): boolean {
+  const row = getUserPasswordStmt.get(username);
   if (!row) return false;
-  if (!verifyPassword(pin, row.pin)) return false;
-  if (!isPasswordHashed(row.pin)) {
-    updateLoginPin(username, pin);
+  if (!verifyPassword(password, row.passwordHash)) return false;
+  if (!isPasswordHashed(row.passwordHash)) {
+    updateLoginPassword(username, password);
   }
   return true;
 }
@@ -671,7 +665,7 @@ export function patchUserProfile(
   }
   if (sets.length === 0) return;
   const stmt = db.prepare(`UPDATE users SET ${sets.join(', ')} WHERE username = @username`);
-  let result = stmt.run(
+  const result = stmt.run(
     params as {
       username: string;
       displayName?: string | null;
@@ -679,17 +673,6 @@ export function patchUserProfile(
       email?: string | null;
     },
   );
-  if (result.changes === 0) {
-    ensureUserPins([username]);
-    result = stmt.run(
-      params as {
-        username: string;
-        displayName?: string | null;
-        theme?: string | null;
-        email?: string | null;
-      },
-    );
-  }
   if (result.changes === 0) {
     throw new Error('user row missing');
   }

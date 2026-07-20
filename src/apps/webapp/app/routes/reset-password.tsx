@@ -111,9 +111,9 @@ export default function ResetPasswordRoute() {
     setSaveFieldErrors({});
 
     setSaveBusy(true);
-    const newPin = pwdNew.trim();
+    const newPassword = pwdNew.trim();
     try {
-      const res = await submitResetPassword({ token, newPin });
+      const res = await submitResetPassword({ token, newPassword });
       showToast({ type: 'success', message: successMessage });
       if (res.user) {
         window.location.assign(userDefaultAppPath(res.user));

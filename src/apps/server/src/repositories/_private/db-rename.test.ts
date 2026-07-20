@@ -1,23 +1,23 @@
 import { describe, expect, it } from 'vitest';
 import {
-  ensureUserPins,
   getDailySelectSeriesForUser,
   getSummationDayTotal,
-  renameUserPin,
+  renameUserAuthRecord,
+  setUserPassword,
   setSelect,
   setTotal,
 } from './db.js';
 
-describe('renameUserPin', () => {
+describe('renameUserAuthRecord', () => {
   it('migrates habit summation and select data to the new username', () => {
     const from = 'rename-from-user';
     const to = 'rename-to-user';
-    ensureUserPins([from]);
+    setUserPassword(from, 'test-password');
 
     setTotal(from, 'push ups', '2025-01-01', 10, "datetime('now')");
     setSelect(from, 'mood', '2025-01-01', 'good');
 
-    renameUserPin(from, to);
+    renameUserAuthRecord(from, to);
 
     expect(getSummationDayTotal(to, 'push ups', '2025-01-01')).toBe(10);
     expect(getSummationDayTotal(from, 'push ups', '2025-01-01')).toBeNull();

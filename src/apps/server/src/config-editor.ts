@@ -64,15 +64,8 @@ export function parseConfigJson(user: string, text: YAMLString): UserConfigJson 
   }
 }
 
-export function configResponseParts(
-  user: string,
-  text: YAMLString,
-): {
-  config: UserConfigJson;
-} {
-  return {
-    config: parseConfigJson(user, text),
-  };
+export function userConfigJsonFromText(user: string, text: YAMLString): UserConfigJson {
+  return parseConfigJson(user, text);
 }
 
 function parseConfigMigrationEntries(text: YAMLString): RawHabitEntry[] {

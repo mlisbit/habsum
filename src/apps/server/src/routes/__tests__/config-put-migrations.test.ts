@@ -47,7 +47,7 @@ describe('PUT /users/:user/config migrations', () => {
       .get(`/users/${user}/config`)
       .set('Cookie', `${SESSION_COOKIE_NAME}=${session}`)
       .expect(200);
-    userAndAuthRepository.ensureUserPins([user]);
+    userAndAuthRepository.setUserPassword(user, 'test-password');
 
     const sqlite = new Database(join(process.env.HABSUM_CONFIG_DIR!, 'habsum.db'));
     try {
@@ -69,7 +69,7 @@ describe('PUT /users/:user/config migrations', () => {
     type: summation
 `,
     );
-    userAndAuthRepository.ensureUserPins([user]);
+    userAndAuthRepository.setUserPassword(user, 'test-password');
     const session = userAndAuthRepository.createUserSession(user, 3600);
 
     for (const habit of ['second', 'third', 'fourth']) {
@@ -134,7 +134,7 @@ describe('PUT /users/:user/config migrations', () => {
     options: [blackout, okay]
 `,
     );
-    userAndAuthRepository.ensureUserPins([user]);
+    userAndAuthRepository.setUserPassword(user, 'test-password');
     habitRepository.applyHabitMutation({
       kind: 'set_total',
       user,
@@ -193,7 +193,7 @@ describe('PUT /users/:user/config migrations', () => {
     options: [blackout, okay]
 `,
     );
-    userAndAuthRepository.ensureUserPins([user]);
+    userAndAuthRepository.setUserPassword(user, 'test-password');
     habitRepository.applyHabitMutation({
       kind: 'set_select',
       user,

@@ -36,8 +36,8 @@ describe('GET /users/:user/habits repeat config', () => {
     goal: 10
 `,
     );
+    userAndAuthRepository.setUserPassword(user, 'test-password');
     userAndAuthRepository.patchUserProfile(user, { displayName: 'Alex Morgan' });
-    userAndAuthRepository.ensureUserPins([user]);
     habitRepository.applyHabitMutation({
       kind: 'set_total',
       user,
@@ -126,7 +126,7 @@ describe('GET /users/:user/habits repeat config', () => {
   it('returns a welcome heading for new users', async () => {
     const user = 'habits-new-user-heading';
     writeUserConfig(user, `habits: {}\n`);
-    userAndAuthRepository.ensureUserPins([user]);
+    userAndAuthRepository.setUserPassword(user, 'test-password');
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2999-07-01T09:00:00.000Z'));
     const session = userAndAuthRepository.createUserSession(user, 24 * 3600);
@@ -159,7 +159,7 @@ describe('GET /users/:user/habits repeat config', () => {
     repeat: [friday]
 `,
     );
-    userAndAuthRepository.ensureUserPins([user]);
+    userAndAuthRepository.setUserPassword(user, 'test-password');
     const session = userAndAuthRepository.createUserSession(user, 3600);
 
     const wednesday = await request(createApp())
@@ -194,7 +194,7 @@ describe('GET /users/:user/habits repeat config', () => {
     repeat: [friday]
 `,
     );
-    userAndAuthRepository.ensureUserPins([user]);
+    userAndAuthRepository.setUserPassword(user, 'test-password');
     const session = userAndAuthRepository.createUserSession(user, 3600);
 
     const res = await request(createApp())
@@ -210,7 +210,7 @@ describe('GET /users/:user/habits repeat config', () => {
   it('sets empty intro when the user has no configured habits', async () => {
     const user = 'habits-empty-config-user';
     writeUserConfig(user, `habits: {}\n`);
-    userAndAuthRepository.ensureUserPins([user]);
+    userAndAuthRepository.setUserPassword(user, 'test-password');
     const session = userAndAuthRepository.createUserSession(user, 3600);
 
     const res = await request(createApp())
@@ -235,7 +235,7 @@ describe('GET /users/:user/habits repeat config', () => {
     repeat: [friday]
 `,
     );
-    userAndAuthRepository.ensureUserPins([user]);
+    userAndAuthRepository.setUserPassword(user, 'test-password');
     habitRepository.applyHabitMutation({
       kind: 'set_total',
       user,

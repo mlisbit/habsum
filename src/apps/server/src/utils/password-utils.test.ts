@@ -17,7 +17,7 @@ describe('password-hash', () => {
     expect(verifyPassword('same', b)).toBe(true);
   });
 
-  it('supports legacy plain-text pins during migration', () => {
+  it('supports legacy plain-text passwords during migration', () => {
     expect(isPasswordHashed('plain')).toBe(false);
     expect(verifyPassword('plain', 'plain')).toBe(true);
     expect(verifyPassword('other', 'plain')).toBe(false);

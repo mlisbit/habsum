@@ -13,6 +13,7 @@ import { ConfigService } from '../services/config-service.js';
 import { UserService } from '../services/user-service.js';
 import { resolveActiveSessionId } from '../utils/cookie-session-utils.js';
 import { generateTemporaryPassword } from '../utils/password-utils.js';
+import { sendServiceResult } from './controller-errors.js';
 
 const WEB_VERSION_HEADER = 'x-habsum-web-version';
 const configService = new ConfigService();
@@ -36,7 +37,7 @@ function parseOptionalDisplayName(body: CreateUserRequest | undefined): {
 
 function rollbackCreatedUser(username: string): void {
   configService.deleteUserConfig(username);
-  userAndAuthRepository.deleteUserPin(username);
+  userAndAuthRepository.deleteUserAuthRecord(username);
 }
 
 function countConfiguredHabits(username: string): number {
@@ -45,34 +46,28 @@ function countConfiguredHabits(username: string): number {
 
 export const usersController = {
   getMe(req: Request, res: Response) {
-    const result = authService.getMe(resolveActiveSessionId(req), req.headers[WEB_VERSION_HEADER]);
-    return res.status(result.status).json(result.body);
+    return sendServiceResult(res, () =>
+      authService.getMe(resolveActiveSessionId(req), req.headers[WEB_VERSION_HEADER]),
+    );
   },
 
   patchUser(req: Request<{ user: string }, unknown, UsersPatchRequest>, res: Response) {
-    const result = userService.patchUser(req.params.user, req.body);
-    return res.status(result.status).json(result.body);
+    return sendServiceResult(res, () => userService.patchUser(req.params.user, req.body));
   },
 
   deleteUser(req: Request<{ user: string }>, res: Response) {
-    const result = userService.deleteUser(req.params.user);
-    return res.status(result.status).json(result.body);
+    return sendServiceResult(res, () => userService.deleteUser(req.params.user));
   },
 
   getUsers(_req: Request, res: Response) {
-    const usernames = configService.listUsers();
-    userAndAuthRepository.ensureUserPins(usernames);
-    const rowsByUsername = new Map(
-      userAndAuthRepository.listUserRows().map((row) => [row.username, row]),
-    );
-    const users: ListUsersResponse['users'] = usernames.map((username) => {
-      const row = rowsByUsername.get(username);
+    const users: ListUsersResponse['users'] = userAndAuthRepository.listUserRows().map((row) => {
+      const username = row.username;
       return {
         username,
-        displayName: row?.displayName ?? null,
-        email: row?.email ?? '',
-        lastLoginAt: row?.lastLoginAt ?? null,
-        webAndApiVersion: row?.webAndApiVersion ?? null,
+        displayName: row.displayName,
+        email: row.email ?? '',
+        lastLoginAt: row.lastLoginAt,
+        webAndApiVersion: row.webAndApiVersion,
         habitCount: countConfiguredHabits(username),
         eventCount: userAndAuthRepository.countUserEvents(username),
         entitlements: userService.entitlementsForUser(username),
@@ -89,12 +84,10 @@ export const usersController = {
       return res.status(400).json({ error: 'invalid user' });
     }
 
-    const existing = configService.listUsers();
-    if (!existing.includes(name)) {
+    if (!userAndAuthRepository.listUserRows().some((row) => row.username === name)) {
       return res.status(404).json({ error: 'user not found' });
     }
 
-    userAndAuthRepository.ensureUserPins(existing);
     const token = userAndAuthRepository.createOucUserSession(name);
     const body: CreateOucSessionResponse = { ok: true, user: name, token };
     return res.status(201).json(body);
@@ -135,7 +128,7 @@ export const usersController = {
       return res.status(status).json({ error: out.error });
     }
 
-    userAndAuthRepository.setUserPin(out.user, password);
+    userAndAuthRepository.setUserPassword(out.user, password);
     try {
       userAndAuthRepository.patchUserProfile(out.user, {
         email,
@@ -173,15 +166,13 @@ export const usersController = {
       return res.status(400).json({ error: 'invalid user' });
     }
 
-    const existing = configService.listUsers();
-    if (!existing.includes(name)) {
+    if (!userAndAuthRepository.listUserRows().some((row) => row.username === name)) {
       return res.status(404).json({ error: 'user not found' });
     }
 
     const password = generateTemporaryPassword();
-    userAndAuthRepository.ensureUserPins(existing);
-    if (!userAndAuthRepository.updateLoginPin(name, password)) {
-      userAndAuthRepository.setUserPin(name, password);
+    if (!userAndAuthRepository.updateLoginPassword(name, password)) {
+      return res.status(404).json({ error: 'user not found' });
     }
 
     const body = { ok: true as const, user: name, password };
@@ -195,8 +186,7 @@ export const usersController = {
       return res.status(400).json({ error: 'invalid user' });
     }
 
-    const existing = configService.listUsers();
-    if (!existing.includes(name)) {
+    if (!userAndAuthRepository.listUserRows().some((row) => row.username === name)) {
       return res.status(404).json({ error: 'user not found' });
     }
 
@@ -213,7 +203,7 @@ export const usersController = {
       return res.status(status).json({ error: out.error });
     }
 
-    userAndAuthRepository.deleteUserPin(out.user);
+    userAndAuthRepository.deleteUserAuthRecord(out.user);
     return res.json({ ok: true, user: out.user });
   },
 };

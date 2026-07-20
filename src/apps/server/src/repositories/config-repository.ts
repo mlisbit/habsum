@@ -164,7 +164,7 @@ export class ConfigRepository {
     mkdirSync(DATA_DIR, { recursive: true });
   }
 
-  listUsers(): string[] {
+  listConfiguredUsers(): string[] {
     return listHabitConfigUsersStmt
       .all()
       .map((row) => row.user)
