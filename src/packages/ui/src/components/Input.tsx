@@ -67,6 +67,7 @@ export type InputProps = Omit<
  * Use `size="small"` for compact fields (e.g. settings forms).
  */
 export function Input({
+  id: providedId,
   value = '',
   type: fieldType = 'string',
   onChange,
@@ -88,9 +89,12 @@ export function Input({
   autoComplete,
   inputMode,
   pattern,
+  role,
+  onKeyDown,
   ...inputProps
 }: InputProps) {
-  const inputId = useId();
+  const generatedInputId = useId();
+  const inputId = providedId ?? generatedInputId;
   const inputRef = useRef<HTMLInputElement>(null);
 
   const computeSeedDraft = (v: string) =>
@@ -195,6 +199,8 @@ export function Input({
   };
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    onKeyDown?.(e);
+    if (e.defaultPrevented) return;
     if (e.key === 'Escape') {
       e.preventDefault();
       handleReject();
@@ -229,7 +235,7 @@ export function Input({
         ref={inputRef}
         id={inputId}
         type={isPasswordField ? 'password' : 'text'}
-        role={isNumberField ? 'spinbutton' : undefined}
+        role={isNumberField ? 'spinbutton' : role}
         placeholder={placeholder}
         inputMode={isNumberField ? 'numeric' : inputMode}
         pattern={isNumberField ? (allowNegative ? '-?[0-9]*' : '[0-9]*') : pattern}

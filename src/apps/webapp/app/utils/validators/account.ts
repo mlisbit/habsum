@@ -99,6 +99,11 @@ export function accountServerErrorToFieldMap(serverMessage: string): AccountErro
     return out;
   }
 
+  if (m === 'invalid hometown' || m === 'hometown must be a location or null') {
+    addError(out, 'hometown', m);
+    return out;
+  }
+
   if (m === 'theme must be a string' || m === 'theme must be a string or null') {
     addError(
       out,

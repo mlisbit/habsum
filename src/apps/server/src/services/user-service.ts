@@ -12,6 +12,7 @@ import type { UserConfig } from '../types/userConfig.js';
 import { ConfigService } from './config-service.js';
 import { UserAndAuthRepository } from '../repositories/user-and-auth-repository.js';
 import { ServiceError } from '../service-error.js';
+import { LocationService } from './location-service.js';
 
 type UserPatchResult = {
   ok: true;
@@ -27,6 +28,7 @@ type PasswordChangeInput = { currentPassword?: unknown; newPassword?: unknown };
 type UserPatchInput = {
   username?: unknown;
   displayName?: unknown;
+  hometown?: unknown;
   theme?: unknown;
   email?: unknown;
 };
@@ -51,6 +53,7 @@ export class UserService {
   constructor(
     private readonly configService = new ConfigService(),
     private readonly userAndAuthRepository = new UserAndAuthRepository(),
+    private readonly locationService = new LocationService(),
   ) {}
 
   loadUserConfig(user: string): UserConfig {
@@ -188,10 +191,11 @@ export class UserService {
 
     const parsed = this.parseUserPatchBody(user, body ?? {});
     this.loadUserConfig(user);
-    if (parsed.hasDisplayName || parsed.hasTheme || parsed.hasEmail) {
+    if (parsed.hasDisplayName || parsed.hasHometown || parsed.hasTheme || parsed.hasEmail) {
       try {
         this.userAndAuthRepository.patchUserProfile(user, {
           ...(parsed.hasDisplayName ? { displayName: parsed.displayName } : {}),
+          ...(parsed.hasHometown ? { hometownId: parsed.hometownId } : {}),
           ...(parsed.hasTheme ? { theme: parsed.theme } : {}),
           ...(parsed.hasEmail ? { email: parsed.email } : {}),
         });
@@ -272,6 +276,8 @@ export class UserService {
     rename: string;
     hasDisplayName: boolean;
     displayName: string | null | undefined;
+    hasHometown: boolean;
+    hometownId: string | null | undefined;
     hasTheme: boolean;
     theme: string | null | undefined;
     hasEmail: boolean;
@@ -304,6 +310,28 @@ export class UserService {
       theme = parsed;
     }
 
+    let hasHometown = false;
+    let hometownId: string | null | undefined;
+    if ('hometown' in body) {
+      hasHometown = true;
+      if (body.hometown === null) {
+        hometownId = null;
+      } else if (
+        typeof body.hometown === 'object' &&
+        body.hometown !== null &&
+        'id' in body.hometown &&
+        typeof body.hometown.id === 'string'
+      ) {
+        const location = this.locationService.getLocation(body.hometown.id.trim());
+        if (!location) {
+          throw new ServiceError('bad_request', 'invalid hometown');
+        }
+        hometownId = location.id;
+      } else {
+        throw new ServiceError('bad_request', 'hometown must be a location or null');
+      }
+    }
+
     let hasEmail = false;
     let email: string | undefined;
     if ('email' in body) {
@@ -327,7 +355,7 @@ export class UserService {
       email = t;
     }
 
-    if (!wantsRename && !hasDisplayName && !hasTheme && !hasEmail) {
+    if (!wantsRename && !hasDisplayName && !hasHometown && !hasTheme && !hasEmail) {
       throw new ServiceError('bad_request', 'no updates provided');
     }
 
@@ -348,6 +376,8 @@ export class UserService {
       rename,
       hasDisplayName,
       displayName,
+      hasHometown,
+      hometownId,
       hasTheme,
       theme,
       hasEmail,

@@ -9,6 +9,7 @@ import { EmailService } from './email-service.js';
 import { UserService } from './user-service.js';
 import { UserAndAuthRepository } from '../repositories/user-and-auth-repository.js';
 import { ServiceError } from '../service-error.js';
+import { LocationService } from './location-service.js';
 
 type LoginInput = { password?: unknown };
 type ForgotPasswordInput = { email?: unknown };
@@ -102,6 +103,7 @@ export class AuthService {
     private readonly emailService = new EmailService(),
     private readonly userAndAuthRepository = new UserAndAuthRepository(),
     private readonly userService = new UserService(configService, userAndAuthRepository),
+    private readonly locationService = new LocationService(),
   ) {}
 
   login(loginId: string, body: LoginInput | undefined) {
@@ -145,6 +147,7 @@ export class AuthService {
       return {
         username: null,
         displayName: null,
+        hometown: null,
         theme: null,
         email: null,
         createdAt: null,
@@ -160,6 +163,7 @@ export class AuthService {
     return {
       username: user,
       displayName: profile.displayName,
+      hometown: profile.hometownId ? this.locationService.getLocation(profile.hometownId) : null,
       theme: profile.theme,
       email: profile.email ?? '',
       admin: this.userAndAuthRepository.isUserAdmin(user),

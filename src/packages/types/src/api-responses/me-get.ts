@@ -1,10 +1,12 @@
 import type { ProductEntitlement } from '../common/entitlement.js';
 import type { DayWithTime } from '../common/day.js';
+import type { LocationOption } from '../common/location.js';
 
 /** Logged-out payload for `GET /users/me` (no session cookie). */
 export type MeGetLoggedOut = {
   username: null;
   displayName: null;
+  hometown: null;
   email: null;
   /** `null` follows the OS color scheme. */
   theme: null;
@@ -20,6 +22,8 @@ export type MeGetLoggedIn = {
   admin: boolean;
   /** Friendly name when set; `null` if unset. */
   displayName: string | null;
+  /** Canonical hometown from the built-in US and Canada location list. */
+  hometown: LocationOption | null;
   /** Login email (unique); also accepted on the login form instead of username. */
   email: string;
   /** UI theme (`light`, `dark`); `null` follows the OS color scheme. */

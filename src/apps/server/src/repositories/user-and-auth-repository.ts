@@ -145,7 +145,12 @@ export class UserAndAuthRepository {
 
   patchUserProfile(
     username: string,
-    patch: { displayName?: string | null; theme?: string | null; email?: string },
+    patch: {
+      displayName?: string | null;
+      hometownId?: string | null;
+      theme?: string | null;
+      email?: string;
+    },
   ): void {
     patchUserProfile(username, patch);
   }
