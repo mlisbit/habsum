@@ -8,12 +8,13 @@ function fixture(name: string): YAMLString {
 }
 
 describe('YAMLConfigParser', () => {
-  it('parses yaml config text into a user config model', () => {
-    const config = new YAMLConfigParser('yaml-parser-user').parse(
-      fixture('valid-user-config.yaml'),
-    );
+  it('parses legacy and new yaml config into the same user config model', () => {
+    const parser = new YAMLConfigParser('yaml-parser-user');
+    const legacyConfig = parser.parse(fixture('legacy-user-config.yaml'));
+    const newConfig = parser.parse(fixture('new-user-config.yaml'));
 
-    expect(config).toMatchObject({
+    expect(legacyConfig).toEqual(newConfig);
+    expect(newConfig).toMatchObject({
       user: 'yaml-parser-user',
       includeAbsentDaysInAverage: true,
       habits: [
@@ -23,16 +24,19 @@ describe('YAMLConfigParser', () => {
           repeat: ['monday', 'wednesday'],
           options: ['great', 'okay', 'bad'],
           theme: 'dark',
-          history: { period: '3w', displays: ['heatmap'] },
-          streak: { options: ['great'], frequency: '3d/1w', show_longest: true },
+          goal: null,
+          data_visualization: { heatmap: {} },
+          insights: ['current_streak', 'longest_streak'],
+          streak_options: { options: ['great'], frequency: '3d' },
         },
         {
           name: 'push ups',
           type: 'summation',
           goal: 100,
           summationOptions: { manualInput: true, increments: [5, 10, 25] },
-          history: { period: '2w', displays: ['weekly_history', 'heatmap'] },
-          streak: { options: ['100'], frequency: '5d/1w' },
+          data_visualization: { bargraph: { period: '2w' }, heatmap: {} },
+          insights: ['current_streak', 'average'],
+          streak_options: { options: ['100'], frequency: '5d' },
         },
       ],
     });
@@ -50,20 +54,21 @@ describe('YAMLConfigParser', () => {
   push ups:
     type: summation
     goal: 100
-    history:
-      displays: []
-      period: 3w
-      show_average: true
-    streak:
-      options: ['100']
-      show_current: false
-      show_longest: true
+    data_visualization:
+      bargraph:
+        period: 3w
+    insights:
+      - longest_streak
+      - average
+    streak_options:
+      frequency: 7d
 `),
     );
 
     expect(config.habits[0]).toMatchObject({
-      history: { displays: [], period: '3w', show_average: true },
-      streak: { options: ['100'], show_current: false, show_longest: true },
+      data_visualization: { bargraph: { period: '3w' } },
+      insights: ['longest_streak', 'average'],
+      streak_options: { options: ['100'], frequency: '7d' },
     });
   });
 });

@@ -16,11 +16,8 @@ function habitDetailLines(habit: UserConfigJsonHabit): string[] {
   if (habit.type === 'single_select' && habit.options?.length) {
     lines.push(`Options: ${habit.options.join(', ')}`);
   }
-  if (habit.history != null) {
-    const displays = habit.history.displays ?? [habit.history.display ?? 'weekly_history'];
-    if (displays.includes('heatmap')) lines.push('Heatmap enabled');
-    if (displays.includes('weekly_history')) lines.push('Weekly history enabled');
-  }
+  if (habit.data_visualization?.heatmap !== undefined) lines.push('Heatmap enabled');
+  if (habit.data_visualization?.bargraph) lines.push('Bar graph enabled');
   return lines;
 }
 

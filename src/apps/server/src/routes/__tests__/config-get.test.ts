@@ -96,4 +96,35 @@ habits:
     expect(res.body.text).toContain('include_absent_days_in_average: true');
     expect(res.body.text).toContain('repeat: [tuesday, thursday]');
   });
+
+  it('stores YAML editor saves using the new config schema', async () => {
+    const user = 'legacy-config-save-user';
+    const legacy = `habits:
+  push ups:
+    type: summation
+    goal: 100
+    history:
+      displays: [weekly_history]
+      period: 3w
+    streak:
+      options: ['100']
+      show_longest: true
+`;
+    writeUserConfig(user, legacy);
+    userAndAuthRepository.setUserPassword(user, 'test-password');
+    const session = userAndAuthRepository.createUserSession(user, 3600);
+
+    await request(createApp())
+      .put(`/users/${user}/config`)
+      .set('Cookie', `${SESSION_COOKIE_NAME}=${session}`)
+      .send({ text: legacy })
+      .expect(200);
+
+    const saved = configService.readUserConfigText(user);
+    expect(saved).toContain('data_visualization:');
+    expect(saved).toContain('insights:');
+    expect(saved).toContain('streak_options:');
+    expect(saved).not.toContain('history:');
+    expect(saved).not.toContain('\n    streak:');
+  });
 });

@@ -10,7 +10,8 @@ const habit: UserConfigJsonHabit = {
   type: 'single_select',
   goal: null,
   options: ['yes', 'no'],
-  streak: { options: ['yes'] },
+  insights: ['current_streak'],
+  streak_options: { options: ['yes'], frequency: '7d' },
 };
 
 function renderConfigModal(initialDraft: ConfigHabitDraft = draftFromHabit(habit)) {

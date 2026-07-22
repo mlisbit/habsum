@@ -23,8 +23,11 @@ habits:
   push ups:
     type: summation
     goal: 100
-    history:
-      period: 1w
+    data_visualization:
+      bargraph:
+        period: 1w
+    insights:
+      - average
 
   soda consumption:
     type: single_select

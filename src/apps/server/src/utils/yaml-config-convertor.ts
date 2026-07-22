@@ -1,7 +1,7 @@
 // Converts the server UserConfig model into persisted YAML habit config text.
 import yaml from 'js-yaml';
 import { yamlString, type YAMLString } from '@habsum/types/common/misc';
-import type { UserConfig, HabitDef } from '../types/userConfig.js';
+import type { UserConfig, HabitDef, HabitInsight } from '../types/userConfig.js';
 
 const YAML_DUMP_OPTS = { lineWidth: -1, noRefs: true };
 const YAML_SCALAR_QUOTE_RE = /[\s:#\[\]{},'"\\&*!?|>%@`-]|^[-?]|^$/;
@@ -53,8 +53,17 @@ function habitToYamlDef(habit: HabitDef): Record<string, unknown> {
   if (habit.type === 'summation' && habit.summationOptions) {
     def.summation_options = habit.summationOptions.increments;
   }
-  if (habit.history) def.history = habit.history;
-  if (habit.streak) def.streak = habit.streak;
+  if (habit.data_visualization) def.data_visualization = habit.data_visualization;
+  if ((habit.insights?.length ?? 0) > 0) {
+    const order: HabitInsight[] = ['current_streak', 'longest_streak', 'average'];
+    def.insights = order.filter((insight) => habit.insights?.includes(insight));
+  }
+  if (habit.streak_options) {
+    def.streak_options = {
+      ...(habit.type === 'single_select' ? { options: habit.streak_options.options } : {}),
+      frequency: habit.streak_options.frequency,
+    };
+  }
   return def;
 }
 
@@ -77,6 +86,17 @@ function dumpHabitDef(def: Record<string, unknown>): string {
 
     if (key === 'repeat' && Array.isArray(value) && value.every((x) => typeof x === 'string')) {
       lines.push(`repeat: ${formatStringListInline(value)}`);
+      continue;
+    }
+
+    if (key === 'data_visualization' && value != null && typeof value === 'object') {
+      const dataVisualization = value as HabitDef['data_visualization'];
+      lines.push('data_visualization:');
+      if (dataVisualization?.heatmap !== undefined) lines.push('  heatmap:');
+      if (dataVisualization?.bargraph) {
+        lines.push('  bargraph:');
+        lines.push(`    period: ${dataVisualization.bargraph.period}`);
+      }
       continue;
     }
 

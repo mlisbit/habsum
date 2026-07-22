@@ -88,7 +88,20 @@ export function InsightsWidget(props: InsightsWidgetProps) {
               type="checkbox"
               checked={draft.averageEnabled}
               disabled={type !== 'summation'}
-              onChange={(event) => patchInsight({ averageEnabled: event.target.checked })}
+              onChange={(event) => {
+                const checked = event.target.checked;
+                patchInsight({
+                  averageEnabled: checked,
+                  ...(checked
+                    ? {
+                        historyEnabled: true,
+                        historyDisplays: draft.historyDisplays.includes('weekly_history')
+                          ? draft.historyDisplays
+                          : [...draft.historyDisplays, 'weekly_history'],
+                      }
+                    : {}),
+                });
+              }}
             />
             Average
           </label>

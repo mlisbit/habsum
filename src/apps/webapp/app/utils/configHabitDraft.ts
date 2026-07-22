@@ -1,8 +1,4 @@
-import {
-  DEFAULT_STREAK_FREQUENCY,
-  formatStreakFrequency,
-  parseStreakFrequencyDays,
-} from '@habsum/types/common/streak';
+import { formatStreakFrequency, parseStreakFrequencyDays } from '@habsum/types/common/streak';
 import type {
   ConfigHabitDraft,
   HistoryDisplay,
@@ -15,7 +11,6 @@ const DEFAULT_HISTORY_PERIOD_AMOUNT = '3';
 const DEFAULT_HISTORY_PERIOD_UNIT: HistoryPeriodUnit = 'w';
 const HISTORY_DISPLAY_ORDER: HistoryDisplay[] = ['heatmap', 'weekly_history'];
 const HISTORY_WEEK_OPTIONS = ['1', '2', '3'];
-const DEFAULT_HISTORY_DISPLAYS: HistoryDisplay[] = ['weekly_history'];
 const DEFAULT_NEW_HABIT_NAME = 'New habit';
 export const HABIT_REPEAT_DAYS = [
   'monday',
@@ -118,19 +113,22 @@ function normalizeHistoryPeriodAmount(amount: string): string {
 
 export function draftFromHabit(habit: UserConfigJsonHabit): ConfigHabitDraft {
   const historyPeriod = parseHistoryPeriod(
-    habit.history?.period ?? `${DEFAULT_HISTORY_PERIOD_AMOUNT}${DEFAULT_HISTORY_PERIOD_UNIT}`,
+    habit.data_visualization?.bargraph?.period ??
+      `${DEFAULT_HISTORY_PERIOD_AMOUNT}${DEFAULT_HISTORY_PERIOD_UNIT}`,
   );
 
-  const configuredHistoryDisplays = normalizeHistoryDisplays(
-    habit.history?.displays ?? [habit.history?.display ?? DEFAULT_HISTORY_DISPLAYS[0]],
-  );
+  const configuredHistoryDisplays = normalizeHistoryDisplays([
+    ...(habit.data_visualization?.heatmap !== undefined ? (['heatmap'] as const) : []),
+    ...(habit.data_visualization?.bargraph != null ? (['weekly_history'] as const) : []),
+  ]);
   const historyDisplays =
     habit.type === 'single_select'
       ? configuredHistoryDisplays.filter((display) => display === 'heatmap')
       : configuredHistoryDisplays;
-  const averageEnabled =
-    habit.type === 'summation' &&
-    (habit.history?.show_average ?? historyDisplays.includes('weekly_history'));
+  const averageEnabled = habit.type === 'summation' && habit.insights?.includes('average') === true;
+  const hasStreakInsights =
+    habit.insights?.includes('current_streak') === true ||
+    habit.insights?.includes('longest_streak') === true;
 
   return {
     name: habit.name,
@@ -148,13 +146,15 @@ export function draftFromHabit(habit: UserConfigJsonHabit): ConfigHabitDraft {
     optionsText: habit.type === 'single_select' ? (habit.options ?? []).join('\n') : '',
     theme: habit.type === 'single_select' ? (habit.theme ?? '') : '',
     averageEnabled,
-    streakOptionsText: habit.streak?.options.join('\n') ?? '',
-    streakFrequencyPerWeek: String(parseStreakFrequencyDays(habit.streak?.frequency)),
-    streakShowCurrent: habit.streak != null && habit.streak.show_current !== false,
-    streakShowLongest: habit.streak?.show_longest === true,
-    historyEnabled: habit.history != null && historyDisplays.length > 0,
+    streakOptionsText: habit.streak_options?.options?.join('\n') ?? '',
+    streakFrequencyPerWeek: String(parseStreakFrequencyDays(habit.streak_options?.frequency)),
+    streakShowCurrent: habit.insights?.includes('current_streak') === true,
+    streakShowLongest: habit.insights?.includes('longest_streak') === true,
+    historyEnabled: historyDisplays.length > 0,
     historyDisplays:
-      habit.history == null && habit.type === 'single_select' ? ['heatmap'] : historyDisplays,
+      historyDisplays.length === 0 && habit.type === 'single_select' && !hasStreakInsights
+        ? ['heatmap']
+        : historyDisplays,
     historyPeriodAmount: normalizeHistoryPeriodAmount(historyPeriod.amount),
     historyPeriodUnit: historyPeriod.unit,
   };
@@ -187,22 +187,23 @@ function draftToHabit(draft: ConfigHabitDraft): UserConfigJsonHabit {
       const frequency = formatStreakFrequency(
         parseOptionalPositiveInt(draft.streakFrequencyPerWeek) ?? 7,
       );
-      habit.streak = {
+      habit.streak_options = {
         options: streakOptions,
-        ...(frequency !== DEFAULT_STREAK_FREQUENCY ? { frequency } : {}),
-        ...(!draft.streakShowCurrent ? { show_current: false } : {}),
-        ...(draft.streakShowLongest ? { show_longest: true } : {}),
+        frequency,
       };
     }
     if (draft.historyEnabled) {
       if (!draft.historyDisplays.includes('heatmap')) {
         throw new Error('single select data visualization requires heatmap');
       }
-      habit.history = {
-        displays: ['heatmap'],
-        period: formatHistoryPeriod(draft.historyPeriodAmount, draft.historyPeriodUnit),
+      habit.data_visualization = {
+        heatmap: {},
       };
     }
+    habit.insights = [
+      ...(draft.streakShowCurrent ? (['current_streak'] as const) : []),
+      ...(draft.streakShowLongest ? (['longest_streak'] as const) : []),
+    ];
     return habit;
   }
 
@@ -228,26 +229,32 @@ function draftToHabit(draft: ConfigHabitDraft): UserConfigJsonHabit {
     const frequency = formatStreakFrequency(
       parseOptionalPositiveInt(draft.streakFrequencyPerWeek) ?? 7,
     );
-    habit.streak = {
-      options: [String(goal)],
-      ...(frequency !== DEFAULT_STREAK_FREQUENCY ? { frequency } : {}),
-      ...(!draft.streakShowCurrent ? { show_current: false } : {}),
-      ...(draft.streakShowLongest ? { show_longest: true } : {}),
-    };
+    habit.streak_options = { frequency };
   }
-  if (draft.historyEnabled || draft.averageEnabled) {
-    if (draft.historyEnabled && draft.historyDisplays.length === 0) {
+  if (draft.averageEnabled && !draft.historyDisplays.includes('weekly_history')) {
+    throw new Error('average insight requires the bar graph visualization');
+  }
+  if (draft.historyEnabled) {
+    if (draft.historyDisplays.length === 0) {
       throw new Error('data visualization needs at least one option');
     }
     const displays = draft.historyEnabled ? normalizeHistoryDisplays(draft.historyDisplays) : [];
-    habit.history = {
-      displays,
-      period: formatHistoryPeriod(draft.historyPeriodAmount, draft.historyPeriodUnit),
-      ...(draft.averageEnabled || displays.includes('weekly_history')
-        ? { show_average: draft.averageEnabled }
+    habit.data_visualization = {
+      ...(displays.includes('heatmap') ? { heatmap: {} } : {}),
+      ...(displays.includes('weekly_history')
+        ? {
+            bargraph: {
+              period: formatHistoryPeriod(draft.historyPeriodAmount, draft.historyPeriodUnit),
+            },
+          }
         : {}),
     };
   }
+  habit.insights = [
+    ...(draft.streakShowCurrent ? (['current_streak'] as const) : []),
+    ...(draft.streakShowLongest ? (['longest_streak'] as const) : []),
+    ...(draft.averageEnabled ? (['average'] as const) : []),
+  ];
   return habit;
 }
 

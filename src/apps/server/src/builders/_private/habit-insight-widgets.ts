@@ -77,7 +77,7 @@ export function buildHabitWidgets({
           data.user,
           h.name,
           data.date,
-          h.streak?.options ?? [],
+          h.streak_options?.options ?? [],
           at,
           tzOffsetMinutes,
           undefined,
@@ -88,15 +88,15 @@ export function buildHabitWidgets({
         )
       : null;
     const streak =
-      (includeCurrentStreakInsight || includeLongestStreakInsight) && h.streak
+      (includeCurrentStreakInsight || includeLongestStreakInsight) && h.streak_options
         ? streakGraphForConfiguredWindow(
             data.user,
             h.name,
             data.date,
-            h.streak.options,
+            h.streak_options.options,
             at,
             tzOffsetMinutes,
-            h.streak.frequency,
+            h.streak_options.frequency,
             includeLongestStreakInsight,
             data.firstDate,
             h.options ?? [],
@@ -113,13 +113,13 @@ export function buildHabitWidgets({
 
   const total = interimHabitTotal(interimHabit, data);
   const history =
-    h.history != null && (includeBarGraph || includeWeeklyAverageInsight)
+    h.data_visualization?.bargraph != null && (includeBarGraph || includeWeeklyAverageInsight)
       ? habitHistoryForConfiguredPeriod(
           data.user,
           h.name,
           data.date,
           data.firstDate,
-          h.history.period,
+          h.data_visualization.bargraph.period,
           h.goal,
           at,
           tzOffsetMinutes,
@@ -142,15 +142,15 @@ export function buildHabitWidgets({
         )
       : null;
   const streak =
-    (includeCurrentStreakInsight || includeLongestStreakInsight) && h.streak
+    (includeCurrentStreakInsight || includeLongestStreakInsight) && h.streak_options
       ? summationStreakGraphForConfiguredWindow(
           data.user,
           h.name,
           data.date,
-          h.streak.options,
+          h.streak_options.options,
           at,
           tzOffsetMinutes,
-          h.streak.frequency,
+          h.streak_options.frequency,
           includeLongestStreakInsight,
           data.firstDate,
           reader,

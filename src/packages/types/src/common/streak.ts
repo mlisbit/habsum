@@ -1,12 +1,12 @@
 import type { Day } from './day.js';
 
-/** Daily streak target (`7d/1w`). Omitted from YAML when streak has no `frequency` key. */
-export const DEFAULT_STREAK_FREQUENCY = '7d/1w';
+/** Daily streak target in the persisted `streak_options.frequency` format. */
+export const DEFAULT_STREAK_FREQUENCY = '7d';
 
 /** Days per week required for the streak. Missing or invalid YAML `frequency` → 7 (every day). */
 export function parseStreakFrequencyDays(spec?: string): number {
   if (typeof spec !== 'string' || spec.trim().length === 0) return 7;
-  const m = spec.trim().match(/^(\d+)d\/1w$/);
+  const m = spec.trim().match(/^(\d+)d(?:\/1w)?$/);
   if (!m) return 7;
   const n = Number(m[1]);
   if (!Number.isFinite(n) || n < 1 || n > 7) return 7;
@@ -18,7 +18,7 @@ export function formatStreakFrequency(daysPerWeek: number): string {
   if (!Number.isFinite(n) || n < 1 || n > 7) {
     throw new Error('streak frequency must be between 1 and 7 per week');
   }
-  return `${n}d/1w`;
+  return `${n}d`;
 }
 
 export function isDailyStreakFrequency(daysPerWeek: number): boolean {

@@ -69,17 +69,14 @@ export type UserConfigJsonHabit = {
   options?: string[];
   theme?: string;
   summationOptions?: SummationOptions;
-  history?: {
-    period: string;
-    displays?: HistoryDisplay[];
-    display?: 'heatmap' | 'weekly_history';
-    show_average?: boolean;
+  data_visualization?: {
+    heatmap?: Record<string, never> | null;
+    bargraph?: { period: string } | null;
   };
-  streak?: {
-    options: string[];
-    frequency?: string;
-    show_current?: boolean;
-    show_longest?: boolean;
+  insights?: Array<'average' | 'current_streak' | 'longest_streak'>;
+  streak_options?: {
+    options?: string[];
+    frequency: string;
   };
 };
 

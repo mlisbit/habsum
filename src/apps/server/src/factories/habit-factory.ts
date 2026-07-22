@@ -22,18 +22,18 @@ export class HabitFactory {
         tzOffsetMinutes,
       });
 
-      if (h.history?.displays.includes('heatmap')) builder.withHeatMap();
+      if (h.data_visualization?.heatmap !== undefined) builder.withHeatMap();
 
-      if (interimHabit.type === 'summation' && h.history?.displays.includes('weekly_history')) {
+      if (interimHabit.type === 'summation' && h.data_visualization?.bargraph) {
         builder.withBarGraph();
       }
 
-      if (interimHabit.type === 'summation' && h.history?.show_average) {
+      if (interimHabit.type === 'summation' && h.insights.includes('average')) {
         builder.withInsights(['weeklyAverage']);
       }
 
-      if (h.streak && h.streak.show_current !== false) builder.withInsights(['currentStreak']);
-      if (h.streak?.show_longest) builder.withInsights(['longestStreak']);
+      if (h.insights.includes('current_streak')) builder.withInsights(['currentStreak']);
+      if (h.insights.includes('longest_streak')) builder.withInsights(['longestStreak']);
 
       return builder;
     });

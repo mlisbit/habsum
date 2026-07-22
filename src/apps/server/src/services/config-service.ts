@@ -287,7 +287,12 @@ export class ConfigService {
 
     let text: YAMLString;
     if (typeof body.text === 'string') {
-      text = yamlString(body.text);
+      try {
+        const config = new YAMLConfigParser(user).parse(yamlString(body.text));
+        text = this.yamlConfigConvertor.convert(config);
+      } catch (e) {
+        throw new ServiceError('bad_request', e instanceof Error ? e.message : 'invalid config');
+      }
     } else if (body.config != null) {
       try {
         text = this.yamlConfigConvertor.convert(body.config as UserConfig);

@@ -81,7 +81,7 @@ function streakInsightRange(
   today: Day,
   firstDate: Day | null,
 ): HabitDataRange {
-  const daysPerWeek = parseStreakFrequencyDays(habit.streak?.frequency);
+  const daysPerWeek = parseStreakFrequencyDays(habit.streak_options?.frequency);
   const graphRange = isDailyStreakFrequency(daysPerWeek)
     ? dailyStreakInsightRange(viewDate, today)
     : weeklyStreakInsightRange(viewDate, today);
@@ -100,13 +100,16 @@ export function habitInsightDataRange(
 ): HabitDataRange {
   let range: HabitDataRange = { start: viewDate, end: viewDate };
 
-  if (habit.history?.displays.includes('weekly_history')) {
-    range = mergeRange(range, weeklyHistoryInsightRange(viewDate, today, habit.history.period));
+  if (habit.data_visualization?.bargraph) {
+    range = mergeRange(
+      range,
+      weeklyHistoryInsightRange(viewDate, today, habit.data_visualization.bargraph.period),
+    );
   }
-  if (habit.history?.displays.includes('heatmap')) {
+  if (habit.data_visualization?.heatmap !== undefined) {
     range = mergeRange(range, dailyStreakInsightRange(viewDate, today));
   }
-  if (habit.streak) {
+  if (habit.streak_options) {
     range = mergeRange(range, streakInsightRange(habit, viewDate, today, firstDate));
   }
 

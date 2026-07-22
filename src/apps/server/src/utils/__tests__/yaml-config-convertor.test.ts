@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { yamlString } from '@habsum/types/common/misc';
 import { describe, expect, it } from 'vitest';
 import type { UserConfig } from '../../types/userConfig.js';
 import { YAMLConfigConvertor } from '../yaml-config-convertor.js';
@@ -19,8 +20,9 @@ const config: UserConfig = {
       repeat: ['monday', 'wednesday'],
       options: ['great', 'okay', 'bad'],
       theme: 'dark',
-      history: { period: '3w', displays: ['heatmap'] },
-      streak: { options: ['great'], frequency: '3d/1w', show_longest: true },
+      data_visualization: { heatmap: {} },
+      insights: ['current_streak', 'longest_streak'],
+      streak_options: { options: ['great'], frequency: '3d' },
     },
     {
       name: 'push ups',
@@ -28,15 +30,23 @@ const config: UserConfig = {
       goal: 100,
       repeat: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
       summationOptions: { manualInput: true, increments: [5, 10, 25] },
-      history: { period: '2w', displays: ['weekly_history', 'heatmap'] },
-      streak: { options: ['100'], frequency: '5d/1w' },
+      data_visualization: { heatmap: {}, bargraph: { period: '2w' } },
+      insights: ['current_streak', 'average'],
+      streak_options: { options: ['100'], frequency: '5d' },
     },
   ],
 };
 
 describe('YAMLConfigConvertor', () => {
   it('converts a user config model into persisted yaml text', () => {
-    expect(new YAMLConfigConvertor().convert(config)).toBe(fixture('converted-user-config.yaml'));
+    expect(new YAMLConfigConvertor().convert(config)).toBe(fixture('new-user-config.yaml'));
+  });
+
+  it('converts parsed legacy yaml into the new persisted schema', () => {
+    const legacy = new YAMLConfigParser('legacy-convertor-user').parse(
+      yamlString(fixture('legacy-user-config.yaml')),
+    );
+    expect(new YAMLConfigConvertor().convert(legacy)).toBe(fixture('new-user-config.yaml'));
   });
 
   it('produces yaml that can be parsed back into a user config model', () => {

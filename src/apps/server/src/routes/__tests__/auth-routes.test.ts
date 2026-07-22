@@ -1,4 +1,5 @@
 import request from 'supertest';
+import { yamlString } from '@habsum/types/common/misc';
 import { describe, expect, it, vi } from 'vitest';
 import { createApp } from '../../app.js';
 import { ConfigService } from '../../services/config-service.js';
@@ -32,6 +33,30 @@ describe('session routes', () => {
       .set('Cookie', sessionCookie!)
       .expect(200);
     expect(loggedOutMeRes.body.username).toBeNull();
+  });
+
+  it('does not rewrite legacy config when resolving an existing session', async () => {
+    const user = 'legacy-session-route-user';
+    configService.createEmptyUserConfig(user);
+    const legacy = yamlString(`habits:
+  push ups:
+    type: summation
+    goal: 100
+    history:
+      displays: [weekly_history]
+      period: 3w
+    streak:
+      options: ['100']
+      show_longest: true
+`);
+    const written = configService.writeUserConfigText(user, legacy);
+    if (!written.ok) throw new Error(written.error);
+    userAndAuthRepository.setUserPassword(user, 'correct-password');
+    const session = userAndAuthRepository.createUserSession(user, 3600);
+
+    await request(createApp()).get('/users/me').set('Cookie', `habsum_sid=${session}`).expect(200);
+
+    expect(configService.readUserConfigText(user)).toBe(legacy);
   });
 });
 

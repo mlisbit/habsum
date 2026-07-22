@@ -64,7 +64,7 @@ export function DataVisualizationWidget({ draft, patch, type }: DataVisualizatio
     const next = displays.filter((display) => type.includes(display));
     if (next.length === 0) {
       setKeepOpenWhenDisabled(true);
-      patch({ historyEnabled: false, historyDisplays: [] });
+      patch({ historyEnabled: false, historyDisplays: [], averageEnabled: false });
       return;
     }
     setKeepOpenWhenDisabled(false);
@@ -72,6 +72,7 @@ export function DataVisualizationWidget({ draft, patch, type }: DataVisualizatio
       historyEnabled: true,
       historyDisplays: next,
       historyPeriodUnit: 'w',
+      ...(!next.includes('weekly_history') ? { averageEnabled: false } : {}),
       ...extra,
     });
   };

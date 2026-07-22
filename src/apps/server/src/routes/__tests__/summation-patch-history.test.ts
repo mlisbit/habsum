@@ -137,18 +137,16 @@ describe('PATCH /users/:user/habits summation history', () => {
     ).toBe(false);
   });
 
-  it('returns independently selected insights without requiring a visualization', async () => {
+  it('returns independently selected insights with the configured bar graph', async () => {
     const user = 'patch-history-independent-insights-user';
     writeSummationUserConfig(
       user,
-      `    history:
-      displays: []
-      period: 1w
-      show_average: true
-    streak:
-      options: ['100']
-      show_current: false
-      show_longest: true`,
+      `    data_visualization:
+      bargraph:
+        period: 1w
+    insights: [longest_streak, average]
+    streak_options:
+      frequency: 7d`,
     );
     userAndAuthRepository.setUserPassword(user, 'test-password');
     const session = userAndAuthRepository.createUserSession(user, 3600);
@@ -171,8 +169,11 @@ describe('PATCH /users/:user/habits summation history', () => {
     const historyWidget = res.body.widgets?.find(
       (widget: { title: string }) => widget.title === 'History',
     );
-    expect(historyWidget?.body?.map((body: { kind: string }) => body.kind)).toEqual(['insights']);
-    const headers = historyWidget?.body?.[0]?.insights?.map(
+    expect(historyWidget?.body?.map((body: { kind: string }) => body.kind)).toEqual([
+      'barGraph',
+      'insights',
+    ]);
+    const headers = historyWidget?.body?.[1]?.insights?.map(
       (insight: { header: string }) => insight.header,
     );
     expect(headers).toEqual(['Longest streak', 'Average/day']);

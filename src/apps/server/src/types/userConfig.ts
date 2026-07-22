@@ -2,6 +2,7 @@
 import type { SummationOptions } from '@habsum/types/common/habit';
 
 export type HabitType = 'summation' | 'single_select';
+export type HabitInsight = 'average' | 'current_streak' | 'longest_streak';
 
 export type HabitDef = {
   name: string;
@@ -12,20 +13,17 @@ export type HabitDef = {
   theme?: string;
   /** Fixed +/− steps from YAML `summation_options` (array) or legacy `{ sub, add }`. */
   summationOptions?: SummationOptions;
-  history?: {
-    period: string;
-    displays: Array<'heatmap' | 'weekly_history'>;
-    show_average?: boolean;
+  data_visualization?: {
+    heatmap?: Record<string, never> | null;
+    bargraph?: { period: string };
   };
-  /** Subset of selectable values or summation totals that count toward the streak. */
-  streak?: {
+  insights: HabitInsight[];
+  /** Options shared by current- and longest-streak insights. */
+  streak_options?: {
+    /** Single-select values that count toward the streak. Summations use the goal. */
     options: string[];
-    /** Target streak days per week, e.g. `3d/1w`. Omitted when daily (`7d/1w`). */
-    frequency?: string;
-    /** False when only the longest-streak insight should be returned. */
-    show_current?: boolean;
-    /** When true, API includes `longestStreak` on streak responses. */
-    show_longest?: boolean;
+    /** Target streak days per week, e.g. `3d`. */
+    frequency: string;
   };
 };
 
@@ -44,12 +42,17 @@ export type RawHabitConfig = {
   /** `[subtract, add]` or `{ sub, add }` / `{ add, sub }` */
   summation_options?: unknown;
   summationOptions?: unknown;
+  data_visualization?: unknown;
+  insights?: unknown;
+  streak_options?: unknown;
+  /** Legacy schema, accepted as an alternate persisted representation. */
   history?: {
     period?: unknown;
     display?: unknown;
     displays?: unknown;
     show_average?: unknown;
   };
+  /** Legacy schema, accepted as an alternate persisted representation. */
   streak?: unknown;
 };
 

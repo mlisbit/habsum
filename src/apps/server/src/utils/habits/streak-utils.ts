@@ -1000,7 +1000,7 @@ function summationStreakGraphWeeklyWindow(
 
 /**
  * Builds a select streak graph around `viewDate`.
- * `streakFrequency` uses `<days>d/1w` (for example `3d/1w`).
+ * `streakFrequency` uses `<days>d` (for example `3d`); the legacy `<days>d/1w` is also accepted.
  */
 export function streakGraphForConfiguredWindow(
   user: string,

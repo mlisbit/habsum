@@ -1,15 +1,12 @@
 // Parses persisted YAML habit config text into the server UserConfig model.
 import { parseSummationOptionsFromRaw } from '@habsum/types/common/habit';
-import {
-  DEFAULT_STREAK_FREQUENCY,
-  formatStreakFrequency,
-  parseStreakFrequencyDays,
-} from '@habsum/types/common/streak';
+import { DEFAULT_STREAK_FREQUENCY, formatStreakFrequency } from '@habsum/types/common/streak';
 import yaml from 'js-yaml';
 import type { YAMLString } from '@habsum/types/common/misc';
 import {
   HABIT_REPEAT_DAYS,
   type HabitDef,
+  type HabitInsight,
   type RawHabitConfig,
   type RawUserConfig,
   type UserConfig,
@@ -51,107 +48,26 @@ function normalizeRepeat(raw: unknown, habitName: string): HabitDef['repeat'] {
   return days;
 }
 
-function normalizeHistory(
-  raw: RawHabitConfig['history'],
-  habitName: string,
-): HabitDef['history'] | undefined {
-  if (!raw) return undefined;
-
-  if (!isRecord(raw)) {
-    throw new YAMLConfigValidationError(
-      `habit "${habitName}" history must be a yaml mapping with period`,
-    );
-  }
-
-  const { period } = raw;
-  if (typeof period !== 'string' || period.length === 0) {
-    throw new YAMLConfigValidationError(
-      `habit "${habitName}" history.period must be a non-empty string`,
-    );
-  }
-  const displays = normalizeHistoryDisplays(raw.displays, raw.display, habitName);
-  const show_average = normalizeHistoryShowAverage(raw.show_average, displays, habitName);
-  if (displays.length === 0 && !show_average) {
-    throw new YAMLConfigValidationError(
-      `habit "${habitName}" history must include a display or enable show_average`,
-    );
-  }
-  return { period, displays, show_average };
-}
-
-function normalizeHistoryShowAverage(
-  raw: unknown,
-  displays: NonNullable<HabitDef['history']>['displays'],
-  habitName: string,
-): boolean {
-  if (raw == null) return displays.includes('weekly_history');
-  if (typeof raw === 'boolean') return raw;
-  throw new YAMLConfigValidationError(
-    `habit "${habitName}" history.show_average must be a boolean`,
-  );
-}
-
-function normalizeHistoryDisplays(
-  rawDisplays: unknown,
-  rawDisplay: unknown,
-  habitName: string,
-): NonNullable<HabitDef['history']>['displays'] {
-  const rawValues =
-    rawDisplays == null ? (rawDisplay == null ? ['weekly_history'] : [rawDisplay]) : rawDisplays;
-  if (!Array.isArray(rawValues)) {
-    throw new YAMLConfigValidationError(
-      `habit "${habitName}" history.displays must be a yaml list`,
-    );
-  }
-  const displays: NonNullable<HabitDef['history']>['displays'] = [];
-  for (const item of rawValues) {
-    if (item !== 'heatmap' && item !== 'weekly_history') {
-      throw new YAMLConfigValidationError(
-        `habit "${habitName}" history.displays must only include "heatmap" or "weekly_history"`,
-      );
-    }
-    if (!displays.includes(item)) displays.push(item);
-  }
-  return displays;
-}
-
-function normalizeStreak(
-  raw: unknown,
+function normalizeStreakOptionsList(
+  rawOptions: unknown,
   habitName: string,
   mainOptions: readonly string[],
-  optionsRequired = true,
-  useMainOptionsOnly = false,
-): HabitDef['streak'] | undefined {
-  if (raw == null) return undefined;
-
-  if (!isRecord(raw)) {
-    throw new YAMLConfigValidationError(`habit "${habitName}" streak must be a yaml mapping`);
+  key: 'streak.options' | 'streak_options.options',
+): string[] {
+  if (!Array.isArray(rawOptions) || rawOptions.length === 0) {
+    throw new YAMLConfigValidationError(`habit "${habitName}" ${key} must be a non-empty array`);
   }
-
-  const optsRaw = raw.options;
-  if ((!Array.isArray(optsRaw) || optsRaw.length === 0) && optionsRequired) {
-    throw new YAMLConfigValidationError(
-      `habit "${habitName}" streak.options must be a non-empty array`,
-    );
-  }
-
-  if (mainOptions.length === 0) {
-    throw new YAMLConfigValidationError(`habit "${habitName}" streak requires a configured goal`);
-  }
-
-  const rawOptions =
-    useMainOptionsOnly || !Array.isArray(optsRaw) || optsRaw.length === 0 ? mainOptions : optsRaw;
   const allowed = new Set(mainOptions);
   const options: string[] = [];
   const seen = new Set<string>();
   for (const item of rawOptions) {
     const normalized = typeof item === 'number' && Number.isFinite(item) ? String(item) : item;
     if (typeof normalized !== 'string' || normalized.length === 0) {
-      throw new YAMLConfigValidationError(`habit "${habitName}" streak.options must be strings`);
+      throw new YAMLConfigValidationError(`habit "${habitName}" ${key} must be strings`);
     }
     if (!allowed.has(normalized)) {
       throw new YAMLConfigValidationError(
-        `habit "${habitName}" streak.options entry "${normalized}" is not listed in habits options`,
+        `habit "${habitName}" ${key} entry "${normalized}" is not listed in habit options`,
       );
     }
     if (seen.has(normalized)) continue;
@@ -161,64 +77,269 @@ function normalizeStreak(
 
   if (options.length === 0) {
     throw new YAMLConfigValidationError(
-      `habit "${habitName}" streak.options must list at least one habits option`,
+      `habit "${habitName}" ${key} must list at least one habit option`,
     );
   }
-
-  const frequency = normalizeStreakFrequency(raw.frequency, habitName);
-  const show_current = normalizeStreakShowCurrent(raw.show_current, habitName);
-  const show_longest = normalizeStreakShowLongest(raw.show_longest, habitName);
-
-  return {
-    options,
-    ...(frequency !== DEFAULT_STREAK_FREQUENCY ? { frequency } : {}),
-    ...(!show_current ? { show_current: false } : {}),
-    ...(show_longest ? { show_longest: true } : {}),
-  };
+  return options;
 }
 
-function normalizeStreakShowCurrent(raw: unknown, habitName: string): boolean {
-  if (raw == null) return true;
-  if (typeof raw === 'boolean') return raw;
-  throw new YAMLConfigValidationError(`habit "${habitName}" streak.show_current must be a boolean`);
-}
-
-function normalizeStreakShowLongest(raw: unknown, habitName: string): boolean {
-  if (raw == null) return false;
-  if (typeof raw === 'boolean') return raw;
-  throw new YAMLConfigValidationError(`habit "${habitName}" streak.show_longest must be a boolean`);
-}
-
-function normalizeStreakFrequency(raw: unknown, habitName: string): string {
+function normalizeStreakFrequency(raw: unknown, habitName: string, legacy = false): string {
   if (raw == null) return DEFAULT_STREAK_FREQUENCY;
 
   if (typeof raw !== 'string' || raw.trim().length === 0) {
     throw new YAMLConfigValidationError(
-      `habit "${habitName}" streak.frequency must be a string like "3d/1w"`,
+      `habit "${habitName}" streak_options.frequency must be a string like "3d"`,
     );
   }
 
   const spec = raw.trim();
-  if (!/^\d+d\/1w$/.test(spec)) {
+  const match = spec.match(legacy ? /^(\d+)d(?:\/1w)?$/ : /^(\d+)d$/);
+  if (!match) {
     throw new YAMLConfigValidationError(
-      `habit "${habitName}" streak.frequency must match Nd/1w (e.g. "3d/1w")`,
+      `habit "${habitName}" streak_options.frequency must match Nd (e.g. "3d")`,
     );
   }
 
-  const days = parseStreakFrequencyDays(spec);
+  const days = Number(match[1]);
   if (days < 1 || days > 7) {
     throw new YAMLConfigValidationError(
-      `habit "${habitName}" streak.frequency day count must be between 1 and 7`,
+      `habit "${habitName}" streak_options.frequency day count must be between 1 and 7`,
     );
   }
 
-  try {
-    return formatStreakFrequency(days);
-  } catch {
+  return formatStreakFrequency(days);
+}
+
+function normalizeDataVisualization(
+  raw: unknown,
+  habitName: string,
+): HabitDef['data_visualization'] | undefined {
+  if (raw == null) return undefined;
+  if (!isRecord(raw)) {
     throw new YAMLConfigValidationError(
-      `habit "${habitName}" streak.frequency day count must be between 1 and 7`,
+      `habit "${habitName}" data_visualization must be a yaml mapping`,
     );
   }
+
+  const dataVisualization: NonNullable<HabitDef['data_visualization']> = {};
+  if (Object.hasOwn(raw, 'heatmap')) {
+    if (raw.heatmap != null && !isRecord(raw.heatmap)) {
+      throw new YAMLConfigValidationError(
+        `habit "${habitName}" data_visualization.heatmap must be empty`,
+      );
+    }
+    dataVisualization.heatmap = {};
+  }
+  if (Object.hasOwn(raw, 'bargraph')) {
+    if (
+      !isRecord(raw.bargraph) ||
+      typeof raw.bargraph.period !== 'string' ||
+      raw.bargraph.period.trim().length === 0
+    ) {
+      throw new YAMLConfigValidationError(
+        `habit "${habitName}" data_visualization.bargraph.period must be a non-empty string`,
+      );
+    }
+    dataVisualization.bargraph = { period: raw.bargraph.period };
+  }
+  return Object.keys(dataVisualization).length > 0 ? dataVisualization : undefined;
+}
+
+const HABIT_INSIGHTS = ['current_streak', 'longest_streak', 'average'] as const;
+
+function canonicalizeInsights(insights: readonly HabitInsight[]): HabitInsight[] {
+  return HABIT_INSIGHTS.filter((insight) => insights.includes(insight));
+}
+
+function normalizeInsights(
+  raw: unknown,
+  habitName: string,
+  type: HabitDef['type'],
+): HabitInsight[] {
+  if (raw == null) return [];
+  if (!Array.isArray(raw)) {
+    throw new YAMLConfigValidationError(`habit "${habitName}" insights must be a yaml list`);
+  }
+  const insights: HabitInsight[] = [];
+  for (const insight of raw) {
+    if (!HABIT_INSIGHTS.some((candidate) => candidate === insight)) {
+      throw new YAMLConfigValidationError(
+        `habit "${habitName}" insights must only include current_streak, longest_streak, or average`,
+      );
+    }
+    if (insight === 'average' && type !== 'summation') {
+      throw new YAMLConfigValidationError(
+        `habit "${habitName}" average insight requires a summation habit`,
+      );
+    }
+    if (!insights.includes(insight)) insights.push(insight);
+  }
+  return canonicalizeInsights(insights);
+}
+
+function normalizeStreakOptions(
+  raw: unknown,
+  habitName: string,
+  type: HabitDef['type'],
+  mainOptions: readonly string[],
+): HabitDef['streak_options'] | undefined {
+  if (raw == null) return undefined;
+  if (!isRecord(raw)) {
+    throw new YAMLConfigValidationError(
+      `habit "${habitName}" streak_options must be a yaml mapping`,
+    );
+  }
+  if (mainOptions.length === 0) {
+    throw new YAMLConfigValidationError(
+      `habit "${habitName}" streak_options requires a configured goal`,
+    );
+  }
+  const options =
+    type === 'summation'
+      ? [...mainOptions]
+      : normalizeStreakOptionsList(raw.options, habitName, mainOptions, 'streak_options.options');
+  return {
+    options,
+    frequency: normalizeStreakFrequency(raw.frequency, habitName),
+  };
+}
+
+function normalizeLegacyPresentation(
+  rawHabit: RawHabitConfig,
+  habitName: string,
+  type: HabitDef['type'],
+  mainOptions: readonly string[],
+): Pick<HabitDef, 'data_visualization' | 'insights' | 'streak_options'> {
+  const insights: HabitInsight[] = [];
+  let dataVisualization: HabitDef['data_visualization'];
+  if (rawHabit.history != null) {
+    if (!isRecord(rawHabit.history) || typeof rawHabit.history.period !== 'string') {
+      throw new YAMLConfigValidationError(
+        `habit "${habitName}" history.period must be a non-empty string`,
+      );
+    }
+    const rawDisplays =
+      rawHabit.history.displays == null
+        ? [rawHabit.history.display ?? 'weekly_history']
+        : rawHabit.history.displays;
+    if (!Array.isArray(rawDisplays)) {
+      throw new YAMLConfigValidationError(
+        `habit "${habitName}" history.displays must be a yaml list`,
+      );
+    }
+    dataVisualization = {};
+    for (const display of rawDisplays) {
+      if (display === 'heatmap') dataVisualization.heatmap = {};
+      else if (display === 'weekly_history') {
+        dataVisualization.bargraph = { period: rawHabit.history.period };
+      } else {
+        throw new YAMLConfigValidationError(
+          `habit "${habitName}" history contains an unsupported display`,
+        );
+      }
+    }
+    const showAverage = rawHabit.history.show_average;
+    if (showAverage === true || (showAverage == null && rawDisplays.includes('weekly_history'))) {
+      if (type === 'summation') {
+        insights.push('average');
+        dataVisualization.bargraph ??= { period: rawHabit.history.period };
+      }
+    } else if (showAverage != null && typeof showAverage !== 'boolean') {
+      throw new YAMLConfigValidationError(
+        `habit "${habitName}" history.show_average must be a boolean`,
+      );
+    }
+  }
+
+  let streakOptions: HabitDef['streak_options'];
+  if (rawHabit.streak != null) {
+    if (!isRecord(rawHabit.streak)) {
+      throw new YAMLConfigValidationError(`habit "${habitName}" streak must be a yaml mapping`);
+    }
+    if (mainOptions.length === 0) {
+      throw new YAMLConfigValidationError(`habit "${habitName}" streak requires a configured goal`);
+    }
+    const options =
+      type === 'summation'
+        ? [...mainOptions]
+        : normalizeStreakOptionsList(
+            rawHabit.streak.options,
+            habitName,
+            mainOptions,
+            'streak.options',
+          );
+    streakOptions = {
+      options,
+      frequency: normalizeStreakFrequency(rawHabit.streak.frequency, habitName, true),
+    };
+    if (rawHabit.streak.show_current != null && typeof rawHabit.streak.show_current !== 'boolean') {
+      throw new YAMLConfigValidationError(
+        `habit "${habitName}" streak.show_current must be a boolean`,
+      );
+    }
+    if (rawHabit.streak.show_longest != null && typeof rawHabit.streak.show_longest !== 'boolean') {
+      throw new YAMLConfigValidationError(
+        `habit "${habitName}" streak.show_longest must be a boolean`,
+      );
+    }
+    if (rawHabit.streak.show_current !== false) insights.push('current_streak');
+    if (rawHabit.streak.show_longest === true) insights.push('longest_streak');
+  }
+
+  return {
+    data_visualization: dataVisualization,
+    insights: canonicalizeInsights(insights),
+    streak_options: streakOptions,
+  };
+}
+
+function normalizePresentation(
+  rawHabit: RawHabitConfig,
+  habitName: string,
+  type: HabitDef['type'],
+  mainOptions: readonly string[],
+): Pick<HabitDef, 'data_visualization' | 'insights' | 'streak_options'> {
+  const hasLegacy = rawHabit.history != null || rawHabit.streak != null;
+  const hasCurrent =
+    rawHabit.data_visualization != null ||
+    rawHabit.insights != null ||
+    rawHabit.streak_options != null;
+  if (hasLegacy && hasCurrent) {
+    throw new YAMLConfigValidationError(
+      `habit "${habitName}" cannot mix legacy history/streak keys with the new presentation keys`,
+    );
+  }
+  if (hasLegacy) {
+    return normalizeLegacyPresentation(rawHabit, habitName, type, mainOptions);
+  }
+
+  const dataVisualization = normalizeDataVisualization(rawHabit.data_visualization, habitName);
+  const insights = normalizeInsights(rawHabit.insights, habitName, type);
+  const hasStreakInsight = insights.some(
+    (insight) => insight === 'current_streak' || insight === 'longest_streak',
+  );
+  const streakOptions = normalizeStreakOptions(
+    rawHabit.streak_options,
+    habitName,
+    type,
+    mainOptions,
+  );
+  if (hasStreakInsight && !streakOptions) {
+    throw new YAMLConfigValidationError(
+      `habit "${habitName}" streak insights require streak_options`,
+    );
+  }
+  if (insights.includes('average') && !dataVisualization?.bargraph) {
+    throw new YAMLConfigValidationError(
+      `habit "${habitName}" average insight requires data_visualization.bargraph`,
+    );
+  }
+
+  return {
+    data_visualization: dataVisualization,
+    insights,
+    streak_options: streakOptions,
+  };
 }
 
 export class YAMLConfigParser {
@@ -265,6 +386,16 @@ export class YAMLConfigParser {
           type === 'single_select' && Array.isArray(rawHabit.options)
             ? rawHabit.options.filter((x) => typeof x === 'string')
             : undefined;
+        const presentation = normalizePresentation(
+          rawHabit,
+          name,
+          type,
+          type === 'single_select'
+            ? (opts ?? [])
+            : rawHabit.goal != null
+              ? [String(rawHabit.goal)]
+              : [],
+        );
         return {
           name,
           type,
@@ -281,17 +412,7 @@ export class YAMLConfigParser {
                   rawHabit.summation_options ?? rawHabit.summationOptions,
                 )
               : undefined,
-          history: normalizeHistory(rawHabit.history, name),
-          streak:
-            type === 'single_select'
-              ? normalizeStreak(rawHabit.streak, name, opts ?? [])
-              : normalizeStreak(
-                  rawHabit.streak,
-                  name,
-                  rawHabit.goal != null ? [String(rawHabit.goal)] : [],
-                  false,
-                  true,
-                ),
+          ...presentation,
         };
       }),
     };

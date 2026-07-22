@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { UserConfigJson, UserConfigJsonHabit } from '~/api.client';
+import type { ConfigHabitDraft, UserConfigJson, UserConfigJsonHabit } from '~/api.client';
 import { applyHabitDraftToConfig, draftFromHabit } from '../configHabitDraft';
 
 describe('single-select data visualization config', () => {
@@ -9,7 +9,7 @@ describe('single-select data visualization config', () => {
       type: 'single_select',
       goal: null,
       options: ['yes', 'no'],
-      history: { displays: ['heatmap'], period: '3w' },
+      data_visualization: { heatmap: {} },
     };
     const config: UserConfigJson = {
       user: 'reader',
@@ -22,15 +22,12 @@ describe('single-select data visualization config', () => {
     expect(draft.historyDisplays).toEqual(['heatmap']);
 
     const result = applyHabitDraftToConfig(config, habit.name, draft);
-    expect(result.config.habits[0]?.history).toEqual({
-      displays: ['heatmap'],
-      period: '3w',
-    });
+    expect(result.config.habits[0]?.data_visualization).toEqual({ heatmap: {} });
   });
 });
 
 describe('habit insight config', () => {
-  it('can save an average insight without a weekly-history visualization', () => {
+  it('saves the average insight alongside its bar graph period', () => {
     const habit: UserConfigJsonHabit = {
       name: 'Push ups',
       type: 'summation',
@@ -44,16 +41,16 @@ describe('habit insight config', () => {
     const draft = {
       ...draftFromHabit(habit),
       averageEnabled: true,
-      historyEnabled: false,
+      historyEnabled: true,
+      historyDisplays: ['weekly_history'] as ConfigHabitDraft['historyDisplays'],
     };
 
     const result = applyHabitDraftToConfig(config, habit.name, draft);
 
-    expect(result.config.habits[0]?.history).toEqual({
-      displays: [],
-      period: '3w',
-      show_average: true,
+    expect(result.config.habits[0]?.data_visualization).toEqual({
+      bargraph: { period: '3w' },
     });
+    expect(result.config.habits[0]?.insights).toEqual(['average']);
   });
 
   it('can save the longest streak without showing the current streak', () => {
@@ -75,10 +72,7 @@ describe('habit insight config', () => {
 
     const result = applyHabitDraftToConfig(config, habit.name, draft);
 
-    expect(result.config.habits[0]?.streak).toEqual({
-      options: ['100'],
-      show_current: false,
-      show_longest: true,
-    });
+    expect(result.config.habits[0]?.insights).toEqual(['longest_streak']);
+    expect(result.config.habits[0]?.streak_options).toEqual({ frequency: '7d' });
   });
 });
