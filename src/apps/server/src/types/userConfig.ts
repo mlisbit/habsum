@@ -15,12 +15,15 @@ export type HabitDef = {
   history?: {
     period: string;
     displays: Array<'heatmap' | 'weekly_history'>;
+    show_average?: boolean;
   };
   /** Subset of selectable values or summation totals that count toward the streak. */
   streak?: {
     options: string[];
     /** Target streak days per week, e.g. `3d/1w`. Omitted when daily (`7d/1w`). */
     frequency?: string;
+    /** False when only the longest-streak insight should be returned. */
+    show_current?: boolean;
     /** When true, API includes `longestStreak` on streak responses. */
     show_longest?: boolean;
   };
@@ -41,7 +44,12 @@ export type RawHabitConfig = {
   /** `[subtract, add]` or `{ sub, add }` / `{ add, sub }` */
   summation_options?: unknown;
   summationOptions?: unknown;
-  history?: { period?: unknown; display?: unknown; displays?: unknown };
+  history?: {
+    period?: unknown;
+    display?: unknown;
+    displays?: unknown;
+    show_average?: unknown;
+  };
   streak?: unknown;
 };
 

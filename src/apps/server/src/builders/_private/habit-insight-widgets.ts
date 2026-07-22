@@ -15,7 +15,8 @@ type HabitInsightWidgetInput = {
   tzOffsetMinutes?: number;
   includeBarGraph?: boolean;
   includeHeatMap?: boolean;
-  includeStreakInsights?: boolean;
+  includeCurrentStreakInsight?: boolean;
+  includeLongestStreakInsight?: boolean;
   includeWeeklyAverageInsight?: boolean;
 };
 
@@ -63,7 +64,8 @@ export function buildHabitWidgets({
   tzOffsetMinutes,
   includeBarGraph = false,
   includeHeatMap = false,
-  includeStreakInsights = false,
+  includeCurrentStreakInsight = false,
+  includeLongestStreakInsight = false,
   includeWeeklyAverageInsight = false,
 }: HabitInsightWidgetInput): HabitWidget[] {
   const h = interimHabit.config;
@@ -86,7 +88,7 @@ export function buildHabitWidgets({
         )
       : null;
     const streak =
-      includeStreakInsights && h.streak
+      (includeCurrentStreakInsight || includeLongestStreakInsight) && h.streak
         ? streakGraphForConfiguredWindow(
             data.user,
             h.name,
@@ -95,7 +97,7 @@ export function buildHabitWidgets({
             at,
             tzOffsetMinutes,
             h.streak.frequency,
-            h.streak.show_longest === true,
+            includeLongestStreakInsight,
             data.firstDate,
             h.options ?? [],
             reader,
@@ -103,7 +105,9 @@ export function buildHabitWidgets({
         : null;
 
     return habitWidgets([
-      heatmap || streak ? historyWidget(null, h.goal, false, heatmap, streak) : null,
+      heatmap || streak
+        ? historyWidget(null, h.goal, false, heatmap, streak, includeCurrentStreakInsight)
+        : null,
     ]);
   }
 
@@ -138,7 +142,7 @@ export function buildHabitWidgets({
         )
       : null;
   const streak =
-    includeStreakInsights && h.streak
+    (includeCurrentStreakInsight || includeLongestStreakInsight) && h.streak
       ? summationStreakGraphForConfiguredWindow(
           data.user,
           h.name,
@@ -147,7 +151,7 @@ export function buildHabitWidgets({
           at,
           tzOffsetMinutes,
           h.streak.frequency,
-          h.streak.show_longest === true,
+          includeLongestStreakInsight,
           data.firstDate,
           reader,
         )
@@ -156,7 +160,15 @@ export function buildHabitWidgets({
   return habitWidgets([
     progressWidget(total, h.goal),
     history || heatmap || streak
-      ? historyWidget(history, h.goal, data.config.includeAbsentDaysInAverage, heatmap, streak)
+      ? historyWidget(
+          history,
+          h.goal,
+          data.config.includeAbsentDaysInAverage,
+          heatmap,
+          streak,
+          includeCurrentStreakInsight,
+          includeBarGraph,
+        )
       : null,
   ]);
 }

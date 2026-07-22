@@ -65,6 +65,10 @@
   margin-left: auto;
 }
 
+.modal__header-back {
+  flex-shrink: 0;
+}
+
 .modal__footer {
   display: flex;
   justify-content: flex-end;

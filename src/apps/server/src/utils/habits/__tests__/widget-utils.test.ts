@@ -23,7 +23,11 @@ describe('historyWidget', () => {
     const widget = historyWidget(oneWeekHistory, 5);
 
     expect(widget.titleValue).toBeUndefined();
-    expect(widget.body[0]).toEqual({
+    expect(widget.body[0]).toMatchObject({
+      kind: 'barGraph',
+      lines: [{ value: 5, label: 'Daily goal: 5' }],
+    });
+    expect(widget.body[1]).toEqual({
       kind: 'insights',
       insights: [
         {
@@ -33,17 +37,17 @@ describe('historyWidget', () => {
         },
       ],
     });
-    expect(widget.body[1]).toMatchObject({
-      kind: 'barGraph',
-      lines: [{ value: 5, label: 'Daily goal: 5' }],
-    });
   });
 
   it('includes missing days as zero when configured', () => {
     const widget = historyWidget(oneWeekHistory, 5, true);
 
     expect(widget.titleValue).toBeUndefined();
-    expect(widget.body[0]).toEqual({
+    expect(widget.body[0]).toMatchObject({
+      kind: 'barGraph',
+      lines: [{ value: 5, label: 'Daily goal: 5' }],
+    });
+    expect(widget.body[1]).toEqual({
       kind: 'insights',
       insights: [
         {
@@ -52,10 +56,6 @@ describe('historyWidget', () => {
           hover: 'May 15 to today',
         },
       ],
-    });
-    expect(widget.body[1]).toMatchObject({
-      kind: 'barGraph',
-      lines: [{ value: 5, label: 'Daily goal: 5' }],
     });
   });
 
@@ -68,7 +68,7 @@ describe('historyWidget', () => {
     );
     const widget = historyWidget({ data: { user: { graphData } } }, 5, true);
 
-    expect(widget.body[0]).toEqual({
+    expect(widget.body[1]).toEqual({
       kind: 'insights',
       insights: [
         {
@@ -91,7 +91,7 @@ describe('historyWidget', () => {
     const widget = historyWidget({ data: { user: { graphData } } }, 5);
 
     expect(widget.titleValue).toBeUndefined();
-    expect(widget.body[0]).toEqual({
+    expect(widget.body[1]).toEqual({
       kind: 'insights',
       insights: [
         {

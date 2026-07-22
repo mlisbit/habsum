@@ -54,36 +54,6 @@
   padding-block-start: functions.spacing(1);
 }
 
-.config-habit-modal__field-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: functions.spacing(5);
-  min-width: 0;
-}
-
-.config-habit-modal__stacked-field {
-  display: flex;
-  flex-flow: column nowrap;
-  gap: functions.spacing(2);
-  min-width: 0;
-}
-
-.config-habit-modal__stacked-label {
-  min-width: 0;
-}
-
-.config-habit-modal__inline-field {
-  display: flex;
-  flex-flow: row nowrap;
-  align-items: center;
-  gap: functions.spacing(2);
-  min-width: 0;
-}
-
-.config-habit-modal__inline-field .config-habit-modal__input {
-  flex: 1 1 auto;
-}
-
 .config-habit-modal__widgets {
   display: flex;
   flex-flow: column nowrap;

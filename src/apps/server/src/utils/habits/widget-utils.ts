@@ -41,15 +41,16 @@ export function historyWidget(
   includeAbsentDaysInAverage = false,
   heatmap: StreakGraphWithText | null = null,
   streak: StreakGraphWithText | null = null,
+  includeCurrentStreakInsight = true,
+  includeBarGraph = true,
 ): HabitWidget {
   const body: HabitWidget['body'] = [];
   const insights = compactInsights([
-    currentStreakInsight(streak),
+    includeCurrentStreakInsight ? currentStreakInsight(streak) : null,
     longestStreakInsight(streak),
     weeklyAverageInsight(history, includeAbsentDaysInAverage),
   ]);
-  if (insights.length > 0) body.push({ kind: 'insights', insights });
-  if (history) {
+  if (history && includeBarGraph) {
     body.push({
       kind: 'barGraph',
       data: history.data.user.graphData,
@@ -59,6 +60,7 @@ export function historyWidget(
     });
   }
   if (heatmap) body.push({ kind: 'streakGraph', graph: streakGraphData(heatmap) });
+  if (insights.length > 0) body.push({ kind: 'insights', insights });
   return { title: 'History', body };
 }
 

@@ -41,9 +41,10 @@ export function isHabitDraftDirty(initial: ConfigHabitDraft, draft: ConfigHabitD
     !quickAddItemsEqual(initial.quickAddItems, draft.quickAddItems) ||
     initial.optionsText !== draft.optionsText ||
     initial.theme !== draft.theme ||
-    initial.streakEnabled !== draft.streakEnabled ||
+    initial.averageEnabled !== draft.averageEnabled ||
     initial.streakOptionsText !== draft.streakOptionsText ||
     initial.streakFrequencyPerWeek !== draft.streakFrequencyPerWeek ||
+    initial.streakShowCurrent !== draft.streakShowCurrent ||
     initial.streakShowLongest !== draft.streakShowLongest ||
     initial.historyEnabled !== draft.historyEnabled ||
     !quickAddItemsEqual(initial.historyDisplays, draft.historyDisplays) ||
@@ -127,6 +128,9 @@ export function draftFromHabit(habit: UserConfigJsonHabit): ConfigHabitDraft {
     habit.type === 'single_select'
       ? configuredHistoryDisplays.filter((display) => display === 'heatmap')
       : configuredHistoryDisplays;
+  const averageEnabled =
+    habit.type === 'summation' &&
+    (habit.history?.show_average ?? historyDisplays.includes('weekly_history'));
 
   return {
     name: habit.name,
@@ -143,9 +147,10 @@ export function draftFromHabit(habit: UserConfigJsonHabit): ConfigHabitDraft {
     ),
     optionsText: habit.type === 'single_select' ? (habit.options ?? []).join('\n') : '',
     theme: habit.type === 'single_select' ? (habit.theme ?? '') : '',
-    streakEnabled: habit.streak != null,
+    averageEnabled,
     streakOptionsText: habit.streak?.options.join('\n') ?? '',
     streakFrequencyPerWeek: String(parseStreakFrequencyDays(habit.streak?.frequency)),
+    streakShowCurrent: habit.streak != null && habit.streak.show_current !== false,
     streakShowLongest: habit.streak?.show_longest === true,
     historyEnabled: habit.history != null && historyDisplays.length > 0,
     historyDisplays:
@@ -173,7 +178,7 @@ function draftToHabit(draft: ConfigHabitDraft): UserConfigJsonHabit {
     };
     if (repeat.length < HABIT_REPEAT_DAYS.length) habit.repeat = repeat;
     if (draft.theme.trim() !== '') habit.theme = draft.theme.trim();
-    if (draft.streakEnabled) {
+    if (draft.streakShowCurrent || draft.streakShowLongest) {
       const allowed = new Set(options);
       const streakOptions = parseLines(draft.streakOptionsText).filter((opt) => allowed.has(opt));
       if (streakOptions.length === 0) {
@@ -185,6 +190,7 @@ function draftToHabit(draft: ConfigHabitDraft): UserConfigJsonHabit {
       habit.streak = {
         options: streakOptions,
         ...(frequency !== DEFAULT_STREAK_FREQUENCY ? { frequency } : {}),
+        ...(!draft.streakShowCurrent ? { show_current: false } : {}),
         ...(draft.streakShowLongest ? { show_longest: true } : {}),
       };
     }
@@ -217,7 +223,7 @@ function draftToHabit(draft: ConfigHabitDraft): UserConfigJsonHabit {
       }),
     };
   }
-  if (draft.streakEnabled) {
+  if (draft.streakShowCurrent || draft.streakShowLongest) {
     if (goal == null) throw new Error('summation streak tracking requires a goal');
     const frequency = formatStreakFrequency(
       parseOptionalPositiveInt(draft.streakFrequencyPerWeek) ?? 7,
@@ -225,16 +231,21 @@ function draftToHabit(draft: ConfigHabitDraft): UserConfigJsonHabit {
     habit.streak = {
       options: [String(goal)],
       ...(frequency !== DEFAULT_STREAK_FREQUENCY ? { frequency } : {}),
+      ...(!draft.streakShowCurrent ? { show_current: false } : {}),
       ...(draft.streakShowLongest ? { show_longest: true } : {}),
     };
   }
-  if (draft.historyEnabled) {
-    if (draft.historyDisplays.length === 0) {
+  if (draft.historyEnabled || draft.averageEnabled) {
+    if (draft.historyEnabled && draft.historyDisplays.length === 0) {
       throw new Error('data visualization needs at least one option');
     }
+    const displays = draft.historyEnabled ? normalizeHistoryDisplays(draft.historyDisplays) : [];
     habit.history = {
-      displays: normalizeHistoryDisplays(draft.historyDisplays),
+      displays,
       period: formatHistoryPeriod(draft.historyPeriodAmount, draft.historyPeriodUnit),
+      ...(draft.averageEnabled || displays.includes('weekly_history')
+        ? { show_average: draft.averageEnabled }
+        : {}),
     };
   }
   return habit;

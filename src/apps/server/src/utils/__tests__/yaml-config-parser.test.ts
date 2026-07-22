@@ -43,4 +43,27 @@ describe('YAMLConfigParser', () => {
       new YAMLConfigParser('yaml-parser-user').parse(fixture('invalid-repeat.yaml')),
     ).toThrow(YAMLConfigParser.ConfigValidationError);
   });
+
+  it('parses independent average and streak insight visibility', () => {
+    const config = new YAMLConfigParser('insights-user').parse(
+      yamlString(`habits:
+  push ups:
+    type: summation
+    goal: 100
+    history:
+      displays: []
+      period: 3w
+      show_average: true
+    streak:
+      options: ['100']
+      show_current: false
+      show_longest: true
+`),
+    );
+
+    expect(config.habits[0]).toMatchObject({
+      history: { displays: [], period: '3w', show_average: true },
+      streak: { options: ['100'], show_current: false, show_longest: true },
+    });
+  });
 });

@@ -9,7 +9,7 @@ import { SingleSelectBaseOptions } from './_private/base-options/SingleSelectBas
 import { SummationBaseOptions } from './_private/base-options/SummationBaseOptions';
 import { ConfigHabitModalActions } from './_private/utils/ConfigHabitModalActions';
 import { DataVisualizationWidget } from './_private/widgets/DataVisualizationWidget';
-import { StreakTrackingWidget } from './_private/widgets/StreakTrackingWidget';
+import { InsightsWidget, StreakOptionsFields } from './_private/widgets/InsightsWidget';
 import { HABIT_REPEAT_DAYS, isHabitDraftDirty, parseOptionLines } from '~/utils/configHabitDraft';
 
 type ConfigModalRendererProps = {
@@ -56,6 +56,7 @@ export function ConfigModalRenderer({
   );
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [activeView, setActiveView] = useState<'habit' | 'streak-options'>('habit');
   const habitOptions = parseOptionLines(draft.optionsText);
   const streakOptions = parseOptionLines(draft.streakOptionsText);
   const editingHabitName = draft.name.trim() || habit.name;
@@ -151,12 +152,13 @@ export function ConfigModalRenderer({
           <div className="config-habit-modal__widgets">
             <DataVisualizationWidget draft={draft} patch={patch} type={['heatmap']} />
 
-            <StreakTrackingWidget
+            <InsightsWidget
               type="single_select"
               draft={draft}
               habitOptions={habitOptions}
               patch={patch}
               streakOptions={streakOptions}
+              onOpenStreakOptions={() => setActiveView('streak-options')}
             />
           </div>
         </>
@@ -165,7 +167,9 @@ export function ConfigModalRenderer({
     case 'summation':
       fields = (
         <>
-          <SummationBaseOptions draft={draft} patch={patch} repeatControl={repeatControl} />
+          <SummationBaseOptions draft={draft} patch={patch} />
+
+          {repeatField}
 
           <div className="config-habit-modal__widgets">
             <DataVisualizationWidget
@@ -174,11 +178,39 @@ export function ConfigModalRenderer({
               type={['weekly_history', 'heatmap']}
             />
 
-            <StreakTrackingWidget type="summation" draft={draft} patch={patch} />
+            <InsightsWidget
+              type="summation"
+              draft={draft}
+              patch={patch}
+              onOpenStreakOptions={() => setActiveView('streak-options')}
+            />
           </div>
         </>
       );
       break;
+  }
+
+  if (activeView === 'streak-options') {
+    return (
+      <>
+        <ModalHeader onBack={() => setActiveView('habit')}>
+          Streak options for "{editingHabitName}"
+        </ModalHeader>
+        <ModalBody className="config-habit-modal">
+          {habit.type === 'single_select' ? (
+            <StreakOptionsFields
+              type="single_select"
+              draft={draft}
+              habitOptions={habitOptions}
+              patch={patch}
+              streakOptions={streakOptions}
+            />
+          ) : (
+            <StreakOptionsFields type="summation" draft={draft} patch={patch} />
+          )}
+        </ModalBody>
+      </>
+    );
   }
 
   return (

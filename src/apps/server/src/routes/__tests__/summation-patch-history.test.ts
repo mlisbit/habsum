@@ -96,11 +96,11 @@ describe('PATCH /users/:user/habits summation history', () => {
       (widget: { title: string }) => widget.title === 'History',
     );
     expect(historyWidget?.body?.map((body: { kind: string }) => body.kind)).toEqual([
-      'insights',
       'barGraph',
       'streakGraph',
+      'insights',
     ]);
-    expect(historyWidget?.body?.[0]?.insights).toEqual(
+    expect(historyWidget?.body?.[2]?.insights).toEqual(
       expect.arrayContaining([expect.objectContaining({ header: 'Average/day' })]),
     );
     expect(
@@ -126,14 +126,55 @@ describe('PATCH /users/:user/habits summation history', () => {
       (widget: { title: string }) => widget.title === 'History',
     );
     expect(listHistoryWidget?.body?.map((body: { kind: string }) => body.kind)).toEqual([
-      'insights',
       'barGraph',
       'streakGraph',
+      'insights',
     ]);
     expect(
       listRes.body.habits?.[0]?.widgets?.some(
         (widget: { title: string }) => widget.title === 'Streak',
       ),
     ).toBe(false);
+  });
+
+  it('returns independently selected insights without requiring a visualization', async () => {
+    const user = 'patch-history-independent-insights-user';
+    writeSummationUserConfig(
+      user,
+      `    history:
+      displays: []
+      period: 1w
+      show_average: true
+    streak:
+      options: ['100']
+      show_current: false
+      show_longest: true`,
+    );
+    userAndAuthRepository.setUserPassword(user, 'test-password');
+    const session = userAndAuthRepository.createUserSession(user, 3600);
+    const app = createApp();
+    const tzOffsetMinutes = new Date().getTimezoneOffset();
+    const date = toDateKey(new Date(), tzOffsetMinutes);
+
+    const res = await request(app)
+      .patch(`/users/${user}/habits`)
+      .set('Cookie', `${SESSION_COOKIE_NAME}=${session}`)
+      .send({
+        habit: 'push ups',
+        total: 100,
+        date,
+        clientCreatedAt: toDateKeyWithTime(new Date(), tzOffsetMinutes),
+        tzOffsetMinutes,
+      });
+
+    expect(res.status).toBe(200);
+    const historyWidget = res.body.widgets?.find(
+      (widget: { title: string }) => widget.title === 'History',
+    );
+    expect(historyWidget?.body?.map((body: { kind: string }) => body.kind)).toEqual(['insights']);
+    const headers = historyWidget?.body?.[0]?.insights?.map(
+      (insight: { header: string }) => insight.header,
+    );
+    expect(headers).toEqual(['Longest streak', 'Average/day']);
   });
 });

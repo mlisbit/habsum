@@ -73,10 +73,12 @@ export type UserConfigJsonHabit = {
     period: string;
     displays?: HistoryDisplay[];
     display?: 'heatmap' | 'weekly_history';
+    show_average?: boolean;
   };
   streak?: {
     options: string[];
     frequency?: string;
+    show_current?: boolean;
     show_longest?: boolean;
   };
 };
@@ -115,9 +117,10 @@ export type ConfigHabitDraft = {
   quickAddItems: string[];
   optionsText: string;
   theme: string;
-  streakEnabled: boolean;
+  averageEnabled: boolean;
   streakOptionsText: string;
   streakFrequencyPerWeek: string;
+  streakShowCurrent: boolean;
   streakShowLongest: boolean;
   historyEnabled: boolean;
   historyDisplays: HistoryDisplay[];

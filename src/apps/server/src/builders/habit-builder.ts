@@ -8,7 +8,7 @@ import {
   interimHabitValue,
 } from './_private/habit-insight-widgets.js';
 
-export type HabitInsightKind = 'weeklyAverage' | 'streak';
+export type HabitInsightKind = 'weeklyAverage' | 'currentStreak' | 'longestStreak';
 
 type HabitBuilderContext = {
   data: InterimHabitsData;
@@ -52,7 +52,8 @@ export class HabitBuilder {
       tzOffsetMinutes: this.context.tzOffsetMinutes,
       includeBarGraph: this.includeBarGraph,
       includeHeatMap: this.includeHeatMap,
-      includeStreakInsights: this.insights.has('streak'),
+      includeCurrentStreakInsight: this.insights.has('currentStreak'),
+      includeLongestStreakInsight: this.insights.has('longestStreak'),
       includeWeeklyAverageInsight: this.insights.has('weeklyAverage'),
     });
 

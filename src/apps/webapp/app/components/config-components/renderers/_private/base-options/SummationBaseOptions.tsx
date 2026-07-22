@@ -1,6 +1,5 @@
 // exclusive-bem-block: summation-quick-add-options
 import { useState } from 'react';
-import type { ReactNode } from 'react';
 import { Button } from '@habsum/ui/components/Button';
 import { Input } from '@habsum/ui/components/Input';
 import { EditablePill } from '@habsum/ui/components/Pill';
@@ -10,7 +9,6 @@ import { sortQuickAddItems } from '~/utils/configHabitDraft';
 type SummationBaseOptionsProps = {
   draft: ConfigHabitDraft;
   patch: (partial: Partial<ConfigHabitDraft>) => void;
-  repeatControl?: ReactNode;
 };
 
 function parseQuickAddValue(raw: string): string | null {
@@ -21,7 +19,7 @@ function parseQuickAddValue(raw: string): string | null {
   return String(n);
 }
 
-export function SummationBaseOptions({ draft, patch, repeatControl }: SummationBaseOptionsProps) {
+export function SummationBaseOptions({ draft, patch }: SummationBaseOptionsProps) {
   const { quickAddItems } = draft;
   const [addingQuickAdd, setAddingQuickAdd] = useState(false);
   const [quickAddDraft, setQuickAddDraft] = useState('');
@@ -58,12 +56,14 @@ export function SummationBaseOptions({ draft, patch, repeatControl }: SummationB
   };
 
   return (
-    <div className="config-habit-modal__field-row">
-      <div className="config-habit-modal__stacked-field">
-        <div className="config-habit-modal__inline-field">
-          <label htmlFor="habit-goal" className="text-h-xs">
+    <>
+      <div className="config-habit-modal__field">
+        <div className="config-habit-modal__label">
+          <label htmlFor="habit-goal" className="text-b-m">
             Goal
           </label>
+        </div>
+        <div className="config-habit-modal__control">
           <Input
             id="habit-goal"
             type="number"
@@ -74,79 +74,61 @@ export function SummationBaseOptions({ draft, patch, repeatControl }: SummationB
             placeholder="No goal"
           />
         </div>
-        {repeatControl != null ? (
-          <div className="config-habit-modal__inline-field">
-            <label className="text-h-xs">Repeat</label>
-            {repeatControl}
-          </div>
-        ) : null}
       </div>
 
-      <div className="config-habit-modal__stacked-field">
-        <div className="summation-quick-add-options">
-          <div className="summation-quick-add-options__header">
-            <div className="summation-quick-add-options__label">
-              <span className="text-h-xs">Quick add options</span>
-              <p className="summation-quick-add-options__info text-b-s text-light">
-                Frequently used amounts that can be added with one click.
-              </p>
+      <div className="config-habit-modal__field config-habit-modal__field--option-pills">
+        <div className="config-habit-modal__label">
+          <span className="text-b-m">Quick add options</span>
+          <p className="config-habit-modal__field-info text-b-s text-light">
+            Frequently used amounts that can be added with one click.
+          </p>
+        </div>
+        <div className="config-habit-modal__control">
+          <div className="summation-quick-add-options">
+            <div className="summation-quick-add-options__values" role="list">
+              {quickAddItems.map((label, index) => (
+                <EditablePill
+                  key={`${label}-${index}`}
+                  value={label}
+                  role="listitem"
+                  dismissAriaLabel={`Remove ${label}`}
+                  onSubmit={(next) => renameQuickAddAt(index, next)}
+                  onDismiss={() => removeQuickAddAt(index)}
+                />
+              ))}
+              {addingQuickAdd ? (
+                <Input
+                  className="summation-quick-add-options__add-input"
+                  size="small"
+                  type="number"
+                  submittable
+                  alwaysDismissable
+                  allowNegative
+                  value={quickAddDraft}
+                  onChange={setQuickAddDraft}
+                  onSubmit={submitQuickAdd}
+                  onReject={cancelQuickAdd}
+                  placeholder="Amount"
+                  applyAriaLabel="Add quick add value"
+                  revertAriaLabel="Cancel"
+                />
+              ) : (
+                <Button
+                  type="primary"
+                  color="muted"
+                  size="medium"
+                  icon="plus"
+                  text={showQuickAddText ? 'Add' : undefined}
+                  circle={!showQuickAddText}
+                  className="summation-quick-add-options__add"
+                  aria-label="Add quick add value"
+                  onClick={() => setAddingQuickAdd(true)}
+                />
+              )}
             </div>
-            {!addingQuickAdd && showQuickAddText ? (
-              <Button
-                type="primary"
-                color="muted"
-                size="medium"
-                icon="plus"
-                text="Add"
-                className="summation-quick-add-options__add"
-                aria-label="Add quick add value"
-                onClick={() => setAddingQuickAdd(true)}
-              />
-            ) : null}
-          </div>
-
-          <div className="summation-quick-add-options__values" role="list">
-            {quickAddItems.map((label, index) => (
-              <EditablePill
-                key={`${label}-${index}`}
-                value={label}
-                role="listitem"
-                dismissAriaLabel={`Remove ${label}`}
-                onSubmit={(next) => renameQuickAddAt(index, next)}
-                onDismiss={() => removeQuickAddAt(index)}
-              />
-            ))}
-            {addingQuickAdd ? (
-              <Input
-                className="summation-quick-add-options__add-input"
-                size="small"
-                type="number"
-                submittable
-                alwaysDismissable
-                allowNegative
-                value={quickAddDraft}
-                onChange={setQuickAddDraft}
-                onSubmit={submitQuickAdd}
-                onReject={cancelQuickAdd}
-                placeholder="Amount"
-                applyAriaLabel="Add quick add value"
-                revertAriaLabel="Cancel"
-              />
-            ) : !showQuickAddText ? (
-              <Button
-                type="primary"
-                color="muted"
-                size="medium"
-                icon="plus"
-                circle
-                className="summation-quick-add-options__add"
-                aria-label="Add quick add value"
-                onClick={() => setAddingQuickAdd(true)}
-              />
-            ) : null}
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

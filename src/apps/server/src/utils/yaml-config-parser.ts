@@ -70,7 +70,25 @@ function normalizeHistory(
     );
   }
   const displays = normalizeHistoryDisplays(raw.displays, raw.display, habitName);
-  return { period, displays };
+  const show_average = normalizeHistoryShowAverage(raw.show_average, displays, habitName);
+  if (displays.length === 0 && !show_average) {
+    throw new YAMLConfigValidationError(
+      `habit "${habitName}" history must include a display or enable show_average`,
+    );
+  }
+  return { period, displays, show_average };
+}
+
+function normalizeHistoryShowAverage(
+  raw: unknown,
+  displays: NonNullable<HabitDef['history']>['displays'],
+  habitName: string,
+): boolean {
+  if (raw == null) return displays.includes('weekly_history');
+  if (typeof raw === 'boolean') return raw;
+  throw new YAMLConfigValidationError(
+    `habit "${habitName}" history.show_average must be a boolean`,
+  );
 }
 
 function normalizeHistoryDisplays(
@@ -94,10 +112,7 @@ function normalizeHistoryDisplays(
     }
     if (!displays.includes(item)) displays.push(item);
   }
-  if (displays.length > 0) return displays;
-  throw new YAMLConfigValidationError(
-    `habit "${habitName}" history.displays must include at least one display`,
-  );
+  return displays;
 }
 
 function normalizeStreak(
@@ -151,13 +166,21 @@ function normalizeStreak(
   }
 
   const frequency = normalizeStreakFrequency(raw.frequency, habitName);
+  const show_current = normalizeStreakShowCurrent(raw.show_current, habitName);
   const show_longest = normalizeStreakShowLongest(raw.show_longest, habitName);
 
   return {
     options,
     ...(frequency !== DEFAULT_STREAK_FREQUENCY ? { frequency } : {}),
+    ...(!show_current ? { show_current: false } : {}),
     ...(show_longest ? { show_longest: true } : {}),
   };
+}
+
+function normalizeStreakShowCurrent(raw: unknown, habitName: string): boolean {
+  if (raw == null) return true;
+  if (typeof raw === 'boolean') return raw;
+  throw new YAMLConfigValidationError(`habit "${habitName}" streak.show_current must be a boolean`);
 }
 
 function normalizeStreakShowLongest(raw: unknown, habitName: string): boolean {

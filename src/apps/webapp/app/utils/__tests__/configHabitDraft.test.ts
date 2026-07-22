@@ -28,3 +28,57 @@ describe('single-select data visualization config', () => {
     });
   });
 });
+
+describe('habit insight config', () => {
+  it('can save an average insight without a weekly-history visualization', () => {
+    const habit: UserConfigJsonHabit = {
+      name: 'Push ups',
+      type: 'summation',
+      goal: 100,
+    };
+    const config: UserConfigJson = {
+      user: 'athlete',
+      includeAbsentDaysInAverage: false,
+      habits: [habit],
+    };
+    const draft = {
+      ...draftFromHabit(habit),
+      averageEnabled: true,
+      historyEnabled: false,
+    };
+
+    const result = applyHabitDraftToConfig(config, habit.name, draft);
+
+    expect(result.config.habits[0]?.history).toEqual({
+      displays: [],
+      period: '3w',
+      show_average: true,
+    });
+  });
+
+  it('can save the longest streak without showing the current streak', () => {
+    const habit: UserConfigJsonHabit = {
+      name: 'Push ups',
+      type: 'summation',
+      goal: 100,
+    };
+    const config: UserConfigJson = {
+      user: 'athlete',
+      includeAbsentDaysInAverage: false,
+      habits: [habit],
+    };
+    const draft = {
+      ...draftFromHabit(habit),
+      streakShowCurrent: false,
+      streakShowLongest: true,
+    };
+
+    const result = applyHabitDraftToConfig(config, habit.name, draft);
+
+    expect(result.config.habits[0]?.streak).toEqual({
+      options: ['100'],
+      show_current: false,
+      show_longest: true,
+    });
+  });
+});

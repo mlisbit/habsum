@@ -67,6 +67,8 @@ export function ModalHeader({
   titleClassName,
   dismissDisabled = false,
   dismissLabel = 'Close',
+  onBack,
+  backLabel = 'Back',
 }: {
   children: ReactNode;
   id?: string;
@@ -74,11 +76,25 @@ export function ModalHeader({
   titleClassName?: string;
   dismissDisabled?: boolean;
   dismissLabel?: string;
+  onBack?: () => void;
+  backLabel?: string;
 }) {
   const { closeModal } = useModal();
 
   return (
     <div className={['modal__header', className].filter(Boolean).join(' ')}>
+      {onBack ? (
+        <Button
+          type="tertiary"
+          size="medium"
+          icon="chevronBack"
+          circle
+          text=""
+          className="modal__header-back"
+          aria-label={backLabel}
+          onClick={onBack}
+        />
+      ) : null}
       <h2
         id={id}
         className={['modal__header-title', 'text-h-l', titleClassName].filter(Boolean).join(' ')}

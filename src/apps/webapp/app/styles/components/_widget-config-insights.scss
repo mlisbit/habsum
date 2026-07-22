@@ -1,0 +1,35 @@
+@use 'functions';
+
+.widget-config-insights__options,
+.widget-config-insights__streak-toggles,
+.widget-config-insights__streak-modal-fields {
+  display: flex;
+  flex-flow: column nowrap;
+  gap: functions.spacing(2);
+  min-width: 0;
+}
+
+.widget-config-insights__option {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.widget-config-insights__streak-options {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: functions.spacing(3);
+  min-width: 0;
+}
+
+.widget-config-insights__streak-options-cta {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 34rem) {
+  .widget-config-insights__streak-options {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

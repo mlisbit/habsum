@@ -25,10 +25,15 @@ export class HabitFactory {
       if (h.history?.displays.includes('heatmap')) builder.withHeatMap();
 
       if (interimHabit.type === 'summation' && h.history?.displays.includes('weekly_history')) {
-        builder.withBarGraph().withInsights(['weeklyAverage']);
+        builder.withBarGraph();
       }
 
-      if (h.streak) builder.withInsights(['streak']);
+      if (interimHabit.type === 'summation' && h.history?.show_average) {
+        builder.withInsights(['weeklyAverage']);
+      }
+
+      if (h.streak && h.streak.show_current !== false) builder.withInsights(['currentStreak']);
+      if (h.streak?.show_longest) builder.withInsights(['longestStreak']);
 
       return builder;
     });
