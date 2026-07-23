@@ -4,22 +4,13 @@ import type { Habit } from '@habsum/types/common/habit';
 import { dasherize } from '@habsum/utils/strings';
 import { HabitResultBuilder } from '../builders/habit-result-builder.js';
 import { HabitFactory } from '../factories/habit-factory.js';
-import {
-  parseClientCreatedAtIso,
-  parseTzOffsetMinutes,
-  resolveHabitApiDateQuery,
-} from '../server-time.js';
-import {
-  emptyHabitForHistory,
-  minDate,
-  parseHabitFilter,
-  type PatchBody,
-} from './habit-service.utils.js';
-import { mapSummationEventsToApi } from '../summation-event-api.js';
+import { parseTzOffsetMinutes, resolveHabitApiDateQuery } from '../server-time.js';
+import { minDate, parseHabitFilter, type PatchBody } from './habit-service.utils.js';
 import { HabitRepository } from '../repositories/habit-repository.js';
-import type { InterimHabit } from '../types/habit.types.js';
 import { HABIT_REPEAT_DAYS, type HabitDef, type UserConfig } from '../types/userConfig.js';
 import { ServiceError } from '../service-error.js';
+import { createHabitTypeService } from './habits/habit-type-service-factory.js';
+import type { HabitTypeService } from './habits/habit-type-service.js';
 
 type HabitListQuery = {
   date?: string;
@@ -61,37 +52,6 @@ function repeatDayForDateKey(date: Day): string {
 /** Returns whether a habit's repeat rule includes the supplied calendar day. */
 function habitRepeatsOnDate(habit: HabitDef, date: Day): boolean {
   return habit.repeat.includes(repeatDayForDateKey(date));
-}
-
-/** Collects every branded day represented by a hydrated interim habit. */
-function interimHabitDates(habit: InterimHabit): Day[] {
-  return habit.type === 'single_select'
-    ? habit.values.map((row) => row.date)
-    : habit.totals.map((row) => row.date);
-}
-
-/** Projects one day of hydrated interim data into the public habit shape. */
-function habitFromInterimDay(habit: InterimHabit, day: Day): Habit {
-  const habitDef = habit.config;
-  if (habit.type === 'single_select') {
-    return {
-      name: habitDef.name,
-      type: 'single_select',
-      goal: habitDef.goal,
-      options: habitDef.options ?? [],
-      ...(habitDef.theme ? { theme: habitDef.theme } : {}),
-      value: habit.values.find((row) => row.date === day)?.value ?? null,
-    } satisfies Habit;
-  }
-
-  return {
-    name: habitDef.name,
-    type: 'summation',
-    goal: habitDef.goal ?? null,
-    total: habit.totals.find((row) => row.date === day)?.total ?? null,
-    events: mapSummationEventsToApi(habit.events.filter((event) => event.date === day)),
-    ...(habitDef.summationOptions ? { summationOptions: habitDef.summationOptions } : {}),
-  } satisfies Habit;
 }
 
 export class HabitService {
@@ -138,10 +98,20 @@ export class HabitService {
       at,
       dataScope: 'all',
     });
+    const typeServices = new Map(
+      habitDefs.map((habitDef) => [
+        habitDef.name,
+        createHabitTypeService(habitDef, this.repository),
+      ]),
+    );
     const habitsByDate = new Map<Day, Habit[]>();
     for (const interimHabit of historyData.habits) {
-      for (const day of interimHabitDates(interimHabit)) {
-        const habit = habitFromInterimDay(interimHabit, day);
+      const typeService = typeServices.get(interimHabit.config.name);
+      if (!typeService) {
+        throw new Error(`missing habit type service for "${interimHabit.config.name}"`);
+      }
+      for (const day of typeService.historyDates(interimHabit)) {
+        const habit = typeService.historyHabit(interimHabit, day);
         habitsByDate.set(day, [...(habitsByDate.get(day) ?? []), habit]);
       }
     }
@@ -152,7 +122,11 @@ export class HabitService {
         day,
         habitDefs
           .filter((habitDef) => habitRepeatsOnDate(habitDef, day))
-          .map((habitDef) => habitsForDay.get(habitDef.name) ?? emptyHabitForHistory(habitDef)),
+          .map(
+            (habitDef) =>
+              habitsForDay.get(habitDef.name) ??
+              typeServices.get(habitDef.name)!.emptyHistoryHabit(),
+          ),
       );
     }
 
@@ -160,14 +134,25 @@ export class HabitService {
     const inspectMap = inspectDayHabits ? new Map(inspectDayHabits.map((h) => [h.name, h])) : null;
     const data: Habit[] = habitDefs
       .filter((habitDef) => habitRepeatsOnDate(habitDef, inspectDate))
-      .map((habitDef) => inspectMap?.get(habitDef.name) ?? emptyHabitForHistory(habitDef));
+      .map(
+        (habitDef) =>
+          inspectMap?.get(habitDef.name) ?? typeServices.get(habitDef.name)!.emptyHistoryHabit(),
+      );
 
     return {
       user,
       habits: Object.fromEntries(
         config.habits.map((habitDef) => [dasherize(habitDef.name), habitDef.name]),
       ),
-      firstDate: minDate(historyData.habits.flatMap(interimHabitDates)),
+      firstDate: minDate(
+        historyData.habits.flatMap((interimHabit) => {
+          const typeService = typeServices.get(interimHabit.config.name);
+          if (!typeService) {
+            throw new Error(`missing habit type service for "${interimHabit.config.name}"`);
+          }
+          return typeService.historyDates(interimHabit);
+        }),
+      ),
       data,
       history: {
         user: Array.from(habitsByDate.entries())
@@ -186,7 +171,7 @@ export class HabitService {
     }
     const day = dayFromString(date);
 
-    const { habit, total, action, value, clientCreatedAt } = body;
+    const { habit } = body;
     if (typeof habit !== 'string' || habit.length === 0) {
       throw new ServiceError('bad_request', 'habit is required');
     }
@@ -196,106 +181,18 @@ export class HabitService {
       throw new ServiceError('not_found', `habit "${habit}" not configured`);
     }
 
-    if (known.type === 'single_select') {
-      const tzOffsetMinutes = parseTzOffsetMinutes(body.tzOffsetMinutes);
-      const mode = typeof action === 'string' ? action : undefined;
-      if (mode === 'clear') {
-        this.repository.applyHabitMutation({
-          kind: 'clear_select',
-          user,
-          habit,
-          date: day,
-        });
-        return this.updatedHabit({
-          config,
-          date: day,
-          habit,
-          at,
-          tzOffsetMinutes,
-        });
-      }
-
-      if (typeof value !== 'string' || value.length === 0) {
-        throw new ServiceError('bad_request', 'value is required');
-      }
-      const opts = known.options ?? [];
-      if (opts.length && !opts.includes(value)) {
-        throw new ServiceError('bad_request', 'invalid option');
-      }
-
-      this.repository.applyHabitMutation({
-        kind: 'set_select',
-        user,
-        habit,
-        date: day,
-        value,
-      });
-      return this.updatedHabit({ config, date: day, habit, at, tzOffsetMinutes });
-    }
-
-    const mode = typeof action === 'string' ? action : 'add';
     const tzOffsetMinutes = parseTzOffsetMinutes(body.tzOffsetMinutes);
+    const typeService = createHabitTypeService(known, this.repository);
+    typeService.applyPatch({ user, date: day, body });
 
-    if (mode === 'delete_event') {
-      const rawId = body.eventId;
-      const eventId = typeof rawId === 'number' ? rawId : Number(rawId);
-      if (!Number.isInteger(eventId) || eventId <= 0) {
-        throw new ServiceError('bad_request', 'eventId is required (positive integer)');
-      }
-      const removed = this.repository.applyHabitMutation({
-        kind: 'delete_event',
-        user,
-        habit,
-        date: day,
-        eventId,
-      });
-      if (!removed) {
-        throw new ServiceError('not_found', 'summation event not found');
-      }
-      return this.updatedHabit({ config, date: day, habit, at, tzOffsetMinutes });
-    }
-
-    if (mode === 'clear') {
-      this.repository.applyHabitMutation({ kind: 'clear_total', user, habit, date: day });
-      return this.updatedHabit({ config, date: day, habit, at, tzOffsetMinutes });
-    }
-
-    const numericTotal = Number(total);
-    if (!Number.isFinite(numericTotal)) {
-      throw new ServiceError('bad_request', 'total must be a number');
-    }
-
-    const createdAtSql = parseClientCreatedAtIso(clientCreatedAt);
-    if (createdAtSql == null) {
-      throw new ServiceError(
-        'bad_request',
-        'body.clientCreatedAt is required for summation add/set (YYYY-MM-DD HH:MM:SS client wall clock)',
-      );
-    }
-
-    if (mode === 'add') {
-      this.repository.applyHabitMutation({
-        kind: 'add_total',
-        user,
-        habit,
-        date: day,
-        total: numericTotal,
-        createdAt: createdAtSql,
-      });
-    } else if (mode === 'set') {
-      this.repository.applyHabitMutation({
-        kind: 'set_total',
-        user,
-        habit,
-        date: day,
-        total: numericTotal,
-        createdAt: createdAtSql,
-      });
-    } else {
-      throw new ServiceError('bad_request', `unknown action "${mode}"`);
-    }
-
-    return this.updatedHabit({ config, date: day, habit, at, tzOffsetMinutes });
+    return this.updatedHabit({
+      config,
+      date: day,
+      habit,
+      at,
+      tzOffsetMinutes,
+      typeService,
+    });
   }
 
   private updatedHabit({
@@ -304,12 +201,14 @@ export class HabitService {
     habit,
     at,
     tzOffsetMinutes,
+    typeService,
   }: {
     config: UserConfig;
     date: Day;
     habit: string;
     at: Date;
     tzOffsetMinutes?: number;
+    typeService: HabitTypeService;
   }) {
     const data = this.repository.getHabits({ config, date, at, tzOffsetMinutes });
     const habitIndex = data.habits.findIndex((candidate) => candidate.config.name === habit);
@@ -317,31 +216,11 @@ export class HabitService {
     const builder = new HabitFactory({ data, at, tzOffsetMinutes }).builders()[habitIndex];
     if (!interimHabit || !builder) throw new Error(`failed to hydrate configured habit "${habit}"`);
 
-    const result = builder.build();
-    if (result.type === 'single_select' && interimHabit.type === 'single_select') {
-      return {
-        user: data.user,
-        date,
-        habit: result.name,
-        value: result.value,
-        type: result.type,
-        options: result.options,
-        ...(result.theme ? { theme: result.theme } : {}),
-        ...(result.widgets ? { widgets: result.widgets } : {}),
-      };
-    }
-    if (result.type === 'summation' && interimHabit.type === 'summation') {
-      return {
-        user: data.user,
-        date,
-        habit: result.name,
-        total: result.total,
-        events: mapSummationEventsToApi(interimHabit.events.filter((event) => event.date === date)),
-        type: result.type,
-        goal: result.goal,
-        ...(result.widgets ? { widgets: result.widgets } : {}),
-      };
-    }
-    throw new Error(`hydrated habit type mismatch for "${habit}"`);
+    return typeService.buildPatchResponse({
+      data,
+      date,
+      result: builder.build(),
+      interimHabit,
+    });
   }
 }

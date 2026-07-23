@@ -1,7 +1,5 @@
-// Request parsing and history-row helpers used only by HabitService and its route.
+// Request parsing and date helpers used only by HabitService and its route.
 import type { Day } from '@habsum/types/common/day';
-import type { Habit } from '@habsum/types/common/habit';
-import type { HabitDef } from '../types/userConfig.js';
 
 export type PatchBody = {
   habit?: unknown;
@@ -34,27 +32,4 @@ export function minDate(dates: Array<Day | null>): Day | null {
     if (date == null) return min;
     return min == null || date < min ? date : min;
   }, null);
-}
-
-/** Creates the empty API history row for a configured habit with no data on a day. */
-export function emptyHabitForHistory(habitDef: HabitDef): Habit {
-  if (habitDef.type === 'single_select') {
-    return {
-      name: habitDef.name,
-      type: 'single_select',
-      goal: habitDef.goal,
-      options: habitDef.options ?? [],
-      ...(habitDef.theme ? { theme: habitDef.theme } : {}),
-      value: null,
-    } satisfies Habit;
-  }
-
-  return {
-    name: habitDef.name,
-    type: 'summation',
-    goal: habitDef.goal ?? null,
-    total: null,
-    events: [],
-    ...(habitDef.summationOptions ? { summationOptions: habitDef.summationOptions } : {}),
-  } satisfies Habit;
 }
