@@ -146,10 +146,6 @@ function migrateUsersThemeToNullable(): void {
 
 migrateUsersThemeToNullable();
 
-if (!usersTableHasColumn('hometown_id')) {
-  db.exec('ALTER TABLE users ADD COLUMN hometown_id TEXT');
-}
-
 const migratePlainTextPasswordStmt = db.prepare<{
   username: string;
   passwordHash: string;
@@ -279,7 +275,6 @@ type UserAdminRow = { admin: number };
 type UserBetaTesterRow = { beta_tester: number };
 type UserProfileCols = {
   display_name: string | null;
-  hometown_id: string | null;
   theme: string | null;
   email: string | null;
   created_at: string;
@@ -367,7 +362,7 @@ const emailUsedByOtherStmt = db.prepare<[string, string], { username: string }>(
 );
 
 const getUserProfileStmt = db.prepare<[string], UserProfileCols>(
-  `SELECT display_name, hometown_id, theme, email,
+  `SELECT display_name, theme, email,
      coalesce(nullif(trim(created_at), ''), datetime('now')) AS created_at
    FROM users WHERE username = ?`,
 );
@@ -621,7 +616,6 @@ export function isUserBetaTester(username: string): boolean {
 
 export function getUserProfile(username: string): {
   displayName: string | null;
-  hometownId: string | null;
   theme: string | null;
   email: string | null;
   /** Non-empty stored or synthetic ISO string (row missing until first sync). */
@@ -631,7 +625,6 @@ export function getUserProfile(username: string): {
   if (!row) {
     return {
       displayName: null,
-      hometownId: null,
       theme: null,
       email: null,
       createdAt: new Date().toISOString(),
@@ -640,7 +633,6 @@ export function getUserProfile(username: string): {
   const theme = row.theme == null ? null : isAllowedUiTheme(row.theme) ? row.theme : 'dark';
   return {
     displayName: row.display_name,
-    hometownId: row.hometown_id,
     theme,
     email: row.email,
     createdAt: row.created_at,
@@ -649,12 +641,7 @@ export function getUserProfile(username: string): {
 
 export function patchUserProfile(
   username: string,
-  patch: {
-    displayName?: string | null;
-    hometownId?: string | null;
-    theme?: string | null;
-    email?: string;
-  },
+  patch: { displayName?: string | null; theme?: string | null; email?: string },
 ): void {
   const sets: string[] = [];
   const params: Record<string, unknown> = { username };
@@ -662,11 +649,6 @@ export function patchUserProfile(
     sets.push('display_name = @displayName');
     const v = patch.displayName;
     params.displayName = v === null || v === undefined ? null : String(v).trim() || null;
-  }
-  if ('hometownId' in patch) {
-    sets.push('hometown_id = @hometownId');
-    const v = patch.hometownId;
-    params.hometownId = v === null || v === undefined ? null : String(v).trim() || null;
   }
   if ('theme' in patch && patch.theme !== undefined) {
     sets.push('theme = @theme');
@@ -687,7 +669,6 @@ export function patchUserProfile(
     params as {
       username: string;
       displayName?: string | null;
-      hometownId?: string | null;
       theme?: string | null;
       email?: string | null;
     },

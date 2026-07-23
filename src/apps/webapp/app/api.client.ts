@@ -1,7 +1,6 @@
 import type { Habit } from '@habsum/types/common/habit';
 import type { DeveloperGetResponse } from '@habsum/types/api-responses/developer-get';
 import type { MeGetResponse } from '@habsum/types/api-responses/me-get';
-import type { LocationTypeaheadResponse } from '@habsum/types/common/location';
 import type { HabitsResponse } from '@habsum/types/api-responses/habits-get';
 import type { HabitPatch, PatchHabitResponse } from '@habsum/types/api-responses/habit-patch';
 import type { HistoryGetResponse } from '@habsum/types/api-responses/history-get';
@@ -163,11 +162,6 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export async function getAuthMe() {
   return request<MeGetResponse>('/users/me');
-}
-
-export async function locationTypeahead(value: string) {
-  const query = new URLSearchParams({ query: value });
-  return request<LocationTypeaheadResponse>(`/locations/typeahead?${query.toString()}`);
 }
 
 export async function requestForgotPassword(email: string) {

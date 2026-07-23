@@ -7,7 +7,6 @@ import { configRouter } from './routes/users/config.routes.js';
 import { dataRouter } from './routes/users/data.routes.js';
 import { habitsRouter } from './routes/users/habits.routes.js';
 import { securityRouter } from './routes/users/security.routes.js';
-import { locationsRouter } from './routes/locations.routes.js';
 
 export function createApp(): express.Application {
   const app = express();
@@ -21,7 +20,6 @@ export function createApp(): express.Application {
 
   app.use(publicRouter);
   app.use(authRouter);
-  app.use(locationsRouter);
   app.use(usersRouter);
   app.use(securityRouter);
   app.use(habitsRouter);

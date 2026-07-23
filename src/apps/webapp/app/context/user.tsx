@@ -17,7 +17,6 @@ import { isMeLoggedIn } from '~/utils/user-session-guard';
 const LOGGED_OUT_ME: MeGetResponse = {
   username: null,
   displayName: null,
-  hometown: null,
   theme: null,
   email: null,
   createdAt: null,

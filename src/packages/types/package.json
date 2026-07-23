@@ -10,7 +10,6 @@
     "./common/streak": "./src/common/streak.ts",
     "./common/habit": "./src/common/habit.ts",
     "./common/entitlement": "./src/common/entitlement.ts",
-    "./common/location": "./src/common/location.ts",
     "./common/misc": "./src/common/misc.ts",
     "./api-responses/developer-get": "./src/api-responses/developer-get.ts",
     "./api-responses/habit-patch": "./src/api-responses/habit-patch.ts",

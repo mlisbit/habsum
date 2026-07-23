@@ -7,7 +7,6 @@ import type { ProductEntitlement } from '@habsum/types/common/entitlement';
 import {
   deleteUser,
   downloadUserDataCsv,
-  locationTypeahead,
   logout,
   patchUser,
   type UsersPatchRequest,
@@ -16,7 +15,6 @@ import { SettingsPageCard } from '~/components/SettingsPageCard';
 import { Button } from '@habsum/ui/components/Button';
 import { InfoText } from '@habsum/ui/components/InfoText';
 import { Input } from '@habsum/ui/components/Input';
-import { Typeahead, type TypeaheadOption } from '@habsum/ui/components/Typeahead';
 import { useModal } from '@habsum/ui/contexts/modal';
 import { useToast } from '@habsum/ui/contexts/toast';
 import { useUser } from '~/context/user';
@@ -41,7 +39,6 @@ import {
 type AccountSnapshot = {
   username: string;
   displayName: string;
-  hometown: TypeaheadOption | null;
   email: string;
   theme: UiThemePreference;
   createdAt: DayWithTime;
@@ -103,9 +100,6 @@ export default function UserSettingsAccount() {
   const [saved, setSaved] = useState<AccountSnapshot | null>(null);
   const [draftUsername, setDraftUsername] = useState('');
   const [draftDisplay, setDraftDisplay] = useState('');
-  const [draftHometown, setDraftHometown] = useState<TypeaheadOption | null>(null);
-  const [draftHometownInput, setDraftHometownInput] = useState('');
-  const [hometownValid, setHometownValid] = useState(true);
   const [draftEmail, setDraftEmail] = useState('');
   const [draftTheme, setDraftTheme] = useState<UiThemePreference>(null);
   const [saveBusy, setSaveBusy] = useState(false);
@@ -129,7 +123,6 @@ export default function UserSettingsAccount() {
     const snap: AccountSnapshot = {
       username: routeUser,
       displayName: display,
-      hometown: res.hometown,
       email,
       theme,
       createdAt: res.createdAt,
@@ -138,9 +131,6 @@ export default function UserSettingsAccount() {
     setSaved(snap);
     setDraftUsername(routeUser);
     setDraftDisplay(display);
-    setDraftHometown(res.hometown);
-    setDraftHometownInput(res.hometown?.name ?? '');
-    setHometownValid(true);
     setDraftEmail(email);
     setDraftTheme(theme);
     syncTheme(theme);
@@ -165,20 +155,10 @@ export default function UserSettingsAccount() {
     return (
       normDisplay(draftUsername) !== normDisplay(saved.username) ||
       normDisplay(draftDisplay) !== normDisplay(saved.displayName) ||
-      draftHometown?.id !== saved.hometown?.id ||
-      draftHometownInput.trim() !== (saved.hometown?.name ?? '') ||
       normEmail(draftEmail) !== normEmail(saved.email) ||
       draftTheme !== saved.theme
     );
-  }, [
-    saved,
-    draftUsername,
-    draftDisplay,
-    draftHometown,
-    draftHometownInput,
-    draftEmail,
-    draftTheme,
-  ]);
+  }, [saved, draftUsername, draftDisplay, draftEmail, draftTheme]);
 
   const { present, closeModal } = useModal();
   const blocker = useBlocker(hasDirty);
@@ -217,9 +197,6 @@ export default function UserSettingsAccount() {
     if (!saved) return;
     setDraftUsername(saved.username);
     setDraftDisplay(saved.displayName);
-    setDraftHometown(saved.hometown);
-    setDraftHometownInput(saved.hometown?.name ?? '');
-    setHometownValid(true);
     setDraftEmail(saved.email);
     setDraftTheme(saved.theme);
     syncTheme(saved.theme);
@@ -252,7 +229,7 @@ export default function UserSettingsAccount() {
   }, [blocker.state]);
 
   const handleSave = async () => {
-    if (!routeUser || !saved || !hometownValid) return;
+    if (!routeUser || !saved) return;
     const nextUsername = normDisplay(draftUsername);
     const nextDisplay = normDisplay(draftDisplay);
     const nextEmail = normEmail(draftEmail);
@@ -264,9 +241,6 @@ export default function UserSettingsAccount() {
     const savedDisplayNorm = normDisplay(saved.displayName);
     if (nextDisplay !== savedDisplayNorm) {
       patch.displayName = nextDisplay === '' ? null : nextDisplay;
-    }
-    if (draftHometown?.id !== saved.hometown?.id) {
-      patch.hometown = draftHometown;
     }
     if (nextEmail !== normEmail(saved.email)) {
       patch.email = nextEmail;
@@ -302,7 +276,6 @@ export default function UserSettingsAccount() {
       const nextSnap: AccountSnapshot = {
         username: res.username,
         displayName: nextDisplay,
-        hometown: draftHometown,
         email: nextEmail,
         theme: draftTheme,
         createdAt: saved.createdAt,
@@ -311,9 +284,6 @@ export default function UserSettingsAccount() {
       setSaved(nextSnap);
       setDraftUsername(res.username);
       setDraftDisplay(nextDisplay);
-      setDraftHometown(draftHometown);
-      setDraftHometownInput(draftHometown?.name ?? '');
-      setHometownValid(true);
       setDraftEmail(nextEmail);
       setDraftTheme(draftTheme);
       syncTheme(draftTheme);
@@ -370,7 +340,7 @@ export default function UserSettingsAccount() {
             <Button
               type="primary"
               text={saveBusy ? 'Saving…' : 'Save'}
-              disabled={!loaded || saveBusy || !normDisplay(draftUsername) || !hometownValid}
+              disabled={!loaded || saveBusy || !normDisplay(draftUsername)}
               onClick={() => void handleSave()}
             />
           </div>
@@ -440,48 +410,6 @@ export default function UserSettingsAccount() {
                   <SaveFieldErrors
                     id="account-field-error-displayName"
                     messages={saveFieldErrors.displayName}
-                    className="account-page__field-error"
-                  />
-                </div>
-              </div>
-              <div className="account-page__field">
-                <label htmlFor="account-hometown" className="account-page__label text-b-m">
-                  Hometown
-                </label>
-                <div className="account-page__control">
-                  <Typeahead
-                    id="account-hometown"
-                    size="small"
-                    className="account-page__profile-input"
-                    value={draftHometownInput}
-                    onChange={(value) => {
-                      setDraftHometownInput(value);
-                      if (value !== draftHometown?.name) setDraftHometown(null);
-                      clearSaveFieldError('hometown');
-                    }}
-                    onInput={locationTypeahead}
-                    forcedSuggestion
-                    forcedSuggestionMessage="Invalid location."
-                    onValidityChange={setHometownValid}
-                    onSelect={(option) => {
-                      setDraftHometown(option);
-                      setDraftHometownInput(option.name);
-                      clearSaveFieldError('hometown');
-                    }}
-                    placeholder="Search US and Canadian cities"
-                    dismissable
-                    autoComplete="off"
-                    autoCapitalize="words"
-                    autoCorrect="off"
-                    spellCheck={false}
-                    disabled={saveBusy}
-                    aria-describedby={
-                      saveFieldErrors.hometown?.length ? 'account-field-error-hometown' : undefined
-                    }
-                  />
-                  <SaveFieldErrors
-                    id="account-field-error-hometown"
-                    messages={saveFieldErrors.hometown}
                     className="account-page__field-error"
                   />
                 </div>
