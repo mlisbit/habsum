@@ -40,9 +40,9 @@ export function formatIncrementLabel(delta: number): string {
 
 export function isEmpty(habit: Habit): boolean {
   if (habit.type === 'single_select') {
-    return habit.value == null || habit.value === '';
+    return habit.details.value == null || habit.details.value === '';
   }
-  return habit.total == null;
+  return habit.details.total == null;
 }
 
 export function hasHabitData(habit: Habit): boolean {
@@ -51,27 +51,29 @@ export function hasHabitData(habit: Habit): boolean {
 
 export function isGoalHit(habit: Habit): boolean {
   if (!hasPositiveGoal(habit)) return false;
-  return (habit.total ?? 0) >= habit.goal;
+  return (habit.details.total ?? 0) >= habit.details.goal;
 }
 
 function isSummation(h: Habit): h is HabitRowSummation {
   return h.type === 'summation';
 }
 
-function hasPositiveGoal(h: Habit): h is HabitRowSummation & { goal: number } {
-  return isSummation(h) && h.goal != null && h.goal > 0;
+function hasPositiveGoal(
+  h: Habit,
+): h is HabitRowSummation & { details: HabitRowSummation['details'] & { goal: number } } {
+  return isSummation(h) && h.details.goal != null && h.details.goal > 0;
 }
 
 function otherHabitCompleted(h: Habit): boolean {
-  if (h.type === 'single_select') return h.value != null;
-  if (h.goal != null && h.goal > 0) return false;
-  return (h.total ?? 0) > 0;
+  if (h.type === 'single_select') return h.details.value != null;
+  if (h.details.goal != null && h.details.goal > 0) return false;
+  return (h.details.total ?? 0) > 0;
 }
 
 function habitCompletionFraction(h: Habit): number {
   if (hasPositiveGoal(h)) {
-    const t = h.total ?? 0;
-    return Math.min(Math.max(t / h.goal, 0), 1);
+    const t = h.details.total ?? 0;
+    return Math.min(Math.max(t / h.details.goal, 0), 1);
   }
   return otherHabitCompleted(h) ? 1 : 0;
 }
@@ -99,8 +101,8 @@ export function getProgress(habits: readonly Habit[]): DayProgressBreakdown {
     weightTotal += w;
 
     if (hasPositiveGoal(h)) {
-      goalsTotal += h.goal;
-      goalsCurrent += Math.min(h.total ?? 0, h.goal);
+      goalsTotal += h.details.goal;
+      goalsCurrent += Math.min(h.details.total ?? 0, h.details.goal);
     } else {
       otherTotal += 1;
       if (otherHabitCompleted(h)) otherCurrent += 1;

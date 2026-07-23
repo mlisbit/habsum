@@ -40,6 +40,13 @@ describe('single-select heatmap', () => {
       .send({ habit: 'read', value: 'yes', date, tzOffsetMinutes });
 
     expect(res.status).toBe(200);
+    expect(res.body.details).toMatchObject({
+      value: 'yes',
+      options: ['yes', 'no'],
+    });
+    expect(res.body).not.toHaveProperty('value');
+    expect(res.body).not.toHaveProperty('options');
+    expect(res.body).not.toHaveProperty('goal');
     const historyWidget = res.body.widgets?.find(
       (widget: { title: string }) => widget.title === 'History',
     );
@@ -58,6 +65,12 @@ describe('single-select heatmap', () => {
       .set('Cookie', `${SESSION_COOKIE_NAME}=${session}`);
 
     expect(listRes.status).toBe(200);
+    expect(listRes.body.habits?.[0]?.details).toMatchObject({
+      value: 'yes',
+      options: ['yes', 'no'],
+    });
+    expect(listRes.body.habits?.[0]).not.toHaveProperty('value');
+    expect(listRes.body.habits?.[0]).not.toHaveProperty('options');
     expect(
       listRes.body.habits?.[0]?.widgets?.find(
         (widget: { title: string }) => widget.title === 'History',

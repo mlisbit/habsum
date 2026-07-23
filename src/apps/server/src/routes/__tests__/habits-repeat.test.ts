@@ -268,6 +268,9 @@ describe('GET /users/:user/habits repeat config', () => {
       .expect(200);
 
     expect(res.body.data.map((habit: { name: string }) => habit.name)).toEqual(['friday reps']);
+    expect(res.body.data[0].details).toMatchObject({ goal: null, total: 5 });
+    expect(res.body.data[0]).not.toHaveProperty('goal');
+    expect(res.body.data[0]).not.toHaveProperty('total');
     expect(
       res.body.history.user
         .find((day: { day: string }) => day.day === '2026-07-03')

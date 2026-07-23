@@ -1,18 +1,31 @@
 // User habit config shapes shared by config parsing, services, repositories, and presentation.
-import type { SummationOptions } from '@habsum/types/common/habit';
+import type { HabitType, SummationOptions } from '@habsum/types/common/habit';
 
-export type HabitType = 'summation' | 'single_select';
+export type { HabitType };
+
 export type HabitInsight = 'average' | 'current_streak' | 'longest_streak';
 
-export type HabitDef = {
-  name: string;
-  type: HabitType;
+export type SummationHabitSettings = {
   goal: number | null;
-  repeat: string[];
-  options?: string[];
-  theme?: string;
   /** Fixed +/− steps from YAML `summation_options` (array) or legacy `{ sub, add }`. */
   summationOptions?: SummationOptions;
+};
+
+export type SingleSelectHabitSettings = {
+  options: string[];
+  theme?: string;
+};
+
+type CompleteHabitTypeMap<T extends Record<HabitType, object>> = T;
+
+export type HabitSettingsByType = CompleteHabitTypeMap<{
+  summation: SummationHabitSettings;
+  single_select: SingleSelectHabitSettings;
+}>;
+
+type SharedHabitDef = {
+  name: string;
+  repeat: string[];
   data_visualization?: {
     heatmap?: Record<string, never> | null;
     bargraph?: { period: string };
@@ -26,6 +39,17 @@ export type HabitDef = {
     frequency: string;
   };
 };
+
+/**
+ * Internal configured-habit model. Shared behavior stays at the root while
+ * `type` and `settings` remain correlated for every supported habit type.
+ */
+export type HabitDef<T extends HabitType = HabitType> = {
+  [K in T]: SharedHabitDef & {
+    type: K;
+    settings: HabitSettingsByType[K];
+  };
+}[T];
 
 export type UserConfig = {
   user: string;

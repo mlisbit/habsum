@@ -44,7 +44,6 @@ export class HabitBuilder {
   }
 
   build(): Habit {
-    const h = this.interimHabit.config;
     const widgets = buildHabitWidgets({
       data: this.context.data,
       habit: this.interimHabit,
@@ -58,23 +57,28 @@ export class HabitBuilder {
     });
 
     if (this.interimHabit.type === 'single_select') {
+      const h = this.interimHabit.config;
       return {
         name: this.habitName,
-        goal: h.goal,
         type: 'single_select',
-        options: h.options ?? [],
-        ...(h.theme ? { theme: h.theme } : {}),
-        value: interimHabitValue(this.interimHabit, this.context.data),
+        details: {
+          options: h.settings.options,
+          ...(h.settings.theme ? { theme: h.settings.theme } : {}),
+          value: interimHabitValue(this.interimHabit, this.context.data),
+        },
         ...(widgets.length > 0 ? { widgets } : {}),
       };
     }
 
+    const h = this.interimHabit.config;
     return {
       name: this.habitName,
-      goal: h.goal,
       type: 'summation',
-      total: interimHabitTotal(this.interimHabit, this.context.data),
-      ...(h.summationOptions ? { summationOptions: h.summationOptions } : {}),
+      details: {
+        goal: h.settings.goal,
+        total: interimHabitTotal(this.interimHabit, this.context.data),
+        ...(h.settings.summationOptions ? { summationOptions: h.settings.summationOptions } : {}),
+      },
       ...(widgets.length > 0 ? { widgets } : {}),
     };
   }

@@ -8,10 +8,10 @@ function clamp(n: number, min: number, max: number) {
 /** 0–1 fill for bottom-to-top bar in calendar cell. */
 function habitFillRatio(habit: Habit): number {
   if (habit.type === 'single_select') {
-    return habit.value != null && habit.value !== '' ? 1 : 0;
+    return habit.details.value != null && habit.details.value !== '' ? 1 : 0;
   }
-  const goal = habit.goal ?? 0;
-  const total = habit.total ?? 0;
+  const goal = habit.details.goal ?? 0;
+  const total = habit.details.total ?? 0;
   if (goal > 0) {
     return clamp(total / goal, 0, 1);
   }

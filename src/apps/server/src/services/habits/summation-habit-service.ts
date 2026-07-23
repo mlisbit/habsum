@@ -4,10 +4,10 @@ import { ServiceError } from '../../service-error.js';
 import { parseClientCreatedAtIso } from '../../server-time.js';
 import { mapSummationEventsToApi } from '../../summation-event-api.js';
 import type { InterimHabit } from '../../types/habit.types.js';
+import type { HabitDef } from '../../types/userConfig.js';
 import type {
   ApplyHabitPatchInput,
   BuildPatchResponseInput,
-  HabitDefOf,
   HabitMutationRepository,
   HabitTypeService,
   PatchHabitResponseFor,
@@ -17,7 +17,7 @@ type InterimSummationHabit = Extract<InterimHabit, { type: 'summation' }>;
 
 export class SummationHabitService implements HabitTypeService<HabitRowSummation> {
   constructor(
-    readonly habit: HabitDefOf<'summation'>,
+    readonly habit: HabitDef<'summation'>,
     private readonly repository: HabitMutationRepository,
   ) {}
 
@@ -27,10 +27,14 @@ export class SummationHabitService implements HabitTypeService<HabitRowSummation
 
   historyHabit(interimHabit: InterimHabit, date: Day): HabitRowSummation {
     const typedHabit = this.summationHabit(interimHabit);
+    const emptyHabit = this.emptyHistoryHabit();
     return {
-      ...this.emptyHistoryHabit(),
-      total: typedHabit.totals.find((row) => row.date === date)?.total ?? null,
-      events: mapSummationEventsToApi(typedHabit.events.filter((event) => event.date === date)),
+      ...emptyHabit,
+      details: {
+        ...emptyHabit.details,
+        total: typedHabit.totals.find((row) => row.date === date)?.total ?? null,
+        events: mapSummationEventsToApi(typedHabit.events.filter((event) => event.date === date)),
+      },
     };
   }
 
@@ -38,10 +42,14 @@ export class SummationHabitService implements HabitTypeService<HabitRowSummation
     return {
       name: this.habit.name,
       type: 'summation',
-      goal: this.habit.goal ?? null,
-      total: null,
-      events: [],
-      ...(this.habit.summationOptions ? { summationOptions: this.habit.summationOptions } : {}),
+      details: {
+        goal: this.habit.settings.goal,
+        total: null,
+        events: [],
+        ...(this.habit.settings.summationOptions
+          ? { summationOptions: this.habit.settings.summationOptions }
+          : {}),
+      },
     };
   }
 
@@ -118,10 +126,11 @@ export class SummationHabitService implements HabitTypeService<HabitRowSummation
       user: data.user,
       date,
       habit: result.name,
-      total: result.total,
-      events: mapSummationEventsToApi(typedHabit.events.filter((event) => event.date === date)),
       type: result.type,
-      goal: result.goal,
+      details: {
+        ...result.details,
+        events: mapSummationEventsToApi(typedHabit.events.filter((event) => event.date === date)),
+      },
       ...(result.widgets ? { widgets: result.widgets } : {}),
     };
   }

@@ -2,8 +2,8 @@ import type { Habit } from '~/api.client';
 import { ProgressBar } from '@habsum/ui/components/ProgressBar';
 
 function summationEventCountLabel(habit: Extract<Habit, { type: 'summation' }>): string | null {
-  if (habit.events == null || habit.events.length === 0) return null;
-  const n = habit.events.length;
+  if (habit.details.events == null || habit.details.events.length === 0) return null;
+  const n = habit.details.events.length;
   return n === 1 ? '1 event' : `${n} event${'s'}`;
 }
 
@@ -17,8 +17,10 @@ export function CellHoverDisplay({ habits }: { habits: Habit[] }) {
             <div key={h.name} className="cell-hover-display__habit">
               <strong>{h.name}</strong>
               <div className="text-light text-b-m">
-                {h.value ?? '—'}
-                {h.options.length > 0 ? <span> · {h.options.join(', ')}</span> : null}
+                {h.details.value ?? '—'}
+                {h.details.options.length > 0 ? (
+                  <span> · {h.details.options.join(', ')}</span>
+                ) : null}
               </div>
             </div>
           );
@@ -28,19 +30,19 @@ export function CellHoverDisplay({ habits }: { habits: Habit[] }) {
         return (
           <div key={h.name} className="cell-hover-display__habit">
             <strong>{h.name}</strong>
-            {h.goal != null && h.goal > 0 ? (
+            {h.details.goal != null && h.details.goal > 0 ? (
               <ProgressBar
                 className="cell-hover-display__progress"
-                value={h.total ?? 0}
-                max={h.goal}
-                aria-label={`${h.name}: ${h.total ?? 0} of ${h.goal}${
+                value={h.details.total ?? 0}
+                max={h.details.goal}
+                aria-label={`${h.name}: ${h.details.total ?? 0} of ${h.details.goal}${
                   eventLabel != null ? `, ${eventLabel}` : ''
                 }`}
               />
             ) : (
               <div className="text-light text-b-m">
-                {h.total == null ? '—' : h.total}
-                {h.goal != null ? ` / ${h.goal}` : ''}
+                {h.details.total == null ? '—' : h.details.total}
+                {h.details.goal != null ? ` / ${h.details.goal}` : ''}
               </div>
             )}
             {eventLabel != null ? (

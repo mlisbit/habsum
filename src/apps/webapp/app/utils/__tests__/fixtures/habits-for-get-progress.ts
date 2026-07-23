@@ -46,59 +46,55 @@ function habitHistoryWidget(history: HabitHistory): HabitWidget {
 export const habitsFixtureProgressMixed: readonly Habit[] = [
   {
     name: 'push ups',
-    goal: 100,
     widgets: [habitHistoryWidget(habitHistoryWeek([null, null, null, null, null, null, 41], 100))],
     type: 'summation',
-    total: 41,
+    details: { goal: 100, total: 41 },
   },
   {
     name: 'alcohol',
-    goal: null,
     type: 'single_select',
-    options: ['none', 'light', 'moderate', 'heavy'],
-    value: 'heavy',
+    details: {
+      options: ['none', 'light', 'moderate', 'heavy'],
+      value: 'heavy',
+    },
   },
   {
     name: 'pull ups',
-    goal: null,
     type: 'summation',
-    total: 0,
+    details: { goal: null, total: 0 },
   },
   {
     name: 'water intake',
-    goal: 5,
     widgets: [habitHistoryWidget(habitHistoryWeek([null, null, null, null, null, null, 0], 5))],
     type: 'summation',
-    total: 0,
+    details: { goal: 5, total: 0 },
   },
 ] as const satisfies readonly Habit[];
 
 export const habitsFixtureProgressSecond: readonly Habit[] = [
   {
     name: 'push ups',
-    goal: 100,
     widgets: [habitHistoryWidget(habitHistoryWeek([null, null, null, 41, 0, 0, 0], 100))],
     type: 'summation',
-    total: 0,
+    details: { goal: 100, total: 0 },
   },
   {
     name: 'alcohol',
-    goal: null,
     type: 'single_select',
-    options: ['none', 'light', 'moderate', 'heavy'],
-    value: 'moderate',
+    details: {
+      options: ['none', 'light', 'moderate', 'heavy'],
+      value: 'moderate',
+    },
   },
   {
     name: 'pull ups',
-    goal: null,
     type: 'summation',
-    total: 4,
+    details: { goal: null, total: 4 },
   },
   {
     name: 'water intake',
-    goal: 5,
     widgets: [habitHistoryWidget(habitHistoryWeek([null, null, null, 0, 0, 0, 0], 5))],
     type: 'summation',
-    total: 0,
+    details: { goal: 5, total: 0 },
   },
 ] as const satisfies readonly Habit[];

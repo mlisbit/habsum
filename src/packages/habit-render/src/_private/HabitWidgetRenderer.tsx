@@ -94,7 +94,7 @@ export default function HabitWidgetRenderer({
         <Events
           habitName={habit.name}
           dayKey={viewDate}
-          events={habit.events}
+          events={habit.details.events}
           onDeleteSummationEvent={(eventId) =>
             onDeleteSummationEvent?.(eventId) ?? Promise.resolve()
           }

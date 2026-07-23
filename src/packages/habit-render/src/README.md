@@ -31,7 +31,7 @@ The server is free to add, omit, or reorder widgets and modules; the client walk
 
 ## What `HabitRenderer` composes
 
-1. **Header** (`HabitHeaderAndActionRenderer`) — habit name, options menu, and actions that depend on habit type (count control for summation, pills/checkbox for single-select). This is driven by habit fields (`type`, `total`, `value`, `options`, …), not by `widgets[]`.
+1. **Header** (`HabitHeaderAndActionRenderer`) — habit name, options menu, and actions that depend on habit type (count control for summation, pills/checkbox for single-select). This is driven by `type` and the type-specific `details` fields (`total`, `value`, `options`, …), not by `widgets[]`.
 
 2. **Widgets** (`HabitWidgetRenderer`) — walks `habit.widgets[]` and renders each widget’s modules. Also includes a few habit-type extras outside that array (e.g. summation **Events** for today’s log). Individual modules are rendered via `renderHabitWidgetBody` (`insights`, `progress`, `barGraph`, `streakGraph`).
 

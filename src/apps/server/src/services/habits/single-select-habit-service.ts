@@ -2,10 +2,10 @@ import type { Day } from '@habsum/types/common/day';
 import type { HabitRowSingleSelect } from '@habsum/types/common/habit';
 import { ServiceError } from '../../service-error.js';
 import type { InterimHabit } from '../../types/habit.types.js';
+import type { HabitDef } from '../../types/userConfig.js';
 import type {
   ApplyHabitPatchInput,
   BuildPatchResponseInput,
-  HabitDefOf,
   HabitMutationRepository,
   HabitTypeService,
   PatchHabitResponseFor,
@@ -15,7 +15,7 @@ type InterimSingleSelectHabit = Extract<InterimHabit, { type: 'single_select' }>
 
 export class SingleSelectHabitService implements HabitTypeService<HabitRowSingleSelect> {
   constructor(
-    readonly habit: HabitDefOf<'single_select'>,
+    readonly habit: HabitDef<'single_select'>,
     private readonly repository: HabitMutationRepository,
   ) {}
 
@@ -25,9 +25,13 @@ export class SingleSelectHabitService implements HabitTypeService<HabitRowSingle
 
   historyHabit(interimHabit: InterimHabit, date: Day): HabitRowSingleSelect {
     const typedHabit = this.singleSelectHabit(interimHabit);
+    const emptyHabit = this.emptyHistoryHabit();
     return {
-      ...this.emptyHistoryHabit(),
-      value: typedHabit.values.find((row) => row.date === date)?.value ?? null,
+      ...emptyHabit,
+      details: {
+        ...emptyHabit.details,
+        value: typedHabit.values.find((row) => row.date === date)?.value ?? null,
+      },
     };
   }
 
@@ -35,10 +39,11 @@ export class SingleSelectHabitService implements HabitTypeService<HabitRowSingle
     return {
       name: this.habit.name,
       type: 'single_select',
-      goal: this.habit.goal,
-      options: this.habit.options ?? [],
-      ...(this.habit.theme ? { theme: this.habit.theme } : {}),
-      value: null,
+      details: {
+        options: this.habit.settings.options,
+        ...(this.habit.settings.theme ? { theme: this.habit.settings.theme } : {}),
+        value: null,
+      },
     };
   }
 
@@ -57,7 +62,7 @@ export class SingleSelectHabitService implements HabitTypeService<HabitRowSingle
     if (typeof body.value !== 'string' || body.value.length === 0) {
       throw new ServiceError('bad_request', 'value is required');
     }
-    const options = this.habit.options ?? [];
+    const options = this.habit.settings.options;
     if (options.length > 0 && !options.includes(body.value)) {
       throw new ServiceError('bad_request', 'invalid option');
     }
@@ -86,10 +91,8 @@ export class SingleSelectHabitService implements HabitTypeService<HabitRowSingle
       user: data.user,
       date,
       habit: result.name,
-      value: result.value,
       type: result.type,
-      options: result.options,
-      ...(result.theme ? { theme: result.theme } : {}),
+      details: result.details,
       ...(result.widgets ? { widgets: result.widgets } : {}),
     };
   }

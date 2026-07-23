@@ -10,15 +10,6 @@ import { SummationHabitService } from './summation-habit-service.js';
 
 const date = dayFromString('2026-07-23');
 
-function habitDef(overrides: Partial<HabitDef> & Pick<HabitDef, 'name' | 'type'>): HabitDef {
-  return {
-    goal: null,
-    repeat: ['thursday'],
-    insights: [],
-    ...overrides,
-  };
-}
-
 function mutationRecorder(result = true): {
   repository: HabitMutationRepository;
   mutations: HabitMutation[];
@@ -38,12 +29,16 @@ function mutationRecorder(result = true): {
 describe('habit type services', () => {
   it('creates a single-select service that owns selection history and mutations', () => {
     const { repository, mutations } = mutationRecorder();
-    const definition = habitDef({
+    const definition: HabitDef<'single_select'> = {
       name: 'mood',
       type: 'single_select',
-      options: ['good', 'bad'],
-      theme: 'sunset',
-    });
+      repeat: ['thursday'],
+      insights: [],
+      settings: {
+        options: ['good', 'bad'],
+        theme: 'sunset',
+      },
+    };
     const service = createHabitTypeService(definition, repository);
     const interimHabit: InterimHabit = {
       type: 'single_select',
@@ -58,10 +53,11 @@ describe('habit type services', () => {
     expect(service.historyHabit(interimHabit, date)).toEqual({
       name: 'mood',
       type: 'single_select',
-      goal: null,
-      options: ['good', 'bad'],
-      theme: 'sunset',
-      value: 'good',
+      details: {
+        options: ['good', 'bad'],
+        theme: 'sunset',
+        value: 'good',
+      },
     });
 
     service.applyPatch({ user: 'user', date, body: { value: 'bad' } });
@@ -73,7 +69,13 @@ describe('habit type services', () => {
 
   it('creates a summation service that owns total history and mutations', () => {
     const { repository, mutations } = mutationRecorder();
-    const definition = habitDef({ name: 'push ups', type: 'summation', goal: 100 });
+    const definition: HabitDef<'summation'> = {
+      name: 'push ups',
+      type: 'summation',
+      repeat: ['thursday'],
+      insights: [],
+      settings: { goal: 100 },
+    };
     const service = createHabitTypeService(definition, repository);
     const interimHabit: InterimHabit = {
       type: 'summation',
@@ -89,15 +91,17 @@ describe('habit type services', () => {
     expect(service.historyHabit(interimHabit, date)).toEqual({
       name: 'push ups',
       type: 'summation',
-      goal: 100,
-      total: 12,
-      events: [
-        {
-          id: 7,
-          amount: 12,
-          createdAt: { day: '2026-07-23', time: '09:30:00' },
-        },
-      ],
+      details: {
+        goal: 100,
+        total: 12,
+        events: [
+          {
+            id: 7,
+            amount: 12,
+            createdAt: { day: '2026-07-23', time: '09:30:00' },
+          },
+        ],
+      },
     });
 
     service.applyPatch({

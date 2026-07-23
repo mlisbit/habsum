@@ -15,12 +15,12 @@ type InterimHabitBase = {
 export type InterimHabit =
   | (InterimHabitBase & {
       type: 'single_select';
-      config: HabitDef;
+      config: HabitDef<'single_select'>;
       values: Array<{ date: Day; value: string }>;
     })
   | (InterimHabitBase & {
       type: 'summation';
-      config: HabitDef;
+      config: HabitDef<'summation'>;
       totals: Array<{ date: Day; total: number }>;
       events: InterimSummationEvent[];
     });

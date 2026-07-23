@@ -42,16 +42,19 @@ function formatSummationOptionsInline(raw: unknown): string | null {
 
 function habitToYamlDef(habit: HabitDef): Record<string, unknown> {
   const def: Record<string, unknown> = { type: habit.type };
-  if (habit.goal != null) def.goal = habit.goal;
   if (habit.repeat != null && habit.repeat.length > 0 && habit.repeat.length < 7) {
     def.repeat = habit.repeat;
   }
   if (habit.type === 'single_select') {
-    def.options = habit.options ?? [];
-    if (habit.theme != null && habit.theme.trim() !== '') def.theme = habit.theme;
-  }
-  if (habit.type === 'summation' && habit.summationOptions) {
-    def.summation_options = habit.summationOptions.increments;
+    def.options = habit.settings.options;
+    if (habit.settings.theme != null && habit.settings.theme.trim() !== '') {
+      def.theme = habit.settings.theme;
+    }
+  } else {
+    if (habit.settings.goal != null) def.goal = habit.settings.goal;
+    if (habit.settings.summationOptions) {
+      def.summation_options = habit.settings.summationOptions.increments;
+    }
   }
   if (habit.data_visualization) def.data_visualization = habit.data_visualization;
   if ((habit.insights?.length ?? 0) > 0) {

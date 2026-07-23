@@ -49,8 +49,12 @@ describe('PATCH /users/:user/habits summation history', () => {
       });
 
     expect(res.status).toBe(200);
-    expect(res.body.total).toBe(5);
-    expect(res.body.events).toEqual([expect.objectContaining({ amount: 5 })]);
+    expect(res.body.details.total).toBe(5);
+    expect(res.body.details.goal).toBe(100);
+    expect(res.body.details.events).toEqual([expect.objectContaining({ amount: 5 })]);
+    expect(res.body).not.toHaveProperty('total');
+    expect(res.body).not.toHaveProperty('goal');
+    expect(res.body).not.toHaveProperty('events');
     const historyWidget = res.body.widgets?.find(
       (widget: { title: string }) => widget.title === 'History',
     );
@@ -122,6 +126,12 @@ describe('PATCH /users/:user/habits summation history', () => {
       .set('Cookie', `${SESSION_COOKIE_NAME}=${session}`);
 
     expect(listRes.status).toBe(200);
+    expect(listRes.body.habits?.[0]?.details).toMatchObject({
+      total: 100,
+      goal: 100,
+    });
+    expect(listRes.body.habits?.[0]).not.toHaveProperty('total');
+    expect(listRes.body.habits?.[0]).not.toHaveProperty('goal');
     const listHistoryWidget = listRes.body.habits?.[0]?.widgets?.find(
       (widget: { title: string }) => widget.title === 'History',
     );

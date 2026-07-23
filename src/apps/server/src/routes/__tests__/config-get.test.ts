@@ -46,6 +46,7 @@ describe('GET /users/:user/config', () => {
         {
           name: 'mood',
           type: 'single_select',
+          goal: null,
           repeat: ['monday', 'wednesday'],
           options: ['good', 'okay', 'bad'],
         },
@@ -56,6 +57,7 @@ describe('GET /users/:user/config', () => {
         },
       ],
     });
+    expect(res.body.config.habits[0].settings).toBeUndefined();
     expect(res.body.habits).toBeUndefined();
   });
 

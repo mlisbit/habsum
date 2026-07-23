@@ -230,13 +230,13 @@ function updateHomepageHabit(habit: Habit, patch: HabitPatch): Habit {
       if (habit.type === 'summation') {
         return {
           ...habit,
-          total: null,
+          details: { ...habit.details, total: null },
           widgets: updateSummationWidgets(habit.widgets, null),
         };
       }
       return {
         ...habit,
-        value: null,
+        details: { ...habit.details, value: null },
         widgets: updateSingleSelectWidgets(habit.widgets, null),
       };
     }
@@ -245,10 +245,10 @@ function updateHomepageHabit(habit: Habit, patch: HabitPatch): Habit {
   }
 
   if ('total' in patch && habit.type === 'summation') {
-    const total = (habit.total ?? 0) + patch.total;
+    const total = (habit.details.total ?? 0) + patch.total;
     return {
       ...habit,
-      total,
+      details: { ...habit.details, total },
       widgets: updateSummationWidgets(habit.widgets, total),
     };
   }
@@ -256,7 +256,7 @@ function updateHomepageHabit(habit: Habit, patch: HabitPatch): Habit {
   if ('value' in patch && habit.type === 'single_select') {
     return {
       ...habit,
-      value: patch.value,
+      details: { ...habit.details, value: patch.value },
       widgets: updateSingleSelectWidgets(habit.widgets, patch.value),
     };
   }

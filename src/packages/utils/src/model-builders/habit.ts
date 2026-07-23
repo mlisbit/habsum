@@ -50,10 +50,11 @@ function singleSelectModel(state: HabitModelBuilderState): HabitRowSingleSelect 
   return {
     name: state.name,
     type: 'single_select',
-    goal: state.goal,
-    options: state.options,
-    value: state.value,
-    ...(state.theme != null ? { theme: state.theme } : {}),
+    details: {
+      options: state.options,
+      value: state.value,
+      ...(state.theme != null ? { theme: state.theme } : {}),
+    },
     ...(state.widgets != null ? { widgets: state.widgets } : {}),
   };
 }
@@ -62,10 +63,12 @@ function summationModel(state: HabitModelBuilderState): HabitRowSummation {
   return {
     name: state.name,
     type: 'summation',
-    goal: state.goal,
-    total: state.total,
-    ...(state.events != null ? { events: state.events } : {}),
-    ...(state.summationOptions != null ? { summationOptions: state.summationOptions } : {}),
+    details: {
+      goal: state.goal,
+      total: state.total,
+      ...(state.events != null ? { events: state.events } : {}),
+      ...(state.summationOptions != null ? { summationOptions: state.summationOptions } : {}),
+    },
     ...(state.widgets != null ? { widgets: state.widgets } : {}),
   };
 }

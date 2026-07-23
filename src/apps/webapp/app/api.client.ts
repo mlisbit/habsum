@@ -322,18 +322,14 @@ export async function patchHabit(user: string, body: HabitPatch, opts: { date: s
     return {
       name: res.habit,
       type: res.type,
-      options: res.options,
-      value: res.value ?? null,
-      goal: null,
+      details: res.details,
       ...(res.widgets ? { widgets: res.widgets } : {}),
     } satisfies Habit;
   }
   return {
     name: res.habit,
-    total: res.total ?? null,
     type: res.type,
-    goal: res.goal,
-    ...(res.events ? { events: res.events } : {}),
+    details: res.details,
     ...(res.widgets ? { widgets: res.widgets } : {}),
   } satisfies Habit;
 }

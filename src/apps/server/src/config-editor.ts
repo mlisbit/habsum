@@ -2,9 +2,11 @@ import yaml from 'js-yaml';
 import type {
   UserConfigDeletion,
   UserConfigJson,
+  UserConfigJsonHabit,
   UserConfigMigration,
   YAMLString,
 } from '@habsum/types/common/misc';
+import { HABIT_REPEAT_DAYS, type HabitDef, type UserConfig } from './types/userConfig.js';
 import { YAMLConfigParser } from './utils/yaml-config-parser.js';
 
 type RawHabitEntry = {
@@ -57,15 +59,101 @@ function parseConfigHabitMigrationEntries(text: YAMLString): RawHabitEntry[] {
 
 export function parseConfigJson(user: string, text: YAMLString): UserConfigJson {
   try {
-    return new YAMLConfigParser(user).parse(text);
+    const config = new YAMLConfigParser(user).parse(text);
+    return {
+      user: config.user,
+      includeAbsentDaysInAverage: config.includeAbsentDaysInAverage,
+      habits: config.habits.map(habitDefToConfigJson),
+    };
   } catch (e) {
     if (e instanceof YAMLConfigParser.ConfigValidationError) throw new Error(e.message);
     throw e;
   }
 }
 
+function habitDefToConfigJson(habit: HabitDef): UserConfigJsonHabit {
+  const shared = {
+    name: habit.name,
+    type: habit.type,
+    repeat: habit.repeat,
+    ...(habit.data_visualization ? { data_visualization: habit.data_visualization } : {}),
+    ...(habit.insights.length > 0 ? { insights: habit.insights } : {}),
+    ...(habit.streak_options ? { streak_options: habit.streak_options } : {}),
+  };
+
+  if (habit.type === 'single_select') {
+    return {
+      ...shared,
+      type: habit.type,
+      goal: null,
+      options: habit.settings.options,
+      ...(habit.settings.theme ? { theme: habit.settings.theme } : {}),
+    };
+  }
+
+  return {
+    ...shared,
+    type: habit.type,
+    goal: habit.settings.goal,
+    ...(habit.settings.summationOptions
+      ? { summationOptions: habit.settings.summationOptions }
+      : {}),
+  };
+}
+
 export function userConfigJsonFromText(user: string, text: YAMLString): UserConfigJson {
   return parseConfigJson(user, text);
+}
+
+export function userConfigFromJson(config: UserConfigJson): UserConfig {
+  return {
+    user: config.user,
+    includeAbsentDaysInAverage: config.includeAbsentDaysInAverage,
+    habits: config.habits.map((habit): HabitDef => {
+      const dataVisualization = habit.data_visualization
+        ? {
+            ...(habit.data_visualization.heatmap !== undefined
+              ? { heatmap: habit.data_visualization.heatmap }
+              : {}),
+            ...(habit.data_visualization.bargraph
+              ? { bargraph: habit.data_visualization.bargraph }
+              : {}),
+          }
+        : undefined;
+      const shared = {
+        name: habit.name,
+        repeat: habit.repeat ?? [...HABIT_REPEAT_DAYS],
+        data_visualization: dataVisualization,
+        insights: habit.insights ?? [],
+        streak_options: habit.streak_options
+          ? {
+              options: habit.streak_options.options ?? [],
+              frequency: habit.streak_options.frequency,
+            }
+          : undefined,
+      };
+
+      if (habit.type === 'single_select') {
+        return {
+          ...shared,
+          type: habit.type,
+          settings: {
+            options: habit.options ?? [],
+            ...(habit.theme ? { theme: habit.theme } : {}),
+          },
+        };
+      }
+
+      return {
+        ...shared,
+        type: habit.type,
+        settings: {
+          goal: habit.goal,
+          ...(habit.summationOptions ? { summationOptions: habit.summationOptions } : {}),
+        },
+      };
+    }),
+  };
 }
 
 function parseConfigMigrationEntries(text: YAMLString): RawHabitEntry[] {

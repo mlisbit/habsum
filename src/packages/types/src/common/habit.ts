@@ -1,5 +1,6 @@
 import type { BarGraphData } from './bar-chart.js';
 import type { StreakGraphData } from './streak.js';
+import type { SummationOptionInput, SummationOptions } from './summation-options.js';
 
 export type HabitHistory = {
   data: {
@@ -65,18 +66,6 @@ export type HabitRenderModelFields = {
   widgets?: HabitWidget[];
 };
 
-/** A single-select row from `GET /users/:user/habits` */
-export type HabitRowSingleSelect = HabitRenderModelFields & {
-  name: string;
-  type: 'single_select';
-  goal: number | null;
-  options: string[];
-  theme?: string;
-  value: string | null;
-};
-
-import type { SummationOptionInput, SummationOptions } from './summation-options.js';
-
 export type { SummationOptionInput, SummationOptions };
 export {
   SUMMATION_OPTION_INPUT,
@@ -96,21 +85,39 @@ export type SummationEvent = {
   createdAt: SummationEventCreatedAt;
 };
 
-/** A summation row from `GET /users/:user/habits` */
-export type HabitRowSummation = HabitRenderModelFields & {
-  name: string;
-  type: 'summation';
-  goal: number | null;
-  /** Logged total for the requested day; `null` means no row stored (distinct from explicit `0`). */
-  total: number | null;
-  /** Individual events for detail views. Omitted from list views. */
-  events?: SummationEvent[];
-  /** Manual amount entry plus quick-add increments from config (`summation_options`). */
-  summationOptions?: SummationOptions;
-};
+export type HabitType = 'summation' | 'single_select';
+
+type CompleteHabitTypeMap<T extends Record<HabitType, object>> = T;
+
+export type HabitDetailsByType = CompleteHabitTypeMap<{
+  single_select: {
+    options: string[];
+    theme?: string;
+    value: string | null;
+  };
+  summation: {
+    goal: number | null;
+    /** Logged total for the requested day; `null` means no row stored (distinct from explicit `0`). */
+    total: number | null;
+    /** Individual events for detail views. Omitted from list views. */
+    events?: SummationEvent[];
+    /** Manual amount entry plus quick-add increments from config (`summation_options`). */
+    summationOptions?: SummationOptions;
+  };
+}>;
 
 /**
- * A habit as returned from `GET /users/:user/habits` and normalized from
- * `PATCH` on the client.
+ * A habit API view model. Shared presentation fields stay at the root while
+ * everything specific to a habit type is grouped under `details`.
  */
-export type Habit = HabitRowSingleSelect | HabitRowSummation;
+export type HabitRow<T extends HabitType = HabitType> = {
+  [K in T]: HabitRenderModelFields & {
+    name: string;
+    type: K;
+    details: HabitDetailsByType[K];
+  };
+}[T];
+
+export type HabitRowSingleSelect = HabitRow<'single_select'>;
+export type HabitRowSummation = HabitRow<'summation'>;
+export type Habit = HabitRow;

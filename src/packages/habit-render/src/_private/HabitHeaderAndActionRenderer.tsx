@@ -24,10 +24,10 @@ type HabitHeaderAndActionRendererProps = {
 
 function isCheckboxTheme(habit: HabitRowSingleSelect): boolean {
   return (
-    habit.theme === 'checkbox' &&
-    habit.options.length === 2 &&
-    habit.options.includes('yes') &&
-    habit.options.includes('no')
+    habit.details.theme === 'checkbox' &&
+    habit.details.options.length === 2 &&
+    habit.details.options.includes('yes') &&
+    habit.details.options.includes('no')
   );
 }
 
@@ -94,8 +94,8 @@ function SingleSelectActions({
   if (checkboxTheme) {
     return (
       <TernaryCheckbox
-        value={toTernaryCheckboxValue(habit.value)}
-        aria-label={`${habit.name}: ${habit.value ?? 'not set'}`}
+        value={toTernaryCheckboxValue(habit.details.value)}
+        aria-label={`${habit.name}: ${habit.details.value ?? 'not set'}`}
         disabled={pending}
         onChange={(nextValue) => {
           void handleSelectChange(nextValue);
@@ -106,9 +106,9 @@ function SingleSelectActions({
 
   return (
     <div className="habit-select__options">
-      {habit.options.map((opt) => {
-        const selected = habit.value === opt;
-        const dim = habit.value != null && !selected;
+      {habit.details.options.map((opt) => {
+        const selected = habit.details.value === opt;
+        const dim = habit.details.value != null && !selected;
         return (
           <TogglePill
             key={opt}
@@ -208,8 +208,8 @@ function SummationHabitHeader({
       className={['mb-4', className].filter(Boolean).join(' ')}
       actions={
         <CountControl
-          summationSteps={habit.summationOptions}
-          displayTotal={habit.total}
+          summationSteps={habit.details.summationOptions}
+          displayTotal={habit.details.total}
           habitName={habit.name}
           pending={pending}
           onAddDelta={(delta) => onUpdate({ habit: habit.name, total: delta })}

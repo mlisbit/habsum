@@ -1,8 +1,9 @@
 // Domain operations for YAML user configuration persistence and migrations.
-import { yamlString, type YAMLString } from '@habsum/types/common/misc';
+import { yamlString, type UserConfigJson, type YAMLString } from '@habsum/types/common/misc';
 import {
   buildConfigDeletions,
   buildConfigMigrations,
+  userConfigFromJson,
   userConfigJsonFromText,
 } from '../config-editor.js';
 import { ConfigRepository } from '../repositories/config-repository.js';
@@ -66,7 +67,7 @@ function parseConfigDeletions(raw: unknown): string[] | null {
 function optionDeletionForPath(path: string, previousHabits: HabitDef[]): ConfigDeletion | null {
   for (const habit of previousHabits) {
     if (habit.type !== 'single_select') continue;
-    for (const option of habit.options ?? []) {
+    for (const option of habit.settings.options) {
       if (`${habit.name}.${option}` === path) {
         return { habit: habit.name, option };
       }
@@ -101,9 +102,9 @@ function optionMigrationForHabitPair(
 ): { habit: string; fromOption: string; toOption: string } | null {
   if (previousHabit.type !== 'single_select' || nextHabit.type !== 'single_select') return null;
 
-  for (const fromOption of previousHabit.options ?? []) {
+  for (const fromOption of previousHabit.settings.options) {
     if (`${previousHabit.name}.${fromOption}` !== fromPath) continue;
-    for (const toOption of nextHabit.options ?? []) {
+    for (const toOption of nextHabit.settings.options) {
       if (`${nextHabit.name}.${toOption}` === toPath) {
         return { habit: nextHabit.name, fromOption, toOption };
       }
@@ -295,7 +296,7 @@ export class ConfigService {
       }
     } else if (body.config != null) {
       try {
-        text = this.yamlConfigConvertor.convert(body.config as UserConfig);
+        text = this.yamlConfigConvertor.convert(userConfigFromJson(body.config as UserConfigJson));
       } catch (e) {
         throw new ServiceError('bad_request', e instanceof Error ? e.message : 'invalid config');
       }

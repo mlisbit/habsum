@@ -16,10 +16,11 @@ const config: UserConfig = {
     {
       name: 'mood',
       type: 'single_select',
-      goal: null,
       repeat: ['monday', 'wednesday'],
-      options: ['great', 'okay', 'bad'],
-      theme: 'dark',
+      settings: {
+        options: ['great', 'okay', 'bad'],
+        theme: 'dark',
+      },
       data_visualization: { heatmap: {} },
       insights: ['current_streak', 'longest_streak'],
       streak_options: { options: ['great'], frequency: '3d' },
@@ -27,9 +28,11 @@ const config: UserConfig = {
     {
       name: 'push ups',
       type: 'summation',
-      goal: 100,
       repeat: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
-      summationOptions: { manualInput: true, increments: [5, 10, 25] },
+      settings: {
+        goal: 100,
+        summationOptions: { manualInput: true, increments: [5, 10, 25] },
+      },
       data_visualization: { heatmap: {}, bargraph: { period: '2w' } },
       insights: ['current_streak', 'average'],
       streak_options: { options: ['100'], frequency: '5d' },

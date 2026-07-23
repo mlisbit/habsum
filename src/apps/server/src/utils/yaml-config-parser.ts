@@ -376,7 +376,7 @@ export class YAMLConfigParser {
     return {
       user: this.user,
       includeAbsentDaysInAverage: rawConfig.include_absent_days_in_average === true,
-      habits: Object.entries(habits).map(([name, def]) => {
+      habits: Object.entries(habits).map(([name, def]): HabitDef => {
         if (!isRecord(def)) {
           throw new YAMLConfigValidationError(`habit "${name}" must be a yaml mapping`);
         }
@@ -396,23 +396,31 @@ export class YAMLConfigParser {
               ? [String(rawHabit.goal)]
               : [],
         );
-        return {
+        const shared = {
           name,
-          type,
-          goal: rawHabit.goal ?? null,
           repeat: normalizeRepeat(rawHabit.repeat, name),
-          options: opts,
-          theme:
-            type === 'single_select' && typeof rawHabit.theme === 'string'
-              ? rawHabit.theme
-              : undefined,
-          summationOptions:
-            type === 'summation'
-              ? parseSummationOptionsFromRaw(
-                  rawHabit.summation_options ?? rawHabit.summationOptions,
-                )
-              : undefined,
           ...presentation,
+        };
+        if (type === 'single_select') {
+          return {
+            ...shared,
+            type,
+            settings: {
+              options: opts ?? [],
+              ...(typeof rawHabit.theme === 'string' ? { theme: rawHabit.theme } : {}),
+            },
+          };
+        }
+        const summationOptions = parseSummationOptionsFromRaw(
+          rawHabit.summation_options ?? rawHabit.summationOptions,
+        );
+        return {
+          ...shared,
+          type,
+          settings: {
+            goal: rawHabit.goal ?? null,
+            ...(summationOptions ? { summationOptions } : {}),
+          },
         };
       }),
     };

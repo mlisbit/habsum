@@ -25,7 +25,7 @@ The SQLite DB lives at:
 ### API
 
 - `GET  /users` → `{ users: string[] }`
-- `GET  /users/:user/habits` → `{ user, habits: [{ name, type, goal, total }] }`
+- `GET  /users/:user/habits` → `{ user, habits: [{ name, type, details: { goal, total } }] }`
 - `PATCH /users/:user/habits` body `{ habit, total, action: "add" | "set" }`
 
 ### Webapp flow (high level)

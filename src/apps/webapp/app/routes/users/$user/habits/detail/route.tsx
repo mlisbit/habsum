@@ -37,19 +37,20 @@ function withoutHistory(habit: Habit): Habit {
 function blankHabitFrom(habit: Habit): Habit {
   if (habit.type === 'single_select') {
     return {
-      name: habit.name,
-      type: 'single_select',
-      goal: habit.goal,
-      options: habit.options,
-      value: null,
+      ...habit,
+      details: {
+        ...habit.details,
+        value: null,
+      },
     } satisfies Habit;
   }
+  const { events: _events, ...details } = habit.details;
   return withoutHistory({
-    name: habit.name,
-    type: 'summation',
-    goal: habit.goal,
-    total: null,
-    ...(habit.summationOptions != null ? { summationOptions: habit.summationOptions } : {}),
+    ...habit,
+    details: {
+      ...details,
+      total: null,
+    },
   } satisfies Habit);
 }
 

@@ -68,10 +68,10 @@ export function buildHabitWidgets({
   includeLongestStreakInsight = false,
   includeWeeklyAverageInsight = false,
 }: HabitInsightWidgetInput): HabitWidget[] {
-  const h = interimHabit.config;
   const reader = readerForInterimHabit(interimHabit);
 
   if (interimHabit.type === 'single_select') {
+    const h = interimHabit.config;
     const heatmap = includeHeatMap
       ? streakGraphForConfiguredWindow(
           data.user,
@@ -83,7 +83,7 @@ export function buildHabitWidgets({
           undefined,
           false,
           data.firstDate,
-          h.options ?? [],
+          h.settings.options,
           reader,
         )
       : null;
@@ -99,18 +99,19 @@ export function buildHabitWidgets({
             h.streak_options.frequency,
             includeLongestStreakInsight,
             data.firstDate,
-            h.options ?? [],
+            h.settings.options,
             reader,
           )
         : null;
 
     return habitWidgets([
       heatmap || streak
-        ? historyWidget(null, h.goal, false, heatmap, streak, includeCurrentStreakInsight)
+        ? historyWidget(null, null, false, heatmap, streak, includeCurrentStreakInsight)
         : null,
     ]);
   }
 
+  const h = interimHabit.config;
   const total = interimHabitTotal(interimHabit, data);
   const history =
     h.data_visualization?.bargraph != null && (includeBarGraph || includeWeeklyAverageInsight)
@@ -120,19 +121,19 @@ export function buildHabitWidgets({
           data.date,
           data.firstDate,
           h.data_visualization.bargraph.period,
-          h.goal,
+          h.settings.goal,
           at,
           tzOffsetMinutes,
           reader,
         )
       : null;
   const heatmap =
-    includeHeatMap && h.goal != null
+    includeHeatMap && h.settings.goal != null
       ? summationStreakGraphForConfiguredWindow(
           data.user,
           h.name,
           data.date,
-          [String(h.goal)],
+          [String(h.settings.goal)],
           at,
           tzOffsetMinutes,
           undefined,
@@ -158,11 +159,11 @@ export function buildHabitWidgets({
       : null;
 
   return habitWidgets([
-    progressWidget(total, h.goal),
+    progressWidget(total, h.settings.goal),
     history || heatmap || streak
       ? historyWidget(
           history,
-          h.goal,
+          h.settings.goal,
           data.config.includeAbsentDaysInAverage,
           heatmap,
           streak,
