@@ -284,10 +284,7 @@ export function Calendar({
                 >
                   {cellBody}
                 </Hoverable.Anchor>
-                <Hoverable.Content
-                  className="calendar__hoverable calendar__hoverable--min-width"
-                  side={hoverPanelSide}
-                >
+                <Hoverable.Content className="calendar__hoverable--min-width" side={hoverPanelSide}>
                   {hoverBody(cellInfo)}
                 </Hoverable.Content>
               </Hoverable.Root>

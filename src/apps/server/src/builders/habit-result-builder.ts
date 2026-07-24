@@ -4,11 +4,13 @@ import type { Day } from '@habsum/types/common/day';
 import type { Habit } from '@habsum/types/common/habit';
 import { fromDateKey } from '@habsum/utils/date';
 import { getProgress } from '@habsum/utils/habit-helpers';
-import type { HabitDataSnapshot } from '../types/habit.types.js';
 import type { UserConfig } from '../types/userConfig.js';
 
 type HabitResultBuilderInput = {
-  data: HabitDataSnapshot;
+  user: string;
+  viewingDate: Day;
+  familiarName: string;
+  firstRecordedDate: Day | null;
   config: UserConfig;
   habits: Habit[];
   today: Day;
@@ -20,21 +22,22 @@ export class HabitResultBuilder {
   constructor(private readonly input: HabitResultBuilderInput) {}
 
   build(): HabitsResponse {
-    const { data, habits } = this.input;
+    const { user, viewingDate, habits } = this.input;
 
     return {
-      user: data.user,
-      date: data.viewDate,
+      user,
+      date: viewingDate,
       page: this.habitPageCopy(habits),
       habits,
     };
   }
 
   private habitPageCopy(habits: readonly Habit[]): HabitsResponse['page'] {
-    const { data, config, today, at, tzOffsetMinutes } = this.input;
+    const { viewingDate, familiarName, firstRecordedDate, config, today, at, tzOffsetMinutes } =
+      this.input;
     const progress = habitPageProgress(habits);
     const showEmptyIntro = config.habits.length === 0;
-    const isNewUser = data.firstRecordedDate === null;
+    const isNewUser = firstRecordedDate === null;
 
     if (isNewUser) {
       return {
@@ -45,18 +48,18 @@ export class HabitResultBuilder {
       };
     }
 
-    if (data.viewDate !== today) {
+    if (viewingDate !== today) {
       return {
-        heading: habitPageDateHeading(data.viewDate, today, tzOffsetMinutes),
-        subheader: exactDate(data.viewDate),
+        heading: habitPageDateHeading(viewingDate, today, tzOffsetMinutes),
+        subheader: exactDate(viewingDate),
         progress,
         showEmptyIntro,
       };
     }
 
     return {
-      heading: habitPageHeading(data.familiarName, at, tzOffsetMinutes),
-      subheader: habitPageSubheaderTemplate(data.viewDate, at, tzOffsetMinutes),
+      heading: habitPageHeading(familiarName, at, tzOffsetMinutes),
+      subheader: habitPageSubheaderTemplate(viewingDate, at, tzOffsetMinutes),
       progress,
       showEmptyIntro,
     };

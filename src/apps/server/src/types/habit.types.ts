@@ -63,12 +63,9 @@ export type HydratedHabitData =
       events: HydratedSummationEvent[];
     });
 
-export type HabitDataSnapshot = {
-  user: string;
+export type HabitDataMetadata = {
   familiarName: string;
-  viewDate: Day;
   firstRecordedDate: Day | null;
-  habits: HydratedHabitData[];
 };
 
 export type HydratedSummationEvent = {

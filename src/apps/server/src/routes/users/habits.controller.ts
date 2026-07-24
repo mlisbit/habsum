@@ -1,8 +1,6 @@
 import type { Request, Response } from 'express';
 import { dasherize } from '@habsum/utils/strings';
-import { HistoryPagePresenter } from '../../presenters/history-page-presenter.js';
 import { HabitRepository } from '../../repositories/habit-repository.js';
-import { HabitDataService } from '../../services/habit-data-service.js';
 import { HabitService } from '../../services/habit-service.js';
 import type { HabitListQuery, PatchBody } from '../../types/habit.types.js';
 import ServiceError from '../../utils/classes/service-error.js';
@@ -15,8 +13,7 @@ import { UserService } from '../../services/user-service.js';
 import { sendServiceResult } from '../../utils/controller-result-utils.js';
 
 const habitRepository = new HabitRepository();
-const habitDataService = new HabitDataService(habitRepository);
-const habitService = new HabitService(habitRepository, habitDataService);
+const habitService = new HabitService(habitRepository);
 const userService = new UserService();
 
 export const habitsController = {
@@ -43,7 +40,7 @@ export const habitsController = {
         }
         return definition;
       });
-      const historyData = habitDataService.loadSnapshot(
+      const hydratedHabits = habitRepository.loadHydratedHabits(
         getHabitHistoryDataQuery({
           user,
           habits: habitDefinitions,
@@ -51,15 +48,15 @@ export const habitsController = {
         }),
       );
 
-      return new HistoryPagePresenter({
+      return habitService.getHabitHistoryPresentation({
         user,
         userConfig,
         habitDefinitions,
-        habitData: historyData,
+        hydratedHabits,
         viewingDate,
         today: getHabitApiToday(requestedAt),
         requestedAt,
-      }).present();
+      });
     });
   },
 
@@ -75,12 +72,16 @@ export const habitsController = {
         config: userConfig,
         context: viewContext,
       });
-      const habitData = habitDataService.loadSnapshot(dataQuery);
+      const metadata = habitRepository.getDataMetadata(userConfig.user);
+      const hydratedHabits = habitRepository.loadHydratedHabits(dataQuery, {
+        firstRecordedDate: metadata.firstRecordedDate,
+      });
 
-      return habitService.presentHabitList({
+      return habitService.getHabitListPresentation({
         config: userConfig,
         context: viewContext,
-        data: habitData,
+        metadata,
+        hydratedHabits,
       });
     });
   },

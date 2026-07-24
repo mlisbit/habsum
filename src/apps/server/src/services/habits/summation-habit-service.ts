@@ -79,7 +79,7 @@ export class SummationHabitService implements HabitTypeService<HabitRowSummation
   }
 
   buildPatchResponse({
-    data,
+    user,
     date,
     result,
     habitData,
@@ -90,7 +90,7 @@ export class SummationHabitService implements HabitTypeService<HabitRowSummation
     }
 
     return {
-      user: data.user,
+      user,
       date,
       habit: result.name,
       type: result.type,

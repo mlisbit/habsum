@@ -26,7 +26,7 @@ function hydratedSelectValue(user: string, habit: string, date: string): string 
   const config = configService.loadUserConfig(user);
   if (!config) throw new Error(`missing config for ${user}`);
   const viewDate = dayFromString(date);
-  const snapshot = habitRepository.loadSnapshot(
+  const hydratedHabits = habitRepository.loadHydratedHabits(
     getHabitListDataQuery({
       config,
       context: {
@@ -36,7 +36,7 @@ function hydratedSelectValue(user: string, habit: string, date: string): string 
       },
     }),
   );
-  const habitData = snapshot.habits.find((candidate) => candidate.name === habit);
+  const habitData = hydratedHabits.find((candidate) => candidate.name === habit);
   if (!habitData || habitData.type !== 'single_select') return null;
   return habitData.values.find((row) => row.date === date)?.value ?? null;
 }

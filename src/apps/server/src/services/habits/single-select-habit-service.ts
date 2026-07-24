@@ -48,7 +48,7 @@ export class SingleSelectHabitService implements HabitTypeService<HabitRowSingle
   }
 
   buildPatchResponse({
-    data,
+    user,
     date,
     result,
     habitData,
@@ -59,7 +59,7 @@ export class SingleSelectHabitService implements HabitTypeService<HabitRowSingle
     }
 
     return {
-      user: data.user,
+      user,
       date,
       habit: result.name,
       type: result.type,

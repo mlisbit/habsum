@@ -1,9 +1,9 @@
-// Presents a hydrated history snapshot as the history page API response.
+// Presents hydrated habits as the history page API response.
 import type { HistoryGetResponse } from '@habsum/types/api-responses/history-get';
 import type { Day } from '@habsum/types/common/day';
 import type { Habit } from '@habsum/types/common/habit';
 import { dasherize } from '@habsum/utils/strings';
-import type { HabitDataSnapshot, HydratedHabitData } from '../types/habit.types.js';
+import type { HydratedHabitData } from '../types/habit.types.js';
 import type { HabitDef, UserConfig } from '../types/userConfig.js';
 import getMinDate from '../utils/get-min-date.js';
 import isHabitRepeatedOnDate from '../utils/habits/is-habit-repeated-on-date.js';
@@ -11,11 +11,11 @@ import { HabitPresenter, type HabitPresentationContext } from './habits/habit-pr
 import { SingleSelectHabitPresenter } from './habits/single-select-habit-presenter.js';
 import { SummationHabitPresenter } from './habits/summation-habit-presenter.js';
 
-type HistoryPagePresenterInput = {
+export type HistoryPagePresenterInput = {
   user: string;
   userConfig: UserConfig;
   habitDefinitions: HabitDef[];
-  habitData: HabitDataSnapshot;
+  hydratedHabits: HydratedHabitData[];
   viewingDate: Day;
   today: Day;
   requestedAt: Date;
@@ -25,12 +25,13 @@ export class HistoryPagePresenter {
   constructor(private readonly input: HistoryPagePresenterInput) {}
 
   present(): HistoryGetResponse {
-    const { user, userConfig, habitData, habitDefinitions, viewingDate, requestedAt } = this.input;
-    const historyStart = habitData.habits.reduce(
+    const { user, userConfig, hydratedHabits, habitDefinitions, viewingDate, requestedAt } =
+      this.input;
+    const historyStart = hydratedHabits.reduce(
       (start, hydratedHabit) => (hydratedHabit.dataStart < start ? hydratedHabit.dataStart : start),
       viewingDate,
     );
-    const historyEnd = habitData.habits.reduce(
+    const historyEnd = hydratedHabits.reduce(
       (end, hydratedHabit) => (hydratedHabit.dataEnd > end ? hydratedHabit.dataEnd : end),
       viewingDate,
     );
@@ -90,7 +91,7 @@ export class HistoryPagePresenter {
   }
 
   private getHabitData(definition: HabitDef): HydratedHabitData {
-    const habitData = this.input.habitData.habits.find(
+    const habitData = this.input.hydratedHabits.find(
       (candidate) => candidate.name === definition.name,
     );
     if (!habitData) {

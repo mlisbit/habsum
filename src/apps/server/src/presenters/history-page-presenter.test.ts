@@ -1,6 +1,6 @@
 import { dayFromString } from '@habsum/types/common/day';
 import { describe, expect, it } from 'vitest';
-import type { HabitDataSnapshot } from '../types/habit.types.js';
+import type { HydratedHabitData } from '../types/habit.types.js';
 import { HABIT_REPEAT_DAYS, type UserConfig } from '../types/userConfig.js';
 import { HistoryPagePresenter } from './history-page-presenter.js';
 
@@ -29,42 +29,36 @@ describe('HistoryPagePresenter', () => {
         },
       ],
     };
-    const data: HabitDataSnapshot = {
-      user: 'tester',
-      familiarName: 'Tester',
-      viewDate: viewingDate,
-      firstRecordedDate: firstDay,
-      habits: [
-        {
-          name: 'mood',
-          type: 'single_select',
-          dataStart: firstDay,
-          dataEnd: viewingDate,
-          values: [{ date: firstDay, value: 'good' }],
-        },
-        {
-          name: 'push ups',
-          type: 'summation',
-          dataStart: firstDay,
-          dataEnd: viewingDate,
-          totals: [{ date: viewingDate, total: 12 }],
-          events: [
-            {
-              id: 7,
-              date: viewingDate,
-              amount: 12,
-              createdAt: '2026-07-23 09:30:00',
-            },
-          ],
-        },
-      ],
-    };
+    const hydratedHabits: HydratedHabitData[] = [
+      {
+        name: 'mood',
+        type: 'single_select',
+        dataStart: firstDay,
+        dataEnd: viewingDate,
+        values: [{ date: firstDay, value: 'good' }],
+      },
+      {
+        name: 'push ups',
+        type: 'summation',
+        dataStart: firstDay,
+        dataEnd: viewingDate,
+        totals: [{ date: viewingDate, total: 12 }],
+        events: [
+          {
+            id: 7,
+            date: viewingDate,
+            amount: 12,
+            createdAt: '2026-07-23 09:30:00',
+          },
+        ],
+      },
+    ];
 
     const result = new HistoryPagePresenter({
       user: 'tester',
       userConfig: config,
       habitDefinitions: config.habits,
-      habitData: data,
+      hydratedHabits,
       viewingDate,
       today: viewingDate,
       requestedAt,

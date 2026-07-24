@@ -1,4 +1,4 @@
-// Repository that owns habit DB access and hydrated snapshot construction.
+// Repository that owns habit DB access and hydrated habit construction.
 import { dayFromString, type Day } from '@habsum/types/common/day';
 import {
   addToTotal,
@@ -17,13 +17,17 @@ import {
   setTotal,
 } from './_private/db.js';
 import type {
+  HabitDataMetadata,
   HabitDataQuery,
   HabitDataRange,
   HabitDataRangeRequest,
   HabitDataSelection,
-  HabitDataSnapshot,
   HydratedHabitData,
 } from '../types/habit.types.js';
+
+type LoadHydratedHabitsOptions = {
+  firstRecordedDate?: Day | null;
+};
 
 export type HabitMutation =
   | { kind: 'set_select'; user: string; habit: string; date: Day; value: string }
@@ -151,14 +155,25 @@ export class HabitRepository {
     };
   }
 
-  loadSnapshot(query: HabitDataQuery): HabitDataSnapshot {
-    const { user, viewDate } = query;
+  getDataMetadata(user: string): HabitDataMetadata {
     const { firstDate, displayName: rawDisplayName } = getHabitHydrationMetadata(user);
-    const typedFirstDate = firstDate == null ? null : dayFromString(firstDate);
     const displayName = rawDisplayName?.trim();
-    const familiarName = displayName?.split(/\s+/)[0] || user;
+    return {
+      familiarName: displayName?.split(/\s+/)[0] || user,
+      firstRecordedDate: firstDate == null ? null : dayFromString(firstDate),
+    };
+  }
+
+  loadHydratedHabits(
+    query: HabitDataQuery,
+    { firstRecordedDate = null }: LoadHydratedHabitsOptions = {},
+  ): HydratedHabitData[] {
+    const { user, viewDate } = query;
     const ranges = new Map(
-      query.habits.map((selection) => [selection.name, selectionRange(selection, typedFirstDate)]),
+      query.habits.map((selection) => [
+        selection.name,
+        selectionRange(selection, firstRecordedDate),
+      ]),
     );
     const finiteRanges = Array.from(ranges.values()).filter(
       (range): range is HabitDataRange => range !== 'all',
@@ -184,7 +199,7 @@ export class HabitRepository {
           : hydrationRange
             ? getSummationEventSeriesForUser(user, hydrationRange.start, hydrationRange.end)
             : [];
-    const habits = query.habits.map((selection): HydratedHabitData => {
+    return query.habits.map((selection): HydratedHabitData => {
       const range = ranges.get(selection.name)!;
       if (selection.type === 'single_select') {
         const values = selectValuesFromSeries(
@@ -231,13 +246,5 @@ export class HabitRepository {
         events,
       };
     });
-
-    return {
-      user,
-      familiarName,
-      viewDate,
-      firstRecordedDate: typedFirstDate,
-      habits,
-    };
   }
 }

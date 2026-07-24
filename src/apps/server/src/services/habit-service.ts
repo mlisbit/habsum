@@ -3,6 +3,10 @@ import { dayFromString, type Day } from '@habsum/types/common/day';
 import type { Habit } from '@habsum/types/common/habit';
 import { HabitResultBuilder } from '../builders/habit-result-builder.js';
 import {
+  HistoryPagePresenter,
+  type HistoryPagePresenterInput,
+} from '../presenters/history-page-presenter.js';
+import {
   HabitPresenter,
   type HabitPresentationContext,
 } from '../presenters/habits/habit-presenter.js';
@@ -11,7 +15,7 @@ import { SummationHabitPresenter } from '../presenters/habits/summation-habit-pr
 import { getHabitApiToday, getTzOffsetMinutes } from '../utils/server-time-utils.js';
 import { HabitRepository } from '../repositories/habit-repository.js';
 import type {
-  HabitDataSnapshot,
+  HabitDataMetadata,
   HabitListViewContext,
   HydratedHabitData,
   PatchBody,
@@ -20,7 +24,6 @@ import type { HabitDef, UserConfig } from '../types/userConfig.js';
 import ServiceError from '../utils/classes/service-error.js';
 import getHabitListDataQuery from '../utils/get-habit-list-data-query.js';
 import isHabitRepeatedOnDate from '../utils/habits/is-habit-repeated-on-date.js';
-import { HabitDataService } from './habit-data-service.js';
 import type { HabitTypeService } from './habits/habit-type-service.js';
 import { SingleSelectHabitService } from './habits/single-select-habit-service.js';
 import { SummationHabitService } from './habits/summation-habit-service.js';
@@ -35,19 +38,29 @@ type PatchHabitInput = {
 type PresentHabitListInput = {
   config: UserConfig;
   context: HabitListViewContext;
-  data: HabitDataSnapshot;
+  metadata: HabitDataMetadata;
+  hydratedHabits: HydratedHabitData[];
 };
 
+/**
+ * Handles the habit-list read model and habit mutations.
+ *
+ * History-page responses for `GET /users/:user/habits/history` are assembled
+ * separately by `HistoryPagePresenter`.
+ */
 export class HabitService {
-  constructor(
-    private readonly repository = new HabitRepository(),
-    private readonly dataService = new HabitDataService(repository),
-  ) {}
+  constructor(private readonly repository = new HabitRepository()) {}
 
-  presentHabitList({ config, context, data }: PresentHabitListInput) {
+  /**
+   * Presents the response for `GET /users/:user/habits`.
+   *
+   * The controller resolves the viewing context and loads the hydrated habits
+   * and page metadata before calling this method.
+   */
+  getHabitListPresentation({ config, context, metadata, hydratedHabits }: PresentHabitListInput) {
     const habits = this.presentHabits({
       definitions: config.habits,
-      snapshot: data,
+      hydratedHabits,
       context: {
         viewingDate: context.viewDate,
         today: context.today,
@@ -57,7 +70,10 @@ export class HabitService {
     });
 
     return new HabitResultBuilder({
-      data,
+      user: config.user,
+      viewingDate: context.viewDate,
+      familiarName: metadata.familiarName,
+      firstRecordedDate: metadata.firstRecordedDate,
       config,
       habits,
       today: context.today,
@@ -66,6 +82,17 @@ export class HabitService {
     }).build();
   }
 
+  /** Presents the response for `GET /users/:user/habits/history`. */
+  getHabitHistoryPresentation(input: HistoryPagePresenterInput) {
+    return new HistoryPagePresenter(input).present();
+  }
+
+  /**
+   * Handles `PATCH /users/:user/habits`.
+   *
+   * Validates and persists the requested habit mutation, then returns the
+   * freshly hydrated habit response consumed by both list and detail views.
+   */
   patchHabit({ user, config, body = {}, at = new Date() }: PatchHabitInput) {
     const dateString = typeof body.date === 'string' ? body.date : null;
     if (dateString == null) {
@@ -108,16 +135,14 @@ export class HabitService {
 
   private presentHabits({
     definitions,
-    snapshot,
+    hydratedHabits,
     context,
   }: {
     definitions: HabitDef[];
-    snapshot: HabitDataSnapshot;
+    hydratedHabits: HydratedHabitData[];
     context: HabitPresentationContext;
   }): Habit[] {
-    const dataByHabitName = new Map(
-      snapshot.habits.map((habitData) => [habitData.name, habitData]),
-    );
+    const dataByHabitName = new Map(hydratedHabits.map((habitData) => [habitData.name, habitData]));
     return definitions
       .filter((definition) => isHabitRepeatedOnDate(definition, context.viewingDate))
       .map((definition) => {
@@ -153,8 +178,14 @@ export class HabitService {
       requestedAt: at,
       tzOffsetMinutes,
     };
-    const data = this.dataService.loadSnapshot(getHabitListDataQuery({ config, context }));
-    const habitData = data.habits.find((candidate) => candidate.name === habit);
+    const metadata = this.repository.getDataMetadata(config.user);
+    const hydratedHabits = this.repository.loadHydratedHabits(
+      getHabitListDataQuery({ config, context }),
+      {
+        firstRecordedDate: metadata.firstRecordedDate,
+      },
+    );
+    const habitData = hydratedHabits.find((candidate) => candidate.name === habit);
     if (!habitData) throw new Error(`failed to hydrate configured habit "${habit}"`);
     const definition = config.habits.find((candidate) => candidate.name === habit);
     if (!definition) throw new Error(`habit "${habit}" is not configured`);
@@ -169,7 +200,7 @@ export class HabitService {
     }).present();
 
     return typeService.buildPatchResponse({
-      data,
+      user: config.user,
       date,
       result,
       habitData,
