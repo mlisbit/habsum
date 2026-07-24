@@ -1,9 +1,7 @@
 import { dayFromString } from '@habsum/types/common/day';
 import { describe, expect, it } from 'vitest';
 import type { HabitMutation } from '../../repositories/habit-repository.js';
-import type { HydratedHabitData } from '../../types/habit.types.js';
 import type { HabitDef } from '../../types/userConfig.js';
-import getHabitTypeService from '../../utils/habits/get-habit-type-service.js';
 import type { HabitMutationRepository } from './habit-type-service.js';
 import { SingleSelectHabitService } from './single-select-habit-service.js';
 import { SummationHabitService } from './summation-habit-service.js';
@@ -27,7 +25,7 @@ function mutationRecorder(result = true): {
 }
 
 describe('habit type services', () => {
-  it('creates a single-select service that owns selection history and mutations', () => {
+  it('keeps selection mutations in the single-select service', () => {
     const { repository, mutations } = mutationRecorder();
     const definition: HabitDef<'single_select'> = {
       name: 'mood',
@@ -39,27 +37,7 @@ describe('habit type services', () => {
         theme: 'sunset',
       },
     };
-    const service = getHabitTypeService(definition, repository);
-    const habitData: HydratedHabitData = {
-      name: definition.name,
-      type: 'single_select',
-      dataStart: date,
-      dataEnd: date,
-      values: [{ date, value: 'good' }],
-    };
-
-    expect(service).toBeInstanceOf(SingleSelectHabitService);
-    expect(service.historyDates(habitData)).toEqual([date]);
-    expect(service.historyHabit(habitData, date)).toEqual({
-      name: 'mood',
-      type: 'single_select',
-      details: {
-        options: ['good', 'bad'],
-        theme: 'sunset',
-        value: 'good',
-      },
-    });
-
+    const service = new SingleSelectHabitService(definition, repository);
     service.applyPatch({ user: 'user', date, body: { value: 'bad' } });
 
     expect(mutations).toEqual([
@@ -67,7 +45,7 @@ describe('habit type services', () => {
     ]);
   });
 
-  it('creates a summation service that owns total history and mutations', () => {
+  it('keeps total mutations in the summation service', () => {
     const { repository, mutations } = mutationRecorder();
     const definition: HabitDef<'summation'> = {
       name: 'push ups',
@@ -76,34 +54,7 @@ describe('habit type services', () => {
       insights: [],
       settings: { goal: 100 },
     };
-    const service = getHabitTypeService(definition, repository);
-    const habitData: HydratedHabitData = {
-      name: definition.name,
-      type: 'summation',
-      dataStart: date,
-      dataEnd: date,
-      totals: [{ date, total: 12 }],
-      events: [{ id: 7, date, amount: 12, createdAt: '2026-07-23 09:30:00' }],
-    };
-
-    expect(service).toBeInstanceOf(SummationHabitService);
-    expect(service.historyDates(habitData)).toEqual([date]);
-    expect(service.historyHabit(habitData, date)).toEqual({
-      name: 'push ups',
-      type: 'summation',
-      details: {
-        goal: 100,
-        total: 12,
-        events: [
-          {
-            id: 7,
-            amount: 12,
-            createdAt: { day: '2026-07-23', time: '09:30:00' },
-          },
-        ],
-      },
-    });
-
+    const service = new SummationHabitService(definition, repository);
     service.applyPatch({
       user: 'user',
       date,

@@ -1,4 +1,3 @@
-import type { Day } from '@habsum/types/common/day';
 import type { HabitRowSummation } from '@habsum/types/common/habit';
 import ServiceError from '../../utils/classes/service-error.js';
 import { getClientCreatedAt } from '../../utils/server-time-utils.js';
@@ -20,38 +19,6 @@ export class SummationHabitService implements HabitTypeService<HabitRowSummation
     readonly habit: HabitDef<'summation'>,
     private readonly repository: HabitMutationRepository,
   ) {}
-
-  historyDates(habitData: HydratedHabitData): Day[] {
-    return this.summationData(habitData).totals.map((row) => row.date);
-  }
-
-  historyHabit(habitData: HydratedHabitData, date: Day): HabitRowSummation {
-    const typedHabit = this.summationData(habitData);
-    const emptyHabit = this.emptyHistoryHabit();
-    return {
-      ...emptyHabit,
-      details: {
-        ...emptyHabit.details,
-        total: typedHabit.totals.find((row) => row.date === date)?.total ?? null,
-        events: getApiSummationEvents(typedHabit.events.filter((event) => event.date === date)),
-      },
-    };
-  }
-
-  emptyHistoryHabit(): HabitRowSummation {
-    return {
-      name: this.habit.name,
-      type: 'summation',
-      details: {
-        goal: this.habit.settings.goal,
-        total: null,
-        events: [],
-        ...(this.habit.settings.summationOptions
-          ? { summationOptions: this.habit.settings.summationOptions }
-          : {}),
-      },
-    };
-  }
 
   applyPatch({ user, date, body }: ApplyHabitPatchInput): void {
     const action = typeof body.action === 'string' ? body.action : 'add';

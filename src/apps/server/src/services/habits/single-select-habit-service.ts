@@ -1,4 +1,3 @@
-import type { Day } from '@habsum/types/common/day';
 import type { HabitRowSingleSelect } from '@habsum/types/common/habit';
 import ServiceError from '../../utils/classes/service-error.js';
 import type { HydratedHabitData } from '../../types/habit.types.js';
@@ -18,34 +17,6 @@ export class SingleSelectHabitService implements HabitTypeService<HabitRowSingle
     readonly habit: HabitDef<'single_select'>,
     private readonly repository: HabitMutationRepository,
   ) {}
-
-  historyDates(habitData: HydratedHabitData): Day[] {
-    return this.singleSelectData(habitData).values.map((row) => row.date);
-  }
-
-  historyHabit(habitData: HydratedHabitData, date: Day): HabitRowSingleSelect {
-    const typedHabit = this.singleSelectData(habitData);
-    const emptyHabit = this.emptyHistoryHabit();
-    return {
-      ...emptyHabit,
-      details: {
-        ...emptyHabit.details,
-        value: typedHabit.values.find((row) => row.date === date)?.value ?? null,
-      },
-    };
-  }
-
-  emptyHistoryHabit(): HabitRowSingleSelect {
-    return {
-      name: this.habit.name,
-      type: 'single_select',
-      details: {
-        options: this.habit.settings.options,
-        ...(this.habit.settings.theme ? { theme: this.habit.settings.theme } : {}),
-        value: null,
-      },
-    };
-  }
 
   applyPatch({ user, date, body }: ApplyHabitPatchInput): void {
     const action = typeof body.action === 'string' ? body.action : undefined;

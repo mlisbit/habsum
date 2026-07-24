@@ -26,17 +26,14 @@ export type PatchHabitResponseFor<THabit extends Habit> = Extract<
 >;
 
 /**
- * Type-specific behavior used by the public HabitService facade.
+ * Type-specific mutation behavior used by the public HabitService facade.
  *
- * A service instance belongs to one configured habit. Implementations own all
- * branching that depends on that habit's type.
+ * A service instance belongs to one configured habit and owns its patch
+ * validation, persistence mutation, and transport response.
  */
 export interface HabitTypeService<THabit extends Habit = Habit> {
   readonly habit: HabitDef<THabit['type']>;
 
-  historyDates(habitData: HydratedHabitData): Day[];
-  historyHabit(habitData: HydratedHabitData, date: Day): THabit;
-  emptyHistoryHabit(): THabit;
   applyPatch(input: ApplyHabitPatchInput): void;
   buildPatchResponse(input: BuildPatchResponseInput): PatchHabitResponseFor<THabit>;
 }

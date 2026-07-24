@@ -77,14 +77,3 @@ export type HydratedSummationEvent = {
   amount: number;
   createdAt: string;
 };
-
-export type HabitDataReader = {
-  getSelect(user: string, habit: string, date: Day): string | null;
-  getFirstSelectDate(user: string, habit: string): Day | null;
-  getSeries(
-    user: string,
-    habit: string,
-    startDate: Day,
-    endDate: Day,
-  ): Array<{ date: Day; total: number }>;
-};
