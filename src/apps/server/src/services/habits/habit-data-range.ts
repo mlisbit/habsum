@@ -1,8 +1,8 @@
-// Date-window utilities for fetching enough interim data to build habit insights.
+// Plans the persisted data window required to present a configured habit.
 import type { Day } from '@habsum/types/common/day';
 import { isDailyStreakFrequency, parseStreakFrequencyDays } from '@habsum/types/common/streak';
 import { fromDateKey, toDateKey } from '@habsum/utils/date';
-import type { HabitDataRange } from '../../types/habit.types.js';
+import type { HabitDataRange, HabitDataRangeRequest } from '../../types/habit.types.js';
 import type { HabitDef } from '../../types/userConfig.js';
 
 const WEEKDAY_ROW_COUNT = 7;
@@ -75,29 +75,18 @@ function weeklyStreakInsightRange(viewDate: Day, today: Day): HabitDataRange {
   return { start, end: addDaysUtc(endWeekStart, 6) };
 }
 
-function streakInsightRange(
-  habit: HabitDef,
-  viewDate: Day,
-  today: Day,
-  firstDate: Day | null,
-): HabitDataRange {
+function streakInsightRange(habit: HabitDef, viewDate: Day, today: Day): HabitDataRange {
   const daysPerWeek = parseStreakFrequencyDays(habit.streak_options?.frequency);
-  const graphRange = isDailyStreakFrequency(daysPerWeek)
+  return isDailyStreakFrequency(daysPerWeek)
     ? dailyStreakInsightRange(viewDate, today)
     : weeklyStreakInsightRange(viewDate, today);
-
-  // Current/longest streak calculations may scan before the graph window.
-  return firstDate == null
-    ? graphRange
-    : mergeRange(graphRange, { start: firstDate, end: graphRange.end });
 }
 
 export function habitInsightDataRange(
   habit: HabitDef,
   viewDate: Day,
   today: Day,
-  firstDate: Day | null,
-): HabitDataRange {
+): HabitDataRangeRequest {
   let range: HabitDataRange = { start: viewDate, end: viewDate };
 
   if (habit.data_visualization?.bargraph) {
@@ -110,8 +99,12 @@ export function habitInsightDataRange(
     range = mergeRange(range, dailyStreakInsightRange(viewDate, today));
   }
   if (habit.streak_options) {
-    range = mergeRange(range, streakInsightRange(habit, viewDate, today, firstDate));
+    range = mergeRange(range, streakInsightRange(habit, viewDate, today));
   }
 
-  return range;
+  return {
+    ...range,
+    // Current/longest streak calculations may scan before the graph window.
+    ...(habit.streak_options ? { extendToFirstRecordedDate: true } : {}),
+  };
 }

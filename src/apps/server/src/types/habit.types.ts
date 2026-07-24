@@ -1,41 +1,54 @@
-// Interim habit data types shared between resource, factory, and builder layers.
+// Explicit storage queries and hydrated habit data shared by repository and presentation layers.
 import type { Day } from '@habsum/types/common/day';
-import type { HabitDef, UserConfig } from './userConfig.js';
+import type { HabitType } from './userConfig.js';
 
 export type HabitDataRange = {
   start: Day;
   end: Day;
 };
 
-type InterimHabitBase = {
+export type HabitDataRangeRequest = HabitDataRange & {
+  extendToFirstRecordedDate?: boolean;
+};
+
+export type HabitDataSelection = {
+  name: string;
+  type: HabitType;
+  range: HabitDataRangeRequest | 'all';
+};
+
+export type HabitDataQuery = {
+  user: string;
+  viewDate: Day;
+  habits: HabitDataSelection[];
+};
+
+type HydratedHabitDataBase = {
+  name: string;
   dataStart: Day;
   dataEnd: Day;
 };
 
-export type InterimHabit =
-  | (InterimHabitBase & {
+export type HydratedHabitData =
+  | (HydratedHabitDataBase & {
       type: 'single_select';
-      config: HabitDef<'single_select'>;
       values: Array<{ date: Day; value: string }>;
     })
-  | (InterimHabitBase & {
+  | (HydratedHabitDataBase & {
       type: 'summation';
-      config: HabitDef<'summation'>;
       totals: Array<{ date: Day; total: number }>;
-      events: InterimSummationEvent[];
+      events: HydratedSummationEvent[];
     });
 
-export type InterimHabitsData = {
+export type HabitDataSnapshot = {
   user: string;
   familiarName: string;
-  date: Day;
-  today: Day;
-  firstDate: Day | null;
-  config: UserConfig;
-  habits: InterimHabit[];
+  viewDate: Day;
+  firstRecordedDate: Day | null;
+  habits: HydratedHabitData[];
 };
 
-export type InterimSummationEvent = {
+export type HydratedSummationEvent = {
   id: number;
   date: Day;
   amount: number;

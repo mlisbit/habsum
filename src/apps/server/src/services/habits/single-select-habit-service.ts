@@ -1,7 +1,7 @@
 import type { Day } from '@habsum/types/common/day';
 import type { HabitRowSingleSelect } from '@habsum/types/common/habit';
 import { ServiceError } from '../../service-error.js';
-import type { InterimHabit } from '../../types/habit.types.js';
+import type { HydratedHabitData } from '../../types/habit.types.js';
 import type { HabitDef } from '../../types/userConfig.js';
 import type {
   ApplyHabitPatchInput,
@@ -11,7 +11,7 @@ import type {
   PatchHabitResponseFor,
 } from './habit-type-service.js';
 
-type InterimSingleSelectHabit = Extract<InterimHabit, { type: 'single_select' }>;
+type HydratedSingleSelectData = Extract<HydratedHabitData, { type: 'single_select' }>;
 
 export class SingleSelectHabitService implements HabitTypeService<HabitRowSingleSelect> {
   constructor(
@@ -19,12 +19,12 @@ export class SingleSelectHabitService implements HabitTypeService<HabitRowSingle
     private readonly repository: HabitMutationRepository,
   ) {}
 
-  historyDates(interimHabit: InterimHabit): Day[] {
-    return this.singleSelectHabit(interimHabit).values.map((row) => row.date);
+  historyDates(habitData: HydratedHabitData): Day[] {
+    return this.singleSelectData(habitData).values.map((row) => row.date);
   }
 
-  historyHabit(interimHabit: InterimHabit, date: Day): HabitRowSingleSelect {
-    const typedHabit = this.singleSelectHabit(interimHabit);
+  historyHabit(habitData: HydratedHabitData, date: Day): HabitRowSingleSelect {
+    const typedHabit = this.singleSelectData(habitData);
     const emptyHabit = this.emptyHistoryHabit();
     return {
       ...emptyHabit,
@@ -80,9 +80,9 @@ export class SingleSelectHabitService implements HabitTypeService<HabitRowSingle
     data,
     date,
     result,
-    interimHabit,
+    habitData,
   }: BuildPatchResponseInput): PatchHabitResponseFor<HabitRowSingleSelect> {
-    this.singleSelectHabit(interimHabit);
+    this.singleSelectData(habitData);
     if (result.type !== 'single_select') {
       throw new Error(`hydrated habit type mismatch for "${this.habit.name}"`);
     }
@@ -97,10 +97,10 @@ export class SingleSelectHabitService implements HabitTypeService<HabitRowSingle
     };
   }
 
-  private singleSelectHabit(interimHabit: InterimHabit): InterimSingleSelectHabit {
-    if (interimHabit.type !== 'single_select' || interimHabit.config.name !== this.habit.name) {
+  private singleSelectData(habitData: HydratedHabitData): HydratedSingleSelectData {
+    if (habitData.type !== 'single_select' || habitData.name !== this.habit.name) {
       throw new Error(`hydrated habit type mismatch for "${this.habit.name}"`);
     }
-    return interimHabit;
+    return habitData;
   }
 }

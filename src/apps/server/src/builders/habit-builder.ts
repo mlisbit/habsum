@@ -1,17 +1,17 @@
-// Builds one API habit row from interim habit data and selected presentation options.
+// Builds one API habit row from hydrated data and selected presentation options.
 import type { Habit } from '@habsum/types/common/habit';
-import type { InterimHabit, InterimHabitsData } from '../types/habit.types.js';
-import type { UserConfig } from '../types/userConfig.js';
+import type { HydratedHabitData, HabitDataSnapshot } from '../types/habit.types.js';
+import type { HabitDef, UserConfig } from '../types/userConfig.js';
 import {
   buildHabitWidgets,
-  interimHabitTotal,
-  interimHabitValue,
+  selectedValueForViewDate,
+  summationTotalForViewDate,
 } from './_private/habit-insight-widgets.js';
 
 export type HabitInsightKind = 'weeklyAverage' | 'currentStreak' | 'longestStreak';
 
 type HabitBuilderContext = {
-  data: InterimHabitsData;
+  data: HabitDataSnapshot;
   at: Date;
   tzOffsetMinutes?: number;
 };
@@ -22,9 +22,9 @@ export class HabitBuilder {
   private includeBarGraph = false;
 
   constructor(
-    private readonly habitName: string,
+    private readonly definition: HabitDef,
     private readonly config: UserConfig,
-    private readonly interimHabit: InterimHabit,
+    private readonly habitData: HydratedHabitData,
     private readonly context: HabitBuilderContext,
   ) {}
 
@@ -46,7 +46,9 @@ export class HabitBuilder {
   build(): Habit {
     const widgets = buildHabitWidgets({
       data: this.context.data,
-      habit: this.interimHabit,
+      definition: this.definition,
+      habitData: this.habitData,
+      includeAbsentDaysInAverage: this.config.includeAbsentDaysInAverage,
       at: this.context.at,
       tzOffsetMinutes: this.context.tzOffsetMinutes,
       includeBarGraph: this.includeBarGraph,
@@ -56,27 +58,31 @@ export class HabitBuilder {
       includeWeeklyAverageInsight: this.insights.has('weeklyAverage'),
     });
 
-    if (this.interimHabit.type === 'single_select') {
-      const h = this.interimHabit.config;
+    if (this.habitData.type === 'single_select' && this.definition.type === 'single_select') {
+      const h = this.definition;
       return {
-        name: this.habitName,
+        name: h.name,
         type: 'single_select',
         details: {
           options: h.settings.options,
           ...(h.settings.theme ? { theme: h.settings.theme } : {}),
-          value: interimHabitValue(this.interimHabit, this.context.data),
+          value: selectedValueForViewDate(this.habitData, this.context.data),
         },
         ...(widgets.length > 0 ? { widgets } : {}),
       };
     }
 
-    const h = this.interimHabit.config;
+    if (this.habitData.type !== 'summation' || this.definition.type !== 'summation') {
+      throw new Error(`hydrated habit type mismatch for "${this.definition.name}"`);
+    }
+
+    const h = this.definition;
     return {
-      name: this.habitName,
+      name: h.name,
       type: 'summation',
       details: {
         goal: h.settings.goal,
-        total: interimHabitTotal(this.interimHabit, this.context.data),
+        total: summationTotalForViewDate(this.habitData, this.context.data),
         ...(h.settings.summationOptions ? { summationOptions: h.settings.summationOptions } : {}),
       },
       ...(widgets.length > 0 ? { widgets } : {}),

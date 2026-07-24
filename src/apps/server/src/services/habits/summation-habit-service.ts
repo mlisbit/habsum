@@ -3,7 +3,7 @@ import type { HabitRowSummation } from '@habsum/types/common/habit';
 import { ServiceError } from '../../service-error.js';
 import { parseClientCreatedAtIso } from '../../server-time.js';
 import { mapSummationEventsToApi } from '../../summation-event-api.js';
-import type { InterimHabit } from '../../types/habit.types.js';
+import type { HydratedHabitData } from '../../types/habit.types.js';
 import type { HabitDef } from '../../types/userConfig.js';
 import type {
   ApplyHabitPatchInput,
@@ -13,7 +13,7 @@ import type {
   PatchHabitResponseFor,
 } from './habit-type-service.js';
 
-type InterimSummationHabit = Extract<InterimHabit, { type: 'summation' }>;
+type HydratedSummationData = Extract<HydratedHabitData, { type: 'summation' }>;
 
 export class SummationHabitService implements HabitTypeService<HabitRowSummation> {
   constructor(
@@ -21,12 +21,12 @@ export class SummationHabitService implements HabitTypeService<HabitRowSummation
     private readonly repository: HabitMutationRepository,
   ) {}
 
-  historyDates(interimHabit: InterimHabit): Day[] {
-    return this.summationHabit(interimHabit).totals.map((row) => row.date);
+  historyDates(habitData: HydratedHabitData): Day[] {
+    return this.summationData(habitData).totals.map((row) => row.date);
   }
 
-  historyHabit(interimHabit: InterimHabit, date: Day): HabitRowSummation {
-    const typedHabit = this.summationHabit(interimHabit);
+  historyHabit(habitData: HydratedHabitData, date: Day): HabitRowSummation {
+    const typedHabit = this.summationData(habitData);
     const emptyHabit = this.emptyHistoryHabit();
     return {
       ...emptyHabit,
@@ -115,9 +115,9 @@ export class SummationHabitService implements HabitTypeService<HabitRowSummation
     data,
     date,
     result,
-    interimHabit,
+    habitData,
   }: BuildPatchResponseInput): PatchHabitResponseFor<HabitRowSummation> {
-    const typedHabit = this.summationHabit(interimHabit);
+    const typedHabit = this.summationData(habitData);
     if (result.type !== 'summation') {
       throw new Error(`hydrated habit type mismatch for "${this.habit.name}"`);
     }
@@ -135,10 +135,10 @@ export class SummationHabitService implements HabitTypeService<HabitRowSummation
     };
   }
 
-  private summationHabit(interimHabit: InterimHabit): InterimSummationHabit {
-    if (interimHabit.type !== 'summation' || interimHabit.config.name !== this.habit.name) {
+  private summationData(habitData: HydratedHabitData): HydratedSummationData {
+    if (habitData.type !== 'summation' || habitData.name !== this.habit.name) {
       throw new Error(`hydrated habit type mismatch for "${this.habit.name}"`);
     }
-    return interimHabit;
+    return habitData;
   }
 }

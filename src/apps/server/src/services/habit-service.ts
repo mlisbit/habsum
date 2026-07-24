@@ -2,31 +2,30 @@
 import { dayFromString, type Day } from '@habsum/types/common/day';
 import type { Habit } from '@habsum/types/common/habit';
 import { dasherize } from '@habsum/utils/strings';
-import { HabitResultBuilder } from '../builders/habit-result-builder.js';
-import { HabitFactory } from '../factories/habit-factory.js';
-import { parseTzOffsetMinutes, resolveHabitApiDateQuery } from '../server-time.js';
+import {
+  habitApiTodayKey,
+  parseTzOffsetMinutes,
+  resolveHabitApiDateQuery,
+} from '../server-time.js';
 import { minDate, parseHabitFilter, type PatchBody } from './habit-service.utils.js';
 import { HabitRepository } from '../repositories/habit-repository.js';
-import { HABIT_REPEAT_DAYS, type HabitDef, type UserConfig } from '../types/userConfig.js';
+import type { UserConfig } from '../types/userConfig.js';
 import { ServiceError } from '../service-error.js';
+import { HabitDataService } from './habit-data-service.js';
+import { HabitPresentationService } from './habit-presentation-service.js';
+import {
+  buildHabitHistoryDataQuery,
+  buildHabitListDataQuery,
+  type HabitListViewContext,
+} from './habits/habit-data-query.js';
+import { habitRepeatsOnDate } from './habits/habit-repeat.js';
 import { createHabitTypeService } from './habits/habit-type-service-factory.js';
 import type { HabitTypeService } from './habits/habit-type-service.js';
-
-type HabitListQuery = {
-  date?: string;
-  tzOffsetMinutes?: string;
-};
 
 type HabitHistoryQuery = {
   date?: string;
   filter?: string;
   habitId?: string;
-};
-
-type GetHabitsInput = {
-  config: UserConfig;
-  query?: HabitListQuery;
-  at?: Date;
 };
 
 type GetHabitHistoryInput = {
@@ -43,40 +42,12 @@ type PatchHabitInput = {
   at?: Date;
 };
 
-/** Maps a branded `YYYY-MM-DD` day to the repeat-rule weekday name. */
-function repeatDayForDateKey(date: Day): string {
-  const dayIndex = new Date(`${date}T00:00:00.000Z`).getUTCDay();
-  return HABIT_REPEAT_DAYS[dayIndex === 0 ? 6 : dayIndex - 1];
-}
-
-/** Returns whether a habit's repeat rule includes the supplied calendar day. */
-function habitRepeatsOnDate(habit: HabitDef, date: Day): boolean {
-  return habit.repeat.includes(repeatDayForDateKey(date));
-}
-
 export class HabitService {
-  constructor(private readonly repository = new HabitRepository()) {}
-
-  getHabits({ config, query = {}, at = new Date() }: GetHabitsInput) {
-    const date = resolveHabitApiDateQuery(query.date, at);
-    const tzOffsetMinutes = parseTzOffsetMinutes(query.tzOffsetMinutes);
-    const data = this.repository.getHabits({ config, date, at, tzOffsetMinutes });
-    const visibleData = {
-      ...data,
-      habits: data.habits.filter((habit) => habitRepeatsOnDate(habit.config, date)),
-    };
-    const habits = new HabitFactory({ data: visibleData, at, tzOffsetMinutes })
-      .builders()
-      .map((builder) => builder.build());
-
-    return new HabitResultBuilder({
-      data: visibleData,
-      habits,
-      familiarName: visibleData.familiarName,
-      at,
-      tzOffsetMinutes,
-    }).build();
-  }
+  constructor(
+    private readonly repository = new HabitRepository(),
+    private readonly dataService = new HabitDataService(repository),
+    private readonly presentationService = new HabitPresentationService(),
+  ) {}
 
   getHabitHistory({ user, config, query = {}, at = new Date() }: GetHabitHistoryInput) {
     const habitIds = parseHabitFilter(query.filter ?? query.habitId);
@@ -92,12 +63,13 @@ export class HabitService {
       habitDefs.push(habitDef);
     }
 
-    const historyData = this.repository.getHabits({
-      config: { ...config, habits: habitDefs },
-      date: inspectDate,
-      at,
-      dataScope: 'all',
-    });
+    const historyData = this.dataService.loadSnapshot(
+      buildHabitHistoryDataQuery({
+        user,
+        habits: habitDefs,
+        viewDate: inspectDate,
+      }),
+    );
     const typeServices = new Map(
       habitDefs.map((habitDef) => [
         habitDef.name,
@@ -105,13 +77,13 @@ export class HabitService {
       ]),
     );
     const habitsByDate = new Map<Day, Habit[]>();
-    for (const interimHabit of historyData.habits) {
-      const typeService = typeServices.get(interimHabit.config.name);
+    for (const habitData of historyData.habits) {
+      const typeService = typeServices.get(habitData.name);
       if (!typeService) {
-        throw new Error(`missing habit type service for "${interimHabit.config.name}"`);
+        throw new Error(`missing habit type service for "${habitData.name}"`);
       }
-      for (const day of typeService.historyDates(interimHabit)) {
-        const habit = typeService.historyHabit(interimHabit, day);
+      for (const day of typeService.historyDates(habitData)) {
+        const habit = typeService.historyHabit(habitData, day);
         habitsByDate.set(day, [...(habitsByDate.get(day) ?? []), habit]);
       }
     }
@@ -145,12 +117,12 @@ export class HabitService {
         config.habits.map((habitDef) => [dasherize(habitDef.name), habitDef.name]),
       ),
       firstDate: minDate(
-        historyData.habits.flatMap((interimHabit) => {
-          const typeService = typeServices.get(interimHabit.config.name);
+        historyData.habits.flatMap((habitData) => {
+          const typeService = typeServices.get(habitData.name);
           if (!typeService) {
-            throw new Error(`missing habit type service for "${interimHabit.config.name}"`);
+            throw new Error(`missing habit type service for "${habitData.name}"`);
           }
-          return typeService.historyDates(interimHabit);
+          return typeService.historyDates(habitData);
         }),
       ),
       data,
@@ -164,12 +136,17 @@ export class HabitService {
   }
 
   patchHabit({ user, config, body = {}, at = new Date() }: PatchHabitInput) {
-    const date =
-      typeof body.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(body.date) ? body.date : null;
-    if (date == null) {
+    const dateString = typeof body.date === 'string' ? body.date : null;
+    if (dateString == null) {
       throw new ServiceError('bad_request', 'body.date is required (YYYY-MM-DD)');
     }
-    const day = dayFromString(date);
+
+    let day: Day;
+    try {
+      day = dayFromString(dateString);
+    } catch {
+      throw new ServiceError('bad_request', 'body.date is required (YYYY-MM-DD)');
+    }
 
     const { habit } = body;
     if (typeof habit !== 'string' || habit.length === 0) {
@@ -210,17 +187,27 @@ export class HabitService {
     tzOffsetMinutes?: number;
     typeService: HabitTypeService;
   }) {
-    const data = this.repository.getHabits({ config, date, at, tzOffsetMinutes });
-    const habitIndex = data.habits.findIndex((candidate) => candidate.config.name === habit);
-    const interimHabit = data.habits[habitIndex];
-    const builder = new HabitFactory({ data, at, tzOffsetMinutes }).builders()[habitIndex];
-    if (!interimHabit || !builder) throw new Error(`failed to hydrate configured habit "${habit}"`);
+    const context: HabitListViewContext = {
+      viewDate: date,
+      today: habitApiTodayKey(at, tzOffsetMinutes),
+      requestedAt: at,
+      tzOffsetMinutes,
+    };
+    const data = this.dataService.loadSnapshot(buildHabitListDataQuery({ config, context }));
+    const habitData = data.habits.find((candidate) => candidate.name === habit);
+    if (!habitData) throw new Error(`failed to hydrate configured habit "${habit}"`);
+    const result = this.presentationService.presentHabit({
+      config,
+      context,
+      data,
+      habitName: habit,
+    });
 
     return typeService.buildPatchResponse({
       data,
       date,
-      result: builder.build(),
-      interimHabit,
+      result,
+      habitData,
     });
   }
 }

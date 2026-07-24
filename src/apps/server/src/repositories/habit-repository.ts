@@ -1,4 +1,4 @@
-// Repository that owns habit DB access and interim habit hydration.
+// Repository that owns habit DB access and hydrated snapshot construction.
 import { dayFromString, type Day } from '@habsum/types/common/day';
 import {
   addToTotal,
@@ -16,20 +16,14 @@ import {
   setSelect,
   setTotal,
 } from './_private/db.js';
-import { habitApiTodayKey } from '../server-time.js';
-import { habitInsightDataRange } from './_private/habit-data-range.js';
-import type { HabitDataRange, InterimHabit, InterimHabitsData } from '../types/habit.types.js';
-import type { UserConfig } from '../types/userConfig.js';
-
-type HabitDataScope = 'configured' | 'all';
-
-type GetHabitsInput = {
-  config: UserConfig;
-  date: Day;
-  at?: Date;
-  tzOffsetMinutes?: number;
-  dataScope?: HabitDataScope;
-};
+import type {
+  HabitDataQuery,
+  HabitDataRange,
+  HabitDataRangeRequest,
+  HabitDataSelection,
+  HabitDataSnapshot,
+  HydratedHabitData,
+} from '../types/habit.types.js';
 
 export type HabitMutation =
   | { kind: 'set_select'; user: string; habit: string; date: Day; value: string }
@@ -95,6 +89,24 @@ function dateIsInRange(date: string, range: HabitDataRange): boolean {
   return date >= range.start && date <= range.end;
 }
 
+function resolveRange(range: HabitDataRangeRequest, firstRecordedDate: Day | null): HabitDataRange {
+  if (
+    !range.extendToFirstRecordedDate ||
+    firstRecordedDate == null ||
+    firstRecordedDate >= range.start
+  ) {
+    return range;
+  }
+  return { start: firstRecordedDate, end: range.end };
+}
+
+function selectionRange(
+  selection: HabitDataSelection,
+  firstRecordedDate: Day | null,
+): HabitDataRange | 'all' {
+  return selection.range === 'all' ? 'all' : resolveRange(selection.range, firstRecordedDate);
+}
+
 export class HabitRepository {
   applyConfigMutation(mutation: HabitConfigMutation): void {
     switch (mutation.kind) {
@@ -139,63 +151,60 @@ export class HabitRepository {
     };
   }
 
-  getHabits({
-    config,
-    date,
-    at = new Date(),
-    tzOffsetMinutes,
-    dataScope = 'configured',
-  }: GetHabitsInput): InterimHabitsData {
-    const today = habitApiTodayKey(at, tzOffsetMinutes);
-    const { firstDate, displayName: rawDisplayName } = getHabitHydrationMetadata(config.user);
+  loadSnapshot(query: HabitDataQuery): HabitDataSnapshot {
+    const { user, viewDate } = query;
+    const { firstDate, displayName: rawDisplayName } = getHabitHydrationMetadata(user);
     const typedFirstDate = firstDate == null ? null : dayFromString(firstDate);
     const displayName = rawDisplayName?.trim();
-    const familiarName = displayName?.split(/\s+/)[0] || config.user;
-    const configuredRanges = new Map(
-      config.habits.map((habit) => [
-        habit.name,
-        habitInsightDataRange(habit, date, today, typedFirstDate),
-      ]),
+    const familiarName = displayName?.split(/\s+/)[0] || user;
+    const ranges = new Map(
+      query.habits.map((selection) => [selection.name, selectionRange(selection, typedFirstDate)]),
     );
-    const hydrationRange = encompassingRange(Array.from(configuredRanges.values()));
-    const hasSelectHabits = config.habits.some((habit) => habit.type === 'single_select');
-    const hasSummationHabits = config.habits.some((habit) => habit.type === 'summation');
-    const selectRows = !hasSelectHabits
-      ? []
-      : dataScope === 'all'
-        ? getAllDailySelectsForUser(config.user)
-        : hydrationRange
-          ? getDailySelectSeriesForUser(config.user, hydrationRange.start, hydrationRange.end)
-          : [];
-    const eventRows = !hasSummationHabits
-      ? []
-      : dataScope === 'all'
-        ? getAllSummationEventsForUser(config.user)
-        : hydrationRange
-          ? getSummationEventSeriesForUser(config.user, hydrationRange.start, hydrationRange.end)
-          : [];
-    const habits = config.habits.map((habit): InterimHabit => {
-      const configuredRange = configuredRanges.get(habit.name)!;
-      if (habit.type === 'single_select') {
+    const finiteRanges = Array.from(ranges.values()).filter(
+      (range): range is HabitDataRange => range !== 'all',
+    );
+    const hydrationRange = encompassingRange(finiteRanges);
+    const selectSelections = query.habits.filter((habit) => habit.type === 'single_select');
+    const summationSelections = query.habits.filter((habit) => habit.type === 'summation');
+    const allSelectData = selectSelections.some((habit) => habit.range === 'all');
+    const allSummationData = summationSelections.some((habit) => habit.range === 'all');
+    const selectRows =
+      selectSelections.length === 0
+        ? []
+        : allSelectData
+          ? getAllDailySelectsForUser(user)
+          : hydrationRange
+            ? getDailySelectSeriesForUser(user, hydrationRange.start, hydrationRange.end)
+            : [];
+    const eventRows =
+      summationSelections.length === 0
+        ? []
+        : allSummationData
+          ? getAllSummationEventsForUser(user)
+          : hydrationRange
+            ? getSummationEventSeriesForUser(user, hydrationRange.start, hydrationRange.end)
+            : [];
+    const habits = query.habits.map((selection): HydratedHabitData => {
+      const range = ranges.get(selection.name)!;
+      if (selection.type === 'single_select') {
         const values = selectValuesFromSeries(
           selectRows.filter(
             (row) =>
-              row.habit === habit.name &&
-              (dataScope === 'all' || dateIsInRange(row.date, configuredRange)),
+              row.habit === selection.name && (range === 'all' || dateIsInRange(row.date, range)),
           ),
         );
-        const range =
-          dataScope === 'all'
+        const hydratedRange =
+          range === 'all'
             ? rangeForDates(
-                date,
+                viewDate,
                 values.map((row) => row.date),
               )
-            : configuredRange;
+            : range;
         return {
+          name: selection.name,
           type: 'single_select',
-          config: habit,
-          dataStart: range.start,
-          dataEnd: range.end,
+          dataStart: hydratedRange.start,
+          dataEnd: hydratedRange.end,
           values,
         };
       }
@@ -203,34 +212,31 @@ export class HabitRepository {
       const events = eventsFromRows(
         eventRows.filter(
           (row) =>
-            row.habit === habit.name &&
-            (dataScope === 'all' || dateIsInRange(row.date, configuredRange)),
+            row.habit === selection.name && (range === 'all' || dateIsInRange(row.date, range)),
         ),
       );
-      const range =
-        dataScope === 'all'
+      const hydratedRange =
+        range === 'all'
           ? rangeForDates(
-              date,
+              viewDate,
               events.map((event) => event.date),
             )
-          : configuredRange;
+          : range;
       return {
+        name: selection.name,
         type: 'summation',
-        config: habit,
-        dataStart: range.start,
-        dataEnd: range.end,
+        dataStart: hydratedRange.start,
+        dataEnd: hydratedRange.end,
         totals: totalsFromEvents(events),
         events,
       };
     });
 
     return {
-      user: config.user,
+      user,
       familiarName,
-      date,
-      today,
-      firstDate: typedFirstDate,
-      config,
+      viewDate,
+      firstRecordedDate: typedFirstDate,
       habits,
     };
   }

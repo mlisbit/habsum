@@ -1,6 +1,11 @@
-// Builds habit widgets and insight visuals from a full interim habit.
+// Builds habit widgets and insight visuals from hydrated data plus its configured definition.
 import type { HabitWidget } from '@habsum/types/common/habit';
-import type { HabitDataReader, InterimHabit, InterimHabitsData } from '../../types/habit.types.js';
+import type {
+  HabitDataReader,
+  HabitDataSnapshot,
+  HydratedHabitData,
+} from '../../types/habit.types.js';
+import type { HabitDef } from '../../types/userConfig.js';
 import { habitHistoryForConfiguredPeriod } from '../../utils/habits/history-utils.js';
 import {
   streakGraphForConfiguredWindow,
@@ -9,8 +14,10 @@ import {
 import { habitWidgets, historyWidget, progressWidget } from '../../utils/habits/widget-utils.js';
 
 type HabitInsightWidgetInput = {
-  data: InterimHabitsData;
-  habit: InterimHabit;
+  data: HabitDataSnapshot;
+  definition: HabitDef;
+  habitData: HydratedHabitData;
+  includeAbsentDaysInAverage: boolean;
   at: Date;
   tzOffsetMinutes?: number;
   includeBarGraph?: boolean;
@@ -20,46 +27,48 @@ type HabitInsightWidgetInput = {
   includeWeeklyAverageInsight?: boolean;
 };
 
-function readerForInterimHabit(interimHabit: InterimHabit): HabitDataReader {
+function readerForHydratedHabit(habitData: HydratedHabitData): HabitDataReader {
   return {
     getSelect(_user, habit, date) {
-      if (interimHabit.type !== 'single_select' || interimHabit.config.name !== habit) return null;
-      return interimHabit.values.find((row) => row.date === date)?.value ?? null;
+      if (habitData.type !== 'single_select' || habitData.name !== habit) return null;
+      return habitData.values.find((row) => row.date === date)?.value ?? null;
     },
     getFirstSelectDate(_user, habit) {
-      if (interimHabit.type !== 'single_select' || interimHabit.config.name !== habit) return null;
-      if (interimHabit.values.length === 0) return null;
-      return interimHabit.values.reduce(
+      if (habitData.type !== 'single_select' || habitData.name !== habit) return null;
+      if (habitData.values.length === 0) return null;
+      return habitData.values.reduce(
         (min, row) => (row.date < min ? row.date : min),
-        interimHabit.values[0]!.date,
+        habitData.values[0]!.date,
       );
     },
     getSeries(_user, habit, startDate, endDate) {
-      if (interimHabit.type !== 'summation' || interimHabit.config.name !== habit) return [];
-      return interimHabit.totals.filter((row) => row.date >= startDate && row.date <= endDate);
+      if (habitData.type !== 'summation' || habitData.name !== habit) return [];
+      return habitData.totals.filter((row) => row.date >= startDate && row.date <= endDate);
     },
   };
 }
 
-export function interimHabitValue(
-  interimHabit: InterimHabit,
-  data: InterimHabitsData,
+export function selectedValueForViewDate(
+  habitData: HydratedHabitData,
+  data: HabitDataSnapshot,
 ): string | null {
-  if (interimHabit.type !== 'single_select') return null;
-  return interimHabit.values.find((row) => row.date === data.date)?.value ?? null;
+  if (habitData.type !== 'single_select') return null;
+  return habitData.values.find((row) => row.date === data.viewDate)?.value ?? null;
 }
 
-export function interimHabitTotal(
-  interimHabit: InterimHabit,
-  data: InterimHabitsData,
+export function summationTotalForViewDate(
+  habitData: HydratedHabitData,
+  data: HabitDataSnapshot,
 ): number | null {
-  if (interimHabit.type !== 'summation') return null;
-  return interimHabit.totals.find((row) => row.date === data.date)?.total ?? null;
+  if (habitData.type !== 'summation') return null;
+  return habitData.totals.find((row) => row.date === data.viewDate)?.total ?? null;
 }
 
 export function buildHabitWidgets({
   data,
-  habit: interimHabit,
+  definition,
+  habitData,
+  includeAbsentDaysInAverage,
   at,
   tzOffsetMinutes,
   includeBarGraph = false,
@@ -68,21 +77,21 @@ export function buildHabitWidgets({
   includeLongestStreakInsight = false,
   includeWeeklyAverageInsight = false,
 }: HabitInsightWidgetInput): HabitWidget[] {
-  const reader = readerForInterimHabit(interimHabit);
+  const reader = readerForHydratedHabit(habitData);
 
-  if (interimHabit.type === 'single_select') {
-    const h = interimHabit.config;
+  if (habitData.type === 'single_select' && definition.type === 'single_select') {
+    const h = definition;
     const heatmap = includeHeatMap
       ? streakGraphForConfiguredWindow(
           data.user,
           h.name,
-          data.date,
+          data.viewDate,
           h.streak_options?.options ?? [],
           at,
           tzOffsetMinutes,
           undefined,
           false,
-          data.firstDate,
+          data.firstRecordedDate,
           h.settings.options,
           reader,
         )
@@ -92,13 +101,13 @@ export function buildHabitWidgets({
         ? streakGraphForConfiguredWindow(
             data.user,
             h.name,
-            data.date,
+            data.viewDate,
             h.streak_options.options,
             at,
             tzOffsetMinutes,
             h.streak_options.frequency,
             includeLongestStreakInsight,
-            data.firstDate,
+            data.firstRecordedDate,
             h.settings.options,
             reader,
           )
@@ -111,15 +120,19 @@ export function buildHabitWidgets({
     ]);
   }
 
-  const h = interimHabit.config;
-  const total = interimHabitTotal(interimHabit, data);
+  if (habitData.type !== 'summation' || definition.type !== 'summation') {
+    throw new Error(`hydrated habit type mismatch for "${definition.name}"`);
+  }
+
+  const h = definition;
+  const total = summationTotalForViewDate(habitData, data);
   const history =
     h.data_visualization?.bargraph != null && (includeBarGraph || includeWeeklyAverageInsight)
       ? habitHistoryForConfiguredPeriod(
           data.user,
           h.name,
-          data.date,
-          data.firstDate,
+          data.viewDate,
+          data.firstRecordedDate,
           h.data_visualization.bargraph.period,
           h.settings.goal,
           at,
@@ -132,13 +145,13 @@ export function buildHabitWidgets({
       ? summationStreakGraphForConfiguredWindow(
           data.user,
           h.name,
-          data.date,
+          data.viewDate,
           [String(h.settings.goal)],
           at,
           tzOffsetMinutes,
           undefined,
           false,
-          data.firstDate,
+          data.firstRecordedDate,
           reader,
         )
       : null;
@@ -147,13 +160,13 @@ export function buildHabitWidgets({
       ? summationStreakGraphForConfiguredWindow(
           data.user,
           h.name,
-          data.date,
+          data.viewDate,
           h.streak_options.options,
           at,
           tzOffsetMinutes,
           h.streak_options.frequency,
           includeLongestStreakInsight,
-          data.firstDate,
+          data.firstRecordedDate,
           reader,
         )
       : null;
@@ -164,7 +177,7 @@ export function buildHabitWidgets({
       ? historyWidget(
           history,
           h.settings.goal,
-          data.config.includeAbsentDaysInAverage,
+          includeAbsentDaysInAverage,
           heatmap,
           streak,
           includeCurrentStreakInsight,

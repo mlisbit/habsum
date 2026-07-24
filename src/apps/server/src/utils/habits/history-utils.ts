@@ -1,4 +1,4 @@
-// Weekly habit-history graph construction from hydrated interim data.
+// Weekly habit-history graph construction from hydrated habit data.
 import type { BarGraphData } from '@habsum/types/common/bar-chart';
 import type { Day } from '@habsum/types/common/day';
 import type { HabitHistory } from '@habsum/types/common/habit';
@@ -11,9 +11,9 @@ import {
   shouldOutlineViewDate,
 } from './date-utils.js';
 
-/** Ensures graph builders received the reader backed by an interim habit. */
+/** Ensures graph builders received a reader backed by hydrated habit data. */
 function requireHabitDataReader(reader: HabitDataReader | undefined): HabitDataReader {
-  if (!reader) throw new Error('habit history requires hydrated interim habit data');
+  if (!reader) throw new Error('habit history requires hydrated habit data');
   return reader;
 }
 

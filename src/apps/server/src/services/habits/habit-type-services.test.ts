@@ -1,7 +1,7 @@
 import { dayFromString } from '@habsum/types/common/day';
 import { describe, expect, it } from 'vitest';
 import type { HabitMutation } from '../../repositories/habit-repository.js';
-import type { InterimHabit } from '../../types/habit.types.js';
+import type { HydratedHabitData } from '../../types/habit.types.js';
 import type { HabitDef } from '../../types/userConfig.js';
 import { createHabitTypeService } from './habit-type-service-factory.js';
 import type { HabitMutationRepository } from './habit-type-service.js';
@@ -40,17 +40,17 @@ describe('habit type services', () => {
       },
     };
     const service = createHabitTypeService(definition, repository);
-    const interimHabit: InterimHabit = {
+    const habitData: HydratedHabitData = {
+      name: definition.name,
       type: 'single_select',
-      config: definition,
       dataStart: date,
       dataEnd: date,
       values: [{ date, value: 'good' }],
     };
 
     expect(service).toBeInstanceOf(SingleSelectHabitService);
-    expect(service.historyDates(interimHabit)).toEqual([date]);
-    expect(service.historyHabit(interimHabit, date)).toEqual({
+    expect(service.historyDates(habitData)).toEqual([date]);
+    expect(service.historyHabit(habitData, date)).toEqual({
       name: 'mood',
       type: 'single_select',
       details: {
@@ -77,9 +77,9 @@ describe('habit type services', () => {
       settings: { goal: 100 },
     };
     const service = createHabitTypeService(definition, repository);
-    const interimHabit: InterimHabit = {
+    const habitData: HydratedHabitData = {
+      name: definition.name,
       type: 'summation',
-      config: definition,
       dataStart: date,
       dataEnd: date,
       totals: [{ date, total: 12 }],
@@ -87,8 +87,8 @@ describe('habit type services', () => {
     };
 
     expect(service).toBeInstanceOf(SummationHabitService);
-    expect(service.historyDates(interimHabit)).toEqual([date]);
-    expect(service.historyHabit(interimHabit, date)).toEqual({
+    expect(service.historyDates(habitData)).toEqual([date]);
+    expect(service.historyHabit(habitData, date)).toEqual({
       name: 'push ups',
       type: 'summation',
       details: {

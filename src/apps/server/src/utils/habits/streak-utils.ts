@@ -25,9 +25,9 @@ export type StreakGraphWithText = StreakGraphData & {
 
 const WEEKDAY_ROW_COUNT = 7;
 
-/** Ensures streak builders received the reader backed by an interim habit. */
+/** Ensures streak builders received a reader backed by hydrated habit data. */
 function requireHabitDataReader(reader: HabitDataReader | undefined): HabitDataReader {
-  if (!reader) throw new Error('habit presentation requires hydrated interim habit data');
+  if (!reader) throw new Error('habit presentation requires hydrated habit data');
   return reader;
 }
 

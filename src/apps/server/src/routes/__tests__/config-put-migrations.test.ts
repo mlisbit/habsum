@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { createApp } from '../../app.js';
 import { ConfigService } from '../../services/config-service.js';
 import { HabitRepository } from '../../repositories/habit-repository.js';
+import { buildHabitListDataQuery } from '../../services/habits/habit-data-query.js';
 import { UserAndAuthRepository } from '../../repositories/user-and-auth-repository.js';
 import { SESSION_COOKIE_NAME } from '../../utils/cookie-session-utils.js';
 
@@ -24,11 +25,20 @@ function writeUserConfig(user: string, text: string) {
 function hydratedSelectValue(user: string, habit: string, date: string): string | null {
   const config = configService.loadUserConfig(user);
   if (!config) throw new Error(`missing config for ${user}`);
-  const interimHabit = habitRepository
-    .getHabits({ config, date: dayFromString(date) })
-    .habits.find((candidate) => candidate.config.name === habit);
-  if (!interimHabit || interimHabit.type !== 'single_select') return null;
-  return interimHabit.values.find((row) => row.date === date)?.value ?? null;
+  const viewDate = dayFromString(date);
+  const snapshot = habitRepository.loadSnapshot(
+    buildHabitListDataQuery({
+      config,
+      context: {
+        viewDate,
+        today: viewDate,
+        requestedAt: new Date(`${date}T12:00:00.000Z`),
+      },
+    }),
+  );
+  const habitData = snapshot.habits.find((candidate) => candidate.name === habit);
+  if (!habitData || habitData.type !== 'single_select') return null;
+  return habitData.values.find((row) => row.date === date)?.value ?? null;
 }
 
 describe('PUT /users/:user/config migrations', () => {
