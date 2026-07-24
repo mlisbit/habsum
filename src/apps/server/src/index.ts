@@ -1,4 +1,4 @@
-import './load-env.js';
+import './utils/load-local-env.js';
 import { join, resolve } from 'node:path';
 import { createApp } from './app.js';
 import { DatabaseRepository } from './repositories/database-repository.js';

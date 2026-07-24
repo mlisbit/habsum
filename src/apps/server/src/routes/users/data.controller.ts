@@ -1,7 +1,7 @@
 import type { Request, Response } from 'express';
 import { buildUserDataCsv } from '../../services/data-export-service.js';
 import { UserService } from '../../services/user-service.js';
-import { sendServiceError } from '../controller-errors.js';
+import { sendServiceError } from '../../utils/controller-result-utils.js';
 
 const userService = new UserService();
 

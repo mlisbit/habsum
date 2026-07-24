@@ -2,7 +2,7 @@ import type { UserPasswordChangeRequest } from '@habsum/types/api-responses/user
 import type { Request, Response } from 'express';
 import { authenticatedSessionId } from '../../middleware/auth.js';
 import { UserService } from '../../services/user-service.js';
-import { sendServiceResult } from '../controller-errors.js';
+import { sendServiceResult } from '../../utils/controller-result-utils.js';
 
 const userService = new UserService();
 

@@ -1,18 +1,18 @@
 // Domain operations for YAML user configuration persistence and migrations.
 import { yamlString, type UserConfigJson, type YAMLString } from '@habsum/types/common/misc';
 import {
-  buildConfigDeletions,
-  buildConfigMigrations,
-  userConfigFromJson,
-  userConfigJsonFromText,
-} from '../config-editor.js';
+  getConfigDeletions,
+  getConfigMigrations,
+  getUserConfigFromJson,
+  getUserConfigJsonFromText,
+} from '../utils/config-editor-utils.js';
 import { ConfigRepository } from '../repositories/config-repository.js';
 import { HabitRepository } from '../repositories/habit-repository.js';
 import type { HabitDef, UserConfig } from '../types/userConfig.js';
-import { YAMLConfigParser } from '../utils/yaml-config-parser.js';
-import { YAMLConfigConvertor } from '../utils/yaml-config-convertor.js';
-import { isSafeConfigUserId } from '../request-helpers.js';
-import { ServiceError } from '../service-error.js';
+import YAMLConfigConvertor from '../utils/classes/yaml-config-convertor.js';
+import YAMLConfigParser from '../utils/classes/yaml-config-parser.js';
+import { isSafeConfigUserId } from '../utils/request-utils.js';
+import ServiceError from '../utils/classes/service-error.js';
 
 const EMPTY_USER_CONFIG_TEXT = yamlString('habits: {}\n');
 
@@ -277,7 +277,7 @@ export class ConfigService {
     if (!config) throw new ServiceError('not_found', 'user not found');
     return {
       text,
-      config: userConfigJsonFromText(user, text),
+      config: getUserConfigJsonFromText(user, text),
     };
   }
 
@@ -296,7 +296,9 @@ export class ConfigService {
       }
     } else if (body.config != null) {
       try {
-        text = this.yamlConfigConvertor.convert(userConfigFromJson(body.config as UserConfigJson));
+        text = this.yamlConfigConvertor.convert(
+          getUserConfigFromJson(body.config as UserConfigJson),
+        );
       } catch (e) {
         throw new ServiceError('bad_request', e instanceof Error ? e.message : 'invalid config');
       }
@@ -317,8 +319,8 @@ export class ConfigService {
     if (!previousConfig) throw new ServiceError('not_found', 'user not found');
     const previousText = this.readUserConfigText(user);
     if (previousText == null) throw new ServiceError('not_found', 'user not found');
-    const configMigrations = migrations ?? buildConfigMigrations(previousText, text);
-    const configDeletions = deletions ?? buildConfigDeletions(previousText, text);
+    const configMigrations = migrations ?? getConfigMigrations(previousText, text);
+    const configDeletions = deletions ?? getConfigDeletions(previousText, text);
 
     const out = this.writeUserConfigText(user, text);
     if (!out.ok) {

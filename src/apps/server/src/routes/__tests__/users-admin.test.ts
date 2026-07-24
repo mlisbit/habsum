@@ -9,11 +9,12 @@ import { ConfigService } from '../../services/config-service.js';
 import { HabitRepository } from '../../repositories/habit-repository.js';
 import { UserAndAuthRepository } from '../../repositories/user-and-auth-repository.js';
 import { SESSION_COOKIE_NAME } from '../../utils/cookie-session-utils.js';
-import { PACKAGE_VERSION } from '../../version.js';
+import getPackageVersion from '../../utils/get-package-version.js';
 
 const configService = new ConfigService();
 const habitRepository = new HabitRepository();
 const userAndAuthRepository = new UserAndAuthRepository();
+const PACKAGE_VERSION = getPackageVersion();
 
 function adminSessionCookie(): string {
   configService.ensureConfigLayout();

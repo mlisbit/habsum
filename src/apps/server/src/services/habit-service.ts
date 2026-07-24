@@ -3,23 +3,22 @@ import { dayFromString, type Day } from '@habsum/types/common/day';
 import type { Habit } from '@habsum/types/common/habit';
 import { dasherize } from '@habsum/utils/strings';
 import {
-  habitApiTodayKey,
-  parseTzOffsetMinutes,
-  resolveHabitApiDateQuery,
-} from '../server-time.js';
-import { minDate, parseHabitFilter, type PatchBody } from './habit-service.utils.js';
+  getHabitApiDate,
+  getHabitApiToday,
+  getTzOffsetMinutes,
+} from '../utils/server-time-utils.js';
 import { HabitRepository } from '../repositories/habit-repository.js';
+import type { HabitListViewContext, PatchBody } from '../types/habit.types.js';
 import type { UserConfig } from '../types/userConfig.js';
-import { ServiceError } from '../service-error.js';
+import ServiceError from '../utils/classes/service-error.js';
+import getHabitFilter from '../utils/get-habit-filter.js';
+import getHabitHistoryDataQuery from '../utils/get-habit-history-data-query.js';
+import getHabitListDataQuery from '../utils/get-habit-list-data-query.js';
+import getHabitTypeService from '../utils/habits/get-habit-type-service.js';
+import getMinDate from '../utils/get-min-date.js';
+import isHabitRepeatedOnDate from '../utils/habits/is-habit-repeated-on-date.js';
 import { HabitDataService } from './habit-data-service.js';
 import { HabitPresentationService } from './habit-presentation-service.js';
-import {
-  buildHabitHistoryDataQuery,
-  buildHabitListDataQuery,
-  type HabitListViewContext,
-} from './habits/habit-data-query.js';
-import { habitRepeatsOnDate } from './habits/habit-repeat.js';
-import { createHabitTypeService } from './habits/habit-type-service-factory.js';
 import type { HabitTypeService } from './habits/habit-type-service.js';
 
 type HabitHistoryQuery = {
@@ -50,10 +49,10 @@ export class HabitService {
   ) {}
 
   getHabitHistory({ user, config, query = {}, at = new Date() }: GetHabitHistoryInput) {
-    const habitIds = parseHabitFilter(query.filter ?? query.habitId);
+    const habitIds = getHabitFilter(query.filter ?? query.habitId);
     if (habitIds.length === 0) throw new ServiceError('bad_request', 'filter is required');
 
-    const inspectDate = resolveHabitApiDateQuery(query.date, at);
+    const inspectDate = getHabitApiDate(query.date, at);
     const habitDefs = [];
     for (const habitId of habitIds) {
       const habitDef = config.habits.find((h) => dasherize(h.name) === habitId);
@@ -64,17 +63,14 @@ export class HabitService {
     }
 
     const historyData = this.dataService.loadSnapshot(
-      buildHabitHistoryDataQuery({
+      getHabitHistoryDataQuery({
         user,
         habits: habitDefs,
         viewDate: inspectDate,
       }),
     );
     const typeServices = new Map(
-      habitDefs.map((habitDef) => [
-        habitDef.name,
-        createHabitTypeService(habitDef, this.repository),
-      ]),
+      habitDefs.map((habitDef) => [habitDef.name, getHabitTypeService(habitDef, this.repository)]),
     );
     const habitsByDate = new Map<Day, Habit[]>();
     for (const habitData of historyData.habits) {
@@ -93,7 +89,7 @@ export class HabitService {
       habitsByDate.set(
         day,
         habitDefs
-          .filter((habitDef) => habitRepeatsOnDate(habitDef, day))
+          .filter((habitDef) => isHabitRepeatedOnDate(habitDef, day))
           .map(
             (habitDef) =>
               habitsForDay.get(habitDef.name) ??
@@ -105,7 +101,7 @@ export class HabitService {
     const inspectDayHabits = habitsByDate.get(inspectDate);
     const inspectMap = inspectDayHabits ? new Map(inspectDayHabits.map((h) => [h.name, h])) : null;
     const data: Habit[] = habitDefs
-      .filter((habitDef) => habitRepeatsOnDate(habitDef, inspectDate))
+      .filter((habitDef) => isHabitRepeatedOnDate(habitDef, inspectDate))
       .map(
         (habitDef) =>
           inspectMap?.get(habitDef.name) ?? typeServices.get(habitDef.name)!.emptyHistoryHabit(),
@@ -116,7 +112,7 @@ export class HabitService {
       habits: Object.fromEntries(
         config.habits.map((habitDef) => [dasherize(habitDef.name), habitDef.name]),
       ),
-      firstDate: minDate(
+      firstDate: getMinDate(
         historyData.habits.flatMap((habitData) => {
           const typeService = typeServices.get(habitData.name);
           if (!typeService) {
@@ -158,8 +154,8 @@ export class HabitService {
       throw new ServiceError('not_found', `habit "${habit}" not configured`);
     }
 
-    const tzOffsetMinutes = parseTzOffsetMinutes(body.tzOffsetMinutes);
-    const typeService = createHabitTypeService(known, this.repository);
+    const tzOffsetMinutes = getTzOffsetMinutes(body.tzOffsetMinutes);
+    const typeService = getHabitTypeService(known, this.repository);
     typeService.applyPatch({ user, date: day, body });
 
     return this.updatedHabit({
@@ -189,11 +185,11 @@ export class HabitService {
   }) {
     const context: HabitListViewContext = {
       viewDate: date,
-      today: habitApiTodayKey(at, tzOffsetMinutes),
+      today: getHabitApiToday(at, tzOffsetMinutes),
       requestedAt: at,
       tzOffsetMinutes,
     };
-    const data = this.dataService.loadSnapshot(buildHabitListDataQuery({ config, context }));
+    const data = this.dataService.loadSnapshot(getHabitListDataQuery({ config, context }));
     const habitData = data.habits.find((candidate) => candidate.name === habit);
     if (!habitData) throw new Error(`failed to hydrate configured habit "${habit}"`);
     const result = this.presentationService.presentHabit({

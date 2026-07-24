@@ -1,6 +1,6 @@
 import type { Day } from '@habsum/types/common/day';
 import type { HabitRowSingleSelect } from '@habsum/types/common/habit';
-import { ServiceError } from '../../service-error.js';
+import ServiceError from '../../utils/classes/service-error.js';
 import type { HydratedHabitData } from '../../types/habit.types.js';
 import type { HabitDef } from '../../types/userConfig.js';
 import type {

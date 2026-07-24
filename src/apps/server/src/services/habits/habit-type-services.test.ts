@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { HabitMutation } from '../../repositories/habit-repository.js';
 import type { HydratedHabitData } from '../../types/habit.types.js';
 import type { HabitDef } from '../../types/userConfig.js';
-import { createHabitTypeService } from './habit-type-service-factory.js';
+import getHabitTypeService from '../../utils/habits/get-habit-type-service.js';
 import type { HabitMutationRepository } from './habit-type-service.js';
 import { SingleSelectHabitService } from './single-select-habit-service.js';
 import { SummationHabitService } from './summation-habit-service.js';
@@ -39,7 +39,7 @@ describe('habit type services', () => {
         theme: 'sunset',
       },
     };
-    const service = createHabitTypeService(definition, repository);
+    const service = getHabitTypeService(definition, repository);
     const habitData: HydratedHabitData = {
       name: definition.name,
       type: 'single_select',
@@ -76,7 +76,7 @@ describe('habit type services', () => {
       insights: [],
       settings: { goal: 100 },
     };
-    const service = createHabitTypeService(definition, repository);
+    const service = getHabitTypeService(definition, repository);
     const habitData: HydratedHabitData = {
       name: definition.name,
       type: 'summation',

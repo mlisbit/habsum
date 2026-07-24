@@ -2,11 +2,10 @@
 import type { Habit } from '@habsum/types/common/habit';
 import type { HydratedHabitData, HabitDataSnapshot } from '../types/habit.types.js';
 import type { HabitDef, UserConfig } from '../types/userConfig.js';
-import {
-  buildHabitWidgets,
-  selectedValueForViewDate,
-  summationTotalForViewDate,
-} from './_private/habit-insight-widgets.js';
+import getHabitWidgets, {
+  getSelectedValueForViewDate,
+  getSummationTotalForViewDate,
+} from '../utils/habits/get-habit-widgets.js';
 
 export type HabitInsightKind = 'weeklyAverage' | 'currentStreak' | 'longestStreak';
 
@@ -44,10 +43,9 @@ export class HabitBuilder {
   }
 
   build(): Habit {
-    const widgets = buildHabitWidgets({
+    const widgets = getHabitWidgets(this.habitData, {
       data: this.context.data,
       definition: this.definition,
-      habitData: this.habitData,
       includeAbsentDaysInAverage: this.config.includeAbsentDaysInAverage,
       at: this.context.at,
       tzOffsetMinutes: this.context.tzOffsetMinutes,
@@ -66,7 +64,7 @@ export class HabitBuilder {
         details: {
           options: h.settings.options,
           ...(h.settings.theme ? { theme: h.settings.theme } : {}),
-          value: selectedValueForViewDate(this.habitData, this.context.data),
+          value: getSelectedValueForViewDate(this.habitData, this.context.data),
         },
         ...(widgets.length > 0 ? { widgets } : {}),
       };
@@ -82,7 +80,7 @@ export class HabitBuilder {
       type: 'summation',
       details: {
         goal: h.settings.goal,
-        total: summationTotalForViewDate(this.habitData, this.context.data),
+        total: getSummationTotalForViewDate(this.habitData, this.context.data),
         ...(h.settings.summationOptions ? { summationOptions: h.settings.summationOptions } : {}),
       },
       ...(widgets.length > 0 ? { widgets } : {}),

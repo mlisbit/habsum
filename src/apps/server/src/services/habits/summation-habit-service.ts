@@ -1,8 +1,8 @@
 import type { Day } from '@habsum/types/common/day';
 import type { HabitRowSummation } from '@habsum/types/common/habit';
-import { ServiceError } from '../../service-error.js';
-import { parseClientCreatedAtIso } from '../../server-time.js';
-import { mapSummationEventsToApi } from '../../summation-event-api.js';
+import ServiceError from '../../utils/classes/service-error.js';
+import { getClientCreatedAt } from '../../utils/server-time-utils.js';
+import { getApiSummationEvents } from '../../utils/summation-event-utils.js';
 import type { HydratedHabitData } from '../../types/habit.types.js';
 import type { HabitDef } from '../../types/userConfig.js';
 import type {
@@ -33,7 +33,7 @@ export class SummationHabitService implements HabitTypeService<HabitRowSummation
       details: {
         ...emptyHabit.details,
         total: typedHabit.totals.find((row) => row.date === date)?.total ?? null,
-        events: mapSummationEventsToApi(typedHabit.events.filter((event) => event.date === date)),
+        events: getApiSummationEvents(typedHabit.events.filter((event) => event.date === date)),
       },
     };
   }
@@ -89,7 +89,7 @@ export class SummationHabitService implements HabitTypeService<HabitRowSummation
       throw new ServiceError('bad_request', 'total must be a number');
     }
 
-    const createdAt = parseClientCreatedAtIso(body.clientCreatedAt);
+    const createdAt = getClientCreatedAt(body.clientCreatedAt);
     if (createdAt == null) {
       throw new ServiceError(
         'bad_request',
@@ -129,7 +129,7 @@ export class SummationHabitService implements HabitTypeService<HabitRowSummation
       type: result.type,
       details: {
         ...result.details,
-        events: mapSummationEventsToApi(typedHabit.events.filter((event) => event.date === date)),
+        events: getApiSummationEvents(typedHabit.events.filter((event) => event.date === date)),
       },
       ...(result.widgets ? { widgets: result.widgets } : {}),
     };

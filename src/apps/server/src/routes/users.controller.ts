@@ -6,14 +6,14 @@ import type {
   ListUsersResponse,
 } from '@habsum/types/common/misc';
 import type { Request, Response } from 'express';
-import { isPlausibleEmail, isSafeConfigUserId } from '../request-helpers.js';
+import { isPlausibleEmail, isSafeConfigUserId } from '../utils/request-utils.js';
 import { UserAndAuthRepository } from '../repositories/user-and-auth-repository.js';
 import { AuthService } from '../services/auth-service.js';
 import { ConfigService } from '../services/config-service.js';
 import { UserService } from '../services/user-service.js';
 import { resolveActiveSessionId } from '../utils/cookie-session-utils.js';
 import { generateTemporaryPassword } from '../utils/password-utils.js';
-import { sendServiceResult } from './controller-errors.js';
+import { sendServiceResult } from '../utils/controller-result-utils.js';
 
 const WEB_VERSION_HEADER = 'x-habsum-web-version';
 const configService = new ConfigService();

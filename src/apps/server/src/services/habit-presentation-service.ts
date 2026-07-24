@@ -3,10 +3,9 @@ import type { HabitsResponse } from '@habsum/types/api-responses/habits-get';
 import type { Habit } from '@habsum/types/common/habit';
 import { HabitBuilder } from '../builders/habit-builder.js';
 import { HabitResultBuilder } from '../builders/habit-result-builder.js';
-import type { HabitDataSnapshot } from '../types/habit.types.js';
+import type { HabitDataSnapshot, HabitListViewContext } from '../types/habit.types.js';
 import type { UserConfig } from '../types/userConfig.js';
-import type { HabitListViewContext } from './habits/habit-data-query.js';
-import { habitRepeatsOnDate } from './habits/habit-repeat.js';
+import isHabitRepeatedOnDate from '../utils/habits/is-habit-repeated-on-date.js';
 
 type HabitPresentationInput = {
   config: UserConfig;
@@ -18,7 +17,7 @@ export class HabitPresentationService {
   presentHabitList({ config, context, data }: HabitPresentationInput): HabitsResponse {
     const visibleConfig = {
       ...config,
-      habits: config.habits.filter((habit) => habitRepeatsOnDate(habit, context.viewDate)),
+      habits: config.habits.filter((habit) => isHabitRepeatedOnDate(habit, context.viewDate)),
     };
     const habits = this.buildHabits(visibleConfig, context, data);
 

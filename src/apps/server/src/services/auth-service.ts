@@ -1,14 +1,16 @@
 // Domain operations for authentication, sessions, and password recovery.
 import { accountCreatedAtToApi } from '@habsum/types/common/day';
 import { PASSWORD_RESET_TOKEN_TTL_SECONDS } from '../constants.js';
-import { isDevelopment } from '../env.js';
-import { isPlausibleEmail, isSafeLoginId, parsePassword } from '../request-helpers.js';
-import { PACKAGE_VERSION } from '../version.js';
+import isDevelopment from '../utils/is-development.js';
+import { getPassword, isPlausibleEmail, isSafeLoginId } from '../utils/request-utils.js';
+import getPackageVersion from '../utils/get-package-version.js';
 import { ConfigService } from './config-service.js';
 import { EmailService } from './email-service.js';
 import { UserService } from './user-service.js';
 import { UserAndAuthRepository } from '../repositories/user-and-auth-repository.js';
-import { ServiceError } from '../service-error.js';
+import ServiceError from '../utils/classes/service-error.js';
+
+const PACKAGE_VERSION = getPackageVersion();
 
 type LoginInput = { password?: unknown };
 type ForgotPasswordInput = { email?: unknown };
@@ -109,7 +111,7 @@ export class AuthService {
       throw new ServiceError('bad_request', 'invalid login');
     }
 
-    const password = parsePassword(body?.password);
+    const password = getPassword(body?.password);
     if (password == null) {
       throw new ServiceError('bad_request', 'password is required');
     }
@@ -239,7 +241,7 @@ export class AuthService {
       throw new ServiceError('bad_request', 'token is required');
     }
 
-    const newPassword = parsePassword(body?.newPassword);
+    const newPassword = getPassword(body?.newPassword);
     if (newPassword == null) {
       throw new ServiceError('bad_request', 'new password is required');
     }

@@ -5,7 +5,7 @@ import { mkdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { hashPassword, isPasswordHashed, verifyPassword } from '../../utils/password-utils.js';
 import { PASSWORD_RESET_COOLDOWN_SECONDS } from '../../constants.js';
-import { isAllowedUiTheme, isPlausibleEmail } from '../../request-helpers.js';
+import { isAllowedUiTheme, isPlausibleEmail } from '../../utils/request-utils.js';
 
 const rawDir = process.env.HABSUM_CONFIG_DIR;
 if (!rawDir) {

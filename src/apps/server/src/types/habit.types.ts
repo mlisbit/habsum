@@ -2,6 +2,29 @@
 import type { Day } from '@habsum/types/common/day';
 import type { HabitType } from './userConfig.js';
 
+export type HabitListQuery = {
+  date?: string;
+  tzOffsetMinutes?: string;
+};
+
+export type HabitListViewContext = {
+  viewDate: Day;
+  today: Day;
+  requestedAt: Date;
+  tzOffsetMinutes?: number;
+};
+
+export type PatchBody = {
+  habit?: unknown;
+  total?: unknown;
+  action?: unknown;
+  value?: unknown;
+  date?: unknown;
+  clientCreatedAt?: unknown;
+  eventId?: unknown;
+  tzOffsetMinutes?: unknown;
+};
+
 export type HabitDataRange = {
   start: Day;
   end: Day;

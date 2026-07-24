@@ -1,17 +1,17 @@
 // Domain operations for user profiles, security, configuration, and data management.
 import { ProductEntitlement } from '@habsum/types/common/entitlement';
 import { accountCreatedAtToApi } from '@habsum/types/common/day';
-import { isForbiddenUsername } from '../forbidden-usernames.js';
+import isForbiddenUsername from '../utils/is-forbidden-username.js';
 import {
   isPlausibleEmail,
   isSafeConfigUserId,
-  parsePassword,
-  parseThemePatchInput,
-} from '../request-helpers.js';
+  getPassword,
+  getThemePatchInput,
+} from '../utils/request-utils.js';
 import type { UserConfig } from '../types/userConfig.js';
 import { ConfigService } from './config-service.js';
 import { UserAndAuthRepository } from '../repositories/user-and-auth-repository.js';
-import { ServiceError } from '../service-error.js';
+import ServiceError from '../utils/classes/service-error.js';
 
 type UserPatchResult = {
   ok: true;
@@ -159,8 +159,8 @@ export class UserService {
   changePassword(user: string, body: PasswordChangeInput | undefined) {
     this.assertValidUserId(user);
 
-    const currentPassword = parsePassword(body?.currentPassword);
-    const newPassword = parsePassword(body?.newPassword);
+    const currentPassword = getPassword(body?.currentPassword);
+    const newPassword = getPassword(body?.newPassword);
     if (currentPassword == null) {
       throw new ServiceError('bad_request', 'current password is required');
     }
@@ -297,7 +297,7 @@ export class UserService {
     let theme: string | null | undefined;
     if ('theme' in body) {
       hasTheme = true;
-      const parsed = parseThemePatchInput(body.theme);
+      const parsed = getThemePatchInput(body.theme);
       if (parsed === 'invalid') {
         throw new ServiceError('bad_request', 'invalid theme');
       }

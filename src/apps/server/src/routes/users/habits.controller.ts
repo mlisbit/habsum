@@ -3,14 +3,11 @@ import { HabitRepository } from '../../repositories/habit-repository.js';
 import { HabitDataService } from '../../services/habit-data-service.js';
 import { HabitPresentationService } from '../../services/habit-presentation-service.js';
 import { HabitService } from '../../services/habit-service.js';
-import type { PatchBody } from '../../services/habit-service.utils.js';
-import {
-  buildHabitListDataQuery,
-  resolveHabitListContext,
-  type HabitListQuery,
-} from '../../services/habits/habit-data-query.js';
+import type { HabitListQuery, PatchBody } from '../../types/habit.types.js';
+import getHabitListContext from '../../utils/get-habit-list-context.js';
+import getHabitListDataQuery from '../../utils/get-habit-list-data-query.js';
 import { UserService } from '../../services/user-service.js';
-import { sendServiceResult } from '../controller-errors.js';
+import { sendServiceResult } from '../../utils/controller-result-utils.js';
 
 const habitRepository = new HabitRepository();
 const habitDataService = new HabitDataService(habitRepository);
@@ -43,11 +40,11 @@ export const habitsController = {
     return sendServiceResult(res, () => {
       const requestedAt = new Date();
       const userConfig = userService.loadUserConfig(req.params.user);
-      const viewContext = resolveHabitListContext({
+      const viewContext = getHabitListContext({
         query: req.query,
         requestedAt,
       });
-      const dataQuery = buildHabitListDataQuery({
+      const dataQuery = getHabitListDataQuery({
         config: userConfig,
         context: viewContext,
       });

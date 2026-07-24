@@ -2,8 +2,8 @@ import { readFileSync } from 'node:fs';
 import { yamlString } from '@habsum/types/common/misc';
 import { describe, expect, it } from 'vitest';
 import type { UserConfig } from '../../types/userConfig.js';
-import { YAMLConfigConvertor } from '../yaml-config-convertor.js';
-import { YAMLConfigParser } from '../yaml-config-parser.js';
+import YAMLConfigConvertor from '../classes/yaml-config-convertor.js';
+import YAMLConfigParser from '../classes/yaml-config-parser.js';
 
 function fixture(name: string): string {
   return readFileSync(new URL(`./fixtures/${name}`, import.meta.url), 'utf8');

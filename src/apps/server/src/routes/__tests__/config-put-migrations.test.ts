@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 import { createApp } from '../../app.js';
 import { ConfigService } from '../../services/config-service.js';
 import { HabitRepository } from '../../repositories/habit-repository.js';
-import { buildHabitListDataQuery } from '../../services/habits/habit-data-query.js';
+import getHabitListDataQuery from '../../utils/get-habit-list-data-query.js';
 import { UserAndAuthRepository } from '../../repositories/user-and-auth-repository.js';
 import { SESSION_COOKIE_NAME } from '../../utils/cookie-session-utils.js';
 
@@ -27,7 +27,7 @@ function hydratedSelectValue(user: string, habit: string, date: string): string 
   if (!config) throw new Error(`missing config for ${user}`);
   const viewDate = dayFromString(date);
   const snapshot = habitRepository.loadSnapshot(
-    buildHabitListDataQuery({
+    getHabitListDataQuery({
       config,
       context: {
         viewDate,
