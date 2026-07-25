@@ -43,6 +43,77 @@ describe('habit presenters', () => {
     });
   });
 
+  it('formats raw heatmap insights in the history widget', () => {
+    const definition: HabitDef<'single_select'> = {
+      name: 'mood',
+      type: 'single_select',
+      repeat: [],
+      insights: ['current_streak', 'longest_streak'],
+      streak_options: {
+        options: ['good'],
+        frequency: '7d',
+      },
+      settings: {
+        options: ['good', 'bad'],
+      },
+    };
+    const habitData: Extract<HydratedHabitData, { type: 'single_select' }> = {
+      name: definition.name,
+      type: 'single_select',
+      dataStart: dayFromString('2026-07-21'),
+      dataEnd: viewingDate,
+      values: [
+        { date: dayFromString('2026-07-21'), value: 'good' },
+        { date: dayFromString('2026-07-22'), value: 'good' },
+      ],
+    };
+
+    const habit = new SingleSelectHabitPresenter(definition, habitData, {
+      viewingDate,
+      today: viewingDate,
+      includeWidgets: true,
+    }).present();
+
+    expect(habit.widgets?.[0]?.body).toEqual([
+      {
+        kind: 'insights',
+        insights: [
+          {
+            header: 'Current streak',
+            description: '2 days',
+          },
+          {
+            header: 'Longest streak',
+            description: '2 days',
+            hover: expect.stringMatching(/–.*\nIncludes good/),
+          },
+        ],
+      },
+    ]);
+
+    const currentOnlyDefinition: HabitDef<'single_select'> = {
+      ...definition,
+      insights: ['current_streak'],
+    };
+    const currentOnlyHabit = new SingleSelectHabitPresenter(currentOnlyDefinition, habitData, {
+      viewingDate,
+      today: viewingDate,
+      includeWidgets: true,
+    }).present();
+
+    expect(currentOnlyHabit.widgets?.[0]?.body).toEqual([
+      {
+        kind: 'insights',
+        insights: [
+          {
+            header: 'Current streak',
+            description: '2 days',
+          },
+        ],
+      },
+    ]);
+  });
+
   it('returns recorded single-select history events within the requested range', () => {
     const definition: HabitDef<'single_select'> = {
       name: 'mood',

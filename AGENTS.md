@@ -8,6 +8,7 @@
 ## Server utility structure
 
 - Place server utility modules under `src/apps/server/src/utils`; do not leave helper-only modules beside services, repositories, routes, or at the server root.
+- A nested `_private` directory is the exception for implementation-only helpers that are scoped to its parent architectural folder. Modules inside it must never be imported from outside that parent folder; move a helper to `src/apps/server/src/utils` once it becomes reusable elsewhere. A scoped `_private/utils.ts` may group tightly coupled pure helpers with named exports and is exempt from the one-default-export convention below.
 - Prefer one default-exported function per utility file. Name the file after that function using kebab case (for example, `get-habit-list-context.ts` exports `getHabitListContext`).
 - Prefer the `get` prefix for utilities that retrieve, derive, map, build, parse, or otherwise return a value.
 - Keep predicates and side-effecting operations truthfully named with prefixes such as `is`, `has`, `set`, or `append`; do not use `get` when it would conceal a mutation or boolean predicate.

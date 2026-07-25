@@ -3,6 +3,8 @@ import type { Day } from '@habsum/types/common/day';
 import type { HabitRowSingleSelect, HabitWidget } from '@habsum/types/common/habit';
 import type { HydratedHabitData } from '../../types/habit.types.js';
 import type { HabitDef } from '../../types/userConfig.js';
+import { SingleSelectHeatmapBuilder } from './_private/builders/heatmap/single-select-heatmap-builder.js';
+import { SingleSelectInsightsBuilder } from './_private/builders/insights/single-select-insights-builder.js';
 import {
   HabitPresenter,
   type HabitHistoryEvent,
@@ -22,10 +24,6 @@ export class SingleSelectHabitPresenter extends HabitPresenter<
     context: HabitPresentationContext,
   ) {
     super(definition, habitData, context);
-  }
-
-  getRecordedDates(): Day[] {
-    return this.habitData.values.map((row) => row.date);
   }
 
   /** Returns the habit data displayed in the calendar view of the history route. */
@@ -61,28 +59,27 @@ export class SingleSelectHabitPresenter extends HabitPresenter<
     const includeCurrentStreak = this.definition.insights.includes('current_streak');
     const includeLongestStreak = this.definition.insights.includes('longest_streak');
     const heatmap = includeHeatmap
-      ? this.getStreakGraph({
+      ? new SingleSelectHeatmapBuilder(this.habitData, this.definition, this.context).build({
           eligibleOptions: this.definition.streak_options?.options ?? [],
-          selectableValues: this.definition.settings.options,
         })
       : null;
-    const streak =
+    const streakInsights =
       (includeCurrentStreak || includeLongestStreak) && this.definition.streak_options
-        ? this.getStreakGraph({
+        ? new SingleSelectInsightsBuilder(this.habitData, this.definition, this.context).build({
             eligibleOptions: this.definition.streak_options.options,
             frequency: this.definition.streak_options.frequency,
-            includeLongest: includeLongestStreak,
-            selectableValues: this.definition.settings.options,
           })
         : null;
 
-    if (!heatmap && !streak) return [];
+    if (!heatmap && !streakInsights) return [];
+
+    // TODO: this all needs to be refactored into a series of formatWidget utils I think.
     return [
       this.getHistoryWidget({
         heatmap,
-        streak,
+        streakInsights,
         includeCurrentStreak,
-        includeBarGraph: false,
+        includeLongestStreak,
       }),
     ];
   }

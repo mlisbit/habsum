@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import { dayFromString, type Day } from '@habsum/types/common/day';
-import type { Habit } from '@habsum/types/common/habit';
 import type { StreakDatum, StreakGraphData } from '@habsum/types/common/streak';
 import { fromDateKey, toDateKey } from '@habsum/utils/date';
-import type { HydratedHabitData } from '../../types/habit.types.js';
-import type { HabitDef } from '../../types/userConfig.js';
-import { HabitPresenter, type HabitPresentationContext } from './habit-presenter.js';
+import type { HydratedHabitData } from '../../../../../types/habit.types.js';
+import type { HabitDef } from '../../../../../types/userConfig.js';
+import { SingleSelectHeatmapBuilder } from './single-select-heatmap-builder.js';
+import { SummationHeatmapBuilder } from './summation-heatmap-builder.js';
 
 const habitDataFixtureMocks = vi.hoisted(() => ({
   getFixtureTotals: vi.fn(),
@@ -18,56 +18,8 @@ const user = 'tester';
 const habit = 'mood';
 const eligible = ['good'];
 
-class HabitPresenterHarness extends HabitPresenter<HabitDef, HydratedHabitData, Habit> {
-  getRecordedDates(): Day[] {
-    return this.habitData.type === 'single_select'
-      ? this.habitData.values.map((row) => row.date)
-      : this.habitData.totals.map((row) => row.date);
-  }
-
-  getHistoryEvents() {
-    return [];
-  }
-
-  present(): Habit {
-    throw new Error('not used by streak tests');
-  }
-
-  getGraph(options: {
-    eligibleOptions: readonly string[];
-    frequency?: string;
-    includeLongest?: boolean;
-    selectableValues?: readonly string[];
-  }) {
-    return this.getStreakGraph(options);
-  }
-}
-
 function addDaysUtc(date: Day, delta: number): Day {
   return toDateKey(new Date(fromDateKey(date, 0).getTime() + delta * 86_400_000), 0);
-}
-
-function getPresenterHarness(
-  habitData: HydratedHabitData,
-  context: HabitPresentationContext,
-): HabitPresenterHarness {
-  const definition: HabitDef =
-    habitData.type === 'single_select'
-      ? {
-          name: habitData.name,
-          type: 'single_select',
-          repeat: [],
-          insights: [],
-          settings: { options: [] },
-        }
-      : {
-          name: habitData.name,
-          type: 'summation',
-          repeat: [],
-          insights: [],
-          settings: { goal: null },
-        };
-  return new HabitPresenterHarness(definition, habitData, context);
 }
 
 function getHydratedSingleSelectData(
@@ -108,20 +60,23 @@ function getTestSingleSelectStreakGraph(
   at: Date = new Date(),
   today: Day = toDateKey(at, 0),
   streakFrequency?: string,
-  showLongest = false,
-  firstDate: Day | null = null,
   selectableValues: readonly string[] = streakEligibleOptions,
 ) {
-  void firstDate;
-  const presenter = getPresenterHarness(getHydratedSingleSelectData(user, habitName, viewDate), {
+  const hydratedHabit = getHydratedSingleSelectData(user, habitName, viewDate);
+  const userRowConfig: HabitDef<'single_select'> = {
+    name: habitName,
+    type: 'single_select',
+    repeat: [],
+    insights: [],
+    settings: { options: [...selectableValues] },
+  };
+  const builder = new SingleSelectHeatmapBuilder(hydratedHabit, userRowConfig, {
     viewingDate: viewDate,
     today,
   });
-  return presenter.getGraph({
+  return builder.build({
     eligibleOptions: streakEligibleOptions,
     frequency: streakFrequency,
-    includeLongest: showLongest,
-    selectableValues,
   });
 }
 
@@ -133,18 +88,22 @@ function getTestSummationStreakGraph(
   at: Date = new Date(),
   today: Day = toDateKey(at, 0),
   streakFrequency?: string,
-  showLongest = false,
-  firstDate: Day | null = null,
 ) {
-  void firstDate;
-  const presenter = getPresenterHarness(getHydratedSummationData(user, habitName, viewDate), {
+  const hydratedHabit = getHydratedSummationData(user, habitName, viewDate);
+  const userRowConfig: HabitDef<'summation'> = {
+    name: habitName,
+    type: 'summation',
+    repeat: [],
+    insights: [],
+    settings: { goal: null },
+  };
+  const builder = new SummationHeatmapBuilder(hydratedHabit, userRowConfig, {
     viewingDate: viewDate,
     today,
   });
-  return presenter.getGraph({
+  return builder.build({
     eligibleOptions: streakEligibleOptions,
     frequency: streakFrequency,
-    includeLongest: showLongest,
   });
 }
 
@@ -162,7 +121,6 @@ describe('getTestSingleSelectStreakGraph', () => {
 
     const streak = getTestSingleSelectStreakGraph(user, habit, viewDate, eligible, at);
 
-    expect(streak.currentText).toBe('2 days');
     expect(streak.data).toHaveLength(53);
     expect(streak.data.every((week) => week.length >= 1 && week.length <= 7)).toBe(true);
     expect(streak.data[0]?.[0]?.date).toBe('2024-05-19');
@@ -201,7 +159,7 @@ describe('getTestSingleSelectStreakGraph', () => {
     expect(streakDatumForDate(streak, dayFromString('2025-05-22'))).toBeUndefined();
   });
 
-  it('omits an unlogged UTC today from current streak length', () => {
+  it('leaves an unlogged UTC today empty', () => {
     const at = new Date('2025-05-21T12:00:00.000Z');
     const viewDate = dayFromString('2025-05-21');
     vi.mocked(getFixtureSelection).mockImplementation((_u, _h, date) => {
@@ -212,13 +170,12 @@ describe('getTestSingleSelectStreakGraph', () => {
 
     const streak = getTestSingleSelectStreakGraph(user, habit, viewDate, eligible, at);
 
-    expect(streak.currentText).toBe('2 days');
     expect(streakDatumForDate(streak, viewDate)?.value).toBeNull();
     expect(streakDatumForDate(streak, viewDate)?.fill).toBeUndefined();
     expect(streakDatumForDate(streak, dayFromString('2025-05-22'))).toBeUndefined();
   });
 
-  it('counts today when it has a streak-eligible selection', () => {
+  it('fills today when it has an eligible selection', () => {
     const at = new Date('2025-05-21T12:00:00.000Z');
     const viewDate = dayFromString('2025-05-21');
     vi.mocked(getFixtureSelection).mockImplementation((_u, _h, date) =>
@@ -227,7 +184,6 @@ describe('getTestSingleSelectStreakGraph', () => {
 
     const streak = getTestSingleSelectStreakGraph(user, habit, viewDate, eligible, at);
 
-    expect(streak.currentText).toBe('1 day');
     expect(streakDatumForDate(streak, viewDate)?.fill).toBe(5);
   });
 
@@ -240,7 +196,6 @@ describe('getTestSingleSelectStreakGraph', () => {
 
     const streak = getTestSingleSelectStreakGraph(user, habit, viewDate, eligible, at);
 
-    expect(streak.currentText).toBe('0 days');
     expect(streakDatumForDate(streak, viewDate)?.value).toBe('bad');
     expect(streakDatumForDate(streak, viewDate)?.fill).toBe(-5);
   });
@@ -266,8 +221,6 @@ describe('getTestSingleSelectStreakGraph', () => {
       at,
       undefined,
       undefined,
-      false,
-      null,
       ['none', 'light', 'moderate', 'heavy'],
     );
 
@@ -275,31 +228,6 @@ describe('getTestSingleSelectStreakGraph', () => {
     expect(streakDatumForDate(streak, dayFromString('2025-05-19'))?.fill).toBe(3);
     expect(streakDatumForDate(streak, dayFromString('2025-05-20'))?.fill).toBe(-4);
     expect(streakDatumForDate(streak, dayFromString('2025-05-21'))?.fill).toBe(-5);
-  });
-
-  it('treats an unlogged past view date as breaking the streak', () => {
-    const at = new Date('2025-05-21T12:00:00.000Z');
-    const viewDate = dayFromString('2025-05-15');
-    vi.mocked(getFixtureSelection).mockImplementation((_u, _h, date) =>
-      date === '2025-05-14' ? 'good' : null,
-    );
-
-    const streak = getTestSingleSelectStreakGraph(user, habit, viewDate, eligible, at);
-
-    expect(streak.currentText).toBe('0 days');
-  });
-
-  it('omits an unlogged view date when the client identifies it as today', () => {
-    const at = new Date('2026-05-20T22:00:00.000Z');
-    const viewDate = dayFromString('2026-05-21');
-    vi.mocked(getFixtureSelection).mockImplementation((_u, _h, date) => {
-      if (date === '2026-05-20' || date === '2026-05-19' || date === '2026-05-18') return 'none';
-      return null;
-    });
-
-    const streak = getTestSingleSelectStreakGraph(user, habit, viewDate, ['none'], at, viewDate);
-
-    expect(streak.currentText).toBe('3 days');
   });
 });
 
@@ -327,10 +255,9 @@ describe('getTestSingleSelectStreakGraph (weekly frequency)', () => {
     expect(streakDatumForDate(streak, viewWeekStart)?.label).toMatch(/–/);
     expect(streakDatumForDate(streak, viewWeekStart)?.value).toBe('3/3');
     expect(streakDatumForDate(streak, viewWeekStart)?.fill).toBe(5);
-    expect(streak.currentText).toBe('2 weeks');
   });
 
-  it('omits the in-progress view week from streak length when under target', () => {
+  it('shows partial progress for an incomplete viewing week', () => {
     const at = new Date('2025-05-21T12:00:00.000Z');
     const viewDate = dayFromString('2025-05-21');
     vi.mocked(getFixtureSelection).mockImplementation((_u, _h, date) => {
@@ -352,7 +279,6 @@ describe('getTestSingleSelectStreakGraph (weekly frequency)', () => {
     const viewWeekStart = dayFromString('2025-05-19');
     expect(streakDatumForDate(streak, viewWeekStart)?.value).toBe('1/3');
     expect(streakDatumForDate(streak, viewWeekStart)?.fill).toBe(2);
-    expect(streak.currentText).toBe('1 week');
   });
 
   it('uses a nonzero weekly fill when the week has only non-eligible logs', () => {
@@ -375,12 +301,11 @@ describe('getTestSingleSelectStreakGraph (weekly frequency)', () => {
     const viewWeekStart = dayFromString('2025-05-19');
     expect(streakDatumForDate(streak, viewWeekStart)?.value).toBeNull();
     expect(streakDatumForDate(streak, viewWeekStart)?.fill).toBe(-5);
-    expect(streak.currentText).toBe('0 weeks');
   });
 });
 
 describe('getTestSummationStreakGraph', () => {
-  it('counts summation days that hit the configured goal', () => {
+  it('scales summation fills against the graph values', () => {
     const at = new Date('2025-05-21T12:00:00.000Z');
     const viewDate = dayFromString('2025-05-21');
     vi.mocked(getFixtureTotals).mockImplementation((_u, _h, startDate) => {
@@ -392,114 +317,8 @@ describe('getTestSummationStreakGraph', () => {
 
     const streak = getTestSummationStreakGraph(user, 'push ups', viewDate, ['10'], at);
 
-    expect(streak.currentText).toBe('1 day');
     expect(streakDatumForDate(streak, viewDate)?.value).toBe('12');
     expect(streakDatumForDate(streak, viewDate)?.fill).toBe(5);
     expect(streakDatumForDate(streak, dayFromString('2025-05-20'))?.fill).toBe(2);
-  });
-});
-
-describe('getTestSingleSelectStreakGraph (show_longest)', () => {
-  it('includes longestStreak for daily habits when enabled', () => {
-    const viewDate = dayFromString('2025-05-21');
-    vi.mocked(getFixtureSelection).mockImplementation((_u, _h, date) => {
-      if (date === '2025-05-10' || date === '2025-05-11') return 'good';
-      if (date === '2025-05-18' || date === '2025-05-19' || date === '2025-05-20') return 'good';
-      return null;
-    });
-
-    const streak = getTestSingleSelectStreakGraph(
-      user,
-      habit,
-      viewDate,
-      eligible,
-      new Date(`${viewDate}T12:00:00.000Z`),
-      undefined,
-      undefined,
-      true,
-      dayFromString('2025-05-01'),
-    );
-
-    expect(streak.longestStreak).toEqual({
-      label: 'Longest streak',
-      text: '3 days (current)',
-      range: expect.stringMatching(/–/),
-      qualifier: 'good',
-    });
-  });
-
-  it('does not mark longest as current when a longer past streak exists', () => {
-    const viewDate = dayFromString('2025-05-21');
-    vi.mocked(getFixtureSelection).mockImplementation((_u, _h, date) => {
-      if (
-        date === '2025-05-01' ||
-        date === '2025-05-02' ||
-        date === '2025-05-03' ||
-        date === '2025-05-04'
-      )
-        return 'good';
-      if (date === '2025-05-20') return 'good';
-      return null;
-    });
-
-    const streak = getTestSingleSelectStreakGraph(
-      user,
-      habit,
-      viewDate,
-      eligible,
-      new Date(`${viewDate}T12:00:00.000Z`),
-      undefined,
-      undefined,
-      true,
-      dayFromString('2025-05-01'),
-    );
-
-    expect(streak.longestStreak?.text).toBe('4 days');
-    expect(streak.currentText).toBe('1 day');
-  });
-
-  it('labels weekly longest streak with the configured frequency and options', () => {
-    const viewDate = dayFromString('2025-05-21');
-    vi.mocked(getFixtureSelection).mockImplementation((_u, _h, date) => {
-      if (date === '2025-05-12' || date === '2025-05-13' || date === '2025-05-14') return 'good';
-      return null;
-    });
-
-    const streak = getTestSingleSelectStreakGraph(
-      user,
-      habit,
-      viewDate,
-      eligible,
-      new Date(`${viewDate}T12:00:00.000Z`),
-      undefined,
-      '3d/1w',
-      true,
-      dayFromString('2025-05-01'),
-    );
-
-    expect(streak.longestStreak?.label).toBe('Longest streak');
-    expect(streak.longestStreak?.text).toBe('1 week (current)');
-    expect(streak.longestStreak?.qualifier).toBe('3+ per week: good');
-  });
-
-  it('omits longestStreak when show_longest is disabled', () => {
-    const viewDate = dayFromString('2025-05-21');
-    vi.mocked(getFixtureSelection).mockImplementation((_u, _h, date) =>
-      date === '2025-05-20' ? 'good' : null,
-    );
-
-    const streak = getTestSingleSelectStreakGraph(
-      user,
-      habit,
-      viewDate,
-      eligible,
-      new Date(`${viewDate}T12:00:00.000Z`),
-      undefined,
-      undefined,
-      false,
-      dayFromString('2025-05-01'),
-    );
-
-    expect(streak.longestStreak).toBeUndefined();
   });
 });
