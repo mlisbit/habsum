@@ -51,7 +51,7 @@ describe('GET /users/:user/habits repeat config', () => {
     const session = userAndAuthRepository.createUserSession(user, 24 * 3600);
 
     const morning = await request(createApp())
-      .get(`/users/${user}/habits?date=2999-07-01&tzOffsetMinutes=0`)
+      .get(`/users/${user}/habits?date=2999-07-01&today=2999-07-01&clientHour=9`)
       .set('Cookie', `${SESSION_COOKIE_NAME}=${session}`)
       .expect(200);
 
@@ -68,7 +68,7 @@ describe('GET /users/:user/habits repeat config', () => {
 
     vi.setSystemTime(new Date('2999-07-01T13:00:00.000Z'));
     const afternoon = await request(createApp())
-      .get(`/users/${user}/habits?date=2999-07-01&tzOffsetMinutes=0`)
+      .get(`/users/${user}/habits?date=2999-07-01&today=2999-07-01&clientHour=13`)
       .set('Cookie', `${SESSION_COOKIE_NAME}=${session}`)
       .expect(200);
 
@@ -76,14 +76,14 @@ describe('GET /users/:user/habits repeat config', () => {
 
     vi.setSystemTime(new Date('2999-07-01T17:00:00.000Z'));
     const evening = await request(createApp())
-      .get(`/users/${user}/habits?date=2999-07-01&tzOffsetMinutes=0`)
+      .get(`/users/${user}/habits?date=2999-07-01&today=2999-07-01&clientHour=17`)
       .set('Cookie', `${SESSION_COOKIE_NAME}=${session}`)
       .expect(200);
 
     expect(evening.body.page.heading).toBe('Hi, Alex');
 
     const yesterday = await request(createApp())
-      .get(`/users/${user}/habits?date=2999-06-30&tzOffsetMinutes=0`)
+      .get(`/users/${user}/habits?date=2999-06-30&today=2999-07-01`)
       .set('Cookie', `${SESSION_COOKIE_NAME}=${session}`)
       .expect(200);
 
@@ -93,7 +93,7 @@ describe('GET /users/:user/habits repeat config', () => {
     });
 
     const withinPastWeek = await request(createApp())
-      .get(`/users/${user}/habits?date=2999-06-27&tzOffsetMinutes=0`)
+      .get(`/users/${user}/habits?date=2999-06-27&today=2999-07-01`)
       .set('Cookie', `${SESSION_COOKIE_NAME}=${session}`)
       .expect(200);
 
@@ -103,7 +103,7 @@ describe('GET /users/:user/habits repeat config', () => {
     });
 
     const older = await request(createApp())
-      .get(`/users/${user}/habits?date=2999-06-22&tzOffsetMinutes=0`)
+      .get(`/users/${user}/habits?date=2999-06-22&today=2999-07-01`)
       .set('Cookie', `${SESSION_COOKIE_NAME}=${session}`)
       .expect(200);
 
@@ -113,7 +113,7 @@ describe('GET /users/:user/habits repeat config', () => {
     });
 
     const past = await request(createApp())
-      .get(`/users/${user}/habits?date=2000-01-01&tzOffsetMinutes=0`)
+      .get(`/users/${user}/habits?date=2000-01-01&today=2999-07-01`)
       .set('Cookie', `${SESSION_COOKIE_NAME}=${session}`)
       .expect(200);
 
@@ -132,7 +132,7 @@ describe('GET /users/:user/habits repeat config', () => {
     const session = userAndAuthRepository.createUserSession(user, 24 * 3600);
 
     const res = await request(createApp())
-      .get(`/users/${user}/habits?date=2999-07-01&tzOffsetMinutes=0`)
+      .get(`/users/${user}/habits?date=2999-07-01&today=2999-07-01`)
       .set('Cookie', `${SESSION_COOKIE_NAME}=${session}`)
       .expect(200);
 

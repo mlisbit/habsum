@@ -1,4 +1,5 @@
-import type { HabitDataQuery, HabitListViewContext } from '../types/habit.types.js';
+import type { Day } from '@habsum/types/common/day';
+import type { HabitDataQuery } from '../types/habit.types.js';
 import type { UserConfig } from '../types/userConfig.js';
 import getHabitInsightDataRange from './habits/get-habit-insight-data-range.js';
 
@@ -7,7 +8,10 @@ export default function getHabitListDataQuery({
   context,
 }: {
   config: UserConfig;
-  context: HabitListViewContext;
+  context: {
+    viewDate: Day;
+    today: Day;
+  };
 }): HabitDataQuery {
   return {
     user: config.user,

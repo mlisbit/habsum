@@ -32,7 +32,6 @@ function hydratedSelectValue(user: string, habit: string, date: string): string 
       context: {
         viewDate,
         today: viewDate,
-        requestedAt: new Date(`${date}T12:00:00.000Z`),
       },
     }),
   );

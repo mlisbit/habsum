@@ -1,4 +1,4 @@
-import { getHabitApiDate, getHabitApiToday, getTzOffsetMinutes } from './server-time-utils.js';
+import { getHabitApiDate, getHabitApiToday, getHabitClientHour } from './server-time-utils.js';
 import type { HabitListQuery, HabitListViewContext } from '../types/habit.types.js';
 
 export default function getHabitListContext({
@@ -8,11 +8,9 @@ export default function getHabitListContext({
   query: HabitListQuery;
   requestedAt: Date;
 }): HabitListViewContext {
-  const tzOffsetMinutes = getTzOffsetMinutes(query.tzOffsetMinutes);
   return {
     viewDate: getHabitApiDate(query.date, requestedAt),
-    today: getHabitApiToday(requestedAt, tzOffsetMinutes),
-    requestedAt,
-    tzOffsetMinutes,
+    today: getHabitApiToday(query.today, requestedAt),
+    clientHour: getHabitClientHour(query.clientHour, requestedAt),
   };
 }

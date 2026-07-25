@@ -43,7 +43,7 @@ import type {
   CreateOucSessionResponse,
   OucLoginResponse,
 } from '@habsum/types/api-responses/ouc-post';
-import { toDateKeyWithTime } from '@habsum/utils/date';
+import { toDateKey, toDateKeyWithTime } from '@habsum/utils/date';
 import { oucSessionRequestHeaders, clearOucSessionToken } from '~/ouc.client';
 import { WEBAPP_VERSION } from '~/version';
 
@@ -130,8 +130,8 @@ function buildHabitPatchPayload(body: HabitPatch, date: string): Record<string, 
   return {
     ...body,
     date,
+    today: toDateKey(d, tzOffsetMinutes),
     clientCreatedAt,
-    tzOffsetMinutes,
   };
 }
 
@@ -290,17 +290,23 @@ export async function deleteUser(user: string) {
 }
 
 export async function getHabits(user: string, date?: string) {
+  const now = new Date();
+  const tzOffsetMinutes = now.getTimezoneOffset();
   const params = new URLSearchParams();
   if (date) params.set('date', date);
-  params.set('tzOffsetMinutes', String(new Date().getTimezoneOffset()));
+  params.set('today', toDateKey(now, tzOffsetMinutes));
+  params.set('clientHour', String(now.getHours()));
   const qs = `?${params.toString()}`;
   return request<HabitsResponse>(`/users/${encodeURIComponent(user)}/habits${qs}`);
 }
 
 export async function getHabitHistory(user: string, filter: string[], date?: string) {
+  const now = new Date();
+  const tzOffsetMinutes = now.getTimezoneOffset();
   const params = new URLSearchParams();
   params.set('filter', filter.join(','));
   if (date) params.set('date', date);
+  params.set('today', toDateKey(now, tzOffsetMinutes));
   const qs = `?${params.toString()}`;
   const path = `/users/${encodeURIComponent(user)}/habits/history${qs}`;
   const pending = habitHistoryRequests.get(path);

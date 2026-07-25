@@ -14,8 +14,7 @@ type HabitResultBuilderInput = {
   config: UserConfig;
   habits: Habit[];
   today: Day;
-  at: Date;
-  tzOffsetMinutes?: number;
+  clientHour: number;
 };
 
 export class HabitResultBuilder {
@@ -33,8 +32,7 @@ export class HabitResultBuilder {
   }
 
   private habitPageCopy(habits: readonly Habit[]): HabitsResponse['page'] {
-    const { viewingDate, familiarName, firstRecordedDate, config, today, at, tzOffsetMinutes } =
-      this.input;
+    const { viewingDate, familiarName, firstRecordedDate, config, today, clientHour } = this.input;
     const progress = habitPageProgress(habits);
     const showEmptyIntro = config.habits.length === 0;
     const isNewUser = firstRecordedDate === null;
@@ -50,7 +48,7 @@ export class HabitResultBuilder {
 
     if (viewingDate !== today) {
       return {
-        heading: habitPageDateHeading(viewingDate, today, tzOffsetMinutes),
+        heading: habitPageDateHeading(viewingDate, today),
         subheader: exactDate(viewingDate),
         progress,
         showEmptyIntro,
@@ -58,26 +56,22 @@ export class HabitResultBuilder {
     }
 
     return {
-      heading: habitPageHeading(familiarName, at, tzOffsetMinutes),
-      subheader: habitPageSubheaderTemplate(viewingDate, at, tzOffsetMinutes),
+      heading: habitPageHeading(familiarName, clientHour),
+      subheader: '{{timeLeftInDay}} until end of day',
       progress,
       showEmptyIntro,
     };
   }
 }
 
-function habitPageHeading(name: string, at: Date, tzOffsetMinutes?: number): string {
-  const localHour = new Date(at.getTime() - (tzOffsetMinutes ?? 0) * 60_000).getUTCHours();
-  if (localHour < 12) return `Good morning, ${name}`;
-  if (localHour < 17) return `Good afternoon, ${name}`;
+function habitPageHeading(name: string, clientHour: number): string {
+  if (clientHour < 12) return `Good morning, ${name}`;
+  if (clientHour < 17) return `Good afternoon, ${name}`;
   return `Hi, ${name}`;
 }
 
-function dateKeyDiffDays(from: Day, to: Day, tzOffsetMinutes?: number): number {
-  const offset = tzOffsetMinutes ?? 0;
-  return Math.round(
-    (fromDateKey(to, offset).getTime() - fromDateKey(from, offset).getTime()) / 86_400_000,
-  );
+function dateKeyDiffDays(from: Day, to: Day): number {
+  return Math.round((fromDateKey(to, 0).getTime() - fromDateKey(from, 0).getTime()) / 86_400_000);
 }
 
 function dateKeyAsUtcDate(date: Day): Date {
@@ -109,24 +103,11 @@ function exactDate(date: Day): string {
   }).format(dateKeyAsUtcDate(date));
 }
 
-function habitPageDateHeading(date: Day, today: Day, tzOffsetMinutes?: number): string {
-  const daysAgo = dateKeyDiffDays(date, today, tzOffsetMinutes);
+function habitPageDateHeading(date: Day, today: Day): string {
+  const daysAgo = dateKeyDiffDays(date, today);
   if (daysAgo === 1) return 'Your day yesterday';
   if (daysAgo > 1 && daysAgo <= 7) return `This past ${weekdayName(date)}`;
   return monthDay(date);
-}
-
-function habitPageSubheaderTemplate(date: Day, at: Date, tzOffsetMinutes?: number): string {
-  const endOfDay =
-    Date.UTC(
-      Number(date.slice(0, 4)),
-      Number(date.slice(5, 7)) - 1,
-      Number(date.slice(8, 10)) + 1,
-    ) +
-    (tzOffsetMinutes ?? 0) * 60_000 -
-    1;
-
-  return at.getTime() > endOfDay ? 'This day has ended' : '{{timeLeftInDay}} until end of day';
 }
 
 function habitPageProgress(habits: readonly Habit[]): HabitsPageProgress {

@@ -31,13 +31,12 @@ describe('single-select heatmap', () => {
     userAndAuthRepository.setUserPassword(user, 'test-password');
     const session = userAndAuthRepository.createUserSession(user, 3600);
     const app = createApp();
-    const tzOffsetMinutes = new Date().getTimezoneOffset();
-    const date = toDateKey(new Date(), tzOffsetMinutes);
+    const date = toDateKey(new Date(), 0);
 
     const res = await request(app)
       .patch(`/users/${user}/habits`)
       .set('Cookie', `${SESSION_COOKIE_NAME}=${session}`)
-      .send({ habit: 'read', value: 'yes', date, tzOffsetMinutes });
+      .send({ habit: 'read', value: 'yes', date, today: date });
 
     expect(res.status).toBe(200);
     expect(res.body.details).toMatchObject({
@@ -61,7 +60,7 @@ describe('single-select heatmap', () => {
 
     const listRes = await request(app)
       .get(`/users/${user}/habits`)
-      .query({ date, tzOffsetMinutes })
+      .query({ date, today: date })
       .set('Cookie', `${SESSION_COOKIE_NAME}=${session}`);
 
     expect(listRes.status).toBe(200);

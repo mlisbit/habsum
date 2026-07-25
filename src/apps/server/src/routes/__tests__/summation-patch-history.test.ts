@@ -33,9 +33,8 @@ describe('PATCH /users/:user/habits summation history', () => {
     const session = userAndAuthRepository.createUserSession(user, 3600);
     const app = createApp();
 
-    const tzOffsetMinutes = new Date().getTimezoneOffset();
-    const date = toDateKey(new Date(), tzOffsetMinutes);
-    const clientCreatedAt = toDateKeyWithTime(new Date(), tzOffsetMinutes);
+    const date = toDateKey(new Date(), 0);
+    const clientCreatedAt = toDateKeyWithTime(new Date(), 0);
 
     const res = await request(app)
       .patch(`/users/${user}/habits`)
@@ -44,8 +43,8 @@ describe('PATCH /users/:user/habits summation history', () => {
         habit: 'push ups',
         total: 5,
         date,
+        today: date,
         clientCreatedAt,
-        tzOffsetMinutes,
       });
 
     expect(res.status).toBe(200);
@@ -80,9 +79,8 @@ describe('PATCH /users/:user/habits summation history', () => {
     const session = userAndAuthRepository.createUserSession(user, 3600);
     const app = createApp();
 
-    const tzOffsetMinutes = new Date().getTimezoneOffset();
-    const date = toDateKey(new Date(), tzOffsetMinutes);
-    const clientCreatedAt = toDateKeyWithTime(new Date(), tzOffsetMinutes);
+    const date = toDateKey(new Date(), 0);
+    const clientCreatedAt = toDateKeyWithTime(new Date(), 0);
 
     const res = await request(app)
       .patch(`/users/${user}/habits`)
@@ -91,8 +89,8 @@ describe('PATCH /users/:user/habits summation history', () => {
         habit: 'push ups',
         total: 100,
         date,
+        today: date,
         clientCreatedAt,
-        tzOffsetMinutes,
       });
 
     expect(res.status).toBe(200);
@@ -122,7 +120,7 @@ describe('PATCH /users/:user/habits summation history', () => {
 
     const listRes = await request(app)
       .get(`/users/${user}/habits`)
-      .query({ date, tzOffsetMinutes })
+      .query({ date, today: date })
       .set('Cookie', `${SESSION_COOKIE_NAME}=${session}`);
 
     expect(listRes.status).toBe(200);
@@ -161,8 +159,7 @@ describe('PATCH /users/:user/habits summation history', () => {
     userAndAuthRepository.setUserPassword(user, 'test-password');
     const session = userAndAuthRepository.createUserSession(user, 3600);
     const app = createApp();
-    const tzOffsetMinutes = new Date().getTimezoneOffset();
-    const date = toDateKey(new Date(), tzOffsetMinutes);
+    const date = toDateKey(new Date(), 0);
 
     const res = await request(app)
       .patch(`/users/${user}/habits`)
@@ -171,8 +168,8 @@ describe('PATCH /users/:user/habits summation history', () => {
         habit: 'push ups',
         total: 100,
         date,
-        clientCreatedAt: toDateKeyWithTime(new Date(), tzOffsetMinutes),
-        tzOffsetMinutes,
+        today: date,
+        clientCreatedAt: toDateKeyWithTime(new Date(), 0),
       });
 
     expect(res.status).toBe(200);

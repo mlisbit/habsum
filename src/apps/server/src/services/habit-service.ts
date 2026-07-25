@@ -12,7 +12,7 @@ import {
 } from '../presenters/habits/habit-presenter.js';
 import { SingleSelectHabitPresenter } from '../presenters/habits/single-select-habit-presenter.js';
 import { SummationHabitPresenter } from '../presenters/habits/summation-habit-presenter.js';
-import { getHabitApiToday, getTzOffsetMinutes } from '../utils/server-time-utils.js';
+import { getHabitApiToday } from '../utils/server-time-utils.js';
 import { HabitRepository } from '../repositories/habit-repository.js';
 import type {
   HabitDataMetadata,
@@ -77,8 +77,7 @@ export class HabitService {
       config,
       habits,
       today: context.today,
-      at: context.requestedAt,
-      tzOffsetMinutes: context.tzOffsetMinutes,
+      clientHour: context.clientHour,
     }).build();
   }
 
@@ -116,7 +115,6 @@ export class HabitService {
       throw new ServiceError('not_found', `habit "${habit}" not configured`);
     }
 
-    const tzOffsetMinutes = getTzOffsetMinutes(body.tzOffsetMinutes);
     const typeService =
       known.type === 'single_select'
         ? new SingleSelectHabitService(known, this.repository)
@@ -127,8 +125,7 @@ export class HabitService {
       config,
       date: day,
       habit,
-      at,
-      tzOffsetMinutes,
+      today: getHabitApiToday(body.today, at),
       typeService,
     });
   }
@@ -161,22 +158,18 @@ export class HabitService {
     config,
     date,
     habit,
-    at,
-    tzOffsetMinutes,
+    today,
     typeService,
   }: {
     config: UserConfig;
     date: Day;
     habit: string;
-    at: Date;
-    tzOffsetMinutes?: number;
+    today: Day;
     typeService: HabitTypeService;
   }) {
-    const context: HabitListViewContext = {
+    const context = {
       viewDate: date,
-      today: getHabitApiToday(at, tzOffsetMinutes),
-      requestedAt: at,
-      tzOffsetMinutes,
+      today,
     };
     const metadata = this.repository.getDataMetadata(config.user);
     const hydratedHabits = this.repository.loadHydratedHabits(

@@ -22,7 +22,7 @@ export const habitsController = {
       { user: string },
       unknown,
       unknown,
-      { filter?: string; habitId?: string; date?: string }
+      { filter?: string; habitId?: string; date?: string; today?: string }
     >,
     res: Response,
   ) {
@@ -54,7 +54,7 @@ export const habitsController = {
         habitDefinitions,
         hydratedHabits,
         viewingDate,
-        today: getHabitApiToday(requestedAt),
+        today: getHabitApiToday(req.query.today, requestedAt),
         requestedAt,
       });
     });

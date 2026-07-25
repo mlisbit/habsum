@@ -4,14 +4,14 @@ import type { HabitType } from './userConfig.js';
 
 export type HabitListQuery = {
   date?: string;
-  tzOffsetMinutes?: string;
+  today?: string;
+  clientHour?: string;
 };
 
 export type HabitListViewContext = {
   viewDate: Day;
   today: Day;
-  requestedAt: Date;
-  tzOffsetMinutes?: number;
+  clientHour: number;
 };
 
 export type PatchBody = {
@@ -22,7 +22,7 @@ export type PatchBody = {
   date?: unknown;
   clientCreatedAt?: unknown;
   eventId?: unknown;
-  tzOffsetMinutes?: unknown;
+  today?: unknown;
 };
 
 export type HabitDataRange = {

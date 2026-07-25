@@ -1,4 +1,4 @@
-// Date/time parsing helpers for habit API requests and server snapshots.
+// Date/time parsing helpers for API requests and server responses.
 import { dayFromString, type Day } from '@habsum/types/common/day';
 import type { ServerTimeResponse } from '@habsum/types/common/misc';
 import { fromDateKey, toDateKey } from '@habsum/utils/date';
@@ -45,17 +45,15 @@ export function getDefaultHabitApiDate(at: Date): Day {
   return toDateKey(at, 0);
 }
 
-/** `Date#getTimezoneOffset()` from query/body (`undefined` when missing or invalid). */
-export function getTzOffsetMinutes(raw: unknown): number | undefined {
-  if (raw === undefined || raw === null || raw === '') return undefined;
-  const n = typeof raw === 'number' ? raw : Number(String(raw).trim());
-  if (!Number.isFinite(n) || !Number.isInteger(n) || n < -840 || n > 840) return undefined;
-  return n;
+/** Client-resolved calendar “today” for streak and history presentation. */
+export function getHabitApiToday(rawToday: unknown, at: Date): Day {
+  return getHabitApiDate(rawToday, at);
 }
 
-/** Client-local calendar “today” for streak omit logic (UTC when offset omitted). */
-export function getHabitApiToday(at: Date, tzOffsetMinutes?: number): Day {
-  return toDateKey(at, tzOffsetMinutes ?? 0);
+/** Client-local hour used only for time-sensitive page copy. */
+export function getHabitClientHour(rawHour: unknown, at: Date): number {
+  const hour = typeof rawHour === 'number' ? rawHour : Number(rawHour);
+  return Number.isInteger(hour) && hour >= 0 && hour <= 23 ? hour : at.getUTCHours();
 }
 
 /** Resolved habit `YYYY-MM-DD` for GET handlers (`?date=` optional; otherwise UTC “today”). */

@@ -5,7 +5,6 @@ import type { StreakDatum, StreakGraphData } from '@habsum/types/common/streak';
 import { fromDateKey, toDateKey } from '@habsum/utils/date';
 import type { HydratedHabitData } from '../../types/habit.types.js';
 import type { HabitDef } from '../../types/userConfig.js';
-import { getHabitApiToday } from '../../utils/server-time-utils.js';
 import { HabitPresenter, type HabitPresentationContext } from './habit-presenter.js';
 
 const habitDataFixtureMocks = vi.hoisted(() => ({
@@ -107,7 +106,7 @@ function getTestSingleSelectStreakGraph(
   viewDate: Day,
   streakEligibleOptions: readonly string[],
   at: Date = new Date(),
-  tzOffsetMinutes?: number,
+  today: Day = toDateKey(at, 0),
   streakFrequency?: string,
   showLongest = false,
   firstDate: Day | null = null,
@@ -116,7 +115,7 @@ function getTestSingleSelectStreakGraph(
   void firstDate;
   const presenter = getPresenterHarness(getHydratedSingleSelectData(user, habitName, viewDate), {
     viewingDate: viewDate,
-    today: getHabitApiToday(at, tzOffsetMinutes),
+    today,
   });
   return presenter.getGraph({
     eligibleOptions: streakEligibleOptions,
@@ -132,7 +131,7 @@ function getTestSummationStreakGraph(
   viewDate: Day,
   streakEligibleOptions: readonly string[],
   at: Date = new Date(),
-  tzOffsetMinutes?: number,
+  today: Day = toDateKey(at, 0),
   streakFrequency?: string,
   showLongest = false,
   firstDate: Day | null = null,
@@ -140,7 +139,7 @@ function getTestSummationStreakGraph(
   void firstDate;
   const presenter = getPresenterHarness(getHydratedSummationData(user, habitName, viewDate), {
     viewingDate: viewDate,
-    today: getHabitApiToday(at, tzOffsetMinutes),
+    today,
   });
   return presenter.getGraph({
     eligibleOptions: streakEligibleOptions,
@@ -290,23 +289,15 @@ describe('getTestSingleSelectStreakGraph', () => {
     expect(streak.currentText).toBe('0 days');
   });
 
-  it('omits unlogged today when view date is ahead of UTC (client tz offset)', () => {
+  it('omits an unlogged view date when the client identifies it as today', () => {
     const at = new Date('2026-05-20T22:00:00.000Z');
     const viewDate = dayFromString('2026-05-21');
-    const tzOffsetMinutes = -120;
     vi.mocked(getFixtureSelection).mockImplementation((_u, _h, date) => {
       if (date === '2026-05-20' || date === '2026-05-19' || date === '2026-05-18') return 'none';
       return null;
     });
 
-    const streak = getTestSingleSelectStreakGraph(
-      user,
-      habit,
-      viewDate,
-      ['none'],
-      at,
-      tzOffsetMinutes,
-    );
+    const streak = getTestSingleSelectStreakGraph(user, habit, viewDate, ['none'], at, viewDate);
 
     expect(streak.currentText).toBe('3 days');
   });
