@@ -1,4 +1,5 @@
 import yaml from 'js-yaml';
+import { isHabitTheme, type HabitTheme } from '@habsum/types/common/habit';
 import type {
   UserConfigDeletion,
   UserConfigJson,
@@ -17,6 +18,14 @@ type RawHabitEntry = {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value != null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function getHabitTheme(raw: unknown, habitName: string): HabitTheme | undefined {
+  if (raw === undefined) return undefined;
+  if (!isHabitTheme(raw)) {
+    throw new Error(`habit "${habitName}" theme must be "checkbox"`);
+  }
+  return raw;
 }
 
 function parseConfigRoot(text: YAMLString): Record<string, unknown> {
@@ -134,12 +143,13 @@ export function getUserConfigFromJson(config: UserConfigJson): UserConfig {
       };
 
       if (habit.type === 'single_select') {
+        const theme = getHabitTheme(habit.theme, habit.name);
         return {
           ...shared,
           type: habit.type,
           settings: {
             options: habit.options ?? [],
-            ...(habit.theme ? { theme: habit.theme } : {}),
+            ...(theme ? { theme } : {}),
           },
         };
       }

@@ -26,6 +26,32 @@ describe('single-select data visualization config', () => {
   });
 });
 
+describe('single-select habit theme config', () => {
+  it('round-trips the checkbox theme and omits it when unchecked', () => {
+    const habit: UserConfigJsonHabit = {
+      name: 'Read',
+      type: 'single_select',
+      goal: null,
+      options: ['yes', 'no'],
+      theme: 'checkbox',
+    };
+    const config: UserConfigJson = {
+      user: 'reader',
+      includeAbsentDaysInAverage: false,
+      habits: [habit],
+    };
+    const draft = draftFromHabit(habit);
+
+    expect(draft.theme).toBe('checkbox');
+    expect(applyHabitDraftToConfig(config, habit.name, draft).config.habits[0]?.theme).toBe(
+      'checkbox',
+    );
+    expect(
+      applyHabitDraftToConfig(config, habit.name, { ...draft, theme: '' }).config.habits[0]?.theme,
+    ).toBeUndefined();
+  });
+});
+
 describe('habit insight config', () => {
   it('saves the average insight alongside its bar graph period', () => {
     const habit: UserConfigJsonHabit = {

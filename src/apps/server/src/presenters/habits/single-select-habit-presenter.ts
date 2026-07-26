@@ -5,6 +5,7 @@ import type { HydratedHabitData } from '../../types/habit.types.js';
 import type { HabitDef } from '../../types/userConfig.js';
 import { SingleSelectHeatmapBuilder } from './_private/builders/heatmap/single-select-heatmap-builder.js';
 import { SingleSelectInsightsBuilder } from './_private/builders/insights/single-select-insights-builder.js';
+import { WidgetBuilder } from './_private/builders/widget-builder.js';
 import {
   HabitPresenter,
   type HabitHistoryEvent,
@@ -71,16 +72,14 @@ export class SingleSelectHabitPresenter extends HabitPresenter<
           })
         : null;
 
-    if (!heatmap && !streakInsights) return [];
-
-    // TODO: this all needs to be refactored into a series of formatWidget utils I think.
-    return [
-      this.getHistoryWidget({
-        heatmap,
+    return new WidgetBuilder()
+      .withHeatmap(heatmap)
+      .withInsights({
         streakInsights,
         includeCurrentStreak,
         includeLongestStreak,
-      }),
-    ];
+        streakFrequency: this.definition.streak_options?.frequency,
+      })
+      .build();
   }
 }

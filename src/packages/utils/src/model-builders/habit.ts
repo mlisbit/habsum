@@ -1,5 +1,6 @@
 import type {
   Habit,
+  HabitTheme,
   HabitWidget,
   HabitRowSingleSelect,
   HabitRowSummation,
@@ -14,7 +15,7 @@ type HabitModelBuilderState = {
   type: HabitType;
   goal: number | null;
   options: string[];
-  theme?: string;
+  theme?: HabitTheme;
   value: string | null;
   total: number | null;
   events?: SummationEvent[];
@@ -36,7 +37,7 @@ type HabitModelBuilder = {
   withType(type: HabitType): HabitModelBuilder;
   withGoal(goal: number | null): HabitModelBuilder;
   withOptions(options: string[]): HabitModelBuilder;
-  withTheme(theme: string | undefined): HabitModelBuilder;
+  withTheme(theme: HabitTheme | undefined): HabitModelBuilder;
   withValue(value: string | null): HabitModelBuilder;
   withTotal(total: number | null): HabitModelBuilder;
   withEvents(events: SummationEvent[] | undefined): HabitModelBuilder;

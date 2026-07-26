@@ -1,6 +1,6 @@
 import type { DayWithTime } from './day.js';
 import type { ProductEntitlement } from './entitlement.js';
-import type { SummationOptions } from './habit.js';
+import type { HabitTheme, SummationOptions } from './habit.js';
 
 declare const yamlStringBrand: unique symbol;
 
@@ -67,7 +67,7 @@ export type UserConfigJsonHabit = {
   goal: number | null;
   repeat?: string[];
   options?: string[];
-  theme?: string;
+  theme?: HabitTheme;
   summationOptions?: SummationOptions;
   data_visualization?: {
     heatmap?: Record<string, never> | null;
@@ -113,7 +113,7 @@ export type ConfigHabitDraft = {
   repeat: string[];
   quickAddItems: string[];
   optionsText: string;
-  theme: string;
+  theme: HabitTheme | '';
   averageEnabled: boolean;
   streakOptionsText: string;
   streakFrequencyPerWeek: string;

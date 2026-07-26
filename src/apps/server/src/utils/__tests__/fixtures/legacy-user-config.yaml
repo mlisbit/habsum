@@ -4,13 +4,13 @@ habits:
   mood:
     type: single_select
     repeat: [monday, wednesday]
-    options: [great, okay, bad]
-    theme: dark
+    options: [yes, no]
+    theme: checkbox
     history:
       display: heatmap
       period: 3w
     streak:
-      options: [great]
+      options: [yes]
       frequency: 3d/1w
       show_longest: true
 

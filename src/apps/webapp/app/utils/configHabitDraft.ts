@@ -1,4 +1,5 @@
 import { formatStreakFrequency, parseStreakFrequencyDays } from '@habsum/types/common/streak';
+import type { HabitTheme } from '@habsum/types/common/habit';
 import type {
   ConfigHabitDraft,
   HistoryDisplay,
@@ -177,7 +178,7 @@ function draftToHabit(draft: ConfigHabitDraft): UserConfigJsonHabit {
       options,
     };
     if (repeat.length < HABIT_REPEAT_DAYS.length) habit.repeat = repeat;
-    if (draft.theme.trim() !== '') habit.theme = draft.theme.trim();
+    if (draft.theme !== '') habit.theme = draft.theme;
     if (draft.streakShowCurrent || draft.streakShowLongest) {
       const allowed = new Set(options);
       const streakOptions = parseLines(draft.streakOptionsText).filter((opt) => allowed.has(opt));
@@ -303,7 +304,7 @@ function uniqueNewHabitName(existingNames: ReadonlySet<string>, base = DEFAULT_N
 export function addHabitToConfig(
   config: UserConfigJson,
   type: 'summation' | 'single_select' = 'summation',
-  options?: { theme?: string },
+  options?: { theme?: HabitTheme },
 ): { config: UserConfigJson; habitName: string } {
   const habitName = uniqueNewHabitName(new Set(config.habits.map((habit) => habit.name)));
   const habit: UserConfigJsonHabit =

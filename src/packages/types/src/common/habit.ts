@@ -87,12 +87,22 @@ export type SummationEvent = {
 
 export type HabitType = 'summation' | 'single_select';
 
+export const HabitTheme = {
+  CHECKBOX: 'checkbox',
+} as const;
+
+export type HabitTheme = (typeof HabitTheme)[keyof typeof HabitTheme];
+
+export function isHabitTheme(value: unknown): value is HabitTheme {
+  return value === HabitTheme.CHECKBOX;
+}
+
 type CompleteHabitTypeMap<T extends Record<HabitType, object>> = T;
 
 export type HabitDetailsByType = CompleteHabitTypeMap<{
   single_select: {
     options: string[];
-    theme?: string;
+    theme?: HabitTheme;
     value: string | null;
   };
   summation: {

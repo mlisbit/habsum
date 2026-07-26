@@ -15,8 +15,8 @@ describe('habit presenters', () => {
       repeat: ['thursday'],
       insights: [],
       settings: {
-        options: ['good', 'bad'],
-        theme: 'sunset',
+        options: ['yes', 'no'],
+        theme: 'checkbox',
       },
     };
     const habitData: Extract<HydratedHabitData, { type: 'single_select' }> = {
@@ -24,7 +24,7 @@ describe('habit presenters', () => {
       type: 'single_select',
       dataStart: viewingDate,
       dataEnd: viewingDate,
-      values: [{ date: viewingDate, value: 'good' }],
+      values: [{ date: viewingDate, value: 'yes' }],
     };
 
     const habit = new SingleSelectHabitPresenter(definition, habitData, {
@@ -36,9 +36,9 @@ describe('habit presenters', () => {
       name: 'mood',
       type: 'single_select',
       details: {
-        options: ['good', 'bad'],
-        theme: 'sunset',
-        value: 'good',
+        options: ['yes', 'no'],
+        theme: 'checkbox',
+        value: 'yes',
       },
     });
   });

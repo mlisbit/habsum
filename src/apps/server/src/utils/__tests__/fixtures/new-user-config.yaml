@@ -4,8 +4,8 @@ habits:
   mood:
     type: single_select
     repeat: [monday, wednesday]
-    options: [great, okay, bad]
-    theme: dark
+    options: [yes, no]
+    theme: checkbox
     data_visualization:
       heatmap:
     insights:
@@ -13,7 +13,7 @@ habits:
       - longest_streak
     streak_options:
       options:
-        - great
+        - 'yes'
       frequency: 3d
 
   push ups:

@@ -1,5 +1,9 @@
 // Parses persisted YAML habit config text into the server UserConfig model.
-import { parseSummationOptionsFromRaw } from '@habsum/types/common/habit';
+import {
+  isHabitTheme,
+  parseSummationOptionsFromRaw,
+  type HabitTheme,
+} from '@habsum/types/common/habit';
 import { DEFAULT_STREAK_FREQUENCY, formatStreakFrequency } from '@habsum/types/common/streak';
 import yaml from 'js-yaml';
 import type { YAMLString } from '@habsum/types/common/misc';
@@ -21,6 +25,14 @@ class YAMLConfigValidationError extends Error {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value != null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function getHabitTheme(raw: unknown, habitName: string): HabitTheme | undefined {
+  if (raw === undefined) return undefined;
+  if (!isHabitTheme(raw)) {
+    throw new YAMLConfigValidationError(`habit "${habitName}" theme must be "checkbox"`);
+  }
+  return raw;
 }
 
 const HABIT_REPEAT_DAY_SET = new Set<string>(HABIT_REPEAT_DAYS);
@@ -402,12 +414,13 @@ export default class YAMLConfigParser {
           ...presentation,
         };
         if (type === 'single_select') {
+          const theme = getHabitTheme(rawHabit.theme, name);
           return {
             ...shared,
             type,
             settings: {
               options: opts ?? [],
-              ...(typeof rawHabit.theme === 'string' ? { theme: rawHabit.theme } : {}),
+              ...(theme ? { theme } : {}),
             },
           };
         }

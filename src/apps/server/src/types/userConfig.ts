@@ -1,5 +1,5 @@
 // User habit config shapes shared by config parsing, services, repositories, and presentation.
-import type { HabitType, SummationOptions } from '@habsum/types/common/habit';
+import type { HabitTheme, HabitType, SummationOptions } from '@habsum/types/common/habit';
 
 export type { HabitType };
 
@@ -13,7 +13,7 @@ export type SummationHabitSettings = {
 
 export type SingleSelectHabitSettings = {
   options: string[];
-  theme?: string;
+  theme?: HabitTheme;
 };
 
 type CompleteHabitTypeMap<T extends Record<HabitType, object>> = T;

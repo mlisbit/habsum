@@ -47,9 +47,7 @@ function habitToYamlDef(habit: HabitDef): Record<string, unknown> {
   }
   if (habit.type === 'single_select') {
     def.options = habit.settings.options;
-    if (habit.settings.theme != null && habit.settings.theme.trim() !== '') {
-      def.theme = habit.settings.theme;
-    }
+    if (habit.settings.theme) def.theme = habit.settings.theme;
   } else {
     if (habit.settings.goal != null) def.goal = habit.settings.goal;
     if (habit.settings.summationOptions) {

@@ -7,6 +7,7 @@ import { getApiSummationEvents } from '../../utils/summation-event-utils.js';
 import { SummationGraphBuilder } from './_private/builders/graph/summation-graph-builder.js';
 import { SummationHeatmapBuilder } from './_private/builders/heatmap/summation-heatmap-builder.js';
 import { SummationInsightsBuilder } from './_private/builders/insights/summation-insights-builder.js';
+import { WidgetBuilder } from './_private/builders/widget-builder.js';
 import {
   HabitPresenter,
   type HabitHistoryEvent,
@@ -104,36 +105,24 @@ export class SummationHabitPresenter extends HabitPresenter<
             frequency: this.definition.streak_options.frequency,
           })
         : null;
-    const widgets: HabitWidget[] = [this.getProgressWidget(total)];
-
-    if (graphData || heatmap || streakInsights) {
-      widgets.push(
-        this.getHistoryWidget({
-          graphData,
-          goal: this.definition.settings.goal,
-          heatmap,
-          streakInsights,
-          includeCurrentStreak,
-          includeLongestStreak,
-        }),
-      );
-    }
-    return widgets;
-  }
-
-  private getProgressWidget(total: number | null): HabitWidget {
-    const goal = this.definition.settings.goal;
-    if (goal == null) {
-      return {
-        title: 'Progress',
-        titleValue: total == null ? 'No data' : String(total),
-        body: [],
-      };
-    }
-    return {
-      title: 'Goal',
-      titleValue: `${total == null ? '—' : total} / ${goal}`,
-      body: [{ kind: 'progress', value: total, max: goal }],
-    };
+    return new WidgetBuilder()
+      .withProgress({
+        value: total,
+        goal: this.definition.settings.goal,
+      })
+      .withBarGraph({
+        data: graphData,
+        goal: this.definition.settings.goal,
+      })
+      .withHeatmap(heatmap)
+      .withInsights({
+        streakInsights,
+        includeCurrentStreak,
+        includeLongestStreak,
+        includeWeeklyAverage,
+        includeAbsentDaysInAverage: this.context.includeAbsentDaysInAverage,
+        streakFrequency: this.definition.streak_options?.frequency,
+      })
+      .build();
   }
 }

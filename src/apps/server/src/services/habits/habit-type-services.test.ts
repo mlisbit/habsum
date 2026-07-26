@@ -34,7 +34,6 @@ describe('habit type services', () => {
       insights: [],
       settings: {
         options: ['good', 'bad'],
-        theme: 'sunset',
       },
     };
     const service = new SingleSelectHabitService(definition, repository);

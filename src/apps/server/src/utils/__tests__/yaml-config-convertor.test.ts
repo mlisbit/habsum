@@ -18,12 +18,12 @@ const config: UserConfig = {
       type: 'single_select',
       repeat: ['monday', 'wednesday'],
       settings: {
-        options: ['great', 'okay', 'bad'],
-        theme: 'dark',
+        options: ['yes', 'no'],
+        theme: 'checkbox',
       },
       data_visualization: { heatmap: {} },
       insights: ['current_streak', 'longest_streak'],
-      streak_options: { options: ['great'], frequency: '3d' },
+      streak_options: { options: ['yes'], frequency: '3d' },
     },
     {
       name: 'push ups',

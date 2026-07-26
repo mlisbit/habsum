@@ -99,6 +99,42 @@ habits:
     expect(res.body.text).toContain('repeat: [tuesday, thursday]');
   });
 
+  it('rejects unsupported themes in structured config json', async () => {
+    const user = 'config-json-theme-user';
+    writeUserConfig(
+      user,
+      `habits:
+  mood:
+    type: single_select
+    options: [yes, no]
+`,
+    );
+    userAndAuthRepository.setUserPassword(user, 'test-password');
+    const session = userAndAuthRepository.createUserSession(user, 3600);
+
+    const res = await request(createApp())
+      .put(`/users/${user}/config`)
+      .set('Cookie', `${SESSION_COOKIE_NAME}=${session}`)
+      .send({
+        config: {
+          user,
+          includeAbsentDaysInAverage: false,
+          habits: [
+            {
+              name: 'mood',
+              type: 'single_select',
+              goal: null,
+              options: ['yes', 'no'],
+              theme: 'dark',
+            },
+          ],
+        },
+      })
+      .expect(400);
+
+    expect(res.body).toEqual({ error: 'habit "mood" theme must be "checkbox"' });
+  });
+
   it('stores YAML editor saves using the new config schema', async () => {
     const user = 'legacy-config-save-user';
     const legacy = `habits:
