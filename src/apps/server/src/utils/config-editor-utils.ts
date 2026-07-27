@@ -1,5 +1,5 @@
 import yaml from 'js-yaml';
-import { isHabitTheme, type HabitTheme } from '@habsum/types/common/habit';
+import { isHabitTheme, type HabitTheme, type HabitType } from '@habsum/types/common/habit';
 import type {
   UserConfigDeletion,
   UserConfigJson,
@@ -12,7 +12,7 @@ import YAMLConfigParser from './classes/yaml-config-parser.js';
 
 type RawHabitEntry = {
   name: string;
-  type: 'summation' | 'single_select';
+  type: HabitType;
   optionLabels: string[];
 };
 
@@ -42,8 +42,9 @@ function parseConfigRoot(text: YAMLString): Record<string, unknown> {
   return parsed;
 }
 
-function parseHabitType(def: Record<string, unknown>): 'summation' | 'single_select' {
-  return def.type === 'single_select' ? 'single_select' : 'summation';
+function parseHabitType(def: Record<string, unknown>): HabitType {
+  if (def.type === 'single_select' || def.type === 'text') return def.type;
+  return 'summation';
 }
 
 function parseConfigHabitMigrationEntries(text: YAMLString): RawHabitEntry[] {
@@ -99,6 +100,13 @@ function habitDefToConfigJson(habit: HabitDef): UserConfigJsonHabit {
       ...(habit.settings.theme ? { theme: habit.settings.theme } : {}),
     };
   }
+  if (habit.type === 'text') {
+    return {
+      ...shared,
+      type: habit.type,
+      goal: null,
+    };
+  }
 
   return {
     ...shared,
@@ -151,6 +159,16 @@ export function getUserConfigFromJson(config: UserConfigJson): UserConfig {
             options: habit.options ?? [],
             ...(theme ? { theme } : {}),
           },
+        };
+      }
+      if (habit.type === 'text') {
+        return {
+          ...shared,
+          data_visualization: undefined,
+          insights: [],
+          streak_options: undefined,
+          type: habit.type,
+          settings: {},
         };
       }
 

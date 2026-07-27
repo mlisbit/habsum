@@ -25,7 +25,13 @@ const PREVIEW_SINGLE_SELECT_HABIT = build()
 
 const PREVIEW_CHECKBOX_HABIT = build().withName('Reading').withType('checkbox').model();
 
-export type HabitTypeChoice = 'summation' | 'single_select' | 'checkbox';
+const PREVIEW_TEXT_HABIT = build()
+  .withName('Daily reflection')
+  .withType('text')
+  .withText('A thought from today')
+  .model();
+
+export type HabitTypeChoice = 'summation' | 'single_select' | 'checkbox' | 'text';
 
 type ConfigHabitTypePickerModalProps = {
   onSelect: (type: HabitTypeChoice) => void;
@@ -60,6 +66,18 @@ function CheckboxTypePreview() {
     <HabitRenderer
       user={PREVIEW_USER}
       habit={PREVIEW_CHECKBOX_HABIT}
+      viewDate={PREVIEW_VIEW_DATE}
+      onUpdate={previewNoop}
+      demo
+    />
+  );
+}
+
+function TextTypePreview() {
+  return (
+    <HabitRenderer
+      user={PREVIEW_USER}
+      habit={PREVIEW_TEXT_HABIT}
       viewDate={PREVIEW_VIEW_DATE}
       onUpdate={previewNoop}
       demo
@@ -115,6 +133,12 @@ export function ConfigHabitTypePickerModal({ onSelect }: ConfigHabitTypePickerMo
             description="Simply mark it done or not done."
             preview={<CheckboxTypePreview />}
             onSelect={() => onSelect('checkbox')}
+          />
+          <TypeOption
+            title="Write text"
+            description="Save a different plain-text entry each day."
+            preview={<TextTypePreview />}
+            onSelect={() => onSelect('text')}
           />
         </div>
       </ModalBody>

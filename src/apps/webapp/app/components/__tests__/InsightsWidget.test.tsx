@@ -92,3 +92,30 @@ describe('summation habit settings layout', () => {
     expect(screen.getByText('Repeat').closest('.config-habit-modal__field')).not.toBeNull();
   });
 });
+
+describe('text habit settings', () => {
+  it('shows repeat configuration without visualization or streak options', () => {
+    const textHabit: UserConfigJsonHabit = {
+      name: 'Journal',
+      type: 'text',
+      goal: null,
+    };
+
+    render(
+      <ModalProvider>
+        <ConfigModalRenderer
+          habit={textHabit}
+          initialDraft={draftFromHabit(textHabit)}
+          onDoneClick={vi.fn()}
+          onRemoveClick={vi.fn()}
+          onCancel={vi.fn()}
+        />
+      </ModalProvider>,
+    );
+
+    expect(screen.getByText('Repeat')).toBeTruthy();
+    expect(screen.queryByText('Data Visualization')).toBeNull();
+    expect(screen.queryByText('Insights')).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Streak Options' })).toBeNull();
+  });
+});

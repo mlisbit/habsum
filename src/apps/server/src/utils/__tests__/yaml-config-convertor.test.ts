@@ -60,4 +60,28 @@ describe('YAMLConfigConvertor', () => {
       habits: config.habits,
     });
   });
+
+  it('writes text habit configuration without presentation options or daily text', () => {
+    const textConfig: UserConfig = {
+      user: 'text-user',
+      includeAbsentDaysInAverage: false,
+      habits: [
+        {
+          name: 'journal',
+          type: 'text',
+          repeat: ['monday'],
+          data_visualization: { heatmap: {} },
+          insights: ['current_streak'],
+          streak_options: { options: [], frequency: '7d' },
+          settings: {},
+        },
+      ],
+    };
+
+    expect(new YAMLConfigConvertor().convert(textConfig)).toBe(`habits:
+  journal:
+    type: text
+    repeat: [monday]
+`);
+  });
 });

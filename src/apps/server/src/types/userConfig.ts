@@ -16,11 +16,14 @@ export type SingleSelectHabitSettings = {
   theme?: HabitTheme;
 };
 
+export type TextHabitSettings = Record<string, never>;
+
 type CompleteHabitTypeMap<T extends Record<HabitType, object>> = T;
 
 export type HabitSettingsByType = CompleteHabitTypeMap<{
   summation: SummationHabitSettings;
   single_select: SingleSelectHabitSettings;
+  text: TextHabitSettings;
 }>;
 
 type SharedHabitDef = {

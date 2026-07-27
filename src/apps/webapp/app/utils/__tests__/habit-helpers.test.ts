@@ -20,4 +20,25 @@ describe('getProgress', () => {
       total: { done: 2000, total: PROGRESS_TOTAL_SCALE },
     });
   });
+
+  it('counts a non-empty text entry as a completed non-goal habit', () => {
+    expect(
+      getProgress([
+        {
+          name: 'Journal',
+          type: 'text',
+          details: { text: 'A thought.' },
+        },
+        {
+          name: 'Notes',
+          type: 'text',
+          details: { text: null },
+        },
+      ]),
+    ).toEqual({
+      goals: { done: 0, total: 0 },
+      other: { done: 1, total: 2 },
+      total: { done: 5000, total: PROGRESS_TOTAL_SCALE },
+    });
+  });
 });

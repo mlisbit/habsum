@@ -5,7 +5,9 @@ import { Icon } from '@habsum/ui/components/Icon';
 import type { UserConfigJsonHabit } from '~/api.client';
 
 function habitTypeLabel(type: UserConfigJsonHabit['type']): string {
-  return type === 'single_select' ? 'Single select' : 'Summation';
+  if (type === 'single_select') return 'Single select';
+  if (type === 'text') return 'Text';
+  return 'Summation';
 }
 
 function habitDetailLines(habit: UserConfigJsonHabit): string[] {

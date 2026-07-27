@@ -25,6 +25,14 @@ export function CellHoverDisplay({ habits }: { habits: Habit[] }) {
             </div>
           );
         }
+        if (h.type === 'text') {
+          return (
+            <div key={h.name} className="cell-hover-display__habit">
+              <strong>{h.name}</strong>
+              <div className="text-light text-b-m">{h.details.text ?? '—'}</div>
+            </div>
+          );
+        }
 
         const eventLabel = summationEventCountLabel(h);
         return (

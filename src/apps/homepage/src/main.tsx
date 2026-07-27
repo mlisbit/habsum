@@ -234,6 +234,12 @@ function updateHomepageHabit(habit: Habit, patch: HabitPatch): Habit {
           widgets: updateSummationWidgets(habit.widgets, null),
         };
       }
+      if (habit.type === 'text') {
+        return {
+          ...habit,
+          details: { text: null },
+        };
+      }
       return {
         ...habit,
         details: { ...habit.details, value: null },
@@ -258,6 +264,13 @@ function updateHomepageHabit(habit: Habit, patch: HabitPatch): Habit {
       ...habit,
       details: { ...habit.details, value: patch.value },
       widgets: updateSingleSelectWidgets(habit.widgets, patch.value),
+    };
+  }
+
+  if ('text' in patch && habit.type === 'text') {
+    return {
+      ...habit,
+      details: { text: patch.text },
     };
   }
 

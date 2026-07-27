@@ -4,6 +4,7 @@ import type {
   HabitWidget,
   HabitRowSingleSelect,
   HabitRowSummation,
+  HabitRowText,
   SummationEvent,
   SummationOptions,
 } from '@habsum/types/common/habit';
@@ -18,6 +19,7 @@ type HabitModelBuilderState = {
   theme?: HabitTheme;
   value: string | null;
   total: number | null;
+  text: string | null;
   events?: SummationEvent[];
   summationOptions?: SummationOptions;
   widgets?: HabitWidget[];
@@ -30,6 +32,7 @@ const DEFAULT_STATE: HabitModelBuilderState = {
   options: [],
   value: null,
   total: null,
+  text: null,
 };
 
 type HabitModelBuilder = {
@@ -40,6 +43,7 @@ type HabitModelBuilder = {
   withTheme(theme: HabitTheme | undefined): HabitModelBuilder;
   withValue(value: string | null): HabitModelBuilder;
   withTotal(total: number | null): HabitModelBuilder;
+  withText(text: string | null): HabitModelBuilder;
   withEvents(events: SummationEvent[] | undefined): HabitModelBuilder;
   withSummationOptions(options: SummationOptions | undefined): HabitModelBuilder;
   withWidgets(widgets: HabitWidget[] | undefined): HabitModelBuilder;
@@ -69,6 +73,17 @@ function summationModel(state: HabitModelBuilderState): HabitRowSummation {
       total: state.total,
       ...(state.events != null ? { events: state.events } : {}),
       ...(state.summationOptions != null ? { summationOptions: state.summationOptions } : {}),
+    },
+    ...(state.widgets != null ? { widgets: state.widgets } : {}),
+  };
+}
+
+function textModel(state: HabitModelBuilderState): HabitRowText {
+  return {
+    name: state.name,
+    type: 'text',
+    details: {
+      text: state.text,
     },
     ...(state.widgets != null ? { widgets: state.widgets } : {}),
   };
@@ -112,12 +127,14 @@ function builder(state: HabitModelBuilderState): HabitModelBuilder {
     withTheme: (theme) => next({ theme }),
     withValue: (value) => next({ value }),
     withTotal: (total) => next({ total }),
+    withText: (text) => next({ text }),
     withEvents: (events) => next({ events }),
     withSummationOptions: (summationOptions) => next({ summationOptions }),
     withWidgets: (widgets) => next({ widgets }),
     withWidget: (widget) => next({ widgets: [...(state.widgets ?? []), widget] }),
     model: () => {
       if (state.type === 'summation') return summationModel(state);
+      if (state.type === 'text') return textModel(state);
       return singleSelectModel(stateForType(state, state.type));
     },
   };

@@ -203,6 +203,17 @@ db.exec(`
 `);
 
 db.exec(`
+  CREATE TABLE IF NOT EXISTS habit_text (
+    user  TEXT NOT NULL,
+    habit TEXT NOT NULL,
+    date  TEXT NOT NULL, -- YYYY-MM-DD
+    text  TEXT NOT NULL,
+    updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (user, habit, date)
+  );
+`);
+
+db.exec(`
   CREATE TABLE IF NOT EXISTS sessions (
     id TEXT PRIMARY KEY,
     username TEXT NOT NULL,
@@ -258,6 +269,12 @@ export type DailySelectExportRow = {
   habit: string;
   date: string;
   value: string;
+  updatedAt: string;
+};
+export type HabitTextExportRow = {
+  habit: string;
+  date: string;
+  text: string;
   updatedAt: string;
 };
 export type SummationEventExportRow = SummationEventRow & {
@@ -406,10 +423,11 @@ const listUserRowsStmt = db.prepare<[], UserListRow>(`
   FROM users
 `);
 
-const countUserEventsStmt = db.prepare<[string, string], { event_count: number }>(`
+const countUserEventsStmt = db.prepare<[string, string, string], { event_count: number }>(`
   SELECT
     (SELECT COUNT(*) FROM habit_summation_events WHERE user = ?) +
-    (SELECT COUNT(*) FROM habit_daily_selects WHERE user = ?) AS event_count
+    (SELECT COUNT(*) FROM habit_daily_selects WHERE user = ?) +
+    (SELECT COUNT(*) FROM habit_text WHERE user = ?) AS event_count
 `);
 
 const getLatestHabitConfigVersionStmt = db.prepare<[string], { version: number }>(`
@@ -527,7 +545,7 @@ export function listUserRows(): Array<{
 }
 
 export function countUserEvents(username: string): number {
-  return countUserEventsStmt.get(username, username)?.event_count ?? 0;
+  return countUserEventsStmt.get(username, username, username)?.event_count ?? 0;
 }
 
 /** Maps a login id (YAML username or stored email) to the account username. */
@@ -857,16 +875,21 @@ const deleteSummationEventStmt = db.prepare<{
   WHERE user = @user AND habit = @habit AND date = @date AND id = @id
 `);
 
-const firstDateStmt = db.prepare<[string, string], FirstDateRow>(`
+const firstDateStmt = db.prepare<[string, string, string], FirstDateRow>(`
   SELECT MIN(date) AS date
   FROM (
     SELECT date FROM habit_summation_events WHERE user = ?
     UNION ALL
     SELECT date FROM habit_daily_selects WHERE user = ?
+    UNION ALL
+    SELECT date FROM habit_text WHERE user = ?
   )
 `);
 
-const habitHydrationMetadataStmt = db.prepare<[string, string, string], HabitHydrationMetadataRow>(`
+const habitHydrationMetadataStmt = db.prepare<
+  [string, string, string, string],
+  HabitHydrationMetadataRow
+>(`
   SELECT
     (SELECT display_name FROM users WHERE username = ?) AS displayName,
     (
@@ -875,6 +898,8 @@ const habitHydrationMetadataStmt = db.prepare<[string, string, string], HabitHyd
         SELECT date FROM habit_summation_events WHERE user = ?
         UNION ALL
         SELECT date FROM habit_daily_selects WHERE user = ?
+        UNION ALL
+        SELECT date FROM habit_text WHERE user = ?
       )
     ) AS firstDate
 `);
@@ -896,6 +921,13 @@ const dailySelectSeriesForUserStmt = db.prepare<[string, string, string], DailyS
   ORDER BY date ASC, habit ASC
 `);
 
+const habitTextSeriesForUserStmt = db.prepare<[string, string, string], HabitTextExportRow>(`
+  SELECT habit, date, text, updated_at AS updatedAt
+  FROM habit_text
+  WHERE user = ? AND date >= ? AND date <= ?
+  ORDER BY date ASC, habit ASC
+`);
+
 const allDailySelectsForUserStmt = db.prepare<[string], DailySelectExportRow>(`
   SELECT habit, date, value, updated_at AS updatedAt
   FROM habit_daily_selects
@@ -910,14 +942,21 @@ const allSummationEventsForUserStmt = db.prepare<[string], SummationEventExportR
   ORDER BY date ASC, habit ASC, id ASC
 `);
 
+const allHabitTextsForUserStmt = db.prepare<[string], HabitTextExportRow>(`
+  SELECT habit, date, text, updated_at AS updatedAt
+  FROM habit_text
+  WHERE user = ?
+  ORDER BY date ASC, habit ASC
+`);
+
 export function getFirstDate(user: string): string | null {
-  const row = firstDateStmt.get(user, user);
+  const row = firstDateStmt.get(user, user, user);
   return row?.date ?? null;
 }
 
 export function getHabitHydrationMetadata(user: string): HabitHydrationMetadataRow {
   return (
-    habitHydrationMetadataStmt.get(user, user, user) ?? {
+    habitHydrationMetadataStmt.get(user, user, user, user) ?? {
       displayName: null,
       firstDate: null,
     }
@@ -1010,12 +1049,24 @@ export function getDailySelectSeriesForUser(
   return dailySelectSeriesForUserStmt.all(user, startDate, endDate);
 }
 
+export function getHabitTextSeriesForUser(
+  user: string,
+  startDate: string,
+  endDate: string,
+): HabitTextExportRow[] {
+  return habitTextSeriesForUserStmt.all(user, startDate, endDate);
+}
+
 export function getAllDailySelectsForUser(user: string): DailySelectExportRow[] {
   return allDailySelectsForUserStmt.all(user);
 }
 
 export function getAllSummationEventsForUser(user: string): SummationEventExportRow[] {
   return allSummationEventsForUserStmt.all(user);
+}
+
+export function getAllHabitTextsForUser(user: string): HabitTextExportRow[] {
+  return allHabitTextsForUserStmt.all(user);
 }
 
 const upsertSelectStmt = db.prepare<{
@@ -1042,6 +1093,32 @@ const deleteDailySelectStmt = db.prepare<[string, string, string], unknown>(
 
 export function deleteDailySelect(user: string, habit: string, date: string): void {
   deleteDailySelectStmt.run(user, habit, date);
+}
+
+const upsertHabitTextStmt = db.prepare<{
+  user: string;
+  habit: string;
+  date: string;
+  text: string;
+}>(`
+  INSERT INTO habit_text (user, habit, date, text, updated_at)
+  VALUES (@user, @habit, @date, @text, datetime('now'))
+  ON CONFLICT(user, habit, date) DO UPDATE SET
+    text = excluded.text,
+    updated_at = excluded.updated_at
+`);
+
+export function setHabitText(user: string, habit: string, date: string, text: string): string {
+  upsertHabitTextStmt.run({ user, habit, date, text });
+  return text;
+}
+
+const deleteHabitTextStmt = db.prepare<[string, string, string], unknown>(
+  'DELETE FROM habit_text WHERE user = ? AND habit = ? AND date = ?',
+);
+
+export function deleteHabitText(user: string, habit: string, date: string): void {
+  deleteHabitTextStmt.run(user, habit, date);
 }
 
 const deleteDailySelectValueStmt = db.prepare<{
@@ -1077,6 +1154,16 @@ const renameDailySelectsHabitStmt = db.prepare<{
   WHERE user = @user AND habit = @fromHabit
 `);
 
+const renameHabitTextHabitStmt = db.prepare<{
+  user: string;
+  fromHabit: string;
+  toHabit: string;
+}>(`
+  UPDATE habit_text
+  SET habit = @toHabit
+  WHERE user = @user AND habit = @fromHabit
+`);
+
 const renameDailySelectValueStmt = db.prepare<{
   user: string;
   habit: string;
@@ -1091,6 +1178,7 @@ const renameDailySelectValueStmt = db.prepare<{
 export function renameHabitData(user: string, fromHabit: string, toHabit: string): void {
   renameSummationHabitStmt.run({ user, fromHabit, toHabit });
   renameDailySelectsHabitStmt.run({ user, fromHabit, toHabit });
+  renameHabitTextHabitStmt.run({ user, fromHabit, toHabit });
 }
 
 export function renameDailySelectValue(
@@ -1114,14 +1202,22 @@ const renameDailySelectsUserStmt = db.prepare<{ fromUsername: string; toUsername
   WHERE user = @fromUsername
 `);
 
+const renameHabitTextUserStmt = db.prepare<{ fromUsername: string; toUsername: string }>(`
+  UPDATE habit_text
+  SET user = @toUsername
+  WHERE user = @fromUsername
+`);
+
 function renameUserHabitData(fromUsername: string, toUsername: string): void {
   renameSummationEventsUserStmt.run({ fromUsername, toUsername });
   renameDailySelectsUserStmt.run({ fromUsername, toUsername });
+  renameHabitTextUserStmt.run({ fromUsername, toUsername });
 }
 
 export function purgeUserData(user: string) {
   db.prepare('DELETE FROM habit_summation_events WHERE user = ?').run(user);
   db.prepare('DELETE FROM habit_daily_selects WHERE user = ?').run(user);
+  db.prepare('DELETE FROM habit_text WHERE user = ?').run(user);
 }
 
 export function closeDb() {

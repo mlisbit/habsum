@@ -3,6 +3,7 @@ import type { HabitRow, HabitType } from '../common/habit.js';
 export type HabitPatch =
   | { habit: string; total: number }
   | { habit: string; value: string }
+  | { habit: string; text: string }
   | { habit: string; action: 'clear' }
   | { habit: string; action: 'delete_event'; eventId: number };
 

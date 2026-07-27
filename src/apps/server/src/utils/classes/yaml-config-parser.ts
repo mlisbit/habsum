@@ -3,6 +3,7 @@ import {
   isHabitTheme,
   parseSummationOptionsFromRaw,
   type HabitTheme,
+  type HabitType,
 } from '@habsum/types/common/habit';
 import { DEFAULT_STREAK_FREQUENCY, formatStreakFrequency } from '@habsum/types/common/streak';
 import yaml from 'js-yaml';
@@ -25,6 +26,14 @@ class YAMLConfigValidationError extends Error {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value != null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function normalizeHabitType(raw: unknown, habitName: string): HabitType {
+  if (raw == null) return 'summation';
+  if (raw === 'summation' || raw === 'single_select' || raw === 'text') return raw;
+  throw new YAMLConfigValidationError(
+    `habit "${habitName}" type must be summation, single_select, or text`,
+  );
 }
 
 function getHabitTheme(raw: unknown, habitName: string): HabitTheme | undefined {
@@ -311,6 +320,14 @@ function normalizePresentation(
   type: HabitDef['type'],
   mainOptions: readonly string[],
 ): Pick<HabitDef, 'data_visualization' | 'insights' | 'streak_options'> {
+  if (type === 'text') {
+    return {
+      data_visualization: undefined,
+      insights: [],
+      streak_options: undefined,
+    };
+  }
+
   const hasLegacy = rawHabit.history != null || rawHabit.streak != null;
   const hasCurrent =
     rawHabit.data_visualization != null ||
@@ -393,7 +410,7 @@ export default class YAMLConfigParser {
           throw new YAMLConfigValidationError(`habit "${name}" must be a yaml mapping`);
         }
         const rawHabit = def as RawHabitConfig;
-        const type = rawHabit.type ?? 'summation';
+        const type = normalizeHabitType(rawHabit.type, name);
         const opts =
           type === 'single_select' && Array.isArray(rawHabit.options)
             ? rawHabit.options.filter((x) => typeof x === 'string')
@@ -422,6 +439,13 @@ export default class YAMLConfigParser {
               options: opts ?? [],
               ...(theme ? { theme } : {}),
             },
+          };
+        }
+        if (type === 'text') {
+          return {
+            ...shared,
+            type,
+            settings: {},
           };
         }
         const summationOptions = parseSummationOptionsFromRaw(

@@ -19,6 +19,7 @@ export type PatchBody = {
   total?: unknown;
   action?: unknown;
   value?: unknown;
+  text?: unknown;
   date?: unknown;
   clientCreatedAt?: unknown;
   eventId?: unknown;
@@ -61,6 +62,10 @@ export type HydratedHabitData =
       type: 'summation';
       totals: Array<{ date: Day; total: number }>;
       events: HydratedSummationEvent[];
+    })
+  | (HydratedHabitDataBase & {
+      type: 'text';
+      texts: Array<{ date: Day; text: string }>;
     });
 
 export type HabitDataMetadata = {

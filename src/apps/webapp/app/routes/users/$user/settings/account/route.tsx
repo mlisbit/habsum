@@ -498,7 +498,7 @@ export default function UserSettingsAccount() {
       {loaded ? (
         <SettingsPageCard
           headerText="Export your habit data"
-          subtitle="Download a CSV of habit daily selections and summation events."
+          subtitle="Download a CSV of habit selections, summation events, and text entries."
           actions={
             <Button
               type="secondary"

@@ -188,6 +188,9 @@ export function ConfigModalRenderer({
         </>
       );
       break;
+    case 'text':
+      fields = repeatField;
+      break;
   }
 
   if (activeView === 'streak-options') {
@@ -205,9 +208,9 @@ export function ConfigModalRenderer({
               patch={patch}
               streakOptions={streakOptions}
             />
-          ) : (
+          ) : habit.type === 'summation' ? (
             <StreakOptionsFields type="summation" draft={draft} patch={patch} />
-          )}
+          ) : null}
         </ModalBody>
       </>
     );

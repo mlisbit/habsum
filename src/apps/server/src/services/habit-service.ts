@@ -12,6 +12,7 @@ import {
 } from '../presenters/habits/habit-presenter.js';
 import { SingleSelectHabitPresenter } from '../presenters/habits/single-select-habit-presenter.js';
 import { SummationHabitPresenter } from '../presenters/habits/summation-habit-presenter.js';
+import { TextHabitPresenter } from '../presenters/habits/text-habit-presenter.js';
 import { getHabitApiToday } from '../utils/server-time-utils.js';
 import { HabitRepository } from '../repositories/habit-repository.js';
 import type {
@@ -27,6 +28,7 @@ import isHabitRepeatedOnDate from '../utils/habits/is-habit-repeated-on-date.js'
 import type { HabitTypeService } from './habits/habit-type-service.js';
 import { SingleSelectHabitService } from './habits/single-select-habit-service.js';
 import { SummationHabitService } from './habits/summation-habit-service.js';
+import { TextHabitService } from './habits/text-habit-service.js';
 
 type PatchHabitInput = {
   user: string;
@@ -118,7 +120,9 @@ export class HabitService {
     const typeService =
       known.type === 'single_select'
         ? new SingleSelectHabitService(known, this.repository)
-        : new SummationHabitService(known, this.repository);
+        : known.type === 'text'
+          ? new TextHabitService(known, this.repository)
+          : new SummationHabitService(known, this.repository);
     typeService.applyPatch({ user, date: day, body });
 
     return this.updatedHabit({
@@ -215,6 +219,9 @@ export class HabitService {
     }
     if (definition.type === 'summation' && habitData.type === 'summation') {
       return new SummationHabitPresenter(definition, habitData, context);
+    }
+    if (definition.type === 'text' && habitData.type === 'text') {
+      return new TextHabitPresenter(definition, habitData, context);
     }
     throw new Error(`hydrated habit type mismatch for "${definition.name}"`);
   }

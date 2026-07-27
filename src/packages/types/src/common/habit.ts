@@ -85,7 +85,7 @@ export type SummationEvent = {
   createdAt: SummationEventCreatedAt;
 };
 
-export type HabitType = 'summation' | 'single_select';
+export type HabitType = 'summation' | 'single_select' | 'text';
 
 export const HabitTheme = {
   CHECKBOX: 'checkbox',
@@ -114,6 +114,10 @@ export type HabitDetailsByType = CompleteHabitTypeMap<{
     /** Manual amount entry plus quick-add increments from config (`summation_options`). */
     summationOptions?: SummationOptions;
   };
+  text: {
+    /** Plain text logged for the requested day; `null` means no row is stored. */
+    text: string | null;
+  };
 }>;
 
 /**
@@ -130,4 +134,5 @@ export type HabitRow<T extends HabitType = HabitType> = {
 
 export type HabitRowSingleSelect = HabitRow<'single_select'>;
 export type HabitRowSummation = HabitRow<'summation'>;
+export type HabitRowText = HabitRow<'text'>;
 export type Habit = HabitRow;

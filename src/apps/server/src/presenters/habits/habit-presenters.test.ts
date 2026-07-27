@@ -4,10 +4,56 @@ import type { HydratedHabitData } from '../../types/habit.types.js';
 import type { HabitDef } from '../../types/userConfig.js';
 import { SingleSelectHabitPresenter } from './single-select-habit-presenter.js';
 import { SummationHabitPresenter } from './summation-habit-presenter.js';
+import { TextHabitPresenter } from './text-habit-presenter.js';
 
 const viewingDate = dayFromString('2026-07-23');
 
 describe('habit presenters', () => {
+  it('presents text for the viewing date without visualization widgets', () => {
+    const definition: HabitDef<'text'> = {
+      name: 'journal',
+      type: 'text',
+      repeat: ['thursday'],
+      data_visualization: { heatmap: {}, bargraph: { period: '1w' } },
+      insights: ['current_streak', 'longest_streak'],
+      streak_options: { options: [], frequency: '7d' },
+      settings: {},
+    };
+    const habitData: Extract<HydratedHabitData, { type: 'text' }> = {
+      name: definition.name,
+      type: 'text',
+      dataStart: viewingDate,
+      dataEnd: viewingDate,
+      texts: [{ date: viewingDate, text: 'A thought for today.' }],
+    };
+
+    const presenter = new TextHabitPresenter(definition, habitData, {
+      viewingDate,
+      today: viewingDate,
+      includeWidgets: true,
+    });
+
+    expect(presenter.present()).toEqual({
+      name: 'journal',
+      type: 'text',
+      details: {
+        text: 'A thought for today.',
+      },
+    });
+    expect(presenter.getHistoryEvents(viewingDate, viewingDate)).toEqual([
+      {
+        day: viewingDate,
+        habit: {
+          name: 'journal',
+          type: 'text',
+          details: {
+            text: 'A thought for today.',
+          },
+        },
+      },
+    ]);
+  });
+
   it('presents the single-select value for the viewing date', () => {
     const definition: HabitDef<'single_select'> = {
       name: 'mood',

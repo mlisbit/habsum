@@ -87,4 +87,40 @@ describe('YAMLConfigParser', () => {
       streak_options: { options: ['100'], frequency: '7d' },
     });
   });
+
+  it('parses text habits while treating visualization and streak config as no-ops', () => {
+    const config = new YAMLConfigParser('text-user').parse(
+      yamlString(`habits:
+  journal:
+    type: text
+    repeat: [monday, friday]
+    data_visualization: ignored
+    insights: [average, current_streak]
+    streak_options: ignored
+`),
+    );
+
+    expect(config.habits).toEqual([
+      {
+        name: 'journal',
+        type: 'text',
+        repeat: ['monday', 'friday'],
+        data_visualization: undefined,
+        insights: [],
+        streak_options: undefined,
+        settings: {},
+      },
+    ]);
+  });
+
+  it('rejects unknown habit types', () => {
+    expect(() =>
+      new YAMLConfigParser('yaml-parser-user').parse(
+        yamlString(`habits:
+  mystery:
+    type: something_else
+`),
+      ),
+    ).toThrow('habit "mystery" type must be summation, single_select, or text');
+  });
 });

@@ -75,6 +75,7 @@ export type {
   HabitWidget,
   HabitRowSingleSelect,
   HabitRowSummation,
+  HabitRowText,
   SummationEvent,
   SummationEventCreatedAt,
   SummationOptions,
@@ -325,6 +326,14 @@ export async function patchHabit(user: string, body: HabitPatch, opts: { date: s
     body: JSON.stringify(buildHabitPatchPayload(body, opts.date)),
   });
   if (res.type === 'single_select') {
+    return {
+      name: res.habit,
+      type: res.type,
+      details: res.details,
+      ...(res.widgets ? { widgets: res.widgets } : {}),
+    } satisfies Habit;
+  }
+  if (res.type === 'text') {
     return {
       name: res.habit,
       type: res.type,

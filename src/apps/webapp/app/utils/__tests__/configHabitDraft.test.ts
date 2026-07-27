@@ -26,6 +26,35 @@ describe('single-select data visualization config', () => {
   });
 });
 
+describe('text habit config', () => {
+  it('keeps only the name, type, and repeat schedule', () => {
+    const habit: UserConfigJsonHabit = {
+      name: 'Journal',
+      type: 'text',
+      goal: null,
+      data_visualization: { heatmap: {}, bargraph: { period: '3w' } },
+      insights: ['current_streak', 'longest_streak'],
+      streak_options: { frequency: '7d' },
+    };
+    const config: UserConfigJson = {
+      user: 'writer',
+      includeAbsentDaysInAverage: false,
+      habits: [habit],
+    };
+
+    const draft = draftFromHabit(habit);
+    expect(draft.historyEnabled).toBe(false);
+    expect(draft.streakShowCurrent).toBe(false);
+
+    const saved = applyHabitDraftToConfig(config, habit.name, draft).config.habits[0];
+    expect(saved).toEqual({
+      name: 'Journal',
+      type: 'text',
+      goal: null,
+    });
+  });
+});
+
 describe('single-select habit theme config', () => {
   it('round-trips the checkbox theme and omits it when unchecked', () => {
     const habit: UserConfigJsonHabit = {

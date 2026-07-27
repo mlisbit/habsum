@@ -1,10 +1,16 @@
-import { useCallback, type ComponentType, type ReactNode } from 'react';
-import type { Habit, HabitRowSingleSelect, HabitRowSummation } from '@habsum/types/common/habit';
+import { useCallback, useEffect, useState, type ComponentType, type ReactNode } from 'react';
+import type {
+  Habit,
+  HabitRowSingleSelect,
+  HabitRowSummation,
+  HabitRowText,
+} from '@habsum/types/common/habit';
 import type { HabitPatch } from '@habsum/types/api-responses/habit-patch';
 import { CountControl } from './heading-renderer-helpers/CountControl';
 import { HabitHeadingRender } from './heading-renderer-helpers/HabitHeadingRender';
 import { HabitMenuModal } from './heading-renderer-helpers/HabitMenuModal';
 import { TogglePill } from '@habsum/ui/components/Pill';
+import { Button } from '@habsum/ui/components/Button';
 import { TernaryCheckbox, type TernaryCheckboxValue } from '@habsum/ui/components/TernaryCheckbox';
 import { useModal } from '@habsum/ui/contexts/modal';
 import { classBuilder } from '@habsum/utils/class-builder';
@@ -219,6 +225,86 @@ function SummationHabitHeader({
   );
 }
 
+function TextHabitActions({
+  habit,
+  pending,
+  onUpdate,
+}: {
+  habit: HabitRowText;
+  pending: boolean;
+  onUpdate: (patch: HabitPatch) => Promise<void>;
+}) {
+  const storedText = habit.details.text ?? '';
+  const [draft, setDraft] = useState(storedText);
+
+  useEffect(() => {
+    setDraft(storedText);
+  }, [habit.name, storedText]);
+
+  return (
+    <div className="habit-text">
+      <textarea
+        className="habit-text__input text-b-m"
+        aria-label={`${habit.name} text for the day`}
+        placeholder="Write something for this day…"
+        rows={3}
+        value={draft}
+        disabled={pending}
+        onChange={(event) => setDraft(event.target.value)}
+      />
+      <Button
+        type="primary"
+        size="medium"
+        text="Save"
+        className="habit-text__save"
+        disabled={pending || draft === storedText}
+        onClick={() => {
+          void onUpdate({ habit: habit.name, text: draft });
+        }}
+      />
+    </div>
+  );
+}
+
+function TextHabitHeader({
+  user,
+  habit,
+  pending,
+  currentSearch,
+  LinkComponent,
+  demo,
+  className,
+  openResetModal,
+  onUpdate,
+}: {
+  user: string;
+  habit: HabitRowText;
+  pending: boolean;
+  currentSearch?: string;
+  LinkComponent?: ComponentType<{ to: string; className?: string; children: ReactNode }>;
+  demo?: boolean;
+  className?: string;
+  openResetModal: () => void;
+  onUpdate: (patch: HabitPatch) => Promise<void>;
+}) {
+  return (
+    <div className={className}>
+      <HabitHeadingRender
+        user={user}
+        habitName={habit.name}
+        pending={pending}
+        currentSearch={currentSearch}
+        LinkComponent={LinkComponent}
+        demo={demo}
+        menuAriaLabel={`More options for ${habit.name}`}
+        onMenuClick={openResetModal}
+        className="mb-4"
+      />
+      <TextHabitActions habit={habit} pending={pending} onUpdate={onUpdate} />
+    </div>
+  );
+}
+
 export default function HabitHeaderAndActionRenderer({
   user,
   habit,
@@ -238,8 +324,8 @@ export default function HabitHeaderAndActionRenderer({
     onUpdate,
   });
 
-  const header =
-    habit.type === 'single_select' ? (
+  if (habit.type === 'single_select') {
+    return (
       <SingleSelectHabitHeader
         user={user}
         habit={habit}
@@ -251,8 +337,11 @@ export default function HabitHeaderAndActionRenderer({
         className={className}
         onUpdate={onUpdate}
       />
-    ) : (
-      <SummationHabitHeader
+    );
+  }
+  if (habit.type === 'text') {
+    return (
+      <TextHabitHeader
         user={user}
         habit={habit}
         pending={pending}
@@ -264,6 +353,18 @@ export default function HabitHeaderAndActionRenderer({
         onUpdate={onUpdate}
       />
     );
-
-  return header;
+  }
+  return (
+    <SummationHabitHeader
+      user={user}
+      habit={habit}
+      pending={pending}
+      currentSearch={currentSearch}
+      LinkComponent={LinkComponent}
+      demo={demo}
+      openResetModal={openResetModal}
+      className={className}
+      onUpdate={onUpdate}
+    />
+  );
 }

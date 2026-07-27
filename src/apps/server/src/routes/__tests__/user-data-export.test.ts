@@ -23,13 +23,15 @@ function writeExportUserConfig(user: string) {
     options: ['good', 'tricky, value']
   push ups:
     type: summation
+  journal:
+    type: text
 `),
   );
   if (!written.ok) throw new Error(written.error);
 }
 
 describe('GET /users/:user/data', () => {
-  it('downloads daily selects and summation events as csv', async () => {
+  it('downloads daily selects, summation events, and text entries as csv', async () => {
     const user = 'export-data-user';
     writeExportUserConfig(user);
     userAndAuthRepository.setUserPassword(user, 'test-password');
@@ -48,6 +50,13 @@ describe('GET /users/:user/data', () => {
       total: 12,
       createdAt: '2026-01-03 08:15:00',
     });
+    habitRepository.applyHabitMutation({
+      kind: 'set_text',
+      user,
+      habit: 'journal',
+      date: dayFromString('2026-01-04'),
+      text: 'line one\nline two',
+    });
     const session = userAndAuthRepository.createUserSession(user, 3600);
     const app = createApp();
 
@@ -65,5 +74,6 @@ describe('GET /users/:user/data', () => {
         'daily_select,mood,2026-01-02,"tricky, value",,,',
     );
     expect(res.text).toMatch(/summation_event,push ups,2026-01-03,,\d+,12,2026-01-03 08:15:00/);
+    expect(res.text).toContain('text,journal,2026-01-04,"line one\nline two",,,');
   });
 });

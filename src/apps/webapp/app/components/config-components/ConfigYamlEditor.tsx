@@ -20,6 +20,12 @@ const HABIT_TYPE_COMPLETIONS: Completion[] = [
     detail: 'choice habit',
     info: 'Tracks one selected option. Use options to define the allowed choices.',
   },
+  {
+    label: 'text',
+    type: 'constant',
+    detail: 'daily text habit',
+    info: 'Tracks one plain-text entry per day. The entry is stored in the database, not in YAML.',
+  },
 ];
 
 function habitTypeCompletion(context: CompletionContext) {

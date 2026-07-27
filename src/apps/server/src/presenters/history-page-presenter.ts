@@ -10,6 +10,7 @@ import isHabitRepeatedOnDate from '../utils/habits/is-habit-repeated-on-date.js'
 import { HabitPresenter, type HabitPresentationContext } from './habits/habit-presenter.js';
 import { SingleSelectHabitPresenter } from './habits/single-select-habit-presenter.js';
 import { SummationHabitPresenter } from './habits/summation-habit-presenter.js';
+import { TextHabitPresenter } from './habits/text-habit-presenter.js';
 
 export type HistoryPagePresenterInput = {
   user: string;
@@ -86,6 +87,9 @@ export class HistoryPagePresenter {
     }
     if (definition.type === 'summation' && habitData.type === 'summation') {
       return new SummationHabitPresenter(definition, habitData, context);
+    }
+    if (definition.type === 'text' && habitData.type === 'text') {
+      return new TextHabitPresenter(definition, habitData, context);
     }
     throw new Error(`hydrated habit type mismatch for "${definition.name}"`);
   }

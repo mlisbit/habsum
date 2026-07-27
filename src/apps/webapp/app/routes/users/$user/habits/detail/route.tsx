@@ -44,6 +44,14 @@ function blankHabitFrom(habit: Habit): Habit {
       },
     } satisfies Habit;
   }
+  if (habit.type === 'text') {
+    return {
+      ...habit,
+      details: {
+        text: null,
+      },
+    } satisfies Habit;
+  }
   const { events: _events, ...details } = habit.details;
   return withoutHistory({
     ...habit,

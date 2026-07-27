@@ -123,9 +123,11 @@ export function draftFromHabit(habit: UserConfigJsonHabit): ConfigHabitDraft {
     ...(habit.data_visualization?.bargraph != null ? (['weekly_history'] as const) : []),
   ]);
   const historyDisplays =
-    habit.type === 'single_select'
-      ? configuredHistoryDisplays.filter((display) => display === 'heatmap')
-      : configuredHistoryDisplays;
+    habit.type === 'text'
+      ? []
+      : habit.type === 'single_select'
+        ? configuredHistoryDisplays.filter((display) => display === 'heatmap')
+        : configuredHistoryDisplays;
   const averageEnabled = habit.type === 'summation' && habit.insights?.includes('average') === true;
   const hasStreakInsights =
     habit.insights?.includes('current_streak') === true ||
@@ -147,10 +149,11 @@ export function draftFromHabit(habit: UserConfigJsonHabit): ConfigHabitDraft {
     optionsText: habit.type === 'single_select' ? (habit.options ?? []).join('\n') : '',
     theme: habit.type === 'single_select' ? (habit.theme ?? '') : '',
     averageEnabled,
-    streakOptionsText: habit.streak_options?.options?.join('\n') ?? '',
+    streakOptionsText:
+      habit.type === 'text' ? '' : (habit.streak_options?.options?.join('\n') ?? ''),
     streakFrequencyPerWeek: String(parseStreakFrequencyDays(habit.streak_options?.frequency)),
-    streakShowCurrent: habit.insights?.includes('current_streak') === true,
-    streakShowLongest: habit.insights?.includes('longest_streak') === true,
+    streakShowCurrent: habit.type !== 'text' && habit.insights?.includes('current_streak') === true,
+    streakShowLongest: habit.type !== 'text' && habit.insights?.includes('longest_streak') === true,
     historyEnabled: historyDisplays.length > 0,
     historyDisplays:
       historyDisplays.length === 0 && habit.type === 'single_select' && !hasStreakInsights
@@ -205,6 +208,15 @@ function draftToHabit(draft: ConfigHabitDraft): UserConfigJsonHabit {
       ...(draft.streakShowCurrent ? (['current_streak'] as const) : []),
       ...(draft.streakShowLongest ? (['longest_streak'] as const) : []),
     ];
+    return habit;
+  }
+  if (draft.type === 'text') {
+    const habit: UserConfigJsonHabit = {
+      name,
+      type: 'text',
+      goal: null,
+    };
+    if (repeat.length < HABIT_REPEAT_DAYS.length) habit.repeat = repeat;
     return habit;
   }
 
@@ -303,13 +315,14 @@ function uniqueNewHabitName(existingNames: ReadonlySet<string>, base = DEFAULT_N
 
 export function addHabitToConfig(
   config: UserConfigJson,
-  type: 'summation' | 'single_select' = 'summation',
+  type: 'summation' | 'single_select' | 'text' = 'summation',
   options?: { theme?: HabitTheme },
 ): { config: UserConfigJson; habitName: string } {
   const habitName = uniqueNewHabitName(new Set(config.habits.map((habit) => habit.name)));
-  const habit: UserConfigJsonHabit =
-    type === 'single_select'
-      ? options?.theme === 'checkbox'
+  let habit: UserConfigJsonHabit;
+  if (type === 'single_select') {
+    habit =
+      options?.theme === 'checkbox'
         ? {
             name: habitName,
             type: 'single_select',
@@ -317,8 +330,12 @@ export function addHabitToConfig(
             options: ['yes', 'no'],
             theme: 'checkbox',
           }
-        : { name: habitName, type: 'single_select', goal: null, options: ['1', '2', '3'] }
-      : { name: habitName, type: 'summation', goal: null };
+        : { name: habitName, type: 'single_select', goal: null, options: ['1', '2', '3'] };
+  } else if (type === 'text') {
+    habit = { name: habitName, type: 'text', goal: null };
+  } else {
+    habit = { name: habitName, type: 'summation', goal: null };
+  }
 
   return {
     config: { ...config, habits: [...config.habits, habit] },

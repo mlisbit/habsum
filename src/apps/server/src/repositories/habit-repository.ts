@@ -4,15 +4,19 @@ import {
   addToTotal,
   deleteDailySelect,
   deleteDailySelectValue,
+  deleteHabitText,
   deleteSummationEvent,
   deleteSummationEventsForDay,
   getAllDailySelectsForUser,
+  getAllHabitTextsForUser,
   getAllSummationEventsForUser,
   getDailySelectSeriesForUser,
   getHabitHydrationMetadata,
+  getHabitTextSeriesForUser,
   getSummationEventSeriesForUser,
   renameDailySelectValue,
   renameHabitData,
+  setHabitText,
   setSelect,
   setTotal,
 } from './_private/db.js';
@@ -32,6 +36,8 @@ type LoadHydratedHabitsOptions = {
 export type HabitMutation =
   | { kind: 'set_select'; user: string; habit: string; date: Day; value: string }
   | { kind: 'clear_select'; user: string; habit: string; date: Day }
+  | { kind: 'set_text'; user: string; habit: string; date: Day; text: string }
+  | { kind: 'clear_text'; user: string; habit: string; date: Day }
   | {
       kind: 'add_total' | 'set_total';
       user: string;
@@ -52,6 +58,13 @@ function selectValuesFromSeries(rows: Array<{ date: string; value: string }>) {
   return rows.map((row) => ({
     date: dayFromString(row.date),
     value: row.value,
+  }));
+}
+
+function textsFromSeries(rows: Array<{ date: string; text: string }>) {
+  return rows.map((row) => ({
+    date: dayFromString(row.date),
+    text: row.text,
   }));
 }
 
@@ -134,6 +147,12 @@ export class HabitRepository {
       case 'clear_select':
         deleteDailySelect(user, habit, date);
         return true;
+      case 'set_text':
+        setHabitText(user, habit, date, mutation.text);
+        return true;
+      case 'clear_text':
+        deleteHabitText(user, habit, date);
+        return true;
       case 'add_total':
         addToTotal(user, habit, date, mutation.total, mutation.createdAt);
         return true;
@@ -152,6 +171,7 @@ export class HabitRepository {
     return {
       dailySelects: getAllDailySelectsForUser(user),
       summationEvents: getAllSummationEventsForUser(user),
+      texts: getAllHabitTextsForUser(user),
     };
   }
 
@@ -181,8 +201,10 @@ export class HabitRepository {
     const hydrationRange = encompassingRange(finiteRanges);
     const selectSelections = query.habits.filter((habit) => habit.type === 'single_select');
     const summationSelections = query.habits.filter((habit) => habit.type === 'summation');
+    const textSelections = query.habits.filter((habit) => habit.type === 'text');
     const allSelectData = selectSelections.some((habit) => habit.range === 'all');
     const allSummationData = summationSelections.some((habit) => habit.range === 'all');
+    const allTextData = textSelections.some((habit) => habit.range === 'all');
     const selectRows =
       selectSelections.length === 0
         ? []
@@ -198,6 +220,14 @@ export class HabitRepository {
           ? getAllSummationEventsForUser(user)
           : hydrationRange
             ? getSummationEventSeriesForUser(user, hydrationRange.start, hydrationRange.end)
+            : [];
+    const textRows =
+      textSelections.length === 0
+        ? []
+        : allTextData
+          ? getAllHabitTextsForUser(user)
+          : hydrationRange
+            ? getHabitTextSeriesForUser(user, hydrationRange.start, hydrationRange.end)
             : [];
     return query.habits.map((selection): HydratedHabitData => {
       const range = ranges.get(selection.name)!;
@@ -224,8 +254,32 @@ export class HabitRepository {
         };
       }
 
-      const events = eventsFromRows(
-        eventRows.filter(
+      if (selection.type === 'summation') {
+        const events = eventsFromRows(
+          eventRows.filter(
+            (row) =>
+              row.habit === selection.name && (range === 'all' || dateIsInRange(row.date, range)),
+          ),
+        );
+        const hydratedRange =
+          range === 'all'
+            ? rangeForDates(
+                viewDate,
+                events.map((event) => event.date),
+              )
+            : range;
+        return {
+          name: selection.name,
+          type: 'summation',
+          dataStart: hydratedRange.start,
+          dataEnd: hydratedRange.end,
+          totals: totalsFromEvents(events),
+          events,
+        };
+      }
+
+      const texts = textsFromSeries(
+        textRows.filter(
           (row) =>
             row.habit === selection.name && (range === 'all' || dateIsInRange(row.date, range)),
         ),
@@ -234,16 +288,15 @@ export class HabitRepository {
         range === 'all'
           ? rangeForDates(
               viewDate,
-              events.map((event) => event.date),
+              texts.map((row) => row.date),
             )
           : range;
       return {
         name: selection.name,
-        type: 'summation',
+        type: 'text',
         dataStart: hydratedRange.start,
         dataEnd: hydratedRange.end,
-        totals: totalsFromEvents(events),
-        events,
+        texts,
       };
     });
   }

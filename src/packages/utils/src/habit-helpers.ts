@@ -42,7 +42,8 @@ export function isEmpty(habit: Habit): boolean {
   if (habit.type === 'single_select') {
     return habit.details.value == null || habit.details.value === '';
   }
-  return habit.details.total == null;
+  if (habit.type === 'summation') return habit.details.total == null;
+  return habit.details.text == null || habit.details.text === '';
 }
 
 export function hasHabitData(habit: Habit): boolean {
@@ -66,6 +67,7 @@ function hasPositiveGoal(
 
 function otherHabitCompleted(h: Habit): boolean {
   if (h.type === 'single_select') return h.details.value != null;
+  if (h.type === 'text') return h.details.text != null && h.details.text !== '';
   if (h.details.goal != null && h.details.goal > 0) return false;
   return (h.details.total ?? 0) > 0;
 }

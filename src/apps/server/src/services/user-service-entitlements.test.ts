@@ -30,4 +30,18 @@ describe('UserService.entitlementsForUser', () => {
 
     expect(userService.entitlementsForUser(username)).not.toContain(ProductEntitlement.NEW_USER);
   });
+
+  it('omits NEW_USER after a text entry is stored', () => {
+    const username = 'entitlements-text-user-test';
+    userAndAuthRepository.setUserPassword(username, 'test-password');
+    habitRepository.applyHabitMutation({
+      kind: 'set_text',
+      user: username,
+      habit: 'journal',
+      date: dayFromString('2020-01-01'),
+      text: 'A thought.',
+    });
+
+    expect(userService.entitlementsForUser(username)).not.toContain(ProductEntitlement.NEW_USER);
+  });
 });

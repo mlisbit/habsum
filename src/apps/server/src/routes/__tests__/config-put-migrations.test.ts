@@ -141,6 +141,8 @@ describe('PUT /users/:user/config migrations', () => {
   mood:
     type: single_select
     options: [blackout, okay]
+  journal:
+    type: text
 `,
     );
     userAndAuthRepository.setUserPassword(user, 'test-password');
@@ -159,6 +161,13 @@ describe('PUT /users/:user/config migrations', () => {
       date: dayFromString('2025-01-01'),
       value: 'blackout',
     });
+    habitRepository.applyHabitMutation({
+      kind: 'set_text',
+      user,
+      habit: 'journal',
+      date: dayFromString('2025-01-01'),
+      text: 'A thought.',
+    });
 
     const session = userAndAuthRepository.createUserSession(user, 3600);
     const nextText = `habits:
@@ -167,6 +176,8 @@ describe('PUT /users/:user/config migrations', () => {
   mood:
     type: single_select
     options: [wrecked, okay]
+  daily journal:
+    type: text
 `;
 
     await request(createApp())
@@ -177,6 +188,7 @@ describe('PUT /users/:user/config migrations', () => {
         migrations: [
           ['push ups', 'pushups'],
           ['mood.blackout', 'mood.wrecked'],
+          ['journal', 'daily journal'],
         ],
         deletions: [],
       })
@@ -190,6 +202,13 @@ describe('PUT /users/:user/config migrations', () => {
       ]),
     );
     expect(hydratedSelectValue(user, 'mood', '2025-01-01')).toBe('wrecked');
+    expect(habitRepository.getDataExport(user).texts).toEqual([
+      expect.objectContaining({
+        habit: 'daily journal',
+        date: '2025-01-01',
+        text: 'A thought.',
+      }),
+    ]);
   });
 
   it('deletes historical option data for config deletions', async () => {

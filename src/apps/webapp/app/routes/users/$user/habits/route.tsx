@@ -38,7 +38,7 @@ const EMPTY_PAGE_PROGRESS: HabitsResponse['page']['progress'] = {
 };
 
 function toListHabit(habit: Habit): Habit {
-  if (habit.type === 'single_select') return habit;
+  if (habit.type !== 'summation') return habit;
   const { events: _events, ...details } = habit.details;
   return { ...habit, details };
 }

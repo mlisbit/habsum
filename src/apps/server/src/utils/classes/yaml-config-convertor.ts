@@ -48,18 +48,20 @@ function habitToYamlDef(habit: HabitDef): Record<string, unknown> {
   if (habit.type === 'single_select') {
     def.options = habit.settings.options;
     if (habit.settings.theme) def.theme = habit.settings.theme;
-  } else {
+  } else if (habit.type === 'summation') {
     if (habit.settings.goal != null) def.goal = habit.settings.goal;
     if (habit.settings.summationOptions) {
       def.summation_options = habit.settings.summationOptions.increments;
     }
   }
-  if (habit.data_visualization) def.data_visualization = habit.data_visualization;
-  if ((habit.insights?.length ?? 0) > 0) {
+  if (habit.type !== 'text' && habit.data_visualization) {
+    def.data_visualization = habit.data_visualization;
+  }
+  if (habit.type !== 'text' && (habit.insights?.length ?? 0) > 0) {
     const order: HabitInsight[] = ['current_streak', 'longest_streak', 'average'];
     def.insights = order.filter((insight) => habit.insights?.includes(insight));
   }
-  if (habit.streak_options) {
+  if (habit.type !== 'text' && habit.streak_options) {
     def.streak_options = {
       ...(habit.type === 'single_select' ? { options: habit.streak_options.options } : {}),
       frequency: habit.streak_options.frequency,

@@ -63,7 +63,7 @@ export type LogoutResponse = { ok: true };
 
 export type UserConfigJsonHabit = {
   name: string;
-  type: 'summation' | 'single_select';
+  type: 'summation' | 'single_select' | 'text';
   goal: number | null;
   repeat?: string[];
   options?: string[];
@@ -108,7 +108,7 @@ export type HistoryDisplay = 'heatmap' | 'weekly_history';
 
 export type ConfigHabitDraft = {
   name: string;
-  type: 'summation' | 'single_select';
+  type: 'summation' | 'single_select' | 'text';
   goal: string;
   repeat: string[];
   quickAddItems: string[];

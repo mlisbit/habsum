@@ -5,6 +5,7 @@ import type { HabitDef } from '../../types/userConfig.js';
 import type { HabitMutationRepository } from './habit-type-service.js';
 import { SingleSelectHabitService } from './single-select-habit-service.js';
 import { SummationHabitService } from './summation-habit-service.js';
+import { TextHabitService } from './text-habit-service.js';
 
 const date = dayFromString('2026-07-23');
 
@@ -70,5 +71,36 @@ describe('habit type services', () => {
         createdAt: '2026-07-23 10:00:00',
       },
     ]);
+  });
+
+  it('keeps daily text mutations in the text service', () => {
+    const { repository, mutations } = mutationRecorder();
+    const definition: HabitDef<'text'> = {
+      name: 'journal',
+      type: 'text',
+      repeat: ['thursday'],
+      insights: [],
+      settings: {},
+    };
+    const service = new TextHabitService(definition, repository);
+    service.applyPatch({ user: 'user', date, body: { text: 'A thought for today.' } });
+
+    expect(mutations).toEqual([
+      {
+        kind: 'set_text',
+        user: 'user',
+        habit: 'journal',
+        date,
+        text: 'A thought for today.',
+      },
+    ]);
+
+    service.applyPatch({ user: 'user', date, body: { text: '' } });
+    expect(mutations.at(-1)).toEqual({
+      kind: 'clear_text',
+      user: 'user',
+      habit: 'journal',
+      date,
+    });
   });
 });

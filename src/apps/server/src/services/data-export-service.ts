@@ -23,6 +23,10 @@ export function buildUserDataCsv(user: string): string {
     lines.push(csvLine(['daily_select', row.habit, row.date, row.value, '', '', row.updatedAt]));
   }
 
+  for (const row of data.texts) {
+    lines.push(csvLine(['text', row.habit, row.date, row.text, '', '', row.updatedAt]));
+  }
+
   for (const row of data.summationEvents) {
     lines.push(
       csvLine(['summation_event', row.habit, row.date, '', row.id, row.amount, row.createdAt]),

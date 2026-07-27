@@ -21,7 +21,7 @@ Habit
 
 | Layer      | What it is                                                                                                                                                        | Who defines it           |
 | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
-| **Habit**  | One configured habit for a day (summation or single-select).                                                                                                      | Config + API             |
+| **Habit**  | One configured habit for a day (summation, single-select, or text).                                                                                               | Config + API             |
 | **Widget** | A titled block on the card (`title`, optional `titleValue`, and a `body`). A habit can have **zero or many** widgets, in any order the server sends.              | Server (`habit.widgets`) |
 | **Module** | One visual piece inside a widget (`body[]` entry): insights, progress bar, bar graph, streak heatmap, etc. Each widget has **one or more** modules, in any order. | Server (`widget.body`)   |
 
@@ -31,7 +31,7 @@ The server is free to add, omit, or reorder widgets and modules; the client walk
 
 ## What `HabitRenderer` composes
 
-1. **Header** (`HabitHeaderAndActionRenderer`) — habit name, options menu, and actions that depend on habit type (count control for summation, pills/checkbox for single-select). This is driven by `type` and the type-specific `details` fields (`total`, `value`, `options`, …), not by `widgets[]`.
+1. **Header** (`HabitHeaderAndActionRenderer`) — habit name, options menu, and actions that depend on habit type (count control for summation, pills/checkbox for single-select, plain-text entry for text habits). This is driven by `type` and the type-specific `details` fields (`total`, `value`, `options`, `text`, …), not by `widgets[]`.
 
 2. **Widgets** (`HabitWidgetRenderer`) — walks `habit.widgets[]` and renders each widget’s modules. Also includes a few habit-type extras outside that array (e.g. summation **Events** for today’s log). Individual modules are rendered via `renderHabitWidgetBody` (`insights`, `progress`, `barGraph`, `streakGraph`).
 

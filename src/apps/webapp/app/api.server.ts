@@ -8,6 +8,7 @@ const SERVER_URL = process.env.HABSUM_SERVER_URL ?? 'http://localhost:3001';
 function buildHabitPatchPayload(
   body:
     | { habit: string; total: number; action?: 'add' | 'set' }
+    | { habit: string; text: string }
     | { habit: string; action: 'clear' }
     | { habit: string; action: 'delete_event'; eventId: number },
   date: string,
@@ -48,6 +49,7 @@ export function patchHabit(
   user: string,
   body:
     | { habit: string; total: number; action?: 'add' | 'set' }
+    | { habit: string; text: string }
     | { habit: string; action: 'clear' }
     | { habit: string; action: 'delete_event'; eventId: number },
   opts: { date: string },
