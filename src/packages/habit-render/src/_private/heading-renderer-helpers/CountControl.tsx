@@ -11,25 +11,15 @@ export type CountControlProps = {
   /** Current logged total for the day; `null` means no stored row. */
   displayTotal: number | null;
   habitName: string;
-  pending: boolean;
   onAddDelta: (delta: number) => Promise<void>;
 };
 
-function AddAmountTrigger({
-  habitName,
-  pending,
-  onClick,
-}: {
-  habitName: string;
-  pending: boolean;
-  onClick: () => void;
-}) {
+function AddAmountTrigger({ habitName, onClick }: { habitName: string; onClick: () => void }) {
   return (
     <Button
       type="tertiary"
       size="medium"
       icon="plus"
-      disabled={pending}
       className="count-control__amount-trigger text-b-m"
       onClick={onClick}
       aria-label={`Enter custom amount for ${habitName}`}
@@ -41,7 +31,6 @@ export function CountControl({
   summationSteps,
   displayTotal,
   habitName,
-  pending,
   onAddDelta,
 }: CountControlProps) {
   const manualMode = hasSummationOptions(summationSteps);
@@ -69,7 +58,7 @@ export function CountControl({
     return (
       <div className="count-control">
         <div className="count-control__manual-row">
-          <AddAmountTrigger habitName={habitName} pending={pending} onClick={openAddModal} />
+          <AddAmountTrigger habitName={habitName} onClick={openAddModal} />
           <div className="count-control__increments" role="group" aria-label="Quick add amounts">
             {increments.map((delta, index) => (
               <Button
@@ -77,7 +66,6 @@ export function CountControl({
                 type="secondary"
                 size="medium"
                 text={formatIncrementLabel(delta)}
-                disabled={pending}
                 className={delta < 0 ? 'text-error' : undefined}
                 onClick={() => void applyDelta(delta)}
                 aria-label={
@@ -95,7 +83,7 @@ export function CountControl({
 
   return (
     <div className="count-control">
-      <AddAmountTrigger habitName={habitName} pending={pending} onClick={openAddModal} />
+      <AddAmountTrigger habitName={habitName} onClick={openAddModal} />
     </div>
   );
 }

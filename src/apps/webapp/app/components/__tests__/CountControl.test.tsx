@@ -29,12 +29,7 @@ describe('CountControl', () => {
   it('free-form: + opens add modal', async () => {
     const user = userEvent.setup();
     renderWithModal(
-      <CountControl
-        displayTotal={null}
-        habitName={habitName}
-        pending={false}
-        onAddDelta={vi.fn(async () => {})}
-      />,
+      <CountControl displayTotal={null} habitName={habitName} onAddDelta={vi.fn(async () => {})} />,
     );
     const trigger = screen.getByRole('button', { name: /Enter custom amount for/ });
     expect(trigger.classList.contains('button--icon')).toBe(true);
@@ -51,12 +46,7 @@ describe('CountControl', () => {
     const user = userEvent.setup();
     const onAddDelta = vi.fn(async () => {});
     renderWithModal(
-      <CountControl
-        displayTotal={null}
-        habitName={habitName}
-        pending={false}
-        onAddDelta={onAddDelta}
-      />,
+      <CountControl displayTotal={null} habitName={habitName} onAddDelta={onAddDelta} />,
     );
     await user.click(screen.getByRole('button', { name: /Enter custom amount for/ }));
     const input = amountInput();
@@ -69,12 +59,7 @@ describe('CountControl', () => {
     const user = userEvent.setup();
     const onAddDelta = vi.fn(async () => {});
     renderWithModal(
-      <CountControl
-        displayTotal={null}
-        habitName={habitName}
-        pending={false}
-        onAddDelta={onAddDelta}
-      />,
+      <CountControl displayTotal={null} habitName={habitName} onAddDelta={onAddDelta} />,
     );
     await user.click(screen.getByRole('button', { name: /Enter custom amount for/ }));
     const input = amountInput();
@@ -88,12 +73,7 @@ describe('CountControl', () => {
     const user = userEvent.setup();
     const onAddDelta = vi.fn(async () => {});
     renderWithModal(
-      <CountControl
-        displayTotal={null}
-        habitName={habitName}
-        pending={false}
-        onAddDelta={onAddDelta}
-      />,
+      <CountControl displayTotal={null} habitName={habitName} onAddDelta={onAddDelta} />,
     );
     await user.click(screen.getByRole('button', { name: /Enter custom amount for/ }));
     const input = amountInput();
@@ -108,7 +88,6 @@ describe('CountControl', () => {
         summationSteps={manualSteps}
         displayTotal={null}
         habitName={habitName}
-        pending={false}
         onAddDelta={vi.fn(async () => {})}
       />,
     );
@@ -127,7 +106,6 @@ describe('CountControl', () => {
         summationSteps={manualSteps}
         displayTotal={null}
         habitName={habitName}
-        pending={false}
         onAddDelta={onAddDelta}
       />,
     );
@@ -140,12 +118,7 @@ describe('CountControl', () => {
   it('add modal: shows new total while typing', async () => {
     const user = userEvent.setup();
     renderWithModal(
-      <CountControl
-        displayTotal={10}
-        habitName={habitName}
-        pending={false}
-        onAddDelta={vi.fn(async () => {})}
-      />,
+      <CountControl displayTotal={10} habitName={habitName} onAddDelta={vi.fn(async () => {})} />,
     );
     await user.click(screen.getByRole('button', { name: /Enter custom amount for/ }));
     expect(screen.queryByText(/New total:/)).toBeNull();
@@ -159,12 +132,7 @@ describe('CountControl', () => {
   it('add modal: rejected letter shows error and is not entered', async () => {
     const user = userEvent.setup();
     renderWithModal(
-      <CountControl
-        displayTotal={null}
-        habitName={habitName}
-        pending={false}
-        onAddDelta={vi.fn(async () => {})}
-      />,
+      <CountControl displayTotal={null} habitName={habitName} onAddDelta={vi.fn(async () => {})} />,
     );
     await user.click(screen.getByRole('button', { name: /Enter custom amount for/ }));
     const input = amountInput();
@@ -184,7 +152,6 @@ describe('CountControl', () => {
         summationSteps={manualSteps}
         displayTotal={null}
         habitName={habitName}
-        pending={false}
         onAddDelta={onAddDelta}
       />,
     );

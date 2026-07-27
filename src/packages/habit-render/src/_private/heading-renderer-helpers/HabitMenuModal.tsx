@@ -6,7 +6,6 @@ import { configEditHabitUrl } from '@habsum/utils/habit-id';
 type HabitMenuModalProps = {
   user: string;
   habitName: string;
-  pending?: boolean;
   onNavigate?: (url: string) => void;
   closeModalThen: (afterClose: () => void) => void;
   onReset: () => void | Promise<void>;
@@ -15,7 +14,6 @@ type HabitMenuModalProps = {
 export function HabitMenuModal({
   user,
   habitName,
-  pending = false,
   onNavigate,
   closeModalThen,
   onReset,
@@ -33,14 +31,13 @@ export function HabitMenuModal({
 
   return (
     <>
-      <ModalHeader dismissDisabled={pending}>{habitName} options</ModalHeader>
+      <ModalHeader>{habitName} options</ModalHeader>
       <ModalBody className="habit-menu-modal__body">
         <Button
           type="secondary"
           size="medium"
           text="Reset data for day"
           className="habit-menu-modal__action"
-          disabled={pending}
           onClick={() => {
             void onReset();
           }}
@@ -50,7 +47,6 @@ export function HabitMenuModal({
           size="medium"
           text="Edit widget"
           className="habit-menu-modal__action"
-          disabled={pending}
           onClick={onEdit}
         />
       </ModalBody>

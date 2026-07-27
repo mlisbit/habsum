@@ -1,4 +1,12 @@
-import { useCallback, useEffect, useState, type ComponentType, type ReactNode } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type ComponentType,
+  type ReactNode,
+} from 'react';
+import type { Day } from '@habsum/types/common/day';
 import type {
   Habit,
   HabitRowSingleSelect,
@@ -10,15 +18,17 @@ import { CountControl } from './heading-renderer-helpers/CountControl';
 import { HabitHeadingRender } from './heading-renderer-helpers/HabitHeadingRender';
 import { HabitMenuModal } from './heading-renderer-helpers/HabitMenuModal';
 import { TogglePill } from '@habsum/ui/components/Pill';
-import { Button } from '@habsum/ui/components/Button';
 import { TernaryCheckbox, type TernaryCheckboxValue } from '@habsum/ui/components/TernaryCheckbox';
 import { useModal } from '@habsum/ui/contexts/modal';
 import { classBuilder } from '@habsum/utils/class-builder';
 import { isGoalHit } from '@habsum/utils/habit-helpers';
 
+const TEXT_AUTOSAVE_DELAY_MS = 600;
+
 type HabitHeaderAndActionRendererProps = {
   user: string;
   habit: Habit;
+  viewDate: Day;
   pending: boolean;
   currentSearch?: string;
   LinkComponent?: ComponentType<{ to: string; className?: string; children: ReactNode }>;
@@ -44,13 +54,11 @@ function toTernaryCheckboxValue(value: string | null): TernaryCheckboxValue {
 function useHabitResetMenu({
   user,
   habit,
-  pending,
   onNavigate,
   onUpdate,
 }: {
   user: string;
   habit: Habit;
-  pending: boolean;
   onNavigate?: (url: string) => void;
   onUpdate: (patch: HabitPatch) => Promise<void>;
 }) {
@@ -62,7 +70,6 @@ function useHabitResetMenu({
         <HabitMenuModal
           user={user}
           habitName={habit.name}
-          pending={pending}
           onNavigate={onNavigate}
           closeModalThen={closeModalThen}
           onReset={async () => {
@@ -72,16 +79,14 @@ function useHabitResetMenu({
         />
       ),
     });
-  }, [present, closeModal, closeModalThen, habit.name, onNavigate, onUpdate, pending, user]);
+  }, [present, closeModal, closeModalThen, habit.name, onNavigate, onUpdate, user]);
 }
 
 function SingleSelectActions({
   habit,
-  pending,
   onUpdate,
 }: {
   habit: HabitRowSingleSelect;
-  pending: boolean;
   onUpdate: (patch: HabitPatch) => Promise<void>;
 }) {
   const checkboxTheme = isCheckboxTheme(habit);
@@ -102,7 +107,6 @@ function SingleSelectActions({
       <TernaryCheckbox
         value={toTernaryCheckboxValue(habit.details.value)}
         aria-label={`${habit.name}: ${habit.details.value ?? 'not set'}`}
-        disabled={pending}
         onChange={(nextValue) => {
           void handleSelectChange(nextValue);
         }}
@@ -119,7 +123,6 @@ function SingleSelectActions({
           <TogglePill
             key={opt}
             selected={selected}
-            disabled={pending}
             className={
               dim ? 'habit-select__option habit-select__option--dim' : 'habit-select__option'
             }
@@ -174,7 +177,7 @@ function SingleSelectHabitHeader({
       menuAriaLabel={`More options for ${habit.name}`}
       onMenuClick={openResetModal}
       className={['mb-4', className].filter(Boolean).join(' ')}
-      actions={<SingleSelectActions habit={habit} pending={pending} onUpdate={onUpdate} />}
+      actions={<SingleSelectActions habit={habit} onUpdate={onUpdate} />}
     />
   );
 }
@@ -217,7 +220,6 @@ function SummationHabitHeader({
           summationSteps={habit.details.summationOptions}
           displayTotal={habit.details.total}
           habitName={habit.name}
-          pending={pending}
           onAddDelta={(delta) => onUpdate({ habit: habit.name, total: delta })}
         />
       }
@@ -236,39 +238,47 @@ function TextHabitActions({
 }) {
   const storedText = habit.details.text ?? '';
   const [draft, setDraft] = useState(storedText);
+  const draftRef = useRef(storedText);
+  const lastAttemptedDraftRef = useRef(storedText);
 
   useEffect(() => {
-    setDraft(storedText);
-  }, [habit.name, storedText]);
+    if (draftRef.current !== lastAttemptedDraftRef.current) return;
+    draftRef.current = storedText;
+    lastAttemptedDraftRef.current = storedText;
+    setDraft((current) => (current === storedText ? current : storedText));
+  }, [storedText]);
+
+  useEffect(() => {
+    if (pending || draft === storedText || draft === lastAttemptedDraftRef.current) return;
+
+    const timeout = window.setTimeout(() => {
+      lastAttemptedDraftRef.current = draft;
+      void onUpdate({ habit: habit.name, text: draft });
+    }, TEXT_AUTOSAVE_DELAY_MS);
+
+    return () => window.clearTimeout(timeout);
+  }, [draft, habit.name, onUpdate, pending, storedText]);
 
   return (
-    <div className="habit-text">
-      <textarea
-        className="habit-text__input text-b-m"
-        aria-label={`${habit.name} text for the day`}
-        placeholder="Write something for this day…"
-        rows={3}
-        value={draft}
-        disabled={pending}
-        onChange={(event) => setDraft(event.target.value)}
-      />
-      <Button
-        type="primary"
-        size="medium"
-        text="Save"
-        className="habit-text__save"
-        disabled={pending || draft === storedText}
-        onClick={() => {
-          void onUpdate({ habit: habit.name, text: draft });
-        }}
-      />
-    </div>
+    <textarea
+      className="habit-text__input text-b-m"
+      aria-label={`${habit.name} text for the day`}
+      placeholder="Write something for this day…"
+      rows={3}
+      value={draft}
+      aria-busy={pending}
+      onChange={(event) => {
+        draftRef.current = event.target.value;
+        setDraft(event.target.value);
+      }}
+    />
   );
 }
 
 function TextHabitHeader({
   user,
   habit,
+  viewDate,
   pending,
   currentSearch,
   LinkComponent,
@@ -279,6 +289,7 @@ function TextHabitHeader({
 }: {
   user: string;
   habit: HabitRowText;
+  viewDate: Day;
   pending: boolean;
   currentSearch?: string;
   LinkComponent?: ComponentType<{ to: string; className?: string; children: ReactNode }>;
@@ -300,7 +311,12 @@ function TextHabitHeader({
         onMenuClick={openResetModal}
         className="mb-4"
       />
-      <TextHabitActions habit={habit} pending={pending} onUpdate={onUpdate} />
+      <TextHabitActions
+        key={`${habit.name}:${viewDate}`}
+        habit={habit}
+        pending={pending}
+        onUpdate={onUpdate}
+      />
     </div>
   );
 }
@@ -308,6 +324,7 @@ function TextHabitHeader({
 export default function HabitHeaderAndActionRenderer({
   user,
   habit,
+  viewDate,
   pending,
   currentSearch,
   LinkComponent,
@@ -319,7 +336,6 @@ export default function HabitHeaderAndActionRenderer({
   const openResetModal = useHabitResetMenu({
     user,
     habit,
-    pending,
     onNavigate,
     onUpdate,
   });
@@ -344,6 +360,7 @@ export default function HabitHeaderAndActionRenderer({
       <TextHabitHeader
         user={user}
         habit={habit}
+        viewDate={viewDate}
         pending={pending}
         currentSearch={currentSearch}
         LinkComponent={LinkComponent}

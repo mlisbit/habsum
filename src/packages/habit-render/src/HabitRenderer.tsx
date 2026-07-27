@@ -23,23 +23,23 @@ type HabitRendererProps = {
 };
 
 function usePendingOp({ onError }: { onError: (message: string) => void }) {
-  const [pending, setPending] = useState(false);
+  const [pendingOperationCount, setPendingOperationCount] = useState(0);
 
   const runOp = useCallback(
     async (fn: () => Promise<void>) => {
-      setPending(true);
+      setPendingOperationCount((count) => count + 1);
       try {
         await fn();
       } catch (e) {
         onError(e instanceof Error ? e.message : String(e));
       } finally {
-        setPending(false);
+        setPendingOperationCount((count) => Math.max(0, count - 1));
       }
     },
     [onError],
   );
 
-  return { pending, runOp };
+  return { pending: pendingOperationCount > 0, runOp };
 }
 
 export default function HabitRenderer(props: HabitRendererProps) {
@@ -80,6 +80,7 @@ export default function HabitRenderer(props: HabitRendererProps) {
       <HabitHeaderAndActionRenderer
         user={user}
         habit={habit}
+        viewDate={viewDate}
         pending={pending}
         currentSearch={currentSearch}
         LinkComponent={LinkComponent}

@@ -1,11 +1,5 @@
 @use 'functions';
 
-.habit-text {
-  display: flex;
-  align-items: flex-end;
-  gap: functions.spacing(2);
-}
-
 .habit-text__input {
   width: 100%;
   min-width: 0;
@@ -20,12 +14,4 @@
     outline: none;
     box-shadow: var(--box-shadow-focus);
   }
-
-  &:disabled {
-    opacity: 0.55;
-  }
-}
-
-.habit-text__save {
-  flex-shrink: 0;
 }
