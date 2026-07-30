@@ -94,11 +94,12 @@ describe('summation habit settings layout', () => {
 });
 
 describe('text habit settings', () => {
-  it('shows repeat configuration without visualization or streak options', () => {
+  it('shows repeat and reset configuration without visualization or streak options', () => {
     const textHabit: UserConfigJsonHabit = {
       name: 'Journal',
       type: 'text',
       goal: null,
+      reset: ['saturday'],
     };
 
     render(
@@ -114,6 +115,9 @@ describe('text habit settings', () => {
     );
 
     expect(screen.getByText('Repeat')).toBeTruthy();
+    const resetField = screen.getByText('Reset').closest('.config-habit-modal__field');
+    expect(resetField).not.toBeNull();
+    expect(resetField?.querySelector('button')?.textContent).toContain('Sat');
     expect(screen.queryByText('Data Visualization')).toBeNull();
     expect(screen.queryByText('Insights')).toBeNull();
     expect(screen.queryByRole('button', { name: 'Streak Options' })).toBeNull();

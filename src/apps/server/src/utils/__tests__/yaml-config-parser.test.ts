@@ -94,6 +94,7 @@ describe('YAMLConfigParser', () => {
   journal:
     type: text
     repeat: [monday, friday]
+    reset: [saturday]
     data_visualization: ignored
     insights: [average, current_streak]
     streak_options: ignored
@@ -108,9 +109,38 @@ describe('YAMLConfigParser', () => {
         data_visualization: undefined,
         insights: [],
         streak_options: undefined,
-        settings: {},
+        settings: {
+          reset: ['saturday'],
+        },
       },
     ]);
+  });
+
+  it('defaults text habit reset to every day', () => {
+    const config = new YAMLConfigParser('text-user').parse(
+      yamlString(`habits:
+  journal:
+    type: text
+`),
+    );
+
+    expect(config.habits[0]?.settings).toEqual({
+      reset: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
+    });
+  });
+
+  it('validates text habit reset using the repeat weekday options', () => {
+    expect(() =>
+      new YAMLConfigParser('text-user').parse(
+        yamlString(`habits:
+  journal:
+    type: text
+    reset: [someday]
+`),
+      ),
+    ).toThrow(
+      'habit "journal" reset must only include monday, tuesday, wednesday, thursday, friday, saturday, sunday',
+    );
   });
 
   it('rejects unknown habit types', () => {

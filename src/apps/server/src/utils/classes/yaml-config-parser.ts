@@ -46,27 +46,39 @@ function getHabitTheme(raw: unknown, habitName: string): HabitTheme | undefined 
 
 const HABIT_REPEAT_DAY_SET = new Set<string>(HABIT_REPEAT_DAYS);
 
-function normalizeRepeat(raw: unknown, habitName: string): HabitDef['repeat'] {
+function normalizeWeekdaySchedule(
+  raw: unknown,
+  habitName: string,
+  field: 'repeat' | 'reset',
+): string[] {
   if (raw == null) return [...HABIT_REPEAT_DAYS];
   if (!Array.isArray(raw)) {
-    throw new YAMLConfigValidationError(`habit "${habitName}" repeat must be a yaml list`);
+    throw new YAMLConfigValidationError(`habit "${habitName}" ${field} must be a yaml list`);
   }
 
   const days: string[] = [];
   for (const item of raw) {
     if (typeof item !== 'string' || !HABIT_REPEAT_DAY_SET.has(item)) {
       throw new YAMLConfigValidationError(
-        `habit "${habitName}" repeat must only include monday, tuesday, wednesday, thursday, friday, saturday, sunday`,
+        `habit "${habitName}" ${field} must only include monday, tuesday, wednesday, thursday, friday, saturday, sunday`,
       );
     }
     if (!days.includes(item)) days.push(item);
   }
   if (days.length === 0) {
     throw new YAMLConfigValidationError(
-      `habit "${habitName}" repeat must include at least one day`,
+      `habit "${habitName}" ${field} must include at least one day`,
     );
   }
   return days;
+}
+
+function normalizeRepeat(raw: unknown, habitName: string): HabitDef['repeat'] {
+  return normalizeWeekdaySchedule(raw, habitName, 'repeat');
+}
+
+function normalizeReset(raw: unknown, habitName: string): string[] {
+  return normalizeWeekdaySchedule(raw, habitName, 'reset');
 }
 
 function normalizeStreakOptionsList(
@@ -445,7 +457,9 @@ export default class YAMLConfigParser {
           return {
             ...shared,
             type,
-            settings: {},
+            settings: {
+              reset: normalizeReset(rawHabit.reset, name),
+            },
           };
         }
         const summationOptions = parseSummationOptionsFromRaw(

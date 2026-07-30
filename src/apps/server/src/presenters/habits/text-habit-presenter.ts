@@ -3,6 +3,7 @@ import type { Day } from '@habsum/types/common/day';
 import type { HabitRowText } from '@habsum/types/common/habit';
 import type { HydratedHabitData } from '../../types/habit.types.js';
 import type { HabitDef } from '../../types/userConfig.js';
+import getTextHabitResetWindowStart from '../../utils/habits/get-text-habit-reset-window-start.js';
 import {
   HabitPresenter,
   type HabitHistoryEvent,
@@ -26,7 +27,7 @@ export class TextHabitPresenter extends HabitPresenter<
 
   getHistoryEvents(startDay: Day, endDay: Day): HabitHistoryEvent[] {
     return this.habitData.texts
-      .filter((row) => row.date >= startDay && row.date <= endDay)
+      .filter((row) => row.date >= startDay && row.date <= endDay && row.text !== '')
       .map((row) => ({
         day: row.date,
         habit: this.getPresentedHabit(row.date),
@@ -38,11 +39,17 @@ export class TextHabitPresenter extends HabitPresenter<
   }
 
   private getPresentedHabit(viewingDate: Day): HabitRowText {
+    const resetWindowStart = getTextHabitResetWindowStart(this.definition, viewingDate);
+    const text =
+      this.habitData.texts
+        .filter((row) => row.date >= resetWindowStart && row.date <= viewingDate)
+        .sort((left, right) => right.date.localeCompare(left.date))[0]?.text ?? null;
+
     return {
       name: this.definition.name,
       type: 'text',
       details: {
-        text: this.habitData.texts.find((row) => row.date === viewingDate)?.text ?? null,
+        text,
       },
     };
   }

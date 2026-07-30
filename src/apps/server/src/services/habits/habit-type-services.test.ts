@@ -80,7 +80,9 @@ describe('habit type services', () => {
       type: 'text',
       repeat: ['thursday'],
       insights: [],
-      settings: {},
+      settings: {
+        reset: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
+      },
     };
     const service = new TextHabitService(definition, repository);
     service.applyPatch({ user: 'user', date, body: { text: 'A thought for today.' } });
@@ -102,5 +104,31 @@ describe('habit type services', () => {
       habit: 'journal',
       date,
     });
+  });
+
+  it('stores a blank reset-window override when persistent text is cleared', () => {
+    const { repository, mutations } = mutationRecorder();
+    const definition: HabitDef<'text'> = {
+      name: 'journal',
+      type: 'text',
+      repeat: ['thursday'],
+      insights: [],
+      settings: {
+        reset: ['saturday'],
+      },
+    };
+    const service = new TextHabitService(definition, repository);
+
+    service.applyPatch({ user: 'user', date, body: { text: '' } });
+
+    expect(mutations).toEqual([
+      {
+        kind: 'set_text',
+        user: 'user',
+        habit: 'journal',
+        date,
+        text: '',
+      },
+    ]);
   });
 });

@@ -9,6 +9,7 @@ const singleSelectHistoryDraft: ConfigHabitDraft = {
   type: 'single_select',
   goal: '',
   repeat: ['monday'],
+  reset: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
   quickAddItems: [],
   optionsText: 'yes\nno',
   theme: '',

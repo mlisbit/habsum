@@ -34,6 +34,7 @@ export function isHabitDraftDirty(initial: ConfigHabitDraft, draft: ConfigHabitD
     initial.type !== draft.type ||
     initial.goal !== draft.goal ||
     !quickAddItemsEqual(initial.repeat, draft.repeat) ||
+    !quickAddItemsEqual(initial.reset, draft.reset) ||
     !quickAddItemsEqual(initial.quickAddItems, draft.quickAddItems) ||
     initial.optionsText !== draft.optionsText ||
     initial.theme !== draft.theme ||
@@ -104,6 +105,12 @@ function normalizeDraftRepeat(repeat: string[]): string[] {
   return normalized;
 }
 
+function normalizeDraftReset(reset: string[]): string[] {
+  const normalized = HABIT_REPEAT_DAYS.filter((day) => reset.includes(day));
+  if (normalized.length === 0) throw new Error('reset must include at least one day');
+  return normalized;
+}
+
 function normalizeHistoryDisplays(displays: readonly HistoryDisplay[]): HistoryDisplay[] {
   return HISTORY_DISPLAY_ORDER.filter((display) => displays.includes(display));
 }
@@ -141,6 +148,10 @@ export function draftFromHabit(habit: UserConfigJsonHabit): ConfigHabitDraft {
       habit.repeat == null
         ? [...HABIT_REPEAT_DAYS]
         : HABIT_REPEAT_DAYS.filter((day) => habit.repeat?.includes(day)),
+    reset:
+      habit.type !== 'text' || habit.reset == null
+        ? [...HABIT_REPEAT_DAYS]
+        : HABIT_REPEAT_DAYS.filter((day) => habit.reset?.includes(day)),
     quickAddItems: sortQuickAddItems(
       habit.type === 'summation'
         ? (habit.summationOptions?.increments ?? []).map((item) => String(item))
@@ -211,12 +222,14 @@ function draftToHabit(draft: ConfigHabitDraft): UserConfigJsonHabit {
     return habit;
   }
   if (draft.type === 'text') {
+    const reset = normalizeDraftReset(draft.reset);
     const habit: UserConfigJsonHabit = {
       name,
       type: 'text',
       goal: null,
     };
     if (repeat.length < HABIT_REPEAT_DAYS.length) habit.repeat = repeat;
+    if (reset.length < HABIT_REPEAT_DAYS.length) habit.reset = reset;
     return habit;
   }
 

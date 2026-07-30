@@ -45,7 +45,11 @@ function habitToYamlDef(habit: HabitDef): Record<string, unknown> {
   if (habit.repeat != null && habit.repeat.length > 0 && habit.repeat.length < 7) {
     def.repeat = habit.repeat;
   }
-  if (habit.type === 'single_select') {
+  if (habit.type === 'text') {
+    if (habit.settings.reset.length > 0 && habit.settings.reset.length < 7) {
+      def.reset = habit.settings.reset;
+    }
+  } else if (habit.type === 'single_select') {
     def.options = habit.settings.options;
     if (habit.settings.theme) def.theme = habit.settings.theme;
   } else if (habit.type === 'summation') {
@@ -87,8 +91,12 @@ function dumpHabitDef(def: Record<string, unknown>): string {
       }
     }
 
-    if (key === 'repeat' && Array.isArray(value) && value.every((x) => typeof x === 'string')) {
-      lines.push(`repeat: ${formatStringListInline(value)}`);
+    if (
+      (key === 'repeat' || key === 'reset') &&
+      Array.isArray(value) &&
+      value.every((x) => typeof x === 'string')
+    ) {
+      lines.push(`${key}: ${formatStringListInline(value)}`);
       continue;
     }
 

@@ -31,12 +31,65 @@ const REPEAT_DAY_LABELS: Record<(typeof HABIT_REPEAT_DAYS)[number], string> = {
   sunday: 'Sunday',
 };
 
-function repeatLabel(repeat: string[]): string {
-  if (repeat.length === HABIT_REPEAT_DAYS.length) return 'everyday';
+function weekdayScheduleLabel(schedule: string[]): string {
+  if (schedule.length === HABIT_REPEAT_DAYS.length) return 'Everyday';
   return (
-    HABIT_REPEAT_DAYS.filter((day) => repeat.includes(day))
+    HABIT_REPEAT_DAYS.filter((day) => schedule.includes(day))
       .map((day) => REPEAT_DAY_LABELS[day].slice(0, 3))
       .join(', ') || 'No days'
+  );
+}
+
+function WeekdayScheduleField({
+  label,
+  schedule,
+  onChange,
+}: {
+  label: string;
+  schedule: string[];
+  onChange: (schedule: string[]) => void;
+}) {
+  return (
+    <div className="config-habit-modal__field">
+      <div className="config-habit-modal__label">
+        <label className="text-b-m">{label}</label>
+      </div>
+      <div className="config-habit-modal__control">
+        <Dropdown>
+          <Dropdown.Trigger asChild>
+            <TriggerPill size="small" className="config-habit-modal__repeat-trigger">
+              {weekdayScheduleLabel(schedule)}
+            </TriggerPill>
+          </Dropdown.Trigger>
+          <Dropdown.Content className="config-habit-modal__repeat-dropdown">
+            <div className="config-habit-modal__repeat-options">
+              {HABIT_REPEAT_DAYS.map((day) => (
+                <label key={day} className="config-habit-modal__repeat-option text-b-s">
+                  <input
+                    className="config-habit-modal__checkbox"
+                    type="checkbox"
+                    checked={schedule.includes(day)}
+                    onChange={(event) => {
+                      if (event.target.checked) {
+                        onChange(
+                          HABIT_REPEAT_DAYS.filter(
+                            (candidate) => candidate === day || schedule.includes(candidate),
+                          ),
+                        );
+                        return;
+                      }
+                      if (schedule.length <= 1) return;
+                      onChange(schedule.filter((scheduledDay) => scheduledDay !== day));
+                    }}
+                  />
+                  {REPEAT_DAY_LABELS[day]}
+                </label>
+              ))}
+            </div>
+          </Dropdown.Content>
+        </Dropdown>
+      </div>
+    </div>
   );
 }
 
@@ -90,49 +143,20 @@ export function ConfigModalRenderer({
     }
   };
 
-  const repeatControl = (
-    <Dropdown>
-      <Dropdown.Trigger asChild>
-        <TriggerPill size="small" className="config-habit-modal__repeat-trigger">
-          {repeatLabel(draft.repeat)}
-        </TriggerPill>
-      </Dropdown.Trigger>
-      <Dropdown.Content className="config-habit-modal__repeat-dropdown">
-        <div className="config-habit-modal__repeat-options">
-          {HABIT_REPEAT_DAYS.map((day) => (
-            <label key={day} className="config-habit-modal__repeat-option text-b-s">
-              <input
-                className="config-habit-modal__checkbox"
-                type="checkbox"
-                checked={draft.repeat.includes(day)}
-                onChange={(event) => {
-                  if (event.target.checked) {
-                    patch({
-                      repeat: HABIT_REPEAT_DAYS.filter(
-                        (candidate) => candidate === day || draft.repeat.includes(candidate),
-                      ),
-                    });
-                    return;
-                  }
-                  if (draft.repeat.length <= 1) return;
-                  patch({ repeat: draft.repeat.filter((repeatDay) => repeatDay !== day) });
-                }}
-              />
-              {REPEAT_DAY_LABELS[day]}
-            </label>
-          ))}
-        </div>
-      </Dropdown.Content>
-    </Dropdown>
+  const repeatField = (
+    <WeekdayScheduleField
+      label="Repeat"
+      schedule={draft.repeat}
+      onChange={(repeat) => patch({ repeat })}
+    />
   );
 
-  const repeatField = (
-    <div className="config-habit-modal__field">
-      <div className="config-habit-modal__label">
-        <label className="text-b-m">Repeat</label>
-      </div>
-      <div className="config-habit-modal__control">{repeatControl}</div>
-    </div>
+  const resetField = (
+    <WeekdayScheduleField
+      label="Reset"
+      schedule={draft.reset}
+      onChange={(reset) => patch({ reset })}
+    />
   );
 
   let fields;
@@ -189,7 +213,12 @@ export function ConfigModalRenderer({
       );
       break;
     case 'text':
-      fields = repeatField;
+      fields = (
+        <>
+          {repeatField}
+          {resetField}
+        </>
+      );
       break;
   }
 

@@ -66,6 +66,8 @@ export type UserConfigJsonHabit = {
   type: 'summation' | 'single_select' | 'text';
   goal: number | null;
   repeat?: string[];
+  /** Text-habit weekdays that start a fresh note window. Omitted means every day. */
+  reset?: string[];
   options?: string[];
   theme?: HabitTheme;
   summationOptions?: SummationOptions;
@@ -111,6 +113,7 @@ export type ConfigHabitDraft = {
   type: 'summation' | 'single_select' | 'text';
   goal: string;
   repeat: string[];
+  reset: string[];
   quickAddItems: string[];
   optionsText: string;
   theme: HabitTheme | '';

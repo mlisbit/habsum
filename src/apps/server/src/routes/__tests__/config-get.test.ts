@@ -99,6 +99,54 @@ habits:
     expect(res.body.text).toContain('repeat: [tuesday, thursday]');
   });
 
+  it('round-trips text habit reset schedules through YAML and structured config', async () => {
+    const user = 'config-json-text-reset-user';
+    writeUserConfig(
+      user,
+      `habits:
+  journal:
+    type: text
+    reset: [saturday]
+`,
+    );
+    userAndAuthRepository.setUserPassword(user, 'test-password');
+    const session = userAndAuthRepository.createUserSession(user, 3600);
+    const cookie = `${SESSION_COOKIE_NAME}=${session}`;
+    const app = createApp();
+
+    const initial = await request(app)
+      .get(`/users/${user}/config`)
+      .set('Cookie', cookie)
+      .expect(200);
+    expect(initial.body.config.habits[0].reset).toEqual(['saturday']);
+
+    await request(app)
+      .put(`/users/${user}/config`)
+      .set('Cookie', cookie)
+      .send({
+        config: {
+          user,
+          includeAbsentDaysInAverage: false,
+          habits: [
+            {
+              name: 'journal',
+              type: 'text',
+              goal: null,
+              reset: ['friday'],
+            },
+          ],
+        },
+      })
+      .expect(200);
+
+    const updated = await request(app)
+      .get(`/users/${user}/config`)
+      .set('Cookie', cookie)
+      .expect(200);
+    expect(updated.body.config.habits[0].reset).toEqual(['friday']);
+    expect(updated.body.text).toContain('reset: [friday]');
+  });
+
   it('rejects unsupported themes in structured config json', async () => {
     const user = 'config-json-theme-user';
     writeUserConfig(

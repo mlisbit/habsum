@@ -16,7 +16,10 @@ export type SingleSelectHabitSettings = {
   theme?: HabitTheme;
 };
 
-export type TextHabitSettings = Record<string, never>;
+export type TextHabitSettings = {
+  /** Weekdays that start a fresh note window. All seven preserves daily behavior. */
+  reset: string[];
+};
 
 type CompleteHabitTypeMap<T extends Record<HabitType, object>> = T;
 
@@ -66,6 +69,7 @@ export type RawHabitConfig = {
   options?: string[];
   theme?: unknown;
   repeat?: unknown;
+  reset?: unknown;
   /** `[subtract, add]` or `{ sub, add }` / `{ add, sub }` */
   summation_options?: unknown;
   summationOptions?: unknown;

@@ -73,7 +73,9 @@ describe('YAMLConfigConvertor', () => {
           data_visualization: { heatmap: {} },
           insights: ['current_streak'],
           streak_options: { options: [], frequency: '7d' },
-          settings: {},
+          settings: {
+            reset: ['saturday'],
+          },
         },
       ],
     };
@@ -82,6 +84,7 @@ describe('YAMLConfigConvertor', () => {
   journal:
     type: text
     repeat: [monday]
+    reset: [saturday]
 `);
   });
 });

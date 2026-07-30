@@ -21,12 +21,7 @@ export class TextHabitService implements HabitTypeService<HabitRowText> {
   applyPatch({ user, date, body }: ApplyHabitPatchInput): void {
     const action = typeof body.action === 'string' ? body.action : undefined;
     if (action === 'clear') {
-      this.repository.applyHabitMutation({
-        kind: 'clear_text',
-        user,
-        habit: this.habit.name,
-        date,
-      });
+      this.clearText(user, date);
       return;
     }
     if (action != null) {
@@ -36,12 +31,7 @@ export class TextHabitService implements HabitTypeService<HabitRowText> {
       throw new ServiceError('bad_request', 'text is required');
     }
     if (body.text.length === 0) {
-      this.repository.applyHabitMutation({
-        kind: 'clear_text',
-        user,
-        habit: this.habit.name,
-        date,
-      });
+      this.clearText(user, date);
       return;
     }
 
@@ -51,6 +41,26 @@ export class TextHabitService implements HabitTypeService<HabitRowText> {
       habit: this.habit.name,
       date,
       text: body.text,
+    });
+  }
+
+  private clearText(user: string, date: ApplyHabitPatchInput['date']): void {
+    if (this.habit.settings.reset.length < 7) {
+      this.repository.applyHabitMutation({
+        kind: 'set_text',
+        user,
+        habit: this.habit.name,
+        date,
+        text: '',
+      });
+      return;
+    }
+
+    this.repository.applyHabitMutation({
+      kind: 'clear_text',
+      user,
+      habit: this.habit.name,
+      date,
     });
   }
 

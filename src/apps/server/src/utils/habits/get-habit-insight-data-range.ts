@@ -4,6 +4,7 @@ import { isDailyStreakFrequency, parseStreakFrequencyDays } from '@habsum/types/
 import { fromDateKey, toDateKey } from '@habsum/utils/date';
 import type { HabitDataRange, HabitDataRangeRequest } from '../../types/habit.types.js';
 import type { HabitDef } from '../../types/userConfig.js';
+import getTextHabitResetWindowStart from './get-text-habit-reset-window-start.js';
 
 const WEEKDAY_ROW_COUNT = 7;
 const DAILY_STREAK_WINDOW_DAYS = 53 * 7;
@@ -89,6 +90,9 @@ export default function getHabitInsightDataRange(
 ): HabitDataRangeRequest {
   let range: HabitDataRange = { start: viewDate, end: viewDate };
 
+  if (habit.type === 'text') {
+    range.start = getTextHabitResetWindowStart(habit, viewDate);
+  }
   if (habit.data_visualization?.bargraph) {
     range = mergeRange(
       range,

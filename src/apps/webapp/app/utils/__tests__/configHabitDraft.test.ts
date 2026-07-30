@@ -27,11 +27,12 @@ describe('single-select data visualization config', () => {
 });
 
 describe('text habit config', () => {
-  it('keeps only the name, type, and repeat schedule', () => {
+  it('keeps only the name, type, repeat schedule, and reset schedule', () => {
     const habit: UserConfigJsonHabit = {
       name: 'Journal',
       type: 'text',
       goal: null,
+      reset: ['saturday'],
       data_visualization: { heatmap: {}, bargraph: { period: '3w' } },
       insights: ['current_streak', 'longest_streak'],
       streak_options: { frequency: '7d' },
@@ -45,13 +46,42 @@ describe('text habit config', () => {
     const draft = draftFromHabit(habit);
     expect(draft.historyEnabled).toBe(false);
     expect(draft.streakShowCurrent).toBe(false);
+    expect(draft.reset).toEqual(['saturday']);
 
     const saved = applyHabitDraftToConfig(config, habit.name, draft).config.habits[0];
     expect(saved).toEqual({
       name: 'Journal',
       type: 'text',
       goal: null,
+      reset: ['saturday'],
     });
+  });
+
+  it('defaults the reset schedule to every day and omits it when saved', () => {
+    const habit: UserConfigJsonHabit = {
+      name: 'Journal',
+      type: 'text',
+      goal: null,
+    };
+    const config: UserConfigJson = {
+      user: 'writer',
+      includeAbsentDaysInAverage: false,
+      habits: [habit],
+    };
+
+    const draft = draftFromHabit(habit);
+    expect(draft.reset).toEqual([
+      'monday',
+      'tuesday',
+      'wednesday',
+      'thursday',
+      'friday',
+      'saturday',
+      'sunday',
+    ]);
+    expect(
+      applyHabitDraftToConfig(config, habit.name, draft).config.habits[0]?.reset,
+    ).toBeUndefined();
   });
 });
 

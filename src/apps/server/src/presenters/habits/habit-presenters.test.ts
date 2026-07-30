@@ -17,7 +17,9 @@ describe('habit presenters', () => {
       data_visualization: { heatmap: {}, bargraph: { period: '1w' } },
       insights: ['current_streak', 'longest_streak'],
       streak_options: { options: [], frequency: '7d' },
-      settings: {},
+      settings: {
+        reset: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
+      },
     };
     const habitData: Extract<HydratedHabitData, { type: 'text' }> = {
       name: definition.name,
@@ -52,6 +54,40 @@ describe('habit presenters', () => {
         },
       },
     ]);
+  });
+
+  it('presents only the latest text in the current reset window', () => {
+    const definition: HabitDef<'text'> = {
+      name: 'journal',
+      type: 'text',
+      repeat: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
+      insights: [],
+      settings: {
+        reset: ['saturday'],
+      },
+    };
+    const habitData: Extract<HydratedHabitData, { type: 'text' }> = {
+      name: definition.name,
+      type: 'text',
+      dataStart: dayFromString('2026-07-18'),
+      dataEnd: dayFromString('2026-07-25'),
+      texts: [
+        { date: dayFromString('2026-07-20'), text: 'Monday note' },
+        { date: dayFromString('2026-07-21'), text: 'Tuesday note' },
+      ],
+    };
+
+    const thursday = new TextHabitPresenter(definition, habitData, {
+      viewingDate: dayFromString('2026-07-23'),
+      today: dayFromString('2026-07-23'),
+    }).present();
+    const saturday = new TextHabitPresenter(definition, habitData, {
+      viewingDate: dayFromString('2026-07-25'),
+      today: dayFromString('2026-07-25'),
+    }).present();
+
+    expect(thursday.details.text).toBe('Tuesday note');
+    expect(saturday.details.text).toBeNull();
   });
 
   it('presents the single-select value for the viewing date', () => {

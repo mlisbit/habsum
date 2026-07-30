@@ -86,6 +86,7 @@ function habitDefToConfigJson(habit: HabitDef): UserConfigJsonHabit {
     name: habit.name,
     type: habit.type,
     repeat: habit.repeat,
+    ...(habit.type === 'text' ? { reset: habit.settings.reset } : {}),
     ...(habit.data_visualization ? { data_visualization: habit.data_visualization } : {}),
     ...(habit.insights.length > 0 ? { insights: habit.insights } : {}),
     ...(habit.streak_options ? { streak_options: habit.streak_options } : {}),
@@ -168,7 +169,9 @@ export function getUserConfigFromJson(config: UserConfigJson): UserConfig {
           insights: [],
           streak_options: undefined,
           type: habit.type,
-          settings: {},
+          settings: {
+            reset: habit.reset ?? [...HABIT_REPEAT_DAYS],
+          },
         };
       }
 
