@@ -1,11 +1,11 @@
-import { StrictMode, useEffect, useState } from 'react';
-import { createRoot } from 'react-dom/client';
+import { useEffect, useState } from 'react';
 import type { BarGraphData } from '@habsum/types/common/bar-chart';
 import { dayFromString, type Day } from '@habsum/types/common/day';
 import type { HabitPatch } from '@habsum/types/api-responses/habit-patch';
 import type { Habit, HabitWidget } from '@habsum/types/common/habit';
 import type { StreakFill, StreakGraphData } from '@habsum/types/common/streak';
 import HabitRenderer from '@habsum/habit-render';
+import { useTracking } from '@habsum/tracking/react';
 import { Button } from '@habsum/ui/components/Button';
 import { Hoverable } from '@habsum/ui/components/Hoverable';
 import { Toggle } from '@habsum/ui/components/Toggle';
@@ -289,6 +289,7 @@ function LegalTodoModal({ title }: { title: string }) {
 }
 
 function HomepageContent() {
+  const trackingProvider = useTracking();
   const [demoHabitKind, setDemoHabitKind] = useState<DemoHabitKind>('quickSelect');
   const [homepageHabit, setHomepageHabit] = useState(readingHabit);
   const [theme, setTheme] = useState<HomepageTheme>(() => {
@@ -338,7 +339,11 @@ function HomepageContent() {
               <span>Coming soon</span>
             </Hoverable.Content>
           </Hoverable.Root>
-          <a className="homepage-habits__login-link" href="/login">
+          <a
+            className="homepage-habits__login-link"
+            href="/login"
+            onClick={() => trackingProvider.trackClick('homepage-login-click')}
+          >
             <Button type="primary" size="large" text="Login" />
           </a>
         </nav>
@@ -458,14 +463,5 @@ export function HomepageApp() {
         <HomepageContent />
       </ModalProvider>
     </ToastProvider>
-  );
-}
-
-const root = typeof document === 'undefined' ? null : document.getElementById('root');
-if (root?.dataset.homepageRoot === 'true') {
-  createRoot(root).render(
-    <StrictMode>
-      <HomepageApp />
-    </StrictMode>,
   );
 }

@@ -5,6 +5,7 @@
   "description": "Habit tracker - lightweight Express server + Remix webapp",
   "workspaces": [
     "src/packages/types",
+    "src/packages/tracking",
     "src/packages/utils",
     "src/packages/ui",
     "src/packages/habit-render",

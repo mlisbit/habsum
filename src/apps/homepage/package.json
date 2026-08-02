@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@habsum/habit-render": "*",
+    "@habsum/tracking": "*",
     "@habsum/types": "*",
     "@habsum/ui": "*",
     "@habsum/utils": "*",

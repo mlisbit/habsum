@@ -18,3 +18,7 @@
 - For domain helpers, pass the domain object as the first and primary parameter—for example, `getHabitWidgets(habit, options)`.
 - A domain helper may have up to three additional positional parameters. When it needs more than three additional parameters, keep the domain object separate and collapse every additional parameter into one typed options object.
 - Give options object properties explicit consumer-facing names, and apply optional-value defaults while destructuring the options object. This keeps call sites self-documenting and makes defaults easy to add or change.
+
+## Module exports
+
+- Do not create barrel modules or re-export-only `index.ts` files. Export modules through explicit package subpaths and import from the module that owns the symbol.

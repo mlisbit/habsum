@@ -1,5 +1,6 @@
 import { Link, useNavigate } from '@remix-run/react';
 import { useEffect, useState } from 'react';
+import { useTracking } from '@habsum/tracking/react';
 import { loginUser, logout } from '~/api.client';
 import { Footer } from '~/components/Footer';
 import { Button } from '@habsum/ui/components/Button';
@@ -16,6 +17,7 @@ function LoginForm({
   anotherAccountHint: boolean;
   formDisabled?: boolean;
 }) {
+  const trackingProvider = useTracking();
   const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -100,7 +102,10 @@ function LoginForm({
           size="medium"
           text={isLoggingIn ? 'Logging in...' : 'Log in'}
           disabled={isLoggingIn || formDisabled || loginId.trim() === '' || password.trim() === ''}
-          onClick={() => void handleLogin()}
+          onClick={() => {
+            trackingProvider.trackClick('login-click');
+            void handleLogin();
+          }}
         />
       </form>
     </>

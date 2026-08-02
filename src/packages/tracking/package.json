@@ -1,0 +1,33 @@
+{
+  "name": "@habsum/tracking",
+  "version": "0.1.27",
+  "private": true,
+  "type": "module",
+  "sideEffects": false,
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc"
+  },
+  "exports": {
+    "./provider": "./src/tracking-provider.ts",
+    "./providers/console": "./src/providers/console-tracking-provider.ts",
+    "./providers/umami": "./src/providers/umami-tracking-provider.ts",
+    "./react": "./src/react/tracking-context.tsx",
+    "./types": "./src/tracking-click-name.ts"
+  },
+  "dependencies": {
+    "react": "^18.3.1"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.3.2",
+    "@types/react": "^18.3.10",
+    "@types/react-dom": "^18.3.0",
+    "jsdom": "^27.0.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.6.2",
+    "vitest": "^3.0.9"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
