@@ -25,4 +25,12 @@ describe('ConsoleTrackingProvider', () => {
 
     expect(log).toHaveBeenCalledWith('[tracking] event', 'test-click');
   });
+
+  it('logs resolved identities', () => {
+    const log = vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+    new ConsoleTrackingProvider().resolveIdentity('test-user');
+
+    expect(log).toHaveBeenCalledWith('[tracking] identity', 'test-user');
+  });
 });

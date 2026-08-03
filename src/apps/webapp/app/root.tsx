@@ -1,6 +1,8 @@
 import { Link, Links, Meta, Outlet, Scripts, ScrollRestoration } from '@remix-run/react';
 import type { LinksFunction, MetaFunction } from '@remix-run/node';
-
+import { useCallback } from 'react';
+import type { MeGetResponse } from '@habsum/types/api-responses/me-get';
+import { useTracking } from '@habsum/tracking/react';
 import { OucIndicator } from '~/components/OucIndicator';
 import { OucPopupBootstrap } from '~/components/OucPopupBootstrap';
 import { ModalProvider } from '@habsum/ui/contexts/modal';
@@ -8,6 +10,7 @@ import { ToastProvider } from '@habsum/ui/contexts/toast';
 import { UserProvider } from '~/context/user';
 import stylesHref from '~/styles/main.scss?url';
 import { UI_THEME_STORAGE_KEY } from '~/theme.shared';
+import { webappTrackingSpec } from '~/tracking-spec';
 
 export const links: LinksFunction = () => [
   { rel: 'stylesheet', href: stylesHref },
@@ -67,10 +70,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 export default function App() {
+  const { resolveIdentity } = useTracking<typeof webappTrackingSpec>();
+  const onUserResolution = useCallback(
+    (me: MeGetResponse) => resolveIdentity(me.username ?? undefined),
+    [resolveIdentity],
+  );
+
   return (
     <ToastProvider linkComponent={ToastLink}>
       <ModalProvider>
-        <UserProvider>
+        <UserProvider onResolution={onUserResolution}>
           <OucPopupBootstrap />
           <Outlet />
           <OucIndicator />

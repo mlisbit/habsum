@@ -46,6 +46,42 @@ describe('UmamiTrackingProvider', () => {
     expect(track).toHaveBeenCalledWith('test-click');
   });
 
+  it('identifies a resolved user with Umami', () => {
+    const identify = vi.fn();
+    vi.stubGlobal('window', { umami: { identify, track: vi.fn() } });
+
+    new UmamiTrackingProvider().resolveIdentity('test-user');
+
+    expect(identify).toHaveBeenCalledWith('test-user', { isAuthenticated: true });
+  });
+
+  it('sends properties directly when an identity has no username', () => {
+    const identify = vi.fn();
+    vi.stubGlobal('window', { umami: { identify, track: vi.fn() } });
+
+    new UmamiTrackingProvider().resolveIdentity();
+
+    expect(identify).toHaveBeenCalledWith({ isAuthenticated: false });
+  });
+
+  it('resolves a queued identity before queued events', () => {
+    vi.stubGlobal('window', {});
+    const provider = new UmamiTrackingProvider();
+    provider.resolveIdentity('test-user');
+    provider.track('queued-click');
+
+    const calls: string[] = [];
+    vi.stubGlobal('window', {
+      umami: {
+        identify: (username: string) => calls.push(`identify:${username}`),
+        track: (eventName: string) => calls.push(`track:${eventName}`),
+      },
+    });
+    document.head.querySelector('script')?.dispatchEvent(new Event('load'));
+
+    expect(calls).toEqual(['identify:test-user', 'track:queued-click']);
+  });
+
   it('does not let Umami failures interrupt a click', () => {
     vi.stubGlobal('window', {
       umami: {

@@ -17,11 +17,17 @@ describe('tracking context', () => {
   it('initializes and exposes its provider', () => {
     const provider: TrackingProvider = {
       initialize: vi.fn(),
+      resolveIdentity: vi.fn(),
       track: vi.fn(),
     };
     function Consumer() {
       const tracking = useTracking<typeof trackingSpec>();
-      return <button onClick={() => tracking.trackClick('mapped-click-event')}>Track</button>;
+      return (
+        <>
+          <button onClick={() => tracking.trackClick('mapped-click-event')}>Track</button>
+          <button onClick={() => tracking.resolveIdentity('test-user')}>Identify</button>
+        </>
+      );
     }
 
     render(
@@ -33,11 +39,14 @@ describe('tracking context', () => {
     expect(provider.initialize).toHaveBeenCalledOnce();
     fireEvent.click(screen.getByRole('button', { name: 'Track' }));
     expect(provider.track).toHaveBeenCalledWith('mapped-click-event');
+    fireEvent.click(screen.getByRole('button', { name: 'Identify' }));
+    expect(provider.resolveIdentity).toHaveBeenCalledWith('test-user');
   });
 
   it('binds different specs to the same provider', () => {
     const provider: TrackingProvider = {
       initialize: vi.fn(),
+      resolveIdentity: vi.fn(),
       track: vi.fn(),
     };
     const otherSpec = new TrackingSpec({

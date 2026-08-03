@@ -22,6 +22,10 @@ export class TrackingService<TSpec extends TrackingSpec = TrackingSpec> {
     private readonly spec: TSpec,
   ) {}
 
+  readonly resolveIdentity = (username?: string): void => {
+    this.provider.resolveIdentity(username);
+  };
+
   trackClick(name: TrackingClickName<TSpec>): void {
     this.provider.track(this.spec.clicks[name]);
   }

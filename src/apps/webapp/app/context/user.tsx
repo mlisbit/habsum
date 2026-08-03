@@ -37,22 +37,33 @@ type UserContextValue = {
 
 const UserContext = createContext<UserContextValue | null>(null);
 
-export function UserProvider({ children }: { children: ReactNode }) {
+export function UserProvider({
+  children,
+  onResolution,
+}: {
+  children: ReactNode;
+  onResolution?: (me: MeGetResponse) => void;
+}) {
   const [me, setMe] = useState<MeGetResponse>(LOGGED_OUT_ME);
   const [loading, setLoading] = useState(true);
   const [introDismissedByUser, setIntroDismissedByUser] = useState<Record<string, boolean>>({});
   const refreshInFlightRef = useRef<Promise<void> | null>(null);
+  const onResolutionRef = useRef(onResolution);
+  onResolutionRef.current = onResolution;
 
   const refresh = useCallback(async () => {
     if (refreshInFlightRef.current) return refreshInFlightRef.current;
 
     const run = (async () => {
+      let next = LOGGED_OUT_ME;
+
       try {
-        const next = await getAuthMe();
-        setMe(next);
+        next = await getAuthMe();
       } catch {
-        setMe(LOGGED_OUT_ME);
+        // A failed resolution has the same client state as a logged-out response.
       } finally {
+        setMe(next);
+        onResolutionRef.current?.(next);
         setLoading(false);
       }
     })();

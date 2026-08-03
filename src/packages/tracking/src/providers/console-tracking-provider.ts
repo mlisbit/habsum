@@ -10,6 +10,10 @@ export class ConsoleTrackingProvider implements TrackingProvider {
     console.log('[tracking] initialized');
   }
 
+  resolveIdentity(username?: string): void {
+    console.log('[tracking] identity', username);
+  }
+
   track(eventName: string): void {
     console.log('[tracking] event', eventName);
   }
