@@ -27,23 +27,23 @@ describe('UmamiTrackingProvider', () => {
   it('queues clicks until the tracker is loaded', () => {
     vi.stubGlobal('window', {});
     const provider = new UmamiTrackingProvider();
-    provider.trackClick('login-click');
+    provider.track('queued-click');
 
     const script = document.head.querySelector('script');
     const track = vi.fn();
     vi.stubGlobal('window', { umami: { track } });
     script?.dispatchEvent(new Event('load'));
 
-    expect(track).toHaveBeenCalledWith('login-click');
+    expect(track).toHaveBeenCalledWith('queued-click');
   });
 
   it('forwards click events to Umami', () => {
     const track = vi.fn();
     vi.stubGlobal('window', { umami: { track } });
 
-    new UmamiTrackingProvider().trackClick('homepage-login-click');
+    new UmamiTrackingProvider().track('test-click');
 
-    expect(track).toHaveBeenCalledWith('homepage-login-click');
+    expect(track).toHaveBeenCalledWith('test-click');
   });
 
   it('does not let Umami failures interrupt a click', () => {
@@ -55,6 +55,6 @@ describe('UmamiTrackingProvider', () => {
       },
     });
 
-    expect(() => new UmamiTrackingProvider().trackClick('login-click')).not.toThrow();
+    expect(() => new UmamiTrackingProvider().track('test-click')).not.toThrow();
   });
 });

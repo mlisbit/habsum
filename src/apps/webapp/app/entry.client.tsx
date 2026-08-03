@@ -5,6 +5,7 @@ import type { TrackingProvider } from '@habsum/tracking/provider';
 import { ConsoleTrackingProvider } from '@habsum/tracking/providers/console';
 import { UmamiTrackingProvider } from '@habsum/tracking/providers/umami';
 import { TrackingContextProvider } from '@habsum/tracking/react';
+import { webappTrackingSpec } from '~/tracking-spec';
 
 const trackingProvider: TrackingProvider = import.meta.env.PROD
   ? new UmamiTrackingProvider()
@@ -14,7 +15,7 @@ startTransition(() => {
   hydrateRoot(
     document,
     <StrictMode>
-      <TrackingContextProvider provider={trackingProvider}>
+      <TrackingContextProvider provider={trackingProvider} spec={webappTrackingSpec}>
         <RemixBrowser />
       </TrackingContextProvider>
     </StrictMode>,

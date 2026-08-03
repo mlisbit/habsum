@@ -1,26 +1,52 @@
-import { createContext, useContext, useEffect, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, type ReactNode } from 'react';
 
 import type { TrackingProvider } from '../tracking-provider';
+import { TrackingService, type TrackingSpec } from '../tracking-spec';
 
-const TrackingContext = createContext<TrackingProvider | null>(null);
+type TrackingContextValue = {
+  provider: TrackingProvider;
+  service: TrackingService;
+};
 
-export function TrackingContextProvider({
+const TrackingContext = createContext<TrackingContextValue | null>(null);
+
+export function TrackingContextProvider<TSpec extends TrackingSpec>({
   provider,
+  spec,
   children,
 }: {
-  provider: TrackingProvider;
+  provider?: TrackingProvider;
+  spec: TSpec;
   children: ReactNode;
 }) {
+  const parentContext = useContext(TrackingContext);
+  const resolvedProvider = provider ?? parentContext?.provider;
+
   useEffect(() => {
-    provider.initialize();
+    provider?.initialize();
   }, [provider]);
 
-  return <TrackingContext.Provider value={provider}>{children}</TrackingContext.Provider>;
+  const service = useMemo(
+    () => (resolvedProvider ? new TrackingService(resolvedProvider, spec) : null),
+    [resolvedProvider, spec],
+  );
+
+  if (!resolvedProvider || !service) {
+    throw new Error(
+      'TrackingContextProvider must receive a provider or be nested within another TrackingContextProvider',
+    );
+  }
+
+  return (
+    <TrackingContext.Provider value={{ provider: resolvedProvider, service }}>
+      {children}
+    </TrackingContext.Provider>
+  );
 }
 
-export function useTracking(): TrackingProvider {
-  const provider = useContext(TrackingContext);
-  if (!provider) throw new Error('useTracking must be used within a TrackingContextProvider');
+export function useTracking<TSpec extends TrackingSpec>(): TrackingService<TSpec> {
+  const context = useContext(TrackingContext);
+  if (!context) throw new Error('useTracking must be used within a TrackingContextProvider');
 
-  return provider;
+  return context.service as TrackingService<TSpec>;
 }

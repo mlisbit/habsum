@@ -12,8 +12,6 @@
     "./styles": "./src/styles/index.scss"
   },
   "scripts": {
-    "dev": "vite --host 127.0.0.1 --port 3002",
-    "build": "vite build",
     "typecheck": "tsc"
   },
   "dependencies": {
@@ -22,13 +20,10 @@
     "@habsum/types": "*",
     "@habsum/ui": "*",
     "@habsum/utils": "*",
-    "@vitejs/plugin-react": "^4.7.0",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "vite": "^5.4.8"
+    "react": "^18.3.1"
   },
   "devDependencies": {
-    "sass": "^1.99.0",
+    "@types/react": "^18.3.10",
     "typescript": "^5.6.2"
   },
   "engines": {

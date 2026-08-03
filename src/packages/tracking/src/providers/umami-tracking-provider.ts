@@ -1,11 +1,10 @@
-import type { TrackingClickName } from '../tracking-click-name';
 import type { TrackingProvider } from '../tracking-provider';
 
 const DEFAULT_SCRIPT_URL = 'https://cloud.umami.is/script.js';
 const DEFAULT_WEBSITE_ID = 'f9e17d35-39a9-43e9-83d7-98c2dab13020';
 
 type UmamiTracker = {
-  track: (eventName: TrackingClickName) => void;
+  track: (eventName: string) => void;
 };
 
 type UmamiWindow = Window & {
@@ -13,7 +12,7 @@ type UmamiWindow = Window & {
 };
 
 export class UmamiTrackingProvider implements TrackingProvider {
-  private readonly pendingClickNames: TrackingClickName[] = [];
+  private readonly pendingClickNames: string[] = [];
   private loadingScript: HTMLScriptElement | null = null;
 
   initialize(): void {
@@ -36,16 +35,16 @@ export class UmamiTrackingProvider implements TrackingProvider {
     document.head.append(script);
   }
 
-  trackClick(name: TrackingClickName): void {
+  track(eventName: string): void {
     if (typeof window === 'undefined') return;
 
     const tracker = this.getTracker();
     if (tracker) {
-      this.sendClick(tracker, name);
+      this.sendClick(tracker, eventName);
       return;
     }
 
-    this.pendingClickNames.push(name);
+    this.pendingClickNames.push(eventName);
     this.initialize();
   }
 
@@ -69,7 +68,7 @@ export class UmamiTrackingProvider implements TrackingProvider {
     names.forEach((name) => this.sendClick(tracker, name));
   }
 
-  private sendClick(tracker: UmamiTracker, name: TrackingClickName): void {
+  private sendClick(tracker: UmamiTracker, name: string): void {
     try {
       tracker.track(name);
     } catch {

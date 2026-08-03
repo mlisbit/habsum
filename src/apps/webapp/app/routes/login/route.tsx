@@ -8,6 +8,7 @@ import { InfoText } from '@habsum/ui/components/InfoText';
 import { Input } from '@habsum/ui/components/Input';
 import { clearLegacyClientLoginMarkers } from '~/cookies.client';
 import { useUser } from '~/context/user';
+import { webappTrackingSpec } from '~/tracking-spec';
 import { isMeLoggedIn, userDefaultAppPath } from '~/utils/user-session-guard';
 
 function LoginForm({
@@ -17,7 +18,7 @@ function LoginForm({
   anotherAccountHint: boolean;
   formDisabled?: boolean;
 }) {
-  const trackingProvider = useTracking();
+  const tracking = useTracking<typeof webappTrackingSpec>();
   const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -103,7 +104,7 @@ function LoginForm({
           text={isLoggingIn ? 'Logging in...' : 'Log in'}
           disabled={isLoggingIn || formDisabled || loginId.trim() === '' || password.trim() === ''}
           onClick={() => {
-            trackingProvider.trackClick('login-click');
+            tracking.trackClick('login-click');
             void handleLogin();
           }}
         />

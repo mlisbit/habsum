@@ -21,8 +21,8 @@ describe('ConsoleTrackingProvider', () => {
   it('logs click events', () => {
     const log = vi.spyOn(console, 'log').mockImplementation(() => undefined);
 
-    new ConsoleTrackingProvider().trackClick('login-click');
+    new ConsoleTrackingProvider().track('test-click');
 
-    expect(log).toHaveBeenCalledWith('[tracking] click', 'login-click');
+    expect(log).toHaveBeenCalledWith('[tracking] event', 'test-click');
   });
 });

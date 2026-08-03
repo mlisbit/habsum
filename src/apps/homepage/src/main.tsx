@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
+import type { HabitPatch } from '@habsum/types/api-responses/habit-patch';
 import type { BarGraphData } from '@habsum/types/common/bar-chart';
 import { dayFromString, type Day } from '@habsum/types/common/day';
-import type { HabitPatch } from '@habsum/types/api-responses/habit-patch';
 import type { Habit, HabitWidget } from '@habsum/types/common/habit';
 import type { StreakFill, StreakGraphData } from '@habsum/types/common/streak';
 import HabitRenderer from '@habsum/habit-render';
-import { useTracking } from '@habsum/tracking/react';
+import { TrackingContextProvider, useTracking } from '@habsum/tracking/react';
 import { Button } from '@habsum/ui/components/Button';
 import { Hoverable } from '@habsum/ui/components/Hoverable';
 import { Toggle } from '@habsum/ui/components/Toggle';
@@ -13,6 +13,7 @@ import { ModalBody, ModalHeader, ModalProvider, useModal } from '@habsum/ui/cont
 import { ToastProvider } from '@habsum/ui/contexts/toast';
 import { build } from '@habsum/utils/model-builders/habit';
 import { build as buildWidget } from '@habsum/utils/model-builders/widget';
+import { homepageTrackingSpec } from './tracking-spec';
 
 import '@habsum/ui/styles';
 import '@habsum/habit-render/styles';
@@ -289,7 +290,7 @@ function LegalTodoModal({ title }: { title: string }) {
 }
 
 function HomepageContent() {
-  const trackingProvider = useTracking();
+  const tracking = useTracking<typeof homepageTrackingSpec>();
   const [demoHabitKind, setDemoHabitKind] = useState<DemoHabitKind>('quickSelect');
   const [homepageHabit, setHomepageHabit] = useState(readingHabit);
   const [theme, setTheme] = useState<HomepageTheme>(() => {
@@ -342,7 +343,7 @@ function HomepageContent() {
           <a
             className="homepage-habits__login-link"
             href="/login"
-            onClick={() => trackingProvider.trackClick('homepage-login-click')}
+            onClick={() => tracking.trackClick('homepage-login-click')}
           >
             <Button type="primary" size="large" text="Login" />
           </a>
@@ -458,10 +459,12 @@ function HomepageContent() {
 
 export function HomepageApp() {
   return (
-    <ToastProvider>
-      <ModalProvider>
-        <HomepageContent />
-      </ModalProvider>
-    </ToastProvider>
+    <TrackingContextProvider spec={homepageTrackingSpec}>
+      <ToastProvider>
+        <ModalProvider>
+          <HomepageContent />
+        </ModalProvider>
+      </ToastProvider>
+    </TrackingContextProvider>
   );
 }

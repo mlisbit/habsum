@@ -1,4 +1,3 @@
-import type { TrackingClickName } from '../tracking-click-name';
 import type { TrackingProvider } from '../tracking-provider';
 
 export class ConsoleTrackingProvider implements TrackingProvider {
@@ -11,7 +10,7 @@ export class ConsoleTrackingProvider implements TrackingProvider {
     console.log('[tracking] initialized');
   }
 
-  trackClick(name: TrackingClickName): void {
-    console.log('[tracking] click', name);
+  track(eventName: string): void {
+    console.log('[tracking] event', eventName);
   }
 }

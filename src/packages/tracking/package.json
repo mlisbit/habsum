@@ -13,7 +13,7 @@
     "./providers/console": "./src/providers/console-tracking-provider.ts",
     "./providers/umami": "./src/providers/umami-tracking-provider.ts",
     "./react": "./src/react/tracking-context.tsx",
-    "./types": "./src/tracking-click-name.ts"
+    "./spec": "./src/tracking-spec.ts"
   },
   "dependencies": {
     "react": "^18.3.1"

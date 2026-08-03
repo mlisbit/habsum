@@ -18,7 +18,6 @@
   "scripts": {
     "dev:server": "HABSUM_CONFIG_DIR=\"$PWD/config\" npm --workspace src/apps/server run dev",
     "dev:webapp": "npm --workspace src/apps/webapp run dev",
-    "dev:homepage": "npm --workspace src/apps/homepage run dev",
     "dev:ports:free": "node scripts/kill-dev-ports.mjs 3000 3001",
     "dev": "npm run dev:ports:free && npm-run-all --parallel dev:server dev:webapp",
     "start": "HABSUM_CONFIG_DIR=\"$PWD/config\" npm --workspace src/apps/server run start",
