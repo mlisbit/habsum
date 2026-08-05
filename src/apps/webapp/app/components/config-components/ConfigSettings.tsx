@@ -1,13 +1,8 @@
 // exclusive-bem-block: config-page
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useBlocker } from 'react-router';
-import {
-  getUserConfig,
-  putUserConfig,
-  yamlString,
-  type UserConfigJson,
-  type YAMLString,
-} from '~/api.client';
+import { yamlString, type UserConfigJson, type YAMLString } from '@habsum/types/common/misc';
+import { getUserConfig, putUserConfig } from '~/api.client';
 import { ConfigGuiEditor } from './ConfigGuiEditor';
 import { ConfigYamlEditor } from './ConfigYamlEditor';
 import { UnsavedChangesModal } from '~/components/UnsavedChangesModal';

@@ -29,7 +29,6 @@ import type {
   UserConfigPutResponse,
   YAMLString,
 } from '@habsum/types/common/misc';
-import { yamlString } from '@habsum/types/common/misc';
 import type {
   ForgotPasswordRequest,
   ForgotPasswordResponse,
@@ -68,7 +67,6 @@ export type {
   UserConfigPutResponse,
   YAMLString,
 } from '@habsum/types/common/misc';
-export { yamlString } from '@habsum/types/common/misc';
 export type {
   Habit,
   HabitHistory,

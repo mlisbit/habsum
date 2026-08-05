@@ -4,7 +4,7 @@ import CodeMirror from '@uiw/react-codemirror';
 import { autocompletion, type Completion, type CompletionContext } from '@codemirror/autocomplete';
 import { yaml } from '@codemirror/lang-yaml';
 import { oneDark } from '@codemirror/theme-one-dark';
-import { yamlString, type YAMLString } from '~/api.client';
+import { yamlString, type YAMLString } from '@habsum/types/common/misc';
 import { getMediaQuerySnapshot, subscribeToMediaQuery } from '~/utils/media-query-store';
 
 const HABIT_TYPE_COMPLETIONS: Completion[] = [
