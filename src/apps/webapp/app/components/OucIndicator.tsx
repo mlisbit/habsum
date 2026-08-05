@@ -20,6 +20,7 @@ export function OucIndicator() {
   }, [refresh]);
 
   const oucUser = useMemo(() => {
+    if (typeof window === 'undefined') return null;
     if (!getOucSessionToken()) return null;
     if (
       me.username != null &&

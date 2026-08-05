@@ -2,7 +2,10 @@ import { Link, Links, Meta, Outlet, Scripts, ScrollRestoration } from 'react-rou
 import type { LinksFunction, MetaFunction } from 'react-router';
 import { useCallback } from 'react';
 import type { MeGetResponse } from '@habsum/types/api-responses/me-get';
-import { useTracking } from '@habsum/tracking/client/react';
+import type { TrackingProvider } from '@habsum/tracking/client/provider';
+import { ConsoleTrackingProvider } from '@habsum/tracking/client/providers/console';
+import { UmamiTrackingProvider } from '@habsum/tracking/client/providers/umami';
+import { TrackingContextProvider, useTracking } from '@habsum/tracking/client/react';
 import { OucIndicator } from '~/components/OucIndicator';
 import { OucPopupBootstrap } from '~/components/OucPopupBootstrap';
 import { ModalProvider } from '@habsum/ui/contexts/modal';
@@ -11,6 +14,10 @@ import { UserProvider } from '~/context/user';
 import stylesHref from '~/styles/main.scss?url';
 import { UI_THEME_STORAGE_KEY } from '~/theme.shared';
 import { webappTrackingSpec } from '~/tracking-spec';
+
+const trackingProvider: TrackingProvider = import.meta.env.PROD
+  ? new UmamiTrackingProvider()
+  : new ConsoleTrackingProvider();
 
 export const links: LinksFunction = () => [
   { rel: 'stylesheet', href: stylesHref },
@@ -69,7 +76,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
-export default function App() {
+function AppContent() {
   const { resolveIdentity } = useTracking<typeof webappTrackingSpec>();
   const onUserResolution = useCallback(
     (me: MeGetResponse) => resolveIdentity(me.username ?? undefined),
@@ -89,16 +96,10 @@ export default function App() {
   );
 }
 
-// SPA mode (`ssr: false`) uses this to generate `index.html`.
-export function HydrateFallback() {
+export default function App() {
   return (
-    <div className="app">
-      <div className="app__content">
-        <div className="container">
-          <h1 className="text-h-xl">habsum</h1>
-          <p className="text-light text-b-m">Loading…</p>
-        </div>
-      </div>
-    </div>
+    <TrackingContextProvider provider={trackingProvider} spec={webappTrackingSpec}>
+      <AppContent />
+    </TrackingContextProvider>
   );
 }
