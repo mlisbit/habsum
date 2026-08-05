@@ -5,7 +5,7 @@ import { dayFromString, type Day } from '@habsum/types/common/day';
 import type { Habit, HabitWidget } from '@habsum/types/common/habit';
 import type { StreakFill, StreakGraphData } from '@habsum/types/common/streak';
 import HabitRenderer from '@habsum/habit-render';
-import { TrackingContextProvider, useTracking } from '@habsum/tracking/react';
+import { TrackingContextProvider, useTracking } from '@habsum/tracking/client/react';
 import { Button } from '@habsum/ui/components/Button';
 import { Hoverable } from '@habsum/ui/components/Hoverable';
 import { Toggle } from '@habsum/ui/components/Toggle';

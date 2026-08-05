@@ -2,7 +2,7 @@ import { Link, Links, Meta, Outlet, Scripts, ScrollRestoration } from '@remix-ru
 import type { LinksFunction, MetaFunction } from '@remix-run/node';
 import { useCallback } from 'react';
 import type { MeGetResponse } from '@habsum/types/api-responses/me-get';
-import { useTracking } from '@habsum/tracking/react';
+import { useTracking } from '@habsum/tracking/client/react';
 import { OucIndicator } from '~/components/OucIndicator';
 import { OucPopupBootstrap } from '~/components/OucPopupBootstrap';
 import { ModalProvider } from '@habsum/ui/contexts/modal';

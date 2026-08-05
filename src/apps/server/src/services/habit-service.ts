@@ -1,4 +1,5 @@
 // Domain operations for reading habit data and applying habit mutations.
+import { Logger } from '@habsum/tracking/server/logger';
 import { dayFromString, type Day } from '@habsum/types/common/day';
 import type { Habit } from '@habsum/types/common/habit';
 import { HabitResultBuilder } from '../builders/habit-result-builder.js';
@@ -51,7 +52,10 @@ type PresentHabitListInput = {
  * separately by `HistoryPagePresenter`.
  */
 export class HabitService {
-  constructor(private readonly repository = new HabitRepository()) {}
+  constructor(
+    private readonly repository = new HabitRepository(),
+    private readonly logger = new Logger(),
+  ) {}
 
   /**
    * Presents the response for `GET /users/:user/habits`.
@@ -125,13 +129,20 @@ export class HabitService {
           : new SummationHabitService(known, this.repository);
     typeService.applyPatch({ user, date: day, body });
 
-    return this.updatedHabit({
+    const response = this.updatedHabit({
       config,
       date: day,
       habit,
       today: getHabitApiToday(body.today, at),
       typeService,
     });
+
+    this.logger.logEvent({
+      name: 'HabitAction',
+      body: { habitType: known.type },
+    });
+
+    return response;
   }
 
   private presentHabits({

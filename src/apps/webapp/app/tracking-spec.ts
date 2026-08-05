@@ -1,4 +1,4 @@
-import { TrackingSpec } from '@habsum/tracking/spec';
+import { TrackingSpec } from '@habsum/tracking/client/spec';
 
 export const webappTrackingSpec = new TrackingSpec({
   clicks: {

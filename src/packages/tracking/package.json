@@ -9,13 +9,17 @@
     "typecheck": "tsc"
   },
   "exports": {
-    "./provider": "./src/tracking-provider.ts",
-    "./providers/console": "./src/providers/console-tracking-provider.ts",
-    "./providers/umami": "./src/providers/umami-tracking-provider.ts",
-    "./react": "./src/react/tracking-context.tsx",
-    "./spec": "./src/tracking-spec.ts"
+    "./client/provider": "./src/client/tracking-provider.ts",
+    "./client/providers/console": "./src/client/providers/console-tracking-provider.ts",
+    "./client/providers/umami": "./src/client/providers/umami-tracking-provider.ts",
+    "./client/react": "./src/client/react/tracking-context.tsx",
+    "./client/spec": "./src/client/tracking-spec.ts",
+    "./server/events/habit-action": "./src/server/events/habit-action.ts",
+    "./server/logger": "./src/server/logger.ts",
+    "./server/server-event": "./src/server/server-event.ts"
   },
   "dependencies": {
+    "@habsum/types": "*",
     "react": "^18.3.1"
   },
   "devDependencies": {

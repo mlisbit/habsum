@@ -1,6 +1,6 @@
 import { Link, useNavigate } from '@remix-run/react';
 import { useEffect, useState } from 'react';
-import { useTracking } from '@habsum/tracking/react';
+import { useTracking } from '@habsum/tracking/client/react';
 import { loginUser, logout } from '~/api.client';
 import { Footer } from '~/components/Footer';
 import { Button } from '@habsum/ui/components/Button';
