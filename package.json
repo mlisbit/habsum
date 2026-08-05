@@ -12,8 +12,7 @@
     "src/packages/eslint",
     "src/packages/stylelint",
     "src/apps/server",
-    "src/apps/webapp",
-    "src/apps/homepage"
+    "src/apps/webapp"
   ],
   "scripts": {
     "dev:server": "HABSUM_CONFIG_DIR=\"$PWD/config\" npm --workspace src/apps/server run dev",
