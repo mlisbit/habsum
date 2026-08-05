@@ -11,6 +11,7 @@
     "test": "vitest run"
   },
   "devDependencies": {
+    "@types/estree-jsx": "^1.0.5",
     "vitest": "^3.0.9"
   }
 }

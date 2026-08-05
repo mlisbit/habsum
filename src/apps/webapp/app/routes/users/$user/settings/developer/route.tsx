@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate, useParams } from '@remix-run/react';
+import { useNavigate, useParams } from 'react-router';
 import type { ListUserItem } from '@habsum/types/common/misc';
 import {
   adminDeleteUser,

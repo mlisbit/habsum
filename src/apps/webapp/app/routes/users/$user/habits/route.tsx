@@ -1,5 +1,5 @@
-import { Link, useNavigate } from '@remix-run/react';
-import type { MetaFunction } from '@remix-run/node';
+import { Link, useNavigate } from 'react-router';
+import type { MetaFunction } from 'react-router';
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { dayFromString } from '@habsum/types/common/day';
 import { getHabits, logout, patchHabit, type Habit, type HabitsResponse } from '~/api.client';

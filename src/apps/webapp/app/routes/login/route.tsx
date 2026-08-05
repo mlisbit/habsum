@@ -1,4 +1,4 @@
-import { Link, useNavigate } from '@remix-run/react';
+import { Link, useNavigate } from 'react-router';
 import { useEffect, useState } from 'react';
 import { useTracking } from '@habsum/tracking/client/react';
 import { loginUser, logout } from '~/api.client';

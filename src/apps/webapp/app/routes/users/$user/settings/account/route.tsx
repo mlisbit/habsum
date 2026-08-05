@@ -1,5 +1,5 @@
 // exclusive-bem-block: account-page
-import { useBlocker, useNavigate, useParams } from '@remix-run/react';
+import { useBlocker, useNavigate, useParams } from 'react-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DayWithTime } from '@habsum/types/common/day';
 import { dateFromDayWithTimeUtc } from '@habsum/types/common/day';

@@ -2,7 +2,7 @@
   "name": "habsum",
   "version": "0.1.29",
   "private": true,
-  "description": "Habit tracker - lightweight Express server + Remix webapp",
+  "description": "Habit tracker - lightweight Express server + React Router webapp",
   "workspaces": [
     "src/packages/types",
     "src/packages/tracking",

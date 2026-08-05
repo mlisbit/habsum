@@ -9,7 +9,7 @@ export function isMeLoggedIn(me: MeGetResponse): me is MeGetResponse & { usernam
 }
 
 type GuardOptions = {
-  /** Remix client navigation; omit only outside the router tree. */
+  /** React Router client navigation; omit only outside the router tree. */
   navigate: (to: string) => void;
 };
 

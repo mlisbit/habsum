@@ -1,4 +1,4 @@
-import { RemixBrowser } from '@remix-run/react';
+import { HydratedRouter } from 'react-router/dom';
 import { startTransition, StrictMode } from 'react';
 import { hydrateRoot } from 'react-dom/client';
 import type { TrackingProvider } from '@habsum/tracking/client/provider';
@@ -16,7 +16,7 @@ startTransition(() => {
     document,
     <StrictMode>
       <TrackingContextProvider provider={trackingProvider} spec={webappTrackingSpec}>
-        <RemixBrowser />
+        <HydratedRouter />
       </TrackingContextProvider>
     </StrictMode>,
   );

@@ -11,7 +11,7 @@ Habsum is deployed as two separate Fly.io applications:
   - Persistent Fly volume mounted at `/data`
 
 - `habsum-web`
-  - Static Remix SPA served through Nginx
+  - Static React Router SPA served through Nginx
   - Proxies `/api/*` requests to the API service over Fly private networking
 
 Architecture:

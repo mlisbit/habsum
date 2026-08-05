@@ -1,5 +1,5 @@
 // exclusive-bem-block: security-page
-import { useNavigate, useParams } from '@remix-run/react';
+import { useNavigate, useParams } from 'react-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { DayWithTime } from '@habsum/types/common/day';
 import { dateFromDayWithTimeUtc } from '@habsum/types/common/day';

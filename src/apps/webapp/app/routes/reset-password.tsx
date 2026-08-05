@@ -1,5 +1,5 @@
 // exclusive-bem-block: reset-password-page
-import { Link, useNavigate, useSearchParams } from '@remix-run/react';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useEffect, useMemo, useState } from 'react';
 import type { PasswordResetTokenPurpose } from '@habsum/types/api-responses/reset-password-get';
 import { submitResetPassword, validateResetPasswordToken } from '~/api.client';

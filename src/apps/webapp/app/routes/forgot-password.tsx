@@ -1,4 +1,4 @@
-import { Link } from '@remix-run/react';
+import { Link } from 'react-router';
 import { useEffect, useState } from 'react';
 import { requestForgotPassword } from '~/api.client';
 import { Footer } from '~/components/Footer';

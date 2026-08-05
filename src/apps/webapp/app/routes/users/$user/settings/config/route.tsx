@@ -1,4 +1,4 @@
-import { useParams } from '@remix-run/react';
+import { useParams } from 'react-router';
 import { ConfigSettings } from '~/components/config-components/ConfigSettings';
 import { SettingsPageCard } from '~/components/SettingsPageCard';
 

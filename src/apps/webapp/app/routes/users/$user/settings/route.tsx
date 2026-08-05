@@ -1,5 +1,5 @@
-import { Link, Outlet, useLocation, useNavigate, useParams } from '@remix-run/react';
-import type { MetaFunction } from '@remix-run/node';
+import { Link, Outlet, useLocation, useNavigate, useParams } from 'react-router';
+import type { MetaFunction } from 'react-router';
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { logout } from '~/api.client';
 import { useUser } from '~/context/user';

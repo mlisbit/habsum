@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Link, useLocation, useNavigate, useParams } from '@remix-run/react';
-import type { MetaFunction } from '@remix-run/node';
+import { Link, useLocation, useNavigate, useParams } from 'react-router';
+import type { MetaFunction } from 'react-router';
 import { dayFromString } from '@habsum/types/common/day';
 import { Calendar, type CalendarDataRender } from '~/components/Calendar';
 import { CellDataDisplay } from '~/components/CellDataDisplay';

@@ -1,5 +1,5 @@
 // exclusive-bem-block: security-password-page
-import { useBlocker, useNavigate, useParams } from '@remix-run/react';
+import { useBlocker, useNavigate, useParams } from 'react-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { changeUserPassword } from '~/api.client';
 import { SettingsPageCard } from '~/components/SettingsPageCard';

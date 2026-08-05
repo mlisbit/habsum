@@ -5,10 +5,10 @@
   "type": "module",
   "sideEffects": false,
   "scripts": {
-    "dev": "remix vite:dev",
-    "build": "remix vite:build",
+    "dev": "react-router dev",
+    "build": "react-router build",
     "start": "vite preview --port 3000",
-    "typecheck": "tsc",
+    "typecheck": "react-router typegen && tsc",
     "test": "vitest run",
     "test:watch": "vitest",
     "lint:js": "eslint ."
@@ -24,18 +24,17 @@
     "@habsum/habit-render": "*",
     "@habsum/types": "*",
     "@habsum/utils": "*",
-    "@remix-run/node": "^2.13.1",
-    "@remix-run/react": "^2.13.1",
-    "@remix-run/serve": "^2.13.1",
+    "@react-router/node": "^7.18.2",
     "@uiw/react-codemirror": "^4.25.9",
     "codemirror": "^6.0.2",
     "isbot": "^4.4.0",
     "lucide-react": "^1.9.0",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "react-router": "^7.18.2"
   },
   "devDependencies": {
-    "@remix-run/dev": "^2.13.1",
+    "@react-router/dev": "^7.18.2",
     "eslint": "9.39.1",
     "eslint-plugin-habsum": "*",
     "typescript-eslint": "8.48.1",

@@ -1,6 +1,6 @@
 // exclusive-bem-block: config-page
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
-import { Link, useBlocker } from '@remix-run/react';
+import { Link, useBlocker } from 'react-router';
 import {
   getUserConfig,
   putUserConfig,
