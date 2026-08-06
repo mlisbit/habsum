@@ -3,8 +3,8 @@ import { useCallback, useState, type ComponentType, type ReactNode } from 'react
 import type { Habit } from '@habsum/types/common/habit';
 import type { Day } from '@habsum/types/common/day';
 import type { HabitPatch } from '@habsum/types/api-responses/habit-patch';
-import HabitHeaderAndActionRenderer from './_private/HabitHeaderAndActionRenderer';
 import HabitWidgetRenderer from './_private/HabitWidgetRenderer';
+import getHabitRendering from './_private/habit-renderers/getHabitRendering';
 import { useToast } from '@habsum/ui/contexts/toast';
 import { classBuilder } from '@habsum/utils/class-builder';
 
@@ -65,6 +65,16 @@ export default function HabitRenderer(props: HabitRendererProps) {
     (patch: HabitPatch) => runOp(() => onUpdate(patch)),
     [onUpdate, runOp],
   );
+  const habitRendering = getHabitRendering(habit);
+  const renderingProps = {
+    user,
+    viewDate,
+    pending,
+    LinkComponent,
+    onNavigate,
+    className: 'habit__header',
+    onUpdate: updateHabit,
+  };
 
   return (
     <div
@@ -75,17 +85,9 @@ export default function HabitRenderer(props: HabitRendererProps) {
         ['card card--no-padding habit', className].filter(Boolean).join(' '),
       )}
     >
-      <HabitHeaderAndActionRenderer
-        user={user}
-        habit={habit}
-        viewDate={viewDate}
-        pending={pending}
-        LinkComponent={LinkComponent}
-        onNavigate={onNavigate}
-        demo={demo}
-        className="habit__header"
-        onUpdate={updateHabit}
-      />
+      {demo
+        ? habitRendering.wrappingDemoComponent(renderingProps)
+        : habitRendering.wrappingComponent(renderingProps)}
       <HabitWidgetRenderer
         habit={habit}
         viewDate={viewDate}

@@ -1,10 +1,12 @@
 // exclusive-bem-block: habit-heading
-import type { ComponentType, ReactNode } from 'react';
+import { useCallback, type ComponentType, type ReactNode } from 'react';
 import type { Day } from '@habsum/types/common/day';
 import { Button } from '@habsum/ui/components/Button';
 import { Icon } from '@habsum/ui/components/Icon';
+import { useModal } from '@habsum/ui/contexts/modal';
 import { classBuilder } from '@habsum/utils/class-builder';
 import { habitDetailUrl } from '@habsum/utils/habit-id';
+import { HabitMenuModal } from './HabitMenuModal';
 
 type HabitHeadingRenderProps = {
   user: string;
@@ -14,9 +16,9 @@ type HabitHeadingRenderProps = {
   pending?: boolean;
   goalHit?: boolean;
   LinkComponent?: ComponentType<{ to: string; className?: string; children: ReactNode }>;
+  onNavigate?: (url: string) => void;
+  onReset: () => Promise<void>;
   demo?: boolean;
-  menuAriaLabel: string;
-  onMenuClick: () => void;
   /** Right-side controls (e.g. summation count buttons). */
   actions?: ReactNode;
 };
@@ -29,12 +31,29 @@ export function HabitHeadingRender({
   pending = false,
   goalHit = false,
   LinkComponent,
+  onNavigate,
+  onReset,
   demo = false,
-  menuAriaLabel,
-  onMenuClick,
   actions,
 }: HabitHeadingRenderProps) {
+  const { present, closeModal, closeModalThen } = useModal();
   const to = habitDetailUrl(user, habitName, viewDate);
+  const openMenu = useCallback(() => {
+    present({
+      content: (
+        <HabitMenuModal
+          user={user}
+          habitName={habitName}
+          onNavigate={onNavigate}
+          closeModalThen={closeModalThen}
+          onReset={async () => {
+            await onReset();
+            closeModal();
+          }}
+        />
+      ),
+    });
+  }, [closeModal, closeModalThen, habitName, onNavigate, onReset, present, user]);
 
   return (
     <div className={classBuilder({}, ['habit-heading', className].filter(Boolean).join(' '))}>
@@ -61,8 +80,8 @@ export function HabitHeadingRender({
             circle
             text=""
             disabled={pending}
-            onClick={onMenuClick}
-            aria-label={menuAriaLabel}
+            onClick={openMenu}
+            aria-label={`More options for ${habitName}`}
             className="habit-heading__menu"
           />
         )}

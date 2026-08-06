@@ -1,7 +1,8 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ModalProvider } from '@habsum/ui/contexts/modal';
-import HabitHeaderAndActionRenderer from '@habsum/habit-render/_private/HabitHeaderAndActionRenderer';
+import { ToastProvider } from '@habsum/ui/contexts/toast';
+import HabitRenderer from '@habsum/habit-render';
 import { dayFromString } from '@habsum/types/common/day';
 import type { HabitRowText } from '~/api.client';
 
@@ -21,15 +22,16 @@ describe('text habit control', () => {
     };
 
     render(
-      <ModalProvider>
-        <HabitHeaderAndActionRenderer
-          user="writer"
-          habit={habit}
-          viewDate={dayFromString('2026-07-27')}
-          pending={false}
-          onUpdate={onUpdate}
-        />
-      </ModalProvider>,
+      <ToastProvider>
+        <ModalProvider>
+          <HabitRenderer
+            user="writer"
+            habit={habit}
+            viewDate={dayFromString('2026-07-27')}
+            onUpdate={onUpdate}
+          />
+        </ModalProvider>
+      </ToastProvider>,
     );
 
     const input = screen.getByRole('textbox', { name: 'Journal text for the day' });
@@ -49,47 +51,61 @@ describe('text habit control', () => {
 
   it('keeps the textarea focused and queues edits while an autosave is pending', async () => {
     vi.useFakeTimers();
-    const onUpdate = vi.fn(async () => {});
+    let resolveFirstSave: () => void = () => {};
+    const firstSave = new Promise<void>((resolve) => {
+      resolveFirstSave = resolve;
+    });
+    const onUpdate = vi
+      .fn<() => Promise<void>>()
+      .mockImplementationOnce(() => firstSave)
+      .mockResolvedValue(undefined);
     const viewDate = dayFromString('2026-07-27');
-    const renderHeader = (pending: boolean, text = 'Today') => (
-      <ModalProvider>
-        <HabitHeaderAndActionRenderer
-          user="writer"
-          habit={{
-            name: 'Journal',
-            type: 'text',
-            details: { text },
-          }}
-          viewDate={viewDate}
-          pending={pending}
-          onUpdate={onUpdate}
-        />
-      </ModalProvider>
+    const renderHabit = (text = 'Today') => (
+      <ToastProvider>
+        <ModalProvider>
+          <HabitRenderer
+            user="writer"
+            habit={{
+              name: 'Journal',
+              type: 'text',
+              details: { text },
+            }}
+            viewDate={viewDate}
+            onUpdate={onUpdate}
+          />
+        </ModalProvider>
+      </ToastProvider>
     );
-    const { rerender } = render(renderHeader(false));
+    const { rerender } = render(renderHabit());
     const input = screen.getByRole('textbox', {
       name: 'Journal text for the day',
     }) as HTMLTextAreaElement;
     input.focus();
 
-    rerender(renderHeader(true));
+    fireEvent.change(input, { target: { value: 'Saved before the latest edit' } });
+    await act(async () => {
+      vi.advanceTimersByTime(600);
+    });
+
     fireEvent.change(input, { target: { value: 'Typed while saving' } });
 
     expect(document.activeElement).toBe(input);
     expect(input.readOnly).toBe(false);
     expect(input.value).toBe('Typed while saving');
     expect(input.getAttribute('aria-busy')).toBe('true');
-    expect(onUpdate).not.toHaveBeenCalled();
+    expect(onUpdate).toHaveBeenCalledTimes(1);
 
-    rerender(renderHeader(true, 'Saved before the latest edit'));
+    rerender(renderHabit('Saved before the latest edit'));
     expect(input.value).toBe('Typed while saving');
 
-    rerender(renderHeader(false, 'Saved before the latest edit'));
+    await act(async () => {
+      resolveFirstSave();
+    });
     await act(async () => {
       vi.advanceTimersByTime(600);
     });
 
-    expect(onUpdate).toHaveBeenCalledWith({
+    expect(onUpdate).toHaveBeenLastCalledWith({
       habit: 'Journal',
       text: 'Typed while saving',
     });

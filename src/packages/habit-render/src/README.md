@@ -31,7 +31,7 @@ The server is free to add, omit, or reorder widgets and modules; the client walk
 
 ## What `HabitRenderer` composes
 
-1. **Header** (`HabitHeaderAndActionRenderer`) — habit name, options menu, and actions that depend on habit type (count control for summation, pills/checkbox for single-select, plain-text entry for text habits). This is driven by `type` and the type-specific `details` fields (`total`, `value`, `options`, `text`, …), not by `widgets[]`.
+1. **Heading** (`HabitHeadingRender`) — the shared habit name and options menu. A `HabitRenderingInterface` implementation supplies the type-specific actions (count control for summation, pills/checkbox for single-select, plain-text entry for text habits). This is driven by `type` and the type-specific `details` fields (`total`, `value`, `options`, `text`, …), not by `widgets[]`.
 
 2. **Widgets** (`HabitWidgetRenderer`) — walks `habit.widgets[]` and renders each widget’s modules. Also includes a few habit-type extras outside that array (e.g. summation **Events** for today’s log). Individual modules are rendered via `renderHabitWidgetBody` (`insights`, `progress`, `barGraph`, `streakGraph`).
 
@@ -41,9 +41,9 @@ The server is free to add, omit, or reorder widgets and modules; the client walk
 habit-renderer/
   HabitRenderer.tsx                 ← import this
   _private/
-    HabitHeaderAndActionRenderer.tsx
     HabitWidgetRenderer.tsx
-    heading-renderer-helpers/       ← header UI (CountControl, HabitMenuModal, …)
+    habit-renderers/                ← type-specific rendering strategies
+    heading-renderer-helpers/       ← shared heading and menu UI
     modules/                        ← module implementations (Events, Streak, …)
 ```
 
