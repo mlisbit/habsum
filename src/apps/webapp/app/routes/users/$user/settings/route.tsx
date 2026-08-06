@@ -1,9 +1,8 @@
 import { Link, Outlet, useLocation, useNavigate, useParams } from 'react-router';
 import type { MetaFunction } from 'react-router';
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { logout } from '~/api.client';
-import { useUser } from '~/context/user';
-import { ensureUserSessionForRoute, isMeLoggedIn } from '~/utils/user-session-guard';
+import { useAuth } from '~/context/auth';
+import { ensureUserSessionForRoute } from '~/utils/user-session-guard';
 import { Button } from '@habsum/ui/components/Button';
 import { Icon } from '@habsum/ui/components/Icon';
 import { Footer } from '~/components/Footer';
@@ -33,21 +32,24 @@ function activeSettingsSectionLabel(path: string): string | null {
 
 export default function UserSettingsLayout() {
   const navigate = useNavigate();
-  const { me, loading: userLoading } = useUser();
-  const { user } = useParams();
+  const { user: authenticatedUser, signOut } = useAuth();
+  const { user: routeUser } = useParams();
   const location = useLocation();
   const path = location.pathname;
-  const base = `/users/${encodeURIComponent(user ?? '')}/settings`;
-  const isAdmin = userLoading ? null : isMeLoggedIn(me) && me.username === user ? me.admin : false;
+  const base = `/users/${encodeURIComponent(routeUser ?? '')}/settings`;
+  const isAdmin =
+    authenticatedUser != null &&
+    authenticatedUser.username === routeUser &&
+    authenticatedUser.admin;
   const isWide = useWideSettingsLayout();
   const [navOpen, setNavOpen] = useState(false);
   const activeSection = useMemo(() => activeSettingsSectionLabel(path), [path]);
   const mainRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    if (!user || userLoading) return;
-    ensureUserSessionForRoute(user, me, { navigate });
-  }, [user, me, userLoading, navigate]);
+    if (!routeUser) return;
+    ensureUserSessionForRoute(routeUser, authenticatedUser, { navigate });
+  }, [routeUser, authenticatedUser, navigate]);
 
   useEffect(() => {
     if (path.endsWith('/developer') && isAdmin === false) {
@@ -79,7 +81,7 @@ export default function UserSettingsLayout() {
     >
       <aside className="settings__sidebar">
         <Link
-          to={`/users/${encodeURIComponent(user ?? '')}/habits`}
+          to={`/users/${encodeURIComponent(routeUser ?? '')}/habits`}
           className="settings__dashboard-link link--fancy text-b-m"
         >
           <Icon name="chevronBack" size="small" />
@@ -147,7 +149,7 @@ export default function UserSettingsLayout() {
             text="Logout"
             className="settings__logout"
             onClick={() => {
-              void logout().then(() => window.location.assign('/login'));
+              void signOut().then(() => navigate('/login'));
             }}
           />
         </nav>

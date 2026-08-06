@@ -1,9 +1,12 @@
 import type { HabitsResponse } from '@habsum/types/api-responses/habits-get';
+import type { MeGetResponse } from '@habsum/types/api-responses/me-get';
 import type { PatchHabitResponse } from '@habsum/types/api-responses/habit-patch';
 import type { ListUsersResponse } from '@habsum/types/common/misc';
 import { toDateKeyWithTime } from '@habsum/utils/date';
+import { WEBAPP_VERSION } from '~/version';
 
-const SERVER_URL = process.env.HABSUM_SERVER_URL ?? 'http://localhost:3001';
+const SERVER_URL =
+  process.env.HABSUM_SERVER_URL ?? process.env.API_UPSTREAM ?? 'http://localhost:3001';
 
 function buildHabitPatchPayload(
   body:
@@ -39,6 +42,16 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export function listUsers() {
   return request<ListUsersResponse>('/users');
+}
+
+export function getAuthMe(documentRequest: Request) {
+  const cookie = documentRequest.headers.get('cookie');
+  return request<MeGetResponse>('/users/me', {
+    headers: {
+      'x-habsum-web-version': WEBAPP_VERSION,
+      ...(cookie ? { cookie } : {}),
+    },
+  });
 }
 
 export function getHabits(user: string) {

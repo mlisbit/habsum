@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react';
 import { logoutOuc } from '~/api.client';
-import { useUser } from '~/context/user';
+import { useAuth } from '~/context/auth';
 import {
   closeOucPopupWindow,
   getOucSessionToken,
@@ -9,7 +9,7 @@ import {
 } from '~/ouc.client';
 
 export function OucIndicator() {
-  const { me, refresh } = useUser();
+  const { user, refresh } = useAuth();
 
   useEffect(() => {
     const onOucChanged = () => {
@@ -22,15 +22,11 @@ export function OucIndicator() {
   const oucUser = useMemo(() => {
     if (typeof window === 'undefined') return null;
     if (!getOucSessionToken()) return null;
-    if (
-      me.username != null &&
-      'sessionTokenPrefix' in me &&
-      isOucSessionTokenPrefix(me.sessionTokenPrefix)
-    ) {
-      return me.username;
+    if (user != null && isOucSessionTokenPrefix(user.sessionTokenPrefix)) {
+      return user.username;
     }
     return null;
-  }, [me]);
+  }, [user]);
 
   if (!oucUser) return null;
 

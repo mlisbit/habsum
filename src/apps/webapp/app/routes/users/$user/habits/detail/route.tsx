@@ -12,7 +12,7 @@ import { InfoText } from '@habsum/ui/components/InfoText';
 import { TogglePill } from '@habsum/ui/components/Pill';
 import HabitRenderer from '@habsum/habit-render';
 import { getHabitHistory, patchHabit, type Habit } from '~/api.client';
-import { useUser } from '~/context/user';
+import { useAuth } from '~/context/auth';
 import { ensureUserSessionForRoute } from '~/utils/user-session-guard';
 import { toDateKey } from '@habsum/utils/date';
 import { addDays } from '~/utils/date-utils';
@@ -77,7 +77,7 @@ function parseHabitFilters(raw: string | null): string[] {
 // Habit detail — /users/:user/habits/detail?filter=:habitId or :habitId,:habitId
 export default function HabitDetailRoute() {
   const navigate = useNavigate();
-  const { me, loading: userLoading } = useUser();
+  const { user: authenticatedUser } = useAuth();
   const { user: routeUser } = useParams();
   const location = useLocation();
   const query = useMemo(() => new URLSearchParams(location.search), [location.search]);
@@ -95,9 +95,9 @@ export default function HabitDetailRoute() {
   const showJumpToToday = effectiveDate !== today;
 
   useEffect(() => {
-    if (!user || userLoading) return;
-    if (!ensureUserSessionForRoute(user, me, { navigate })) return;
-  }, [user, me, userLoading, navigate]);
+    if (!user) return;
+    if (!ensureUserSessionForRoute(user, authenticatedUser, { navigate })) return;
+  }, [user, authenticatedUser, navigate]);
 
   const fetchHistory = useCallback(
     async (options: { mode: 'initial' | 'refresh'; cancelled?: { current: boolean } }) => {

@@ -4,21 +4,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DayWithTime } from '@habsum/types/common/day';
 import { dateFromDayWithTimeUtc } from '@habsum/types/common/day';
 import type { ProductEntitlement } from '@habsum/types/common/entitlement';
-import {
-  deleteUser,
-  downloadUserDataCsv,
-  logout,
-  patchUser,
-  type UsersPatchRequest,
-} from '~/api.client';
+import { deleteUser, downloadUserDataCsv, patchUser, type UsersPatchRequest } from '~/api.client';
 import { SettingsPageCard } from '~/components/SettingsPageCard';
 import { Button } from '@habsum/ui/components/Button';
 import { InfoText } from '@habsum/ui/components/InfoText';
 import { Input } from '@habsum/ui/components/Input';
 import { useModal } from '@habsum/ui/contexts/modal';
 import { useToast } from '@habsum/ui/contexts/toast';
-import { useUser } from '~/context/user';
-import { isMeLoggedIn } from '~/utils/user-session-guard';
+import { useAuth } from '~/context/auth';
 import { UnsavedChangesModal } from '~/components/UnsavedChangesModal';
 import {
   accountServerErrorToFieldMap,
@@ -95,7 +88,7 @@ function SaveFieldErrors({
 
 export default function UserSettingsAccount() {
   const navigate = useNavigate();
-  const { me, refresh } = useUser();
+  const { user: authenticatedUser, refresh, signOut } = useAuth();
   const { user: routeUser } = useParams();
   const [saved, setSaved] = useState<AccountSnapshot | null>(null);
   const [draftUsername, setDraftUsername] = useState('');
@@ -114,8 +107,8 @@ export default function UserSettingsAccount() {
   }, [saved]);
 
   const loadAccount = useCallback(async () => {
-    if (!routeUser || !isMeLoggedIn(me) || me.username !== routeUser) return;
-    const res = me;
+    if (!routeUser || authenticatedUser?.username !== routeUser) return;
+    const res = authenticatedUser;
     const display = res.displayName ?? '';
     const email = res.email ?? '';
     const theme: UiThemePreference =
@@ -135,7 +128,7 @@ export default function UserSettingsAccount() {
     setDraftTheme(theme);
     syncTheme(theme);
     setSaveFieldErrors({});
-  }, [me, routeUser]);
+  }, [authenticatedUser, routeUser]);
 
   useEffect(() => {
     if (!routeUser) return;
@@ -555,8 +548,8 @@ export default function UserSettingsAccount() {
                 setDeleteBusy(true);
                 try {
                   await deleteUser(routeUser);
-                  await logout().catch(() => {});
-                  window.location.assign('/login');
+                  await signOut().catch(() => {});
+                  navigate('/login');
                 } catch (e) {
                   showToast({
                     type: 'error',

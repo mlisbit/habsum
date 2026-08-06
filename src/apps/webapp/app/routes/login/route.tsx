@@ -1,15 +1,14 @@
 import { Link, useNavigate } from 'react-router';
 import { useEffect, useState } from 'react';
 import { useTracking } from '@habsum/tracking/client/react';
-import { loginUser, logout } from '~/api.client';
 import { Footer } from '~/components/Footer';
 import { Button } from '@habsum/ui/components/Button';
 import { InfoText } from '@habsum/ui/components/InfoText';
 import { Input } from '@habsum/ui/components/Input';
 import { clearLegacyClientLoginMarkers } from '~/cookies.client';
-import { useUser } from '~/context/user';
+import { useAuth } from '~/context/auth';
 import { webappTrackingSpec } from '~/tracking-spec';
-import { isMeLoggedIn, userDefaultAppPath } from '~/utils/user-session-guard';
+import { userDefaultAppPath } from '~/utils/user-session-guard';
 
 function LoginForm({
   anotherAccountHint,
@@ -18,6 +17,8 @@ function LoginForm({
   anotherAccountHint: boolean;
   formDisabled?: boolean;
 }) {
+  const navigate = useNavigate();
+  const { signIn } = useAuth();
   const tracking = useTracking<typeof webappTrackingSpec>();
   const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
@@ -39,8 +40,8 @@ function LoginForm({
     setError(null);
     setIsLoggingIn(true);
     try {
-      const res = await loginUser(id, nextPassword);
-      window.location.assign(userDefaultAppPath(res.user));
+      const res = await signIn(id, nextPassword);
+      navigate(userDefaultAppPath(res.user));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'login failed');
     } finally {
@@ -115,8 +116,8 @@ function LoginForm({
 
 export default function LoginRoute() {
   const navigate = useNavigate();
-  const { me, refresh } = useUser();
-  const currentUser = me.username;
+  const { user, signOut } = useAuth();
+  const currentUser = user?.username ?? null;
   const [signOutBusy, setSignOutBusy] = useState(false);
 
   useEffect(() => {
@@ -126,8 +127,7 @@ export default function LoginRoute() {
   const handleSignOut = async () => {
     setSignOutBusy(true);
     try {
-      await logout();
-      await refresh();
+      await signOut();
     } finally {
       setSignOutBusy(false);
     }
@@ -152,11 +152,7 @@ export default function LoginRoute() {
                 text={`Continue as ${currentUser}`}
                 disabled={signOutBusy}
                 onClick={() => {
-                  if (isMeLoggedIn(me) && me.username === currentUser) {
-                    navigate(userDefaultAppPath(currentUser));
-                  } else {
-                    navigate(`/users/${encodeURIComponent(currentUser)}/habits`);
-                  }
+                  navigate(userDefaultAppPath(currentUser));
                 }}
               />
               <Button

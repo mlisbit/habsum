@@ -19,8 +19,7 @@ import { InfoText } from '@habsum/ui/components/InfoText';
 import { Input } from '@habsum/ui/components/Input';
 import { ModalBody, ModalFooter, ModalHeader, useModal } from '@habsum/ui/contexts/modal';
 import { useToast } from '@habsum/ui/contexts/toast';
-import { useUser } from '~/context/user';
-import { isMeLoggedIn } from '~/utils/user-session-guard';
+import { useAuth } from '~/context/auth';
 
 const clockFormat: Intl.DateTimeFormatOptions = {
   weekday: 'long',
@@ -516,17 +515,14 @@ function UserRowIconAction({ tooltip, icon, ariaLabel, onClick }: UserRowIconAct
 export default function UserSettingsDeveloper() {
   const navigate = useNavigate();
   const { user } = useParams();
-  const { me, loading: userLoading } = useUser();
+  const { user: authenticatedUser } = useAuth();
   const [developerData, setDeveloperData] = useState<DeveloperGetResponse | null>(null);
   const [developerError, setDeveloperError] = useState<string | null>(null);
   const [browserNow, setBrowserNow] = useState(() => new Date());
   const [users, setUsers] = useState<ListUserItem[] | null>(null);
   const [usersError, setUsersError] = useState<string | null>(null);
-  const canViewDeveloper = userLoading
-    ? null
-    : isMeLoggedIn(me) && me.username === user
-      ? me.admin
-      : false;
+  const canViewDeveloper =
+    authenticatedUser != null && authenticatedUser.username === user && authenticatedUser.admin;
   const { present, closeModal } = useModal();
   const { showToast } = useToast();
 

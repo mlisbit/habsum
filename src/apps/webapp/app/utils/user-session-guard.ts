@@ -1,4 +1,4 @@
-import type { MeGetResponse } from '@habsum/types/api-responses/me-get';
+import type { MeGetLoggedIn, MeGetResponse } from '@habsum/types/api-responses/me-get';
 
 export function userDefaultAppPath(user: string): string {
   return `/users/${encodeURIComponent(user)}/habits`;
@@ -14,16 +14,16 @@ type GuardOptions = {
 };
 
 /**
- * Ensures `me` matches `routeUser`. Redirects to login when needed.
+ * Ensures the authenticated user matches `routeUser`. Redirects to login when needed.
  * @returns true when the route may render.
  */
 export function ensureUserSessionForRoute(
   routeUser: string,
-  me: MeGetResponse,
+  user: MeGetLoggedIn | null,
   options: GuardOptions,
 ): boolean {
   const { navigate } = options;
-  if (!isMeLoggedIn(me) || me.username !== routeUser) {
+  if (!user || user.username !== routeUser) {
     navigate('/login');
     return false;
   }

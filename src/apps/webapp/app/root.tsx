@@ -1,4 +1,4 @@
-import { Link, Links, Meta, Outlet, Scripts, ScrollRestoration } from 'react-router';
+import { Link, Links, Meta, Outlet, Scripts, ScrollRestoration, useLoaderData } from 'react-router';
 import type { LinksFunction, MetaFunction } from 'react-router';
 import { useCallback } from 'react';
 import type { MeGetResponse } from '@habsum/types/api-responses/me-get';
@@ -10,10 +10,14 @@ import { OucIndicator } from '~/components/OucIndicator';
 import { OucPopupBootstrap } from '~/components/OucPopupBootstrap';
 import { ModalProvider } from '@habsum/ui/contexts/modal';
 import { ToastProvider } from '@habsum/ui/contexts/toast';
-import { UserProvider } from '~/context/user';
+import { AuthProvider } from '~/context/auth';
+import { getAuthMe as getClientAuthMe } from '~/api.client';
 import stylesHref from '~/styles/main.scss?url';
 import { UI_THEME_STORAGE_KEY } from '~/theme.shared';
 import { webappTrackingSpec } from '~/tracking-spec';
+import { getAuthMe as getServerAuthMe } from '~/api.server';
+import { getOucSessionToken } from '~/ouc.client';
+import type { Route } from './+types/root';
 
 const trackingProvider: TrackingProvider = import.meta.env.PROD
   ? new UmamiTrackingProvider()
@@ -25,6 +29,19 @@ export const links: LinksFunction = () => [
 ];
 
 export const meta: MetaFunction = () => [{ title: 'habsum' }];
+
+export async function loader({ request }: Route.LoaderArgs) {
+  return { me: await getServerAuthMe(request) };
+}
+
+export async function clientLoader({ serverLoader }: Route.ClientLoaderArgs) {
+  if (getOucSessionToken()) {
+    return { me: await getClientAuthMe() };
+  }
+  return serverLoader();
+}
+
+clientLoader.hydrate = true as const;
 
 const initialThemeScript = `
 (() => {
@@ -77,6 +94,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 }
 
 function AppContent() {
+  const { me } = useLoaderData<typeof loader>();
   const { resolveIdentity } = useTracking<typeof webappTrackingSpec>();
   const onUserResolution = useCallback(
     (me: MeGetResponse) => resolveIdentity(me.username ?? undefined),
@@ -86,11 +104,11 @@ function AppContent() {
   return (
     <ToastProvider linkComponent={ToastLink}>
       <ModalProvider>
-        <UserProvider onResolution={onUserResolution}>
+        <AuthProvider me={me} onResolution={onUserResolution}>
           <OucPopupBootstrap />
           <Outlet />
           <OucIndicator />
-        </UserProvider>
+        </AuthProvider>
       </ModalProvider>
     </ToastProvider>
   );

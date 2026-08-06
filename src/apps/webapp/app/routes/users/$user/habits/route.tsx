@@ -2,13 +2,13 @@ import { Link, useNavigate } from 'react-router';
 import type { MetaFunction } from 'react-router';
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { dayFromString } from '@habsum/types/common/day';
-import { getHabits, logout, patchHabit, type Habit, type HabitsResponse } from '~/api.client';
+import { getHabits, patchHabit, type Habit, type HabitsResponse } from '~/api.client';
 import { Footer } from '~/components/Footer';
 import { TopNav } from '~/components/TopNav';
 import HabitRenderer from '@habsum/habit-render';
 import { Icon } from '@habsum/ui/components/Icon';
 import { InfoText } from '@habsum/ui/components/InfoText';
-import { useUser } from '~/context/user';
+import { useAuth } from '~/context/auth';
 import { ensureUserSessionForRoute } from '~/utils/user-session-guard';
 import { awaitOucPopupBootstrap, getOucSessionToken } from '~/ouc.client';
 import { useTodayDateKey } from '~/utils/use-today-date-key';
@@ -77,7 +77,7 @@ function NoHabitsForDay() {
 
 export default function HabitsPage() {
   const navigate = useNavigate();
-  const { me, loading: userLoading, isNewUser, refresh: refreshUser } = useUser();
+  const { user: authenticatedUser, isNewUser, refresh: refreshUser, signOut } = useAuth();
   const syncedEntitlementsAfterFirstActivityRef = useRef(false);
   const [user, setUser] = useState<string>('');
   // Source of truth: the URL. `null` means "today" (clean URL).
@@ -115,16 +115,15 @@ export default function HabitsPage() {
   }, []);
 
   useEffect(() => {
-    if (userLoading) return;
     const match = window.location.pathname.match(/^\/users\/([^/]+)\/habits\/?$/);
     const routeUser = match ? decodeURIComponent(match[1]) : '';
     if (!routeUser) {
       setUser('');
       return;
     }
-    if (!ensureUserSessionForRoute(routeUser, me, { navigate })) return;
+    if (!ensureUserSessionForRoute(routeUser, authenticatedUser, { navigate })) return;
     setUser(routeUser);
-  }, [me, userLoading, navigate]);
+  }, [authenticatedUser, navigate]);
 
   useEffect(() => {
     if (!user) return;
@@ -223,7 +222,7 @@ export default function HabitsPage() {
         firstDate={null}
         onChangeDate={goToDate}
         onBack={() => {
-          void logout().then(() => window.location.assign('/login'));
+          void signOut().then(() => navigate('/login'));
         }}
         onSettings={() => navigate(`/users/${encodeURIComponent(user)}/settings/account`)}
         progress={state?.page.progress ?? EMPTY_PAGE_PROGRESS}
