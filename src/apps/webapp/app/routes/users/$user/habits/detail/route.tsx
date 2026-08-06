@@ -292,7 +292,6 @@ export default function HabitDetailRoute() {
                   user={user}
                   habit={habitForWidget}
                   viewDate={viewDate}
-                  currentSearch={location.search}
                   LinkComponent={({ to, className, children }) => (
                     <Link className={className} to={to}>
                       {children}

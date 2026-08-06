@@ -1,5 +1,6 @@
 // exclusive-bem-block: habit-heading
 import type { ComponentType, ReactNode } from 'react';
+import type { Day } from '@habsum/types/common/day';
 import { Button } from '@habsum/ui/components/Button';
 import { Icon } from '@habsum/ui/components/Icon';
 import { classBuilder } from '@habsum/utils/class-builder';
@@ -8,10 +9,10 @@ import { habitDetailUrl } from '@habsum/utils/habit-id';
 type HabitHeadingRenderProps = {
   user: string;
   habitName: string;
+  viewDate: Day;
   className?: string;
   pending?: boolean;
   goalHit?: boolean;
-  currentSearch?: string;
   LinkComponent?: ComponentType<{ to: string; className?: string; children: ReactNode }>;
   demo?: boolean;
   menuAriaLabel: string;
@@ -23,21 +24,17 @@ type HabitHeadingRenderProps = {
 export function HabitHeadingRender({
   user,
   habitName,
+  viewDate,
   className,
   pending = false,
   goalHit = false,
-  currentSearch,
   LinkComponent,
   demo = false,
   menuAriaLabel,
   onMenuClick,
   actions,
 }: HabitHeadingRenderProps) {
-  const to = habitDetailUrl(
-    user,
-    habitName,
-    currentSearch ?? (typeof window !== 'undefined' ? window.location.search : ''),
-  );
+  const to = habitDetailUrl(user, habitName, viewDate);
 
   return (
     <div className={classBuilder({}, ['habit-heading', className].filter(Boolean).join(' '))}>

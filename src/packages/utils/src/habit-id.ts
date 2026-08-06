@@ -1,4 +1,5 @@
 import { dasherize } from './strings.js';
+import type { Day } from '@habsum/types/common/day';
 
 /** Query param on `/users/:user/settings/habits` for deep-linking the habit edit modal. */
 export const CONFIG_EDIT_HABIT_QUERY_PARAM = 'habit';
@@ -57,14 +58,10 @@ export function configEditHabitUrl(user: string, habitName: string): string {
   return `/users/${encodeURIComponent(user)}/settings/habits${search}`;
 }
 
-export function habitDetailUrl(user: string, habitName: string, search = ''): string {
-  const current = new URLSearchParams(search);
+export function habitDetailUrl(user: string, habitName: string, viewDate: Day): string {
   const qs = new URLSearchParams();
   qs.set('filter', habitIdPathSegment(habitName));
-
-  for (const [key, value] of current) {
-    if (key !== 'filter') qs.append(key, value);
-  }
+  qs.set('date', viewDate);
 
   return `/users/${encodeURIComponent(user)}/habits/detail?${qs.toString()}`;
 }

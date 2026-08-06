@@ -14,7 +14,6 @@ type HabitRendererProps = {
   viewDate: Day;
   habit: Habit;
   onUpdate: (patch: HabitPatch) => Promise<void>;
-  currentSearch?: string;
   LinkComponent?: ComponentType<{ to: string; className?: string; children: ReactNode }>;
   onNavigate?: (url: string) => void;
   demo?: boolean;
@@ -48,7 +47,6 @@ export default function HabitRenderer(props: HabitRendererProps) {
     habit,
     viewDate,
     onUpdate,
-    currentSearch,
     LinkComponent,
     onNavigate,
     demo,
@@ -82,7 +80,6 @@ export default function HabitRenderer(props: HabitRendererProps) {
         habit={habit}
         viewDate={viewDate}
         pending={pending}
-        currentSearch={currentSearch}
         LinkComponent={LinkComponent}
         onNavigate={onNavigate}
         demo={demo}

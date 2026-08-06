@@ -30,7 +30,6 @@ type HabitHeaderAndActionRendererProps = {
   habit: Habit;
   viewDate: Day;
   pending: boolean;
-  currentSearch?: string;
   LinkComponent?: ComponentType<{ to: string; className?: string; children: ReactNode }>;
   onNavigate?: (url: string) => void;
   demo?: boolean;
@@ -147,8 +146,8 @@ function SingleSelectActions({
 function SingleSelectHabitHeader({
   user,
   habit,
+  viewDate,
   pending,
-  currentSearch,
   LinkComponent,
   demo,
   className,
@@ -157,8 +156,8 @@ function SingleSelectHabitHeader({
 }: {
   user: string;
   habit: HabitRowSingleSelect;
+  viewDate: Day;
   pending: boolean;
-  currentSearch?: string;
   LinkComponent?: ComponentType<{ to: string; className?: string; children: ReactNode }>;
   demo?: boolean;
   className?: string;
@@ -169,9 +168,9 @@ function SingleSelectHabitHeader({
     <HabitHeadingRender
       user={user}
       habitName={habit.name}
+      viewDate={viewDate}
       pending={pending}
       goalHit={isGoalHit(habit)}
-      currentSearch={currentSearch}
       LinkComponent={LinkComponent}
       demo={demo}
       menuAriaLabel={`More options for ${habit.name}`}
@@ -185,8 +184,8 @@ function SingleSelectHabitHeader({
 function SummationHabitHeader({
   user,
   habit,
+  viewDate,
   pending,
-  currentSearch,
   LinkComponent,
   demo,
   className,
@@ -195,8 +194,8 @@ function SummationHabitHeader({
 }: {
   user: string;
   habit: HabitRowSummation;
+  viewDate: Day;
   pending: boolean;
-  currentSearch?: string;
   LinkComponent?: ComponentType<{ to: string; className?: string; children: ReactNode }>;
   demo?: boolean;
   className?: string;
@@ -207,9 +206,9 @@ function SummationHabitHeader({
     <HabitHeadingRender
       user={user}
       habitName={habit.name}
+      viewDate={viewDate}
       pending={pending}
       goalHit={isGoalHit(habit)}
-      currentSearch={currentSearch}
       LinkComponent={LinkComponent}
       demo={demo}
       menuAriaLabel={`More options for ${habit.name}`}
@@ -280,7 +279,6 @@ function TextHabitHeader({
   habit,
   viewDate,
   pending,
-  currentSearch,
   LinkComponent,
   demo,
   className,
@@ -291,7 +289,6 @@ function TextHabitHeader({
   habit: HabitRowText;
   viewDate: Day;
   pending: boolean;
-  currentSearch?: string;
   LinkComponent?: ComponentType<{ to: string; className?: string; children: ReactNode }>;
   demo?: boolean;
   className?: string;
@@ -303,8 +300,8 @@ function TextHabitHeader({
       <HabitHeadingRender
         user={user}
         habitName={habit.name}
+        viewDate={viewDate}
         pending={pending}
-        currentSearch={currentSearch}
         LinkComponent={LinkComponent}
         demo={demo}
         menuAriaLabel={`More options for ${habit.name}`}
@@ -326,7 +323,6 @@ export default function HabitHeaderAndActionRenderer({
   habit,
   viewDate,
   pending,
-  currentSearch,
   LinkComponent,
   onNavigate,
   demo = false,
@@ -345,8 +341,8 @@ export default function HabitHeaderAndActionRenderer({
       <SingleSelectHabitHeader
         user={user}
         habit={habit}
+        viewDate={viewDate}
         pending={pending}
-        currentSearch={currentSearch}
         LinkComponent={LinkComponent}
         demo={demo}
         openResetModal={openResetModal}
@@ -362,7 +358,6 @@ export default function HabitHeaderAndActionRenderer({
         habit={habit}
         viewDate={viewDate}
         pending={pending}
-        currentSearch={currentSearch}
         LinkComponent={LinkComponent}
         demo={demo}
         openResetModal={openResetModal}
@@ -375,8 +370,8 @@ export default function HabitHeaderAndActionRenderer({
     <SummationHabitHeader
       user={user}
       habit={habit}
+      viewDate={viewDate}
       pending={pending}
-      currentSearch={currentSearch}
       LinkComponent={LinkComponent}
       demo={demo}
       openResetModal={openResetModal}

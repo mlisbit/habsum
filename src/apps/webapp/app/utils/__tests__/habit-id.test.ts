@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { dayFromString } from '@habsum/types/common/day';
 import {
   configEditHabitQueryValue,
   configEditHabitUrl,
   findHabitNameByConfigEditId,
+  habitDetailUrl,
   readConfigEditHabitId,
   readShowAddModal,
   withConfigEditHabitId,
@@ -39,6 +41,12 @@ describe('config edit habit query param', () => {
   it('builds the settings config edit url', () => {
     expect(configEditHabitUrl('user2', 'push ups')).toBe(
       '/users/user2/settings/habits?habit=push-ups',
+    );
+  });
+
+  it('builds a habit detail url for the selected view date', () => {
+    expect(habitDetailUrl('user2', 'push ups', dayFromString('2026-08-06'))).toBe(
+      '/users/user2/habits/detail?filter=push-ups&date=2026-08-06',
     );
   });
 });
