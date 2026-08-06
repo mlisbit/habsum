@@ -5,6 +5,7 @@
   "description": "Habit tracker - lightweight Express server + React Router webapp",
   "workspaces": [
     "src/packages/types",
+    "src/packages/feature-flags",
     "src/packages/tracking",
     "src/packages/utils",
     "src/packages/ui",

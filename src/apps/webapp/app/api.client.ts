@@ -1,4 +1,5 @@
 import type { Habit } from '@habsum/types/common/habit';
+import type { FeatureFlagPostRequest, FeatureFlagPostResponse } from '@habsum/feature-flags/types';
 import type { DeveloperGetResponse } from '@habsum/types/api-responses/developer-get';
 import type { MeGetResponse } from '@habsum/types/api-responses/me-get';
 import type { HabitsResponse } from '@habsum/types/api-responses/habits-get';
@@ -211,6 +212,13 @@ export async function loginWithOucToken(token: string) {
 
 export async function getDeveloper() {
   return request<DeveloperGetResponse>('/developer');
+}
+
+export async function updateFeatureFlag(body: FeatureFlagPostRequest) {
+  return request<FeatureFlagPostResponse>('/feature-flags', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
 }
 
 export async function createUser(

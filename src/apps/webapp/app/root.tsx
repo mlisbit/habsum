@@ -2,6 +2,8 @@ import { Link, Links, Meta, Outlet, Scripts, ScrollRestoration, useLoaderData } 
 import type { LinksFunction, MetaFunction } from 'react-router';
 import { useCallback } from 'react';
 import type { MeGetResponse } from '@habsum/types/api-responses/me-get';
+import { FeatureFlagsProvider } from '@habsum/feature-flags/client/react';
+import { FEATURE_FLAG_KEYS } from '@habsum/feature-flags/feature-flags';
 import type { TrackingProvider } from '@habsum/tracking/client/provider';
 import { ConsoleTrackingProvider } from '@habsum/tracking/client/providers/console';
 import { UmamiTrackingProvider } from '@habsum/tracking/client/providers/umami';
@@ -15,7 +17,7 @@ import { getAuthMe as getClientAuthMe } from '~/api.client';
 import stylesHref from '~/styles/main.scss?url';
 import { UI_THEME_STORAGE_KEY } from '~/theme.shared';
 import { webappTrackingSpec } from '~/tracking-spec';
-import { getAuthMe as getServerAuthMe } from '~/api.server';
+import { getAuthMe as getServerAuthMe, getFeatureFlags } from '~/api.server';
 import { getOucSessionToken } from '~/ouc.client';
 import type { Route } from './+types/root';
 
@@ -31,14 +33,16 @@ export const links: LinksFunction = () => [
 export const meta: MetaFunction = () => [{ title: 'habsum' }];
 
 export async function loader({ request }: Route.LoaderArgs) {
-  return { me: await getServerAuthMe(request) };
+  const [me, featureFlags] = await Promise.all([getServerAuthMe(request), getFeatureFlags()]);
+  return { me, featureFlags: featureFlags.flags };
 }
 
 export async function clientLoader({ serverLoader }: Route.ClientLoaderArgs) {
+  const serverData = await serverLoader();
   if (getOucSessionToken()) {
-    return { me: await getClientAuthMe() };
+    return { ...serverData, me: await getClientAuthMe() };
   }
-  return serverLoader();
+  return serverData;
 }
 
 clientLoader.hydrate = true as const;
@@ -115,9 +119,13 @@ function AppContent() {
 }
 
 export default function App() {
+  const { featureFlags } = useLoaderData<typeof loader>();
+
   return (
-    <TrackingContextProvider provider={trackingProvider} spec={webappTrackingSpec}>
-      <AppContent />
-    </TrackingContextProvider>
+    <FeatureFlagsProvider flags={featureFlags} flagKeys={FEATURE_FLAG_KEYS}>
+      <TrackingContextProvider provider={trackingProvider} spec={webappTrackingSpec}>
+        <AppContent />
+      </TrackingContextProvider>
+    </FeatureFlagsProvider>
   );
 }

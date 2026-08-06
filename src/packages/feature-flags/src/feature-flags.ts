@@ -1,0 +1,9 @@
+export const FEATURE_FLAG_ENABLED_VALUE = 'enabled';
+
+export const FEATURE_FLAG_KEYS = ['show-version-in-footer'] as const;
+
+export type FeatureFlagKey = (typeof FEATURE_FLAG_KEYS)[number];
+
+export function isFeatureFlagKey(value: unknown): value is FeatureFlagKey {
+  return typeof value === 'string' && (FEATURE_FLAG_KEYS as readonly string[]).includes(value);
+}

@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
+import { useFeatureFlags } from '@habsum/feature-flags/client/react';
+import {
+  FEATURE_FLAG_ENABLED_VALUE,
+  type FeatureFlagKey,
+} from '@habsum/feature-flags/feature-flags';
 import type { ListUserItem } from '@habsum/types/common/misc';
 import {
   adminDeleteUser,
@@ -8,6 +13,7 @@ import {
   createUser,
   getDeveloper,
   listUsers,
+  updateFeatureFlag,
   type DeveloperGetResponse,
 } from '~/api.client';
 import { openOucWindow } from '~/ouc.client';
@@ -17,6 +23,7 @@ import { Hoverable } from '@habsum/ui/components/Hoverable';
 import type { IconName } from '@habsum/ui/components/Icon';
 import { InfoText } from '@habsum/ui/components/InfoText';
 import { Input } from '@habsum/ui/components/Input';
+import { Toggle } from '@habsum/ui/components/Toggle';
 import { ModalBody, ModalFooter, ModalHeader, useModal } from '@habsum/ui/contexts/modal';
 import { useToast } from '@habsum/ui/contexts/toast';
 import { useAuth } from '~/context/auth';
@@ -521,10 +528,32 @@ export default function UserSettingsDeveloper() {
   const [browserNow, setBrowserNow] = useState(() => new Date());
   const [users, setUsers] = useState<ListUserItem[] | null>(null);
   const [usersError, setUsersError] = useState<string | null>(null);
+  const [updatingFlagKey, setUpdatingFlagKey] = useState<FeatureFlagKey | null>(null);
   const canViewDeveloper =
     authenticatedUser != null && authenticatedUser.username === user && authenticatedUser.admin;
   const { present, closeModal } = useModal();
   const { showToast } = useToast();
+  const { flags: featureFlags } = useFeatureFlags<FeatureFlagKey>();
+
+  const setFeatureFlagEnabled = useCallback(
+    async (key: FeatureFlagKey, enabled: boolean) => {
+      setUpdatingFlagKey(key);
+      try {
+        await updateFeatureFlag({
+          key,
+          value: enabled ? FEATURE_FLAG_ENABLED_VALUE : null,
+        });
+        window.location.reload();
+      } catch (e) {
+        setUpdatingFlagKey(null);
+        showToast({
+          type: 'error',
+          message: e instanceof Error ? e.message : 'Failed to update feature flag.',
+        });
+      }
+    },
+    [showToast],
+  );
 
   const loadUsers = useCallback(async () => {
     setUsersError(null);
@@ -742,6 +771,39 @@ export default function UserSettingsDeveloper() {
                   </li>
                 );
               })}
+            </ul>
+          )}
+        </div>
+      </SettingsPageCard>
+
+      <SettingsPageCard
+        headerText="Feature Flags"
+        headerAs="h3"
+        className="developer-page__feature-flags"
+      >
+        <div className="card-padding">
+          {featureFlags.length === 0 ? (
+            <p className="text-light text-b-m">No feature flags configured.</p>
+          ) : (
+            <ul className="developer-page__feature-flags-list">
+              {featureFlags.map((flag) => (
+                <li key={flag.key} className="developer-page__feature-flags-row">
+                  <div className="developer-page__feature-flags-details">
+                    <code className="text-b-m">{flag.key}</code>
+                    <span className="text-light text-b-s">
+                      Last modified: {formatUnixTimeLocal(flag.lastModifiedAt)}
+                    </span>
+                  </div>
+                  <Toggle
+                    checked={flag.value != null}
+                    checkedLabel="Enabled"
+                    uncheckedLabel="Disabled"
+                    aria-label={`${flag.key} feature flag`}
+                    disabled={updatingFlagKey != null}
+                    onChange={(enabled) => void setFeatureFlagEnabled(flag.key, enabled)}
+                  />
+                </li>
+              ))}
             </ul>
           )}
         </div>
