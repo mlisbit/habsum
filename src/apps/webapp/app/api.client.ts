@@ -35,6 +35,7 @@ import type {
   ForgotPasswordResponse,
 } from '@habsum/types/api-responses/forgot-password-post';
 import type { ResetPasswordValidateResponse } from '@habsum/types/api-responses/reset-password-get';
+import type { SignupRequest, SignupResponse } from '@habsum/types/api-responses/signup-post';
 import type {
   ResetPasswordRequest,
   ResetPasswordResponse,
@@ -162,6 +163,13 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
 export async function getAuthMe() {
   return request<MeGetResponse>('/users/me');
+}
+
+export async function signupUser(email: string, password: string) {
+  return request<SignupResponse>('/auth/signup', {
+    method: 'POST',
+    body: JSON.stringify({ email, password } satisfies SignupRequest),
+  });
 }
 
 export async function requestForgotPassword(email: string) {

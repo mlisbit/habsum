@@ -4,6 +4,7 @@ export default [
   index('routes/_index/route.tsx'),
   layout('routes/_layout.tsx', [
     route('login', 'routes/login/route.tsx'),
+    route('signup', 'routes/signup.tsx'),
     route('forgot-password', 'routes/forgot-password.tsx'),
     route('reset-password', 'routes/reset-password.tsx'),
     route('users', 'routes/users/_index/route.tsx'),

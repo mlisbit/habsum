@@ -5,14 +5,14 @@ import type {
   FeatureFlagsGetResponse,
 } from '@habsum/feature-flags/types';
 import type { Request, Response } from 'express';
-import { FeatureFlagRepository } from '../repositories/feature-flag-repository.js';
+import { FeatureFlagService } from '../services/feature-flag-service.js';
 
-const featureFlagRepository = new FeatureFlagRepository();
+const featureFlagService = new FeatureFlagService();
 
 export const featureFlagsController = {
   getFeatureFlags(_req: Request, res: Response) {
     const body: FeatureFlagsGetResponse<FeatureFlagKey> = {
-      flags: featureFlagRepository.listFeatureFlags(),
+      flags: featureFlagService.listFeatureFlags(),
     };
     return res.json(body);
   },
@@ -28,7 +28,7 @@ export const featureFlagsController = {
     }
 
     const body: FeatureFlagPostResponse<FeatureFlagKey> = {
-      flag: featureFlagRepository.setFeatureFlagValue(key, value),
+      flag: featureFlagService.setFeatureFlagValue(key, value),
     };
     return res.json(body);
   },

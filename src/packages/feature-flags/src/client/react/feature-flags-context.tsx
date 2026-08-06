@@ -1,6 +1,7 @@
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
 
 import type { FeatureFlag } from '../../feature-flag-types';
+import { isFeatureFlagValueEnabled } from '../../feature-flags';
 
 type FeatureFlagsContextValue = {
   flags: readonly FeatureFlag[];
@@ -29,7 +30,7 @@ export function FeatureFlagsProvider<const TFlagKey extends string>({
     );
     return {
       flags: configuredFlags,
-      isFlagEnabled: (flagName) => flagValues.get(flagName) != null,
+      isFlagEnabled: (flagName) => isFeatureFlagValueEnabled(flagValues.get(flagName)),
     };
   }, [configuredFlags]);
 

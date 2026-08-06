@@ -1,13 +1,93 @@
 import request from 'supertest';
+import { FEATURE_FLAG_ENABLED_VALUE } from '@habsum/feature-flags/feature-flags';
 import { yamlString } from '@habsum/types/common/misc';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../../app.js';
 import { ConfigService } from '../../services/config-service.js';
 import { EmailService } from '../../services/email-service.js';
 import { UserAndAuthRepository } from '../../repositories/user-and-auth-repository.js';
+import { FeatureFlagRepository } from '../../repositories/feature-flag-repository.js';
 
 const configService = new ConfigService();
 const userAndAuthRepository = new UserAndAuthRepository();
+const featureFlagRepository = new FeatureFlagRepository();
+
+describe('POST /auth/signup', () => {
+  afterEach(() => {
+    featureFlagRepository.setFeatureFlagValue('enable-user-account-creation', null);
+    vi.restoreAllMocks();
+  });
+
+  it('rejects direct API account creation while the feature is disabled', async () => {
+    featureFlagRepository.setFeatureFlagValue('enable-user-account-creation', null);
+
+    const response = await request(createApp())
+      .post('/auth/signup')
+      .send({ email: 'disabled-signup@example.com', password: 'secret' })
+      .expect(403);
+
+    expect(response.body).toEqual({ error: 'account creation is disabled' });
+    expect(
+      userAndAuthRepository.resolveUsernameByLoginId('disabled-signup@example.com'),
+    ).toBeNull();
+    expect(configService.loadUserConfig('disabled-signup')).toBeNull();
+  });
+
+  it('creates and authenticates an account while the feature is enabled', async () => {
+    featureFlagRepository.setFeatureFlagValue(
+      'enable-user-account-creation',
+      FEATURE_FLAG_ENABLED_VALUE,
+    );
+
+    const response = await request(createApp())
+      .post('/auth/signup')
+      .send({ email: 'self-signup@example.com', password: 'chosen-secret' })
+      .expect(201);
+
+    expect(response.body).toEqual({ ok: true, user: 'self-signup' });
+    const sessionCookie = response.headers['set-cookie']?.[0]?.split(';')[0];
+    expect(sessionCookie).toMatch(/^habsum_sid=/);
+    expect(configService.loadUserConfig('self-signup')?.habits).toEqual([]);
+    expect(userAndAuthRepository.isUserPasswordValid('self-signup', 'chosen-secret')).toBe(true);
+    expect(userAndAuthRepository.getUserProfile('self-signup').email).toBe(
+      'self-signup@example.com',
+    );
+
+    const meResponse = await request(createApp())
+      .get('/users/me')
+      .set('Cookie', sessionCookie!)
+      .expect(200);
+    expect(meResponse.body).toMatchObject({
+      username: 'self-signup',
+      email: 'self-signup@example.com',
+    });
+  });
+
+  it('validates signup input and rejects an email already in use', async () => {
+    featureFlagRepository.setFeatureFlagValue(
+      'enable-user-account-creation',
+      FEATURE_FLAG_ENABLED_VALUE,
+    );
+    userAndAuthRepository.setUserPassword('existing-signup-user', 'secret');
+    userAndAuthRepository.patchUserProfile('existing-signup-user', {
+      email: 'existing-signup@example.com',
+    });
+    const app = createApp();
+
+    await request(app)
+      .post('/auth/signup')
+      .send({ email: 'not-an-email', password: 'secret' })
+      .expect(400, { error: 'invalid email' });
+    await request(app)
+      .post('/auth/signup')
+      .send({ email: 'missing-password@example.com' })
+      .expect(400, { error: 'password is required' });
+    await request(app)
+      .post('/auth/signup')
+      .send({ email: 'existing-signup@example.com', password: 'secret' })
+      .expect(409, { error: 'email already in use' });
+  });
+});
 
 describe('session routes', () => {
   it('logs in through /auth/login, resolves /users/me, and logs out through /auth/logout', async () => {

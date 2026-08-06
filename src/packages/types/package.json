@@ -18,6 +18,7 @@
     "./api-responses/me-get": "./src/api-responses/me-get.ts",
     "./api-responses/security-get": "./src/api-responses/security-get.ts",
     "./api-responses/security-delete": "./src/api-responses/security-delete.ts",
+    "./api-responses/signup-post": "./src/api-responses/signup-post.ts",
     "./api-responses/users-patch": "./src/api-responses/users-patch.ts",
     "./api-responses/user-password-change": "./src/api-responses/user-password-change.ts",
     "./api-responses/user-new-password": "./src/api-responses/user-new-password.ts",

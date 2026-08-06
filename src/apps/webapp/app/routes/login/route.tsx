@@ -1,5 +1,7 @@
 import { Link, useNavigate } from 'react-router';
 import { useEffect, useState } from 'react';
+import { useFeatureFlags } from '@habsum/feature-flags/client/react';
+import type { FeatureFlagKey } from '@habsum/feature-flags/feature-flags';
 import { useTracking } from '@habsum/tracking/client/react';
 import { Footer } from '~/components/Footer';
 import { Button } from '@habsum/ui/components/Button';
@@ -20,6 +22,7 @@ function LoginForm({
   const navigate = useNavigate();
   const { signIn } = useAuth();
   const tracking = useTracking<typeof webappTrackingSpec>();
+  const { isFlagEnabled } = useFeatureFlags<FeatureFlagKey>();
   const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -109,6 +112,14 @@ function LoginForm({
             void handleLogin();
           }}
         />
+        {isFlagEnabled('enable-user-account-creation') ? (
+          <p className="users-index__signup text-b-s text-light">
+            Don&apos;t have an account?{' '}
+            <Link to="/signup" className="text-link">
+              Sign up
+            </Link>
+          </p>
+        ) : null}
       </form>
     </>
   );

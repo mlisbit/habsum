@@ -9,10 +9,12 @@ import { EmailService } from './email-service.js';
 import { UserService } from './user-service.js';
 import { UserAndAuthRepository } from '../repositories/user-and-auth-repository.js';
 import ServiceError from '../utils/classes/service-error.js';
+import { FeatureFlagService } from './feature-flag-service.js';
 
 const PACKAGE_VERSION = getPackageVersion();
 
 type LoginInput = { password?: unknown };
+type SignupInput = { email?: unknown; password?: unknown };
 type ForgotPasswordInput = { email?: unknown };
 type ResetPasswordInput = { token?: unknown; newPassword?: unknown };
 type OucLoginInput = { token?: unknown };
@@ -104,7 +106,60 @@ export class AuthService {
     private readonly emailService = new EmailService(),
     private readonly userAndAuthRepository = new UserAndAuthRepository(),
     private readonly userService = new UserService(configService, userAndAuthRepository),
+    private readonly featureFlagService = new FeatureFlagService(),
   ) {}
+
+  signup(body: SignupInput | undefined) {
+    if (!this.featureFlagService.isFlagEnabled('enable-user-account-creation')) {
+      throw new ServiceError('forbidden', 'account creation is disabled');
+    }
+
+    const rawEmail = body?.email;
+    if (typeof rawEmail !== 'string') {
+      throw new ServiceError('bad_request', 'email is required');
+    }
+    const email = rawEmail.trim().toLowerCase();
+    if (!isPlausibleEmail(email)) {
+      throw new ServiceError('bad_request', 'invalid email');
+    }
+
+    const password = getPassword(body?.password);
+    if (password == null) {
+      throw new ServiceError('bad_request', 'password is required');
+    }
+    if (this.userAndAuthRepository.resolveUsernameByLoginId(email)) {
+      throw new ServiceError('conflict', 'email already in use');
+    }
+
+    const username = this.userService.allocateUsernameForEmail(email);
+    if (!username) {
+      throw new ServiceError('conflict', 'could not allocate username');
+    }
+
+    const configResult = this.configService.createEmptyUserConfig(username);
+    if (!configResult.ok) {
+      throw new ServiceError(
+        configResult.error.includes('already exists') ? 'conflict' : 'bad_request',
+        configResult.error,
+      );
+    }
+
+    try {
+      this.userAndAuthRepository.setUserPassword(username, password);
+      this.userAndAuthRepository.patchUserProfile(username, { email });
+    } catch (error) {
+      this.configService.deleteUserConfig(username);
+      this.userAndAuthRepository.deleteUserAuthRecord(username);
+      const message = error instanceof Error ? error.message : 'failed to create account';
+      if (message.includes('UNIQUE constraint failed: users.email')) {
+        throw new ServiceError('conflict', 'email already in use');
+      }
+      throw new ServiceError('internal', message);
+    }
+
+    const sessionId = this.userAndAuthRepository.createUserSession(username);
+    return { data: { ok: true as const, user: username }, sessionId };
+  }
 
   login(loginId: string, body: LoginInput | undefined) {
     if (!isSafeLoginId(loginId)) {

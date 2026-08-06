@@ -53,6 +53,10 @@ export class FeatureFlagRepository {
     return listFlags.all() as FeatureFlagRow[];
   }
 
+  getFeatureFlag(key: FeatureFlagKey): FeatureFlag<FeatureFlagKey> | null {
+    return (getFlag.get({ key }) as FeatureFlagRow | undefined) ?? null;
+  }
+
   setFeatureFlagValue(
     key: FeatureFlagKey,
     value: string | null,
@@ -61,7 +65,7 @@ export class FeatureFlagRepository {
     const result = setFlagValue.run({ key, value, lastModifiedAt });
     if (result.changes !== 1) throw new Error(`feature flag not found: ${key}`);
 
-    const flag = getFlag.get({ key }) as FeatureFlagRow | undefined;
+    const flag = this.getFeatureFlag(key);
     if (!flag) throw new Error(`feature flag not found after update: ${key}`);
     return flag;
   }

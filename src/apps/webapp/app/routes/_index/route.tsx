@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
+import type { MetaFunction } from 'react-router';
 import type { HabitPatch } from '@habsum/types/api-responses/habit-patch';
 import type { BarGraphData } from '@habsum/types/common/bar-chart';
 import { dayFromString, type Day } from '@habsum/types/common/day';
 import type { Habit, HabitWidget } from '@habsum/types/common/habit';
 import type { StreakFill, StreakGraphData } from '@habsum/types/common/streak';
 import HabitRenderer from '@habsum/habit-render';
+import { useFeatureFlags } from '@habsum/feature-flags/client/react';
+import type { FeatureFlagKey } from '@habsum/feature-flags/feature-flags';
 import { useTracking } from '@habsum/tracking/client/react';
 import { Button } from '@habsum/ui/components/Button';
 import { Hoverable } from '@habsum/ui/components/Hoverable';
@@ -12,7 +15,11 @@ import { Toggle } from '@habsum/ui/components/Toggle';
 import { ModalBody, ModalHeader, useModal } from '@habsum/ui/contexts/modal';
 import { build } from '@habsum/utils/model-builders/habit';
 import { build as buildWidget } from '@habsum/utils/model-builders/widget';
+import { useAuth } from '~/context/auth';
 import { webappTrackingSpec } from '~/tracking-spec';
+import { userDefaultAppPath } from '~/utils/user-session-guard';
+
+export const meta: MetaFunction = () => [{ title: 'Habsum | Homepage' }];
 
 const viewDate = dayFromString('2026-06-19');
 const user = 'demo';
@@ -286,6 +293,12 @@ function LegalTodoModal({ title }: { title: string }) {
 
 export default function IndexRoute() {
   const tracking = useTracking<typeof webappTrackingSpec>();
+  const { user: authenticatedUser } = useAuth();
+  const { isFlagEnabled } = useFeatureFlags<FeatureFlagKey>();
+  const accountCreationEnabled = isFlagEnabled('enable-user-account-creation');
+  const authenticatedUserDashboard = authenticatedUser
+    ? userDefaultAppPath(authenticatedUser.username)
+    : null;
   const [demoHabitKind, setDemoHabitKind] = useState<DemoHabitKind>('quickSelect');
   const [homepageHabit, setHomepageHabit] = useState(readingHabit);
   const [theme, setTheme] = useState<HomepageTheme>(() => {
@@ -320,27 +333,39 @@ export default function IndexRoute() {
           Habsum
         </div>
         <nav className="homepage-habits__nav flex align-items-center gap-2" aria-label="Homepage">
-          <Hoverable.Root>
-            <Hoverable.Anchor className="homepage-habits__demo-anchor">
-              <Button
-                type="secondary"
-                size="large"
-                text="Demo"
-                aria-disabled="true"
-                className="homepage-habits__demo-button"
-                onClick={(event) => event.preventDefault()}
-              />
-            </Hoverable.Anchor>
-            <Hoverable.Content className="homepage-habits__demo-tooltip" side="bottom">
-              <span>Coming soon</span>
-            </Hoverable.Content>
-          </Hoverable.Root>
+          {!authenticatedUser && accountCreationEnabled ? (
+            <a className="homepage-habits__demo-anchor" href="/signup">
+              <Button type="secondary" size="large" text="Sign up" />
+            </a>
+          ) : !authenticatedUser ? (
+            <Hoverable.Root>
+              <Hoverable.Anchor className="homepage-habits__demo-anchor">
+                <Button
+                  type="secondary"
+                  size="large"
+                  text="Sign up"
+                  aria-disabled="true"
+                  className="homepage-habits__demo-button"
+                  onClick={(event) => event.preventDefault()}
+                />
+              </Hoverable.Anchor>
+              <Hoverable.Content className="homepage-habits__demo-tooltip" side="bottom">
+                <span>Coming soon</span>
+              </Hoverable.Content>
+            </Hoverable.Root>
+          ) : null}
           <a
             className="homepage-habits__login-link"
-            href="/login"
-            onClick={() => tracking.trackClick('homepage-login-click')}
+            href={authenticatedUserDashboard ?? '/login'}
+            onClick={() => {
+              if (!authenticatedUser) tracking.trackClick('homepage-login-click');
+            }}
           >
-            <Button type="primary" size="large" text="Login" />
+            <Button
+              type="primary"
+              size="large"
+              text={authenticatedUser ? `Continue as ${authenticatedUser.username}` : 'Login'}
+            />
           </a>
         </nav>
       </header>

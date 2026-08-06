@@ -3,6 +3,9 @@ import { authController } from './auth.controller.js';
 
 export const authRouter = Router();
 
+// Used by the public signup page when account creation is enabled.
+authRouter.post('/auth/signup', authController.postSignup);
+
 // Used by the login page to authenticate a user and establish their session cookie.
 authRouter.post('/auth/login', authController.postLogin);
 
