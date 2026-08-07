@@ -1,6 +1,7 @@
 import { toDateKey } from '@habsum/utils/date';
 import { Button } from '@habsum/ui/components/Button';
 import { HumanDate } from '@habsum/ui/components/HumanDate';
+import { Text as GhostText } from '@habsum/ui/components/ghosts/Text';
 import { addDays } from '~/utils/date-utils';
 
 function classNames(...values: Array<string | false | null | undefined>) {
@@ -15,6 +16,7 @@ export function DayNav({
   onDateTooFarText,
   showJumpToToday = false,
   nextDisabled = date >= today,
+  isLoading = false,
   className,
 }: {
   date: string;
@@ -24,13 +26,18 @@ export function DayNav({
   onDateTooFarText?: string;
   showJumpToToday?: boolean;
   nextDisabled?: boolean;
+  isLoading?: boolean;
   className?: string;
 }) {
   return (
     <div className={classNames('day-nav', className)}>
       <div className="day-nav__top">
         <div className="text-h-l">
-          <HumanDate date={date} tzOffsetMinutes={tzOffsetMinutes} today={today} />
+          {isLoading ? (
+            <GhostText mimic="text-h-l" width="8rem" />
+          ) : (
+            <HumanDate date={date} tzOffsetMinutes={tzOffsetMinutes} today={today} />
+          )}
         </div>
         <div className="day-nav__actions">
           <div className="flex gap-2">

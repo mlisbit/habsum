@@ -1,0 +1,24 @@
+@keyframes ghost-card-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+.ghost-card {
+  width: 100%;
+  border-radius: var(--border-radius-m);
+  background: linear-gradient(
+    90deg,
+    var(--background-secondary) 25%,
+    var(--background-disabled) 50%,
+    var(--background-secondary) 75%
+  );
+  background-size: 200% 100%;
+  animation: ghost-card-shimmer 1.5s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ghost-card {
+    animation: none;
+  }
+}

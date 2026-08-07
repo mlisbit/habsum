@@ -7,6 +7,7 @@ import { DayNav } from '~/components/DayNav';
 import { Hoverable } from '@habsum/ui/components/Hoverable';
 import { Icon } from '@habsum/ui/components/Icon';
 import { ProgressBar } from '@habsum/ui/components/ProgressBar';
+import { Text as GhostText } from '@habsum/ui/components/ghosts/Text';
 import type { HabitsPageProgress } from '@habsum/types/api-responses/habits-get';
 
 function useTimeLeftInDay(dateKey: string, tzOffsetMinutes: number): string {
@@ -42,6 +43,8 @@ function renderCopyTemplate(template: string, variables: Record<string, string>)
 
 export type TopNavProps = {
   heading: string;
+  isLoading: boolean;
+  isDateLoading: boolean;
   subheader: string;
   /** Day being viewed (YYYY-MM-DD); drives end-of-day countdown. */
   effectiveDate: string;
@@ -56,6 +59,8 @@ export type TopNavProps = {
 
 export function TopNav({
   heading,
+  isLoading,
+  isDateLoading,
   subheader,
   effectiveDate,
   tzOffsetMinutes,
@@ -80,9 +85,9 @@ export function TopNav({
       className: 'top-nav__day-progress',
       value: progress.percent ?? 0,
       max: 100,
-      'aria-label': progress.ariaLabel,
+      'aria-label': isLoading ? 'Loading day progress' : progress.ariaLabel,
     }),
-    [progress],
+    [isLoading, progress],
   );
 
   return (
@@ -95,7 +100,7 @@ export function TopNav({
             aria-labelledby="top-nav-user-greeting"
           >
             <span id="top-nav-user-greeting" className="top-nav__greeting text-h-xl">
-              {heading}
+              {isLoading ? <GhostText mimic="text-h-xl" width="10rem" /> : heading}
             </span>
           </div>
           <Hoverable.Root>
@@ -114,8 +119,10 @@ export function TopNav({
             </Hoverable.Content>
           </Hoverable.Root>
         </div>
-        {renderedSubheader ? (
-          <p className="top-nav__countdown text-b-m text-light">{renderedSubheader}</p>
+        {isLoading || renderedSubheader ? (
+          <p className="top-nav__countdown text-b-m text-light">
+            {isLoading ? <GhostText mimic="text-b-m" width="14rem" /> : renderedSubheader}
+          </p>
         ) : null}
       </div>
       {!hideDayNavigation ? (
@@ -127,6 +134,7 @@ export function TopNav({
             onChangeDate={onChangeDate}
             nextDisabled={nextDisabled}
             showJumpToToday={showJumpToToday}
+            isLoading={isDateLoading}
             onDateTooFarText={showBeforeDataNotice ? 'No data past this day.' : undefined}
           />
           <div className="top-nav__progress-wrap">
@@ -142,7 +150,11 @@ export function TopNav({
             ) : (
               <ProgressBar {...progressBarProps} />
             )}
-            {progress.isComplete && progress.caption ? (
+            {isLoading ? (
+              <p className="top-nav__progress-caption text-b-s text-light">
+                <GhostText mimic="text-b-s" width="8rem" />
+              </p>
+            ) : progress.isComplete && progress.caption ? (
               <p className="top-nav__progress-caption top-nav__progress-caption--celebrate text-b-s text-light">
                 <Icon name="party" size="medium" className="top-nav__progress-party" />
                 <span>{progress.caption}</span>

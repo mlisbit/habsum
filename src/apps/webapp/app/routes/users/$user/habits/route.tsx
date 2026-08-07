@@ -8,6 +8,7 @@ import { TopNav } from '~/components/TopNav';
 import HabitRenderer from '@habsum/habit-render';
 import { Icon } from '@habsum/ui/components/Icon';
 import { InfoText } from '@habsum/ui/components/InfoText';
+import { Card as GhostCard } from '@habsum/ui/components/ghosts/Card';
 import { useAuth } from '~/context/auth';
 import { ensureUserSessionForRoute } from '~/utils/user-session-guard';
 import { awaitOucPopupBootstrap, getOucSessionToken } from '~/ouc.client';
@@ -82,6 +83,7 @@ export default function HabitsPage() {
   const [user, setUser] = useState<string>('');
   // Source of truth: the URL. `null` means "today" (clean URL).
   const [urlDate, setUrlDate] = useState<string | null>(null);
+  const [hasResolvedUrlDate, setHasResolvedUrlDate] = useState(false);
   const [state, setState] = useState<HabitsState | null>(null);
   const [error, setError] = useState<string | null>(null);
   const tzOffsetMinutes = useMemo(() => new Date().getTimezoneOffset(), []);
@@ -104,6 +106,7 @@ export default function HabitsPage() {
       const q = new URLSearchParams(window.location.search);
       const raw = q.get('date');
       setUrlDate(raw && raw.length > 0 ? raw : null);
+      setHasResolvedUrlDate(true);
     };
 
     syncFromUrl();
@@ -127,9 +130,12 @@ export default function HabitsPage() {
 
   useEffect(() => {
     if (!user) return;
+    let cancelled = false;
+    setState(null);
     setError(null);
     getHabits(user, effectiveDate)
       .then((r) => {
+        if (cancelled) return;
         setState({
           user: r.user,
           page: r.page,
@@ -148,7 +154,13 @@ export default function HabitsPage() {
           setUrlDate(null);
         }
       })
-      .catch((e) => setError(e instanceof Error ? e.message : String(e)));
+      .catch((e) => {
+        if (!cancelled) setError(e instanceof Error ? e.message : String(e));
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [user, effectiveDate, today]);
 
   const goToDate = (next: string) => {
@@ -216,6 +228,8 @@ export default function HabitsPage() {
     <div className="habits-page">
       <TopNav
         heading={state?.page.heading ?? ''}
+        isLoading={!state}
+        isDateLoading={!hasResolvedUrlDate}
         subheader={state?.page.subheader ?? ''}
         effectiveDate={effectiveDate}
         tzOffsetMinutes={tzOffsetMinutes}
@@ -236,9 +250,18 @@ export default function HabitsPage() {
       ) : null}
 
       {!state ? (
-        <p className="text-light text-b-m" aria-busy>
-          Loading…
-        </p>
+        wideTwoColumn ? (
+          <div className="habits-page__columns">
+            <div className="habits-page__column">
+              <GhostCard />
+            </div>
+            <div className="habits-page__column" />
+          </div>
+        ) : (
+          <div className="habits-page__stack">
+            <GhostCard />
+          </div>
+        )
       ) : state.habits.length === 0 ? (
         state.page.showEmptyIntro ? (
           <EmptyHabits user={state.user} />
