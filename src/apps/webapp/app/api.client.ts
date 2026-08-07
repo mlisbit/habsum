@@ -105,8 +105,7 @@ export type {
 const OVERRIDE_SERVER_URL = import.meta.env.VITE_HABSUM_SERVER_URL;
 const API_PREFIX = OVERRIDE_SERVER_URL ? '' : '/api';
 const SERVER_URL = OVERRIDE_SERVER_URL ?? '';
-const habitHistoryRequests = new Map<string, Promise<HistoryGetResponse>>();
-const userConfigRequests = new Map<string, Promise<UserConfigGetResponse>>();
+const pendingGetRequests = new Map<string, Promise<unknown>>();
 
 export class ApiRequestError extends Error {
   readonly status: number;
@@ -161,8 +160,19 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return (bodyText ? (JSON.parse(bodyText) as T) : ({} as T)) as T;
 }
 
+function getRequest<T>(path: string): Promise<T> {
+  const pending = pendingGetRequests.get(path);
+  if (pending) return pending as Promise<T>;
+
+  const next = request<T>(path).finally(() => {
+    if (pendingGetRequests.get(path) === next) pendingGetRequests.delete(path);
+  });
+  pendingGetRequests.set(path, next);
+  return next;
+}
+
 export async function getAuthMe() {
-  return request<MeGetResponse>('/users/me');
+  return getRequest<MeGetResponse>('/users/me');
 }
 
 export async function signupUser(email: string, password: string) {
@@ -181,7 +191,7 @@ export async function requestForgotPassword(email: string) {
 
 export async function validateResetPasswordToken(token: string) {
   const qs = `?token=${encodeURIComponent(token)}`;
-  return request<ResetPasswordValidateResponse>(`/auth/reset-password${qs}`);
+  return getRequest<ResetPasswordValidateResponse>(`/auth/reset-password${qs}`);
 }
 
 export async function submitResetPassword(body: ResetPasswordRequest) {
@@ -201,7 +211,7 @@ export async function logoutOuc() {
 }
 
 export async function listUsers() {
-  return request<ListUsersResponse>('/users');
+  return getRequest<ListUsersResponse>('/users');
 }
 
 export async function createOucSession(name: string) {
@@ -219,7 +229,7 @@ export async function loginWithOucToken(token: string) {
 }
 
 export async function getDeveloper() {
-  return request<DeveloperGetResponse>('/developer');
+  return getRequest<DeveloperGetResponse>('/developer');
 }
 
 export async function updateFeatureFlag(body: FeatureFlagPostRequest) {
@@ -267,7 +277,7 @@ export async function loginUser(user: string, password: string) {
 }
 
 export async function getUserSecurity(user: string) {
-  return request<SecurityGetResponse>(`/users/${encodeURIComponent(user)}/security`);
+  return getRequest<SecurityGetResponse>(`/users/${encodeURIComponent(user)}/security`);
 }
 
 export async function revokeUserSecuritySession(user: string, token: string) {
@@ -312,7 +322,7 @@ export async function getHabits(user: string, date?: string) {
   params.set('today', toDateKey(now, tzOffsetMinutes));
   params.set('clientHour', String(now.getHours()));
   const qs = `?${params.toString()}`;
-  return request<HabitsResponse>(`/users/${encodeURIComponent(user)}/habits${qs}`);
+  return getRequest<HabitsResponse>(`/users/${encodeURIComponent(user)}/habits${qs}`);
 }
 
 export async function getHabitHistory(user: string, filter: string[], date?: string) {
@@ -324,14 +334,7 @@ export async function getHabitHistory(user: string, filter: string[], date?: str
   params.set('today', toDateKey(now, tzOffsetMinutes));
   const qs = `?${params.toString()}`;
   const path = `/users/${encodeURIComponent(user)}/habits/history${qs}`;
-  const pending = habitHistoryRequests.get(path);
-  if (pending) return pending;
-
-  const next = request<HistoryGetResponse>(path).finally(() => {
-    habitHistoryRequests.delete(path);
-  });
-  habitHistoryRequests.set(path, next);
-  return next;
+  return getRequest<HistoryGetResponse>(path);
 }
 
 export async function patchHabit(user: string, body: HabitPatch, opts: { date: string }) {
@@ -365,14 +368,7 @@ export async function patchHabit(user: string, body: HabitPatch, opts: { date: s
 
 export async function getUserConfig(user: string) {
   const path = `/users/${encodeURIComponent(user)}/config`;
-  const pending = userConfigRequests.get(path);
-  if (pending) return pending;
-
-  const next = request<UserConfigGetResponse>(path).finally(() => {
-    userConfigRequests.delete(path);
-  });
-  userConfigRequests.set(path, next);
-  return next;
+  return getRequest<UserConfigGetResponse>(path);
 }
 
 export async function putUserConfig(

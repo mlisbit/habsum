@@ -13,6 +13,10 @@
   gap: functions.spacing(2);
 }
 
+.account-page__loader {
+  width: 100%;
+}
+
 .account-page__meta-rows {
   display: flex;
   flex-direction: column;

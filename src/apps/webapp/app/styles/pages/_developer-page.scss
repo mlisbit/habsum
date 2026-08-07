@@ -15,6 +15,15 @@
   gap: functions.spacing(1);
 }
 
+.developer-page__users-loader {
+  width: 100%;
+}
+
+.developer-page__clock-loader,
+.developer-page__version-loader {
+  width: 100%;
+}
+
 .developer-page__users-list-row {
   display: flex;
   align-items: center;

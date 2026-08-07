@@ -23,6 +23,7 @@ import { Hoverable } from '@habsum/ui/components/Hoverable';
 import type { IconName } from '@habsum/ui/components/Icon';
 import { InfoText } from '@habsum/ui/components/InfoText';
 import { Input } from '@habsum/ui/components/Input';
+import { Loader } from '@habsum/ui/components/Loader';
 import { Toggle } from '@habsum/ui/components/Toggle';
 import { ModalBody, ModalFooter, ModalHeader, useModal } from '@habsum/ui/contexts/modal';
 import { useToast } from '@habsum/ui/contexts/toast';
@@ -661,7 +662,7 @@ export default function UserSettingsDeveloper() {
           {usersError ? (
             <p className="text-light text-b-m">Could not load users: {usersError}</p>
           ) : users == null ? (
-            <p className="text-light text-b-m">Loading users...</p>
+            <Loader className="developer-page__users-loader" label="Loading users" size="medium" />
           ) : users.length === 0 ? (
             <p className="text-light text-b-m">No users found.</p>
           ) : (
@@ -823,7 +824,11 @@ export default function UserSettingsDeveloper() {
                     <div className="text-light text-b-s">Time zone: {serverTime.timezone}</div>
                   </>
                 ) : (
-                  <span className="text-light">Loading…</span>
+                  <Loader
+                    className="developer-page__clock-loader"
+                    label="Loading server time"
+                    size="medium"
+                  />
                 )}
               </dd>
             </div>
@@ -850,7 +855,11 @@ export default function UserSettingsDeveloper() {
               </div>
             </dl>
           ) : (
-            <p className="text-light text-b-m">Loading…</p>
+            <Loader
+              className="developer-page__version-loader"
+              label="Loading version"
+              size="medium"
+            />
           )}
         </div>
       </SettingsPageCard>

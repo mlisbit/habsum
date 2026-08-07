@@ -14,6 +14,11 @@
   gap: functions.spacing(2);
 }
 
+.config-page__loader {
+  width: 100%;
+  padding: functions.spacing(3);
+}
+
 .config-page__statistics {
   display: flex;
   flex-direction: column;

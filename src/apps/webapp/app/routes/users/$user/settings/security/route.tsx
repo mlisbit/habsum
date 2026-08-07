@@ -12,6 +12,7 @@ import {
 import { SettingsPageCard } from '~/components/SettingsPageCard';
 import { Button } from '@habsum/ui/components/Button';
 import { Hoverable } from '@habsum/ui/components/Hoverable';
+import { Loader } from '@habsum/ui/components/Loader';
 import { useToast } from '@habsum/ui/contexts/toast';
 
 function formatSessionTime(value: DayWithTime): string {
@@ -165,7 +166,11 @@ export default function UserSettingsSecurity() {
       >
         <div className="card-padding" id="security-sessions">
           {sessions == null ? (
-            <p className="security-page__sessions-empty text-light text-b-m">Loading sessions…</p>
+            <Loader
+              className="security-page__sessions-loader"
+              label="Loading sessions"
+              size="medium"
+            />
           ) : sessionsError ? (
             <p className="security-page__sessions-empty text-b-m" role="alert">
               {sessionsError}

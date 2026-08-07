@@ -8,6 +8,7 @@ import { ConfigYamlEditor } from './ConfigYamlEditor';
 import { UnsavedChangesModal } from '~/components/UnsavedChangesModal';
 import { Button } from '@habsum/ui/components/Button';
 import { InfoText } from '@habsum/ui/components/InfoText';
+import { Loader } from '@habsum/ui/components/Loader';
 import { useModal } from '@habsum/ui/contexts/modal';
 import { useToast } from '@habsum/ui/contexts/toast';
 import { reorderConfigHabits } from '~/utils/configHabitDraft';
@@ -163,11 +164,7 @@ export function ConfigSettings({ user, mode, renderCard }: ConfigSettingsProps) 
       <div className="config-page">
         {renderCard({
           headerText: configCardHeader,
-          children: (
-            <p className="text-light text-b-m card-padding" aria-busy>
-              Loading config…
-            </p>
-          ),
+          children: <Loader className="config-page__loader" label="Loading config" size="medium" />,
         })}
       </div>
     );

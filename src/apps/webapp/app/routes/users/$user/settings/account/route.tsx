@@ -9,6 +9,7 @@ import { SettingsPageCard } from '~/components/SettingsPageCard';
 import { Button } from '@habsum/ui/components/Button';
 import { InfoText } from '@habsum/ui/components/InfoText';
 import { Input } from '@habsum/ui/components/Input';
+import { Loader } from '@habsum/ui/components/Loader';
 import { useModal } from '@habsum/ui/contexts/modal';
 import { useToast } from '@habsum/ui/contexts/toast';
 import { useAuth } from '~/context/auth';
@@ -343,7 +344,7 @@ export default function UserSettingsAccount() {
       <SettingsPageCard headerText="Profile information">
         <div className="card-padding">
           {!loaded ? (
-            <p className="text-light text-b-m">Loading…</p>
+            <Loader className="account-page__loader" label="Loading account" size="medium" />
           ) : (
             <div className="account-page__basic">
               <div className="account-page__field">

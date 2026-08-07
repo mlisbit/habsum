@@ -17,6 +17,10 @@
   margin: 0;
 }
 
+.security-page__sessions-loader {
+  width: 100%;
+}
+
 .security-page__sessions-rows {
   display: flex;
   flex-direction: column;
