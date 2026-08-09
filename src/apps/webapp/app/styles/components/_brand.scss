@@ -1,0 +1,25 @@
+@use 'functions';
+
+.brand {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+}
+
+.brand--small {
+  gap: functions.spacing(1);
+}
+
+.brand__icon {
+  flex: 0 0 auto;
+}
+
+.brand--small .brand__icon {
+  inline-size: 1rem;
+  block-size: 1rem;
+}
+
+.brand--large .brand__icon {
+  inline-size: 1.5rem;
+  block-size: 1.5rem;
+}

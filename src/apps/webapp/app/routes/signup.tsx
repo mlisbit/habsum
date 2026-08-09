@@ -7,6 +7,7 @@ import { InfoText } from '@habsum/ui/components/InfoText';
 import { Input } from '@habsum/ui/components/Input';
 import { signupUser } from '~/api.client';
 import { Footer } from '~/components/Footer';
+import { HomeLink } from '~/components/HomeLink';
 import { useAuth } from '~/context/auth';
 import { userDefaultAppPath } from '~/utils/user-session-guard';
 
@@ -60,6 +61,7 @@ export default function SignupRoute() {
 
   return (
     <div className="users-index">
+      <HomeLink />
       <div className="users-index__main">
         <div className="card users-index__card">
           <div className="users-index__header">
@@ -122,7 +124,7 @@ export default function SignupRoute() {
         </div>
       </div>
 
-      <Footer />
+      <Footer variant="full" />
     </div>
   );
 }

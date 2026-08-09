@@ -1,0 +1,15 @@
+@use 'functions';
+
+.home-link {
+  position: fixed;
+  inset-block-start: calc(functions.spacing(4) + env(safe-area-inset-top, 0px));
+  inset-inline-start: functions.spacing(4);
+  z-index: 1;
+  display: inline-flex;
+  border-radius: var(--border-radius-s);
+
+  &:focus-visible {
+    outline: none;
+    box-shadow: var(--box-shadow-focus);
+  }
+}

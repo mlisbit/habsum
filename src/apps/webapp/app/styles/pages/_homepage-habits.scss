@@ -15,19 +15,6 @@
   background: var(--background);
 }
 
-.homepage-habits__brand {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: functions.spacing(2);
-}
-
-.homepage-habits__brand-icon {
-  flex: 0 0 auto;
-  inline-size: 1.5rem;
-  block-size: 1.5rem;
-}
-
 .homepage-habits__nav {
   min-inline-size: 0;
 }
@@ -129,45 +116,4 @@
 .homepage-habits__waitlist-anchor {
   justify-self: start;
   margin-block-start: functions.spacing(2);
-}
-
-.homepage-habits__footer {
-  margin-block-start: auto;
-  padding-block: functions.spacing(3);
-  border-block-start: 1px solid var(--border-color-faint);
-  background: var(--background-secondary);
-}
-
-.homepage-habits__footer-grid {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: functions.spacing(2);
-}
-
-.homepage-habits__footer-nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: functions.spacing(2);
-}
-
-.homepage-habits__footer-link {
-  margin: 0;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 0.18em;
-
-  &:hover {
-    text-decoration-thickness: 2px;
-  }
-
-  &:focus-visible {
-    outline: none;
-    border-radius: var(--border-radius-s);
-    box-shadow: var(--box-shadow-focus);
-  }
 }

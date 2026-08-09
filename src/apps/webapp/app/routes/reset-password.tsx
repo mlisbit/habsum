@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { PasswordResetTokenPurpose } from '@habsum/types/api-responses/reset-password-get';
 import { submitResetPassword, validateResetPasswordToken } from '~/api.client';
 import { Footer } from '~/components/Footer';
+import { HomeLink } from '~/components/HomeLink';
 import { Button } from '@habsum/ui/components/Button';
 import { InfoText } from '@habsum/ui/components/InfoText';
 import { Input } from '@habsum/ui/components/Input';
@@ -132,6 +133,7 @@ export default function ResetPasswordRoute() {
 
   return (
     <div className="users-index">
+      <HomeLink />
       <div className="users-index__main">
         <div className="card users-index__card">
           <div className="users-index__header">
@@ -273,7 +275,7 @@ export default function ResetPasswordRoute() {
         </div>
       </div>
 
-      <Footer />
+      <Footer variant="full" />
     </div>
   );
 }

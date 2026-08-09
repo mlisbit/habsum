@@ -26,6 +26,8 @@
 @use 'core-components/toggle';
 
 // components
+@use 'components/brand';
+@use 'components/home-link';
 @use 'components/day-nav';
 @use 'components/calendar';
 @use 'components/cell-data-display';
@@ -51,6 +53,7 @@
 
 // pages
 @use 'pages/homepage-habits';
+@use 'pages/public-page';
 @use 'pages/settings';
 @use 'pages/config-page';
 @use 'pages/top-nav';

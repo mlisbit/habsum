@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import mdx from '@mdx-js/rollup';
 import { reactRouter } from '@react-router/dev/vite';
 import { defineConfig } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
@@ -34,7 +35,7 @@ export default defineConfig({
     noDiscovery: true,
     include: ['react-dom'],
   },
-  plugins: [reactRouter(), tsconfigPaths()],
+  plugins: [{ enforce: 'pre', ...mdx() }, reactRouter(), tsconfigPaths()],
   css: {
     preprocessorOptions: {
       scss: {

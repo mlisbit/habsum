@@ -2,6 +2,9 @@ import { index, layout, route, type RouteConfig } from '@react-router/dev/routes
 
 export default [
   index('routes/_index/route.tsx'),
+  route('contact', 'routes/contact.tsx'),
+  route('privacy-policy', 'routes/privacy-policy.tsx'),
+  route('terms-of-service', 'routes/terms-of-service.tsx'),
   layout('routes/_layout.tsx', [
     route('login', 'routes/login/route.tsx'),
     route('signup', 'routes/signup.tsx'),

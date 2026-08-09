@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { FeatureFlagsProvider } from '@habsum/feature-flags/client/react';
@@ -47,6 +47,27 @@ function renderLogin(accountCreationValue: string | null) {
 afterEach(cleanup);
 
 describe('login signup entry point', () => {
+  it('links the top-left Habsum emblem to the homepage', () => {
+    renderLogin(null);
+
+    expect(screen.getByRole('link', { name: 'Habsum homepage' }).getAttribute('href')).toBe('/');
+  });
+
+  it('links to the public terms and privacy pages below the login button', () => {
+    renderLogin(null);
+    const consent = screen.getByText(/By logging in/).closest('p');
+
+    expect(consent).not.toBeNull();
+    const consentLinks = within(consent!);
+
+    expect(consentLinks.getByRole('link', { name: 'Terms' }).getAttribute('href')).toBe(
+      '/terms-of-service',
+    );
+    expect(consentLinks.getByRole('link', { name: 'Privacy Policy' }).getAttribute('href')).toBe(
+      '/privacy-policy',
+    );
+  });
+
   it('shows the signup link when account creation is enabled', () => {
     renderLogin(FEATURE_FLAG_ENABLED_VALUE);
 

@@ -6,7 +6,6 @@ import { Calendar, type CalendarDataRender } from '~/components/Calendar';
 import { CellDataDisplay } from '~/components/CellDataDisplay';
 import { CellHoverDisplay } from '~/components/CellHoverDisplay';
 import { DayNav } from '~/components/DayNav';
-import { Footer } from '~/components/Footer';
 import { Button } from '@habsum/ui/components/Button';
 import { InfoText } from '@habsum/ui/components/InfoText';
 import { TogglePill } from '@habsum/ui/components/Pill';
@@ -307,8 +306,6 @@ export default function HabitDetailRoute() {
             : null}
         </div>
       </div>
-
-      <Footer />
     </div>
   );
 }

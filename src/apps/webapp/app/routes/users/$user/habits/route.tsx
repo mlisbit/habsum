@@ -3,7 +3,6 @@ import type { MetaFunction } from 'react-router';
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { dayFromString } from '@habsum/types/common/day';
 import { getHabits, patchHabit, type Habit, type HabitsResponse } from '~/api.client';
-import { Footer } from '~/components/Footer';
 import { TopNav } from '~/components/TopNav';
 import HabitRenderer from '@habsum/habit-render';
 import { Icon } from '@habsum/ui/components/Icon';
@@ -280,8 +279,6 @@ export default function HabitsPage() {
       ) : (
         <div className="habits-page__stack">{state.habits.map((h) => renderHabit(h))}</div>
       )}
-
-      <Footer />
     </div>
   );
 }

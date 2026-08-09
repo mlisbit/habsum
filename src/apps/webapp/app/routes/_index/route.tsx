@@ -12,9 +12,10 @@ import { useTracking } from '@habsum/tracking/client/react';
 import { Button } from '@habsum/ui/components/Button';
 import { Hoverable } from '@habsum/ui/components/Hoverable';
 import { Toggle } from '@habsum/ui/components/Toggle';
-import { ModalBody, ModalHeader, useModal } from '@habsum/ui/contexts/modal';
 import { build } from '@habsum/utils/model-builders/habit';
 import { build as buildWidget } from '@habsum/utils/model-builders/widget';
+import { Brand } from '~/components/Brand';
+import { Footer } from '~/components/Footer';
 import { useAuth } from '~/context/auth';
 import { webappTrackingSpec } from '~/tracking-spec';
 import { userDefaultAppPath } from '~/utils/user-session-guard';
@@ -280,17 +281,6 @@ function updateHomepageHabit(habit: Habit, patch: HabitPatch): Habit {
   return habit;
 }
 
-function LegalTodoModal({ title }: { title: string }) {
-  return (
-    <>
-      <ModalHeader>{title}</ModalHeader>
-      <ModalBody>
-        <p className="text-b-m text-light">TODO</p>
-      </ModalBody>
-    </>
-  );
-}
-
 export default function IndexRoute() {
   const tracking = useTracking<typeof webappTrackingSpec>();
   const { user: authenticatedUser } = useAuth();
@@ -305,8 +295,6 @@ export default function IndexRoute() {
     if (typeof document === 'undefined') return 'light';
     return document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light';
   });
-  const { present } = useModal();
-
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
   }, [theme]);
@@ -321,17 +309,10 @@ export default function IndexRoute() {
     setHomepageHabit(createDemoHabit(nextKind));
   };
 
-  const openLegalTodo = (title: string) => {
-    present({ content: <LegalTodoModal title={title} /> });
-  };
-
   return (
     <>
       <header className="homepage-habits__topbar">
-        <div className="homepage-habits__brand text-h-m" aria-label="Habsum">
-          <img className="homepage-habits__brand-icon" src="/favicon.svg" alt="" />
-          Habsum
-        </div>
+        <Brand size="large" />
         <nav className="homepage-habits__nav flex align-items-center gap-2" aria-label="Homepage">
           {!authenticatedUser && accountCreationEnabled ? (
             <a className="homepage-habits__demo-anchor" href="/signup">
@@ -434,44 +415,26 @@ export default function IndexRoute() {
               quality-of-life improvements. Early users have a direct impact on what gets built
               next.
             </p>
-            <Hoverable.Root>
-              <Hoverable.Anchor className="homepage-habits__waitlist-anchor">
-                <Button
-                  type="primary"
-                  size="large"
-                  text="Join waitlist"
-                  aria-disabled="true"
-                  className="homepage-habits__waitlist-button"
-                  onClick={(event) => event.preventDefault()}
-                />
-              </Hoverable.Anchor>
-              <Hoverable.Content className="homepage-habits__waitlist-tooltip" side="top">
-                <span>Waitlist coming soon</span>
-              </Hoverable.Content>
-            </Hoverable.Root>
+            {!accountCreationEnabled ? (
+              <Hoverable.Root>
+                <Hoverable.Anchor className="homepage-habits__waitlist-anchor">
+                  <Button
+                    type="primary"
+                    size="large"
+                    text="Join waitlist"
+                    aria-disabled="true"
+                    className="homepage-habits__waitlist-button"
+                    onClick={(event) => event.preventDefault()}
+                  />
+                </Hoverable.Anchor>
+                <Hoverable.Content className="homepage-habits__waitlist-tooltip" side="top">
+                  <span>Waitlist coming soon</span>
+                </Hoverable.Content>
+              </Hoverable.Root>
+            ) : null}
           </section>
         </div>
-        <footer className="homepage-habits__footer">
-          <div className="homepage-habits__grid homepage-habits__footer-grid">
-            <span className="homepage-habits__footer-copy text-b-m">&copy; 2026 Habsum</span>
-            <nav className="homepage-habits__footer-nav" aria-label="Legal">
-              <button
-                type="button"
-                className="homepage-habits__footer-link text-b-m"
-                onClick={() => openLegalTodo('Terms')}
-              >
-                Terms
-              </button>
-              <button
-                type="button"
-                className="homepage-habits__footer-link text-b-m"
-                onClick={() => openLegalTodo('Privacy')}
-              >
-                Privacy
-              </button>
-            </nav>
-          </div>
-        </footer>
+        <Footer variant="full" />
       </main>
     </>
   );
