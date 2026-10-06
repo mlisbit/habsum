@@ -8,8 +8,13 @@ export type AdministratorEmailSettingsResponse = {
 export type AdministratorEmailSettingsPutRequest = {
   provider: 'resend';
   fromEmail: string;
-  /** Omit or send an empty string to retain an already-configured key. */
-  apiKey?: string;
+  apiKey: string;
+};
+
+export type AdministratorEmailTestRequest = {
+  provider: 'resend';
+  apiKey: string;
+  fromEmail: string;
 };
 
 export type AdministratorEmailTestResponse = {

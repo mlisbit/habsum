@@ -38,6 +38,10 @@ const setResendSettingsStatement = db.prepare<{
   `,
 );
 
+const deleteResendSettingsStatement = db.prepare(
+  "DELETE FROM email_settings WHERE provider = 'resend'",
+);
+
 export class EmailSettingsRepository {
   getResendSettings(): ResendEmailSettings | null {
     const row = getResendSettingsStatement.get();
@@ -53,5 +57,9 @@ export class EmailSettingsRepository {
   setResendSettings(settings: Omit<ResendEmailSettings, 'provider'>): ResendEmailSettings {
     setResendSettingsStatement.run(settings);
     return { provider: 'resend', ...settings };
+  }
+
+  deleteResendSettings(): void {
+    deleteResendSettingsStatement.run();
   }
 }

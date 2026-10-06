@@ -4,6 +4,7 @@ import type { AdministratorGetResponse } from '@habsum/types/api-responses/admin
 import type {
   AdministratorEmailSettingsPutRequest,
   AdministratorEmailSettingsResponse,
+  AdministratorEmailTestRequest,
   AdministratorEmailTestResponse,
 } from '@habsum/types/api-responses/administrator-email-settings';
 import type { MeGetResponse } from '@habsum/types/api-responses/me-get';
@@ -104,6 +105,7 @@ export type { AdministratorGetResponse } from '@habsum/types/api-responses/admin
 export type {
   AdministratorEmailSettingsPutRequest,
   AdministratorEmailSettingsResponse,
+  AdministratorEmailTestRequest,
   AdministratorEmailTestResponse,
 } from '@habsum/types/api-responses/administrator-email-settings';
 export type {
@@ -253,10 +255,10 @@ export async function updateAdministratorEmailSettings(body: AdministratorEmailS
   });
 }
 
-export async function sendAdministratorTestEmail() {
+export async function sendAdministratorTestEmail(body: AdministratorEmailTestRequest) {
   return request<AdministratorEmailTestResponse>('/administrator/email-settings/test', {
     method: 'POST',
-    body: JSON.stringify({}),
+    body: JSON.stringify(body),
   });
 }
 

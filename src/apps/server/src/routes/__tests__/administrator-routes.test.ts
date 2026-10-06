@@ -83,7 +83,7 @@ describe('/administrator', () => {
       .expect(400, { error: 'invalid email address' });
   });
 
-  it('retains an existing API key when the update omits it', async () => {
+  it('removes Resend settings when both fields are cleared', async () => {
     const { cookie } = administratorSession();
     const app = createApp();
     await request(app)
@@ -94,29 +94,47 @@ describe('/administrator', () => {
     await request(app)
       .put('/administrator/email-settings')
       .set('Cookie', cookie)
-      .send({ provider: 'resend', fromEmail: 'second@example.com' })
-      .expect(200);
+      .send({ provider: 'resend', apiKey: '', fromEmail: '' })
+      .expect(200, {
+        provider: 'resend',
+        apiKey: '',
+        fromEmail: '',
+        updatedAt: null,
+      });
 
     expect(
       db.prepare("SELECT api_key, from_email FROM email_settings WHERE provider = 'resend'").get(),
-    ).toEqual({ api_key: 're_keep_me', from_email: 'second@example.com' });
+    ).toBeUndefined();
+  });
+
+  it('rejects partially configured Resend settings', async () => {
+    const { cookie } = administratorSession();
+    const app = createApp();
+
+    await request(app)
+      .put('/administrator/email-settings')
+      .set('Cookie', cookie)
+      .send({ provider: 'resend', apiKey: 're_secret', fromEmail: '' })
+      .expect(400, { error: 'email address is required' });
+
+    await request(app)
+      .put('/administrator/email-settings')
+      .set('Cookie', cookie)
+      .send({ provider: 'resend', apiKey: '', fromEmail: 'sender@example.com' })
+      .expect(400, { error: 'Resend API key is required' });
   });
 
   it('sends a test message to the signed-in administrator account email', async () => {
     const { cookie, username } = administratorSession();
     userAndAuthRepository.patchUserProfile(username, { email: 'admin@example.com' });
-    db.prepare(
-      `
-        INSERT INTO email_settings (provider, api_key, from_email, updated_at)
-        VALUES ('resend', 're_test', 'sender@example.com', 1)
-      `,
-    ).run();
-    const sendEmail = vi.spyOn(EmailService.prototype, 'sendEmail').mockResolvedValue();
+    const sendEmail = vi
+      .spyOn(EmailService.prototype, 'sendEmailUsingSettings')
+      .mockResolvedValue();
 
     const response = await request(createApp())
       .post('/administrator/email-settings/test')
       .set('Cookie', cookie)
-      .send({})
+      .send({ provider: 'resend', apiKey: 're_draft', fromEmail: 'draft@example.com' })
       .expect(200);
 
     expect(response.body).toEqual({ ok: true, recipient: 'admin@example.com' });
@@ -126,6 +144,18 @@ describe('/administrator', () => {
         to: 'admin@example.com',
         subject: 'Habsum test email',
       }),
+      { apiKey: 're_draft', fromEmail: 'draft@example.com' },
     );
+  });
+
+  it('validates draft settings before sending a test message', async () => {
+    const { cookie, username } = administratorSession();
+    userAndAuthRepository.patchUserProfile(username, { email: 'admin@example.com' });
+
+    await request(createApp())
+      .post('/administrator/email-settings/test')
+      .set('Cookie', cookie)
+      .send({ provider: 'resend', apiKey: 're_draft', fromEmail: 'not-an-email' })
+      .expect(400, { error: 'invalid email address' });
   });
 });

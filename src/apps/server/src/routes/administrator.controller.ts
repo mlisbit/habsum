@@ -1,4 +1,7 @@
-import type { AdministratorEmailSettingsPutRequest } from '@habsum/types/api-responses/administrator-email-settings';
+import type {
+  AdministratorEmailSettingsPutRequest,
+  AdministratorEmailTestRequest,
+} from '@habsum/types/api-responses/administrator-email-settings';
 import type { Request, Response } from 'express';
 import { AdministratorService } from '../services/administrator-service.js';
 import { sendAsyncServiceResult, sendServiceResult } from '../utils/controller-result-utils.js';
@@ -17,9 +20,9 @@ export const administratorController = {
     return sendServiceResult(res, () => administratorService.updateEmailSettings(req.body));
   },
 
-  postEmailTest(_req: Request, res: Response) {
+  postEmailTest(req: Request<unknown, unknown, AdministratorEmailTestRequest>, res: Response) {
     return sendAsyncServiceResult(res, () =>
-      administratorService.sendTestEmail(res.locals.sessionUser ?? ''),
+      administratorService.sendTestEmail(res.locals.sessionUser ?? '', req.body),
     );
   },
 };

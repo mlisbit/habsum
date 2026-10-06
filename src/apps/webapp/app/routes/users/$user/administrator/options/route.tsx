@@ -1,5 +1,6 @@
 // exclusive-bem-block: administrator-options
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useBlocker } from 'react-router';
 import { useFeatureFlags } from '@habsum/feature-flags/client/react';
 import {
   FEATURE_FLAG_ENABLED_VALUE,
@@ -10,6 +11,7 @@ import { InfoText } from '@habsum/ui/components/InfoText';
 import { Input } from '@habsum/ui/components/Input';
 import { Loader } from '@habsum/ui/components/Loader';
 import { Toggle } from '@habsum/ui/components/Toggle';
+import { useModal } from '@habsum/ui/contexts/modal';
 import { useToast } from '@habsum/ui/contexts/toast';
 import {
   getAdministratorEmailSettings,
@@ -19,7 +21,20 @@ import {
   type AdministratorEmailSettingsResponse,
 } from '~/api.client';
 import { SettingsPageCard } from '~/components/SettingsPageCard';
+import { UnsavedChangesModal } from '~/components/UnsavedChangesModal';
 import { useAuth } from '~/context/auth';
+
+type FeatureFlagValues = Partial<Record<FeatureFlagKey, string | null>>;
+type EmailFieldErrors = {
+  apiKey?: string;
+  fromEmail?: string;
+};
+
+function getFeatureFlagValues(
+  flags: readonly { key: FeatureFlagKey; value: string | null }[],
+): FeatureFlagValues {
+  return Object.fromEntries(flags.map((flag) => [flag.key, flag.value])) as FeatureFlagValues;
+}
 
 function formatUnixTimeLocal(unixSeconds: number | null): string {
   if (unixSeconds == null) return 'Never';
@@ -31,6 +46,10 @@ function formatUnixTimeLocal(unixSeconds: number | null): string {
   }).format(date);
 }
 
+function isPlausibleEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
 export default function AdministratorOptions() {
   const { user } = useAuth();
   const { showToast } = useToast();
@@ -39,31 +58,15 @@ export default function AdministratorOptions() {
     null,
   );
   const [emailSettingsError, setEmailSettingsError] = useState<string | null>(null);
+  const [emailFieldErrors, setEmailFieldErrors] = useState<EmailFieldErrors>({});
   const [resendApiKey, setResendApiKey] = useState('');
   const [resendFromEmail, setResendFromEmail] = useState('');
-  const [savingEmailSettings, setSavingEmailSettings] = useState(false);
-  const [sendingTestEmail, setSendingTestEmail] = useState(false);
-  const [updatingFlagKey, setUpdatingFlagKey] = useState<FeatureFlagKey | null>(null);
-
-  const setFeatureFlagEnabled = useCallback(
-    async (key: FeatureFlagKey, enabled: boolean) => {
-      setUpdatingFlagKey(key);
-      try {
-        await updateFeatureFlag({
-          key,
-          value: enabled ? FEATURE_FLAG_ENABLED_VALUE : null,
-        });
-        window.location.reload();
-      } catch (error) {
-        setUpdatingFlagKey(null);
-        showToast({
-          type: 'error',
-          message: error instanceof Error ? error.message : 'Failed to update feature flag.',
-        });
-      }
-    },
-    [showToast],
+  const [draftFeatureFlagValues, setDraftFeatureFlagValues] = useState<FeatureFlagValues>(() =>
+    getFeatureFlagValues(featureFlags),
   );
+  const [saveBusy, setSaveBusy] = useState(false);
+  const [sendingTestEmail, setSendingTestEmail] = useState(false);
+  const { present, closeModal } = useModal();
 
   useEffect(() => {
     let cancelled = false;
@@ -85,25 +88,117 @@ export default function AdministratorOptions() {
     };
   }, []);
 
-  const saveEmailSettings = async () => {
+  const isEmailSettingsDirty = useMemo(() => {
+    if (!emailSettings) return false;
+    return (
+      resendApiKey.trim() !== emailSettings.apiKey ||
+      resendFromEmail.trim().toLowerCase() !== emailSettings.fromEmail.toLowerCase()
+    );
+  }, [emailSettings, resendApiKey, resendFromEmail]);
+
+  const changedFeatureFlags = useMemo(
+    () => featureFlags.filter((flag) => draftFeatureFlagValues[flag.key] !== flag.value),
+    [draftFeatureFlagValues, featureFlags],
+  );
+  const hasDirty = isEmailSettingsDirty || changedFeatureFlags.length > 0;
+
+  const revertDrafts = useCallback(() => {
+    if (emailSettings) {
+      setResendApiKey(emailSettings.apiKey);
+      setResendFromEmail(emailSettings.fromEmail);
+    }
+    setDraftFeatureFlagValues(getFeatureFlagValues(featureFlags));
     setEmailSettingsError(null);
-    setSavingEmailSettings(true);
+    setEmailFieldErrors({});
+  }, [emailSettings, featureFlags]);
+
+  const blocker = useBlocker(hasDirty);
+  const blockerRef = useRef(blocker);
+  blockerRef.current = blocker;
+  const presentRef = useRef(present);
+  presentRef.current = present;
+  const closeModalRef = useRef(closeModal);
+  closeModalRef.current = closeModal;
+  const revertDraftsRef = useRef(revertDrafts);
+  revertDraftsRef.current = revertDrafts;
+
+  useEffect(() => {
+    if (blocker.state !== 'blocked') return;
+    const dismiss = presentRef.current({
+      onRequestClose: () => {
+        const currentBlocker = blockerRef.current;
+        if (currentBlocker.state === 'blocked') currentBlocker.reset();
+      },
+      content: (
+        <UnsavedChangesModal
+          onKeepEditing={() => closeModalRef.current()}
+          onDiscardChanges={() => {
+            dismiss();
+            revertDraftsRef.current();
+            const currentBlocker = blockerRef.current;
+            if (currentBlocker.state === 'blocked') currentBlocker.proceed();
+          }}
+        />
+      ),
+    });
+    return dismiss;
+  }, [blocker.state]);
+
+  const handleSave = async () => {
+    if (!hasDirty || saveBusy) return;
+    if (isEmailSettingsDirty) {
+      const nextFieldErrors: EmailFieldErrors = {};
+      const hasApiKey = resendApiKey.trim() !== '';
+      const hasFromEmail = resendFromEmail.trim() !== '';
+      if (!hasApiKey && hasFromEmail) {
+        nextFieldErrors.apiKey = 'Resend API key is required.';
+      }
+      if (hasApiKey && !hasFromEmail) {
+        nextFieldErrors.fromEmail = 'Email address is required.';
+      } else if (hasFromEmail && !isPlausibleEmail(resendFromEmail)) {
+        nextFieldErrors.fromEmail = 'Enter a valid email address.';
+      }
+      if (Object.keys(nextFieldErrors).length > 0) {
+        setEmailFieldErrors(nextFieldErrors);
+        return;
+      }
+    }
+
+    setEmailSettingsError(null);
+    setEmailFieldErrors({});
+    setSaveBusy(true);
     try {
-      const settings = await updateAdministratorEmailSettings({
-        provider: 'resend',
-        fromEmail: resendFromEmail.trim(),
-        ...(resendApiKey.trim() ? { apiKey: resendApiKey.trim() } : {}),
-      });
-      setEmailSettings(settings);
-      setResendFromEmail(settings.fromEmail);
-      setResendApiKey(settings.apiKey);
-      showToast({ type: 'success', message: 'Email settings saved.' });
-    } catch (error) {
-      setEmailSettingsError(
-        error instanceof Error ? error.message : 'Failed to save email settings.',
+      if (isEmailSettingsDirty) {
+        const settings = await updateAdministratorEmailSettings({
+          provider: 'resend',
+          fromEmail: resendFromEmail.trim(),
+          apiKey: resendApiKey.trim(),
+        });
+        setEmailSettings(settings);
+        setResendFromEmail(settings.fromEmail);
+        setResendApiKey(settings.apiKey);
+      }
+
+      await Promise.all(
+        changedFeatureFlags.map((flag) =>
+          updateFeatureFlag({ key: flag.key, value: draftFeatureFlagValues[flag.key] ?? null }),
+        ),
       );
+
+      showToast({ type: 'success', message: 'Saved.' });
+      if (changedFeatureFlags.length > 0) window.location.reload();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to save settings.';
+      if (message.toLowerCase().includes('api key')) {
+        setEmailFieldErrors({ apiKey: message });
+      } else if (message.toLowerCase().includes('email')) {
+        setEmailFieldErrors({ fromEmail: message });
+      } else {
+        setEmailSettingsError(message);
+      }
+      showToast({ type: 'error', message });
     } finally {
-      setSavingEmailSettings(false);
+      setSaveBusy(false);
     }
   };
 
@@ -111,15 +206,11 @@ export default function AdministratorOptions() {
     setEmailSettingsError(null);
     setSendingTestEmail(true);
     try {
-      const settings = await updateAdministratorEmailSettings({
+      const response = await sendAdministratorTestEmail({
         provider: 'resend',
+        apiKey: resendApiKey.trim(),
         fromEmail: resendFromEmail.trim(),
-        ...(resendApiKey.trim() ? { apiKey: resendApiKey.trim() } : {}),
       });
-      setEmailSettings(settings);
-      setResendFromEmail(settings.fromEmail);
-      setResendApiKey(settings.apiKey);
-      const response = await sendAdministratorTestEmail();
       showToast({ type: 'success', message: `Test email sent to ${response.recipient}.` });
     } catch (error) {
       setEmailSettingsError(error instanceof Error ? error.message : 'Failed to send test email.');
@@ -128,19 +219,52 @@ export default function AdministratorOptions() {
     }
   };
 
-  const hasResendConfiguration = resendFromEmail.trim() !== '' && resendApiKey.trim() !== '';
-  const canSaveEmailSettings = hasResendConfiguration && !savingEmailSettings && !sendingTestEmail;
+  const hasDraftEmailSettings = resendApiKey.trim() !== '' && resendFromEmail.trim() !== '';
   const canSendTestEmail =
     user?.email.trim() !== '' &&
-    hasResendConfiguration &&
-    !savingEmailSettings &&
+    hasDraftEmailSettings &&
+    isPlausibleEmail(resendFromEmail) &&
+    !saveBusy &&
     !sendingTestEmail;
 
   return (
     <div className="administrator-options">
+      {hasDirty ? (
+        <div className="flex justify-space-between">
+          <InfoText size="medium" variant="warning" className="administrator-options__info">
+            You have unsaved changes.
+          </InfoText>
+          <div className="administrator-options__actions">
+            <Button
+              type="tertiary"
+              text="Cancel"
+              disabled={saveBusy || sendingTestEmail}
+              onClick={revertDrafts}
+            />
+            <Button
+              type="primary"
+              text={saveBusy ? 'Saving…' : 'Save'}
+              disabled={saveBusy || sendingTestEmail}
+              onClick={() => void handleSave()}
+            />
+          </div>
+        </div>
+      ) : null}
+
       <SettingsPageCard
         headerText="Resend Email Settings"
         className="administrator-options__email-settings"
+        actions={
+          hasDraftEmailSettings ? (
+            <Button
+              type="secondary"
+              size="medium"
+              text={sendingTestEmail ? 'Sending…' : 'Send test email'}
+              disabled={!canSendTestEmail}
+              onClick={() => void sendTestEmail()}
+            />
+          ) : undefined
+        }
       >
         <div className="card-padding administrator-options__email-settings-content">
           {emailSettings == null && emailSettingsError == null ? (
@@ -158,11 +282,21 @@ export default function AdministratorOptions() {
                     size="small"
                     value={resendApiKey}
                     placeholder="re_…"
-                    disabled={savingEmailSettings || sendingTestEmail}
+                    disabled={saveBusy || sendingTestEmail}
                     autoComplete="off"
                     aria-label="Resend API key"
-                    onChange={setResendApiKey}
+                    aria-describedby={emailFieldErrors.apiKey ? 'resend-api-key-error' : undefined}
+                    onChange={(value) => {
+                      setResendApiKey(value);
+                      setEmailFieldErrors((errors) => ({ ...errors, apiKey: undefined }));
+                      setEmailSettingsError(null);
+                    }}
                   />
+                  {emailFieldErrors.apiKey ? (
+                    <InfoText size="small" variant="error" id="resend-api-key-error">
+                      {emailFieldErrors.apiKey}
+                    </InfoText>
+                  ) : null}
                 </div>
                 <div className="administrator-options__email-settings-field">
                   <span className="text-b-m text-bold">Email address</span>
@@ -170,15 +304,38 @@ export default function AdministratorOptions() {
                     size="small"
                     value={resendFromEmail}
                     placeholder="auth@example.com"
-                    disabled={savingEmailSettings || sendingTestEmail}
+                    disabled={saveBusy || sendingTestEmail}
                     autoComplete="email"
                     inputMode="email"
                     aria-label="Resend email address"
-                    onChange={setResendFromEmail}
+                    aria-describedby={
+                      emailFieldErrors.fromEmail ? 'resend-email-address-error' : undefined
+                    }
+                    onChange={(value) => {
+                      setResendFromEmail(value);
+                      setEmailFieldErrors((errors) => ({ ...errors, fromEmail: undefined }));
+                      setEmailSettingsError(null);
+                    }}
+                    onBlur={() => {
+                      const value = resendFromEmail.trim();
+                      setEmailFieldErrors((errors) => ({
+                        ...errors,
+                        fromEmail:
+                          value === ''
+                            ? resendApiKey.trim() === ''
+                              ? undefined
+                              : 'Email address is required.'
+                            : isPlausibleEmail(value)
+                              ? undefined
+                              : 'Enter a valid email address.',
+                      }));
+                    }}
                   />
-                  <span className="text-light text-b-s">
-                    Use an email address verified by Resend.
-                  </span>
+                  {emailFieldErrors.fromEmail ? (
+                    <InfoText size="small" variant="error" id="resend-email-address-error">
+                      {emailFieldErrors.fromEmail}
+                    </InfoText>
+                  ) : null}
                 </div>
               </div>
 
@@ -187,23 +344,6 @@ export default function AdministratorOptions() {
                   {emailSettingsError}
                 </InfoText>
               ) : null}
-
-              <div className="administrator-options__email-settings-actions">
-                <Button
-                  type="secondary"
-                  size="medium"
-                  text={sendingTestEmail ? 'Sending…' : 'Send test email'}
-                  disabled={!canSendTestEmail}
-                  onClick={() => void sendTestEmail()}
-                />
-                <Button
-                  type="primary"
-                  size="medium"
-                  text={savingEmailSettings ? 'Saving…' : 'Save'}
-                  disabled={!canSaveEmailSettings}
-                  onClick={() => void saveEmailSettings()}
-                />
-              </div>
             </>
           )}
         </div>
@@ -224,12 +364,17 @@ export default function AdministratorOptions() {
                     </span>
                   </div>
                   <Toggle
-                    checked={flag.value != null}
+                    checked={draftFeatureFlagValues[flag.key] != null}
                     checkedLabel="Enabled"
                     uncheckedLabel="Disabled"
                     aria-label={`${flag.key} feature flag`}
-                    disabled={updatingFlagKey != null}
-                    onChange={(enabled) => void setFeatureFlagEnabled(flag.key, enabled)}
+                    disabled={saveBusy || sendingTestEmail}
+                    onChange={(enabled) =>
+                      setDraftFeatureFlagValues((values) => ({
+                        ...values,
+                        [flag.key]: enabled ? FEATURE_FLAG_ENABLED_VALUE : null,
+                      }))
+                    }
                   />
                 </li>
               ))}

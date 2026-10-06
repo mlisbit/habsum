@@ -7,6 +7,12 @@
   min-width: 0;
 }
 
+.administrator-options__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: functions.spacing(2);
+}
+
 .administrator-options__email-settings-content,
 .administrator-options__email-settings-fields,
 .administrator-options__email-settings-field {
@@ -26,13 +32,6 @@
     inline-size: 100%;
     min-inline-size: 0;
   }
-}
-
-.administrator-options__email-settings-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: functions.spacing(2);
-  flex-wrap: wrap;
 }
 
 .administrator-options__feature-flags-list {

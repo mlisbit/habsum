@@ -1,6 +1,7 @@
 import type {
   AdministratorEmailSettingsPutRequest,
   AdministratorEmailSettingsResponse,
+  AdministratorEmailTestRequest,
   AdministratorEmailTestResponse,
 } from '@habsum/types/api-responses/administrator-email-settings';
 import { EmailSettingsRepository } from '../repositories/email-settings-repository.js';
@@ -30,42 +31,66 @@ export class AdministratorService {
     if (body?.provider !== 'resend') {
       throw new ServiceError('bad_request', 'provider must be resend');
     }
-    if (typeof body.fromEmail !== 'string' || !isPlausibleEmail(body.fromEmail.trim())) {
-      throw new ServiceError('bad_request', 'invalid email address');
-    }
-    if (body.apiKey !== undefined && typeof body.apiKey !== 'string') {
+    if (typeof body.apiKey !== 'string') {
       throw new ServiceError('bad_request', 'apiKey must be a string');
     }
+    if (typeof body.fromEmail !== 'string') {
+      throw new ServiceError('bad_request', 'fromEmail must be a string');
+    }
 
-    const existing = this.emailSettingsRepository.getResendSettings();
-    const submittedApiKey = body.apiKey?.trim() ?? '';
-    const apiKey = submittedApiKey || existing?.apiKey || '';
+    const apiKey = body.apiKey.trim();
+    const fromEmail = body.fromEmail.trim();
+    if (!apiKey && !fromEmail) {
+      this.emailSettingsRepository.deleteResendSettings();
+      return this.getEmailSettings();
+    }
     if (!apiKey) {
       throw new ServiceError('bad_request', 'Resend API key is required');
+    }
+    if (!fromEmail) {
+      throw new ServiceError('bad_request', 'email address is required');
+    }
+    if (!isPlausibleEmail(fromEmail)) {
+      throw new ServiceError('bad_request', 'invalid email address');
     }
 
     this.emailSettingsRepository.setResendSettings({
       apiKey,
-      fromEmail: body.fromEmail.trim(),
+      fromEmail,
       updatedAt: Math.floor(Date.now() / 1000),
     });
     return this.getEmailSettings();
   }
 
-  async sendTestEmail(username: string): Promise<AdministratorEmailTestResponse> {
+  async sendTestEmail(
+    username: string,
+    body: AdministratorEmailTestRequest | undefined,
+  ): Promise<AdministratorEmailTestResponse> {
     const recipient = this.userAndAuthRepository.getUserProfile(username).email?.trim() ?? '';
     if (!isPlausibleEmail(recipient)) {
       throw new ServiceError('bad_request', 'your account does not have a valid email address');
     }
+    if (body?.provider !== 'resend') {
+      throw new ServiceError('bad_request', 'provider must be resend');
+    }
+    if (typeof body.apiKey !== 'string' || !body.apiKey.trim()) {
+      throw new ServiceError('bad_request', 'Resend API key is required');
+    }
+    if (typeof body.fromEmail !== 'string' || !isPlausibleEmail(body.fromEmail.trim())) {
+      throw new ServiceError('bad_request', 'invalid email address');
+    }
 
     try {
-      await this.emailService.sendEmail({
-        deliveryName: 'administrator test email',
-        to: recipient,
-        subject: 'Habsum test email',
-        html: '<p>This test email was sent from the Habsum Administrator settings page.</p>',
-        text: 'This test email was sent from the Habsum Administrator settings page.',
-      });
+      await this.emailService.sendEmailUsingSettings(
+        {
+          deliveryName: 'administrator test email',
+          to: recipient,
+          subject: 'Habsum test email',
+          html: '<p>This test email was sent from the Habsum Administrator settings page.</p>',
+          text: 'This test email was sent from the Habsum Administrator settings page.',
+        },
+        { apiKey: body.apiKey.trim(), fromEmail: body.fromEmail.trim() },
+      );
     } catch (error) {
       throw new ServiceError(
         'unavailable',

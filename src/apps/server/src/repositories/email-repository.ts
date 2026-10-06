@@ -9,6 +9,11 @@ export type EmailMessage = {
   text: string;
 };
 
+export type EmailDeliverySettings = {
+  apiKey: string;
+  fromEmail: string;
+};
+
 export class EmailRepository {
   constructor(private readonly emailSettingsRepository = new EmailSettingsRepository()) {}
 
@@ -16,8 +21,12 @@ export class EmailRepository {
     return this.emailSettingsRepository.getResendSettings()?.fromEmail ?? null;
   }
 
-  async sendEmail(message: EmailMessage, deliveryName: string): Promise<void> {
-    const settings = this.emailSettingsRepository.getResendSettings();
+  async sendEmail(
+    message: EmailMessage,
+    deliveryName: string,
+    settingsOverride?: EmailDeliverySettings,
+  ): Promise<void> {
+    const settings = settingsOverride ?? this.emailSettingsRepository.getResendSettings();
     if (!settings?.apiKey) {
       const errorMessage = 'Resend API key is not configured';
       console.error(`[habsum] ${errorMessage}; ${deliveryName} was not sent`);
