@@ -1,9 +1,6 @@
 export const FEATURE_FLAG_ENABLED_VALUE = 'enabled';
 
-export const FEATURE_FLAG_KEYS = [
-  'enable-user-account-creation',
-  'show-version-in-footer',
-] as const;
+export const FEATURE_FLAG_KEYS = ['enable-user-account-creation'] as const;
 
 export type FeatureFlagKey = (typeof FEATURE_FLAG_KEYS)[number];
 

@@ -3,9 +3,11 @@ import { FEATURE_FLAG_ENABLED_VALUE, FEATURE_FLAG_KEYS } from '@habsum/feature-f
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../../app.js';
 import { UserAndAuthRepository } from '../../repositories/user-and-auth-repository.js';
+import { db } from '../../repositories/_private/db.js';
 import { SESSION_COOKIE_NAME } from '../../utils/cookie-session-utils.js';
 
 const userAndAuthRepository = new UserAndAuthRepository();
+const mutableFlagKey = 'enable-user-account-creation';
 
 function developerSessionCookie(): string {
   if (userAndAuthRepository.countAdmins() === 0) {
@@ -21,19 +23,25 @@ describe('/feature-flags', () => {
   });
 
   it('returns every configured flag publicly', async () => {
+    db.prepare(
+      `
+      INSERT OR REPLACE INTO feature_flags (key, value, last_modified_at)
+      VALUES ('show-version-in-footer', 'enabled', 1)
+    `,
+    ).run();
+
     const response = await request(createApp()).get('/feature-flags').expect(200);
 
-    expect(response.body.flags.map((flag: { key: string }) => flag.key)).toEqual(
-      expect.arrayContaining([...FEATURE_FLAG_KEYS]),
-    );
-    const footerFlag = response.body.flags.find(
-      (flag: { key: string }) => flag.key === 'show-version-in-footer',
-    );
-    expect(footerFlag).toMatchObject({
-      key: 'show-version-in-footer',
+    expect(response.body.flags.map((flag: { key: string }) => flag.key)).toEqual([
+      ...FEATURE_FLAG_KEYS,
+    ]);
+    expect(response.body.flags[0]).toMatchObject({
+      key: mutableFlagKey,
       lastModifiedAt: expect.any(Number),
     });
-    expect(footerFlag.value === null || typeof footerFlag.value === 'string').toBe(true);
+    expect(
+      response.body.flags[0].value === null || typeof response.body.flags[0].value === 'string',
+    ).toBe(true);
   });
 
   it('only lets developers update configured flags and stores a UTC Unix timestamp', async () => {
@@ -41,7 +49,7 @@ describe('/feature-flags', () => {
 
     await request(app)
       .post('/feature-flags')
-      .send({ key: 'show-version-in-footer', value: FEATURE_FLAG_ENABLED_VALUE })
+      .send({ key: mutableFlagKey, value: FEATURE_FLAG_ENABLED_VALUE })
       .expect(401);
 
     userAndAuthRepository.setUserPassword('feature-flags-regular', 'secret');
@@ -49,19 +57,19 @@ describe('/feature-flags', () => {
     await request(app)
       .post('/feature-flags')
       .set('Cookie', `${SESSION_COOKIE_NAME}=${regularSession}`)
-      .send({ key: 'show-version-in-footer', value: FEATURE_FLAG_ENABLED_VALUE })
+      .send({ key: mutableFlagKey, value: FEATURE_FLAG_ENABLED_VALUE })
       .expect(403);
 
     vi.spyOn(Date, 'now').mockReturnValue(1_900_000_000_000);
     const response = await request(app)
       .post('/feature-flags')
       .set('Cookie', developerSessionCookie())
-      .send({ key: 'show-version-in-footer', value: FEATURE_FLAG_ENABLED_VALUE })
+      .send({ key: mutableFlagKey, value: FEATURE_FLAG_ENABLED_VALUE })
       .expect(200);
 
     expect(response.body).toEqual({
       flag: {
-        key: 'show-version-in-footer',
+        key: mutableFlagKey,
         value: FEATURE_FLAG_ENABLED_VALUE,
         lastModifiedAt: 1_900_000_000,
       },
@@ -70,11 +78,13 @@ describe('/feature-flags', () => {
     expect(getResponse.body.flags).toContainEqual(response.body.flag);
   });
 
-  it('rejects unknown keys', async () => {
-    await request(createApp())
-      .post('/feature-flags')
-      .set('Cookie', developerSessionCookie())
-      .send({ key: 'unknown-flag', value: FEATURE_FLAG_ENABLED_VALUE })
-      .expect(400, { error: 'invalid feature flag key' });
+  it('rejects removed and unknown keys', async () => {
+    for (const key of ['show-version-in-footer', 'unknown-flag']) {
+      await request(createApp())
+        .post('/feature-flags')
+        .set('Cookie', developerSessionCookie())
+        .send({ key, value: FEATURE_FLAG_ENABLED_VALUE })
+        .expect(400, { error: 'invalid feature flag key' });
+    }
   });
 });

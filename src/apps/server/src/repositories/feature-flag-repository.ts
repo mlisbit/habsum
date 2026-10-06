@@ -1,9 +1,13 @@
-import { FEATURE_FLAG_KEYS, type FeatureFlagKey } from '@habsum/feature-flags/feature-flags';
+import {
+  FEATURE_FLAG_KEYS,
+  isFeatureFlagKey,
+  type FeatureFlagKey,
+} from '@habsum/feature-flags/feature-flags';
 import type { FeatureFlag } from '@habsum/feature-flags/types';
 import { db } from './_private/db.js';
 
 type FeatureFlagRow = {
-  key: FeatureFlagKey;
+  key: string;
   value: string | null;
   lastModifiedAt: number;
 };
@@ -50,11 +54,13 @@ export class FeatureFlagRepository {
   }
 
   listFeatureFlags(): FeatureFlag<FeatureFlagKey>[] {
-    return listFlags.all() as FeatureFlagRow[];
+    return (listFlags.all() as FeatureFlagRow[]).filter(
+      (flag): flag is FeatureFlag<FeatureFlagKey> => isFeatureFlagKey(flag.key),
+    );
   }
 
   getFeatureFlag(key: FeatureFlagKey): FeatureFlag<FeatureFlagKey> | null {
-    return (getFlag.get({ key }) as FeatureFlagRow | undefined) ?? null;
+    return (getFlag.get({ key }) as FeatureFlag<FeatureFlagKey> | undefined) ?? null;
   }
 
   setFeatureFlagValue(
