@@ -222,7 +222,7 @@ describe('POST /auth/forgot-password', () => {
   it('returns an error to the client when email delivery fails for a known user', async () => {
     const app = createApp();
     vi.spyOn(EmailService.prototype, 'sendEmail').mockRejectedValue(
-      new Error('RESEND_API_KEY is not configured'),
+      new Error('Resend API key is not configured'),
     );
 
     userAndAuthRepository.setUserPassword('email-fail-user', 'test-password');

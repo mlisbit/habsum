@@ -8,6 +8,7 @@ import { dataRouter } from './routes/users/data.routes.js';
 import { habitsRouter } from './routes/users/habits.routes.js';
 import { securityRouter } from './routes/users/security.routes.js';
 import { featureFlagsRouter } from './routes/feature-flags.routes.js';
+import { administratorRouter } from './routes/administrator.routes.js';
 
 export function createApp(): express.Application {
   const app = express();
@@ -21,6 +22,7 @@ export function createApp(): express.Application {
 
   app.use(publicRouter);
   app.use(featureFlagsRouter);
+  app.use(administratorRouter);
   app.use(authRouter);
   app.use(usersRouter);
   app.use(securityRouter);

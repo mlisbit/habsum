@@ -26,7 +26,9 @@ function activeSettingsSectionLabel(path: string): string | null {
   if (path.includes('/settings/security')) return 'Security';
   if (path.endsWith('/habits')) return 'Habits';
   if (path.endsWith('/config')) return 'Config';
-  if (path.endsWith('/developer')) return 'Developer';
+  if (path.endsWith('/administrator/users')) return 'Administrator · Users';
+  if (path.endsWith('/administrator/options')) return 'Administrator · Options';
+  if (path.endsWith('/administrator/info')) return 'Administrator · Info';
   return null;
 }
 
@@ -52,7 +54,7 @@ export default function UserSettingsLayout() {
   }, [routeUser, authenticatedUser, navigate]);
 
   useEffect(() => {
-    if (path.endsWith('/developer') && isAdmin === false) {
+    if (path.includes('/settings/administrator') && isAdmin === false) {
       navigate(`${base}/account`);
     }
   }, [base, isAdmin, navigate, path]);
@@ -102,7 +104,11 @@ export default function UserSettingsLayout() {
             circle
             className="settings__nav-toggle"
             aria-expanded={navOpen}
-            aria-controls="settings-nav"
+            aria-controls={
+              isAdmin
+                ? 'settings-nav administrator-nav settings-session-actions'
+                : 'settings-nav settings-session-actions'
+            }
             aria-label={navOpen ? 'Collapse settings navigation' : 'Expand settings navigation'}
             onClick={() => setNavOpen((open) => !open)}
           />
@@ -133,16 +139,43 @@ export default function UserSettingsLayout() {
           >
             Security
           </Link>
-          {isAdmin === true ? (
-            <Link
-              className={`settings__link text-b-l${
-                path.endsWith('/developer') ? ' settings__link--active' : ''
-              }`}
-              to={`${base}/developer`}
-            >
-              Developer
-            </Link>
-          ) : null}
+        </nav>
+        {isAdmin === true ? (
+          <>
+            <div className="settings__header settings__header--section">
+              <div className="settings__header-text">
+                <h2 className="settings__title text-h-l">Administrator</h2>
+              </div>
+            </div>
+            <nav id="administrator-nav" className="settings__nav">
+              <Link
+                className={`settings__link text-b-l${
+                  path.endsWith('/administrator/users') ? ' settings__link--active' : ''
+                }`}
+                to={`${base}/administrator/users`}
+              >
+                Users
+              </Link>
+              <Link
+                className={`settings__link text-b-l${
+                  path.endsWith('/administrator/options') ? ' settings__link--active' : ''
+                }`}
+                to={`${base}/administrator/options`}
+              >
+                Options
+              </Link>
+              <Link
+                className={`settings__link text-b-l${
+                  path.endsWith('/administrator/info') ? ' settings__link--active' : ''
+                }`}
+                to={`${base}/administrator/info`}
+              >
+                Info
+              </Link>
+            </nav>
+          </>
+        ) : null}
+        <div id="settings-session-actions" className="settings__session-actions">
           <Button
             type="secondary"
             size="medium"
@@ -152,7 +185,7 @@ export default function UserSettingsLayout() {
               void signOut().then(() => navigate('/login'));
             }}
           />
-        </nav>
+        </div>
         <div hidden={!isWide} className="settings__footer-slot settings__footer-slot--sidebar">
           <Footer className="settings__footer" />
         </div>

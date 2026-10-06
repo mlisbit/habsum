@@ -8,6 +8,10 @@ export type SendEmailInput = EmailMessage & {
 export class EmailService {
   constructor(private readonly emailRepository = new EmailRepository()) {}
 
+  getConfiguredFromAddress(): string | null {
+    return this.emailRepository.configuredFromAddress();
+  }
+
   async sendEmail({ deliveryName, ...message }: SendEmailInput): Promise<void> {
     await this.emailRepository.sendEmail(message, deliveryName);
   }

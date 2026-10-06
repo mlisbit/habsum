@@ -6,5 +6,5 @@ export const publicRouter = Router();
 // Used by deployment health probes to verify that the API process is responsive.
 publicRouter.get('/health', publicController.getHealth);
 
-// Used by the administrator developer page to display API version and server diagnostics.
-publicRouter.get('/developer', publicController.getDeveloper);
+// Used by the administrator page to display API version and server diagnostics.
+publicRouter.get('/administrator', publicController.getAdministrator);

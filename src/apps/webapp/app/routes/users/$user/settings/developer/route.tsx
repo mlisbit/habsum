@@ -1,20 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
-import { useFeatureFlags } from '@habsum/feature-flags/client/react';
-import {
-  FEATURE_FLAG_ENABLED_VALUE,
-  type FeatureFlagKey,
-} from '@habsum/feature-flags/feature-flags';
+import { useParams } from 'react-router';
 import type { ListUserItem } from '@habsum/types/common/misc';
 import {
   adminDeleteUser,
   adminResetUserPassword,
   createOucSession,
   createUser,
-  getDeveloper,
   listUsers,
-  updateFeatureFlag,
-  type DeveloperGetResponse,
 } from '~/api.client';
 import { openOucWindow } from '~/ouc.client';
 import { SettingsPageCard } from '~/components/SettingsPageCard';
@@ -24,25 +16,8 @@ import type { IconName } from '@habsum/ui/components/Icon';
 import { InfoText } from '@habsum/ui/components/InfoText';
 import { Input } from '@habsum/ui/components/Input';
 import { Loader } from '@habsum/ui/components/Loader';
-import { Toggle } from '@habsum/ui/components/Toggle';
 import { ModalBody, ModalFooter, ModalHeader, useModal } from '@habsum/ui/contexts/modal';
 import { useToast } from '@habsum/ui/contexts/toast';
-import { useAuth } from '~/context/auth';
-
-const clockFormat: Intl.DateTimeFormatOptions = {
-  weekday: 'long',
-  year: 'numeric',
-  month: 'long',
-  day: 'numeric',
-  hour: 'numeric',
-  minute: '2-digit',
-  second: '2-digit',
-  timeZoneName: 'short',
-};
-
-function formatInstantInZone(iso: string, timeZone: string) {
-  return new Date(iso).toLocaleString(undefined, { ...clockFormat, timeZone });
-}
 
 function formatUnixTimeLocal(unixSeconds: number | null): string {
   if (unixSeconds == null) return 'Never';
@@ -520,41 +495,12 @@ function UserRowIconAction({ tooltip, icon, ariaLabel, onClick }: UserRowIconAct
   );
 }
 
-export default function UserSettingsDeveloper() {
-  const navigate = useNavigate();
+export default function AdministratorUsers() {
   const { user } = useParams();
-  const { user: authenticatedUser } = useAuth();
-  const [developerData, setDeveloperData] = useState<DeveloperGetResponse | null>(null);
-  const [developerError, setDeveloperError] = useState<string | null>(null);
-  const [browserNow, setBrowserNow] = useState(() => new Date());
   const [users, setUsers] = useState<ListUserItem[] | null>(null);
   const [usersError, setUsersError] = useState<string | null>(null);
-  const [updatingFlagKey, setUpdatingFlagKey] = useState<FeatureFlagKey | null>(null);
-  const canViewDeveloper =
-    authenticatedUser != null && authenticatedUser.username === user && authenticatedUser.admin;
   const { present, closeModal } = useModal();
   const { showToast } = useToast();
-  const { flags: featureFlags } = useFeatureFlags<FeatureFlagKey>();
-
-  const setFeatureFlagEnabled = useCallback(
-    async (key: FeatureFlagKey, enabled: boolean) => {
-      setUpdatingFlagKey(key);
-      try {
-        await updateFeatureFlag({
-          key,
-          value: enabled ? FEATURE_FLAG_ENABLED_VALUE : null,
-        });
-        window.location.reload();
-      } catch (e) {
-        setUpdatingFlagKey(null);
-        showToast({
-          type: 'error',
-          message: e instanceof Error ? e.message : 'Failed to update feature flag.',
-        });
-      }
-    },
-    [showToast],
-  );
 
   const loadUsers = useCallback(async () => {
     setUsersError(null);
@@ -568,45 +514,8 @@ export default function UserSettingsDeveloper() {
   }, []);
 
   useEffect(() => {
-    if (user && canViewDeveloper === false) {
-      navigate(`/users/${encodeURIComponent(user)}/settings/account`);
-    }
-  }, [canViewDeveloper, navigate, user]);
-
-  useEffect(() => {
-    let cancelled = false;
-    setDeveloperError(null);
-    getDeveloper()
-      .then((res) => {
-        if (!cancelled) setDeveloperData(res);
-      })
-      .catch((e) => {
-        if (!cancelled) {
-          setDeveloperData(null);
-          setDeveloperError(e instanceof Error ? e.message : String(e));
-        }
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    const id = window.setInterval(() => setBrowserNow(new Date()), 1000);
-    return () => window.clearInterval(id);
-  }, []);
-
-  useEffect(() => {
-    if (canViewDeveloper === true) {
-      void loadUsers();
-    }
-  }, [canViewDeveloper, loadUsers]);
-
-  const browserZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const serverTime = developerData?.time ?? null;
-  const version = developerData?.version ?? null;
-
-  if (canViewDeveloper !== true) return null;
+    void loadUsers();
+  }, [loadUsers]);
 
   return (
     <div className="developer-page">
@@ -773,93 +682,6 @@ export default function UserSettingsDeveloper() {
                 );
               })}
             </ul>
-          )}
-        </div>
-      </SettingsPageCard>
-
-      <SettingsPageCard
-        headerText="Feature Flags"
-        headerAs="h3"
-        className="developer-page__feature-flags"
-      >
-        <div className="card-padding">
-          {featureFlags.length === 0 ? (
-            <p className="text-light text-b-m">No feature flags configured.</p>
-          ) : (
-            <ul className="developer-page__feature-flags-list">
-              {featureFlags.map((flag) => (
-                <li key={flag.key} className="developer-page__feature-flags-row">
-                  <div className="developer-page__feature-flags-details">
-                    <code className="text-b-m">{flag.key}</code>
-                    <span className="text-light text-b-s">
-                      Last modified: {formatUnixTimeLocal(flag.lastModifiedAt)}
-                    </span>
-                  </div>
-                  <Toggle
-                    checked={flag.value != null}
-                    checkedLabel="Enabled"
-                    uncheckedLabel="Disabled"
-                    aria-label={`${flag.key} feature flag`}
-                    disabled={updatingFlagKey != null}
-                    onChange={(enabled) => void setFeatureFlagEnabled(flag.key, enabled)}
-                  />
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </SettingsPageCard>
-
-      <SettingsPageCard headerText="Time" headerAs="h3" className="developer-page__clocks">
-        <div className="card-padding">
-          <dl className="developer-page__clock-list">
-            <div className="developer-page__clock-row">
-              <dt className="text-b-m">Server (API)</dt>
-              <dd className="developer-page__clock-dd text-b-m">
-                {developerError ? (
-                  <span className="text-light">Could not load: {developerError}</span>
-                ) : serverTime ? (
-                  <>
-                    <div>{formatInstantInZone(serverTime.iso, serverTime.timezone)}</div>
-                    <div className="text-light text-b-s">Time zone: {serverTime.timezone}</div>
-                  </>
-                ) : (
-                  <Loader
-                    className="developer-page__clock-loader"
-                    label="Loading server time"
-                    size="medium"
-                  />
-                )}
-              </dd>
-            </div>
-            <div className="developer-page__clock-row">
-              <dt className="text-b-m">This device</dt>
-              <dd className="developer-page__clock-dd text-b-m">
-                <div>{browserNow.toLocaleString(undefined, clockFormat)}</div>
-                <div className="text-light text-b-s">Time zone: {browserZone}</div>
-              </dd>
-            </div>
-          </dl>
-        </div>
-      </SettingsPageCard>
-
-      <SettingsPageCard headerText="Version" headerAs="h3" className="developer-page__version">
-        <div className="card-padding">
-          {developerError ? (
-            <p className="text-light text-b-m">Could not load: {developerError}</p>
-          ) : version ? (
-            <dl className="developer-page__version-list">
-              <div className="developer-page__version-row">
-                <dt className="text-b-m">Server</dt>
-                <dd className="developer-page__version-dd text-b-m">v{version.currentVersion}</dd>
-              </div>
-            </dl>
-          ) : (
-            <Loader
-              className="developer-page__version-loader"
-              label="Loading version"
-              size="medium"
-            />
           )}
         </div>
       </SettingsPageCard>

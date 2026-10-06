@@ -46,6 +46,10 @@
   min-width: 0;
 }
 
+.settings__header--section {
+  margin-top: functions.spacing(4);
+}
+
 .settings__dashboard-link {
   display: inline-flex;
   align-items: center;
@@ -103,6 +107,11 @@
   background: var(--background-secondary);
 }
 
+.settings__session-actions {
+  display: flex;
+  flex-direction: column;
+}
+
 .settings__logout {
   margin-top: functions.spacing(3);
 }
@@ -152,6 +161,11 @@
   }
 
   .settings--narrow:not(.settings--nav-open) .settings__nav {
+    display: none;
+  }
+
+  .settings--narrow:not(.settings--nav-open) .settings__header--section,
+  .settings--narrow:not(.settings--nav-open) .settings__session-actions {
     display: none;
   }
 }

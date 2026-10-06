@@ -1,4 +1,4 @@
-import type { DeveloperGetResponse } from '@habsum/types/api-responses/developer-get';
+import type { AdministratorGetResponse } from '@habsum/types/api-responses/administrator-get';
 import type { HealthResponse } from '@habsum/types/common/misc';
 import type { Request, Response } from 'express';
 import getPackageVersion from '../utils/get-package-version.js';
@@ -12,8 +12,8 @@ export const publicController = {
     return res.json(body);
   },
 
-  getDeveloper(_req: Request, res: Response) {
-    const body: DeveloperGetResponse = {
+  getAdministrator(_req: Request, res: Response) {
+    const body: AdministratorGetResponse = {
       time: getApiServerTimeSnapshot(),
       version: {
         currentVersion: PACKAGE_VERSION,

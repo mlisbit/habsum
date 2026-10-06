@@ -3,17 +3,13 @@ import Database from 'better-sqlite3';
 import { hashPassword, isPasswordHashed, verifyPassword } from '@habsum/utils/password';
 import { randomBytes } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { dirname } from 'node:path';
 import { PASSWORD_RESET_COOLDOWN_SECONDS } from '../../constants.js';
+import getDatabasePath from '../../utils/get-database-path.js';
 import { isAllowedUiTheme, isPlausibleEmail } from '../../utils/request-utils.js';
 
-const rawDir = process.env.HABSUM_CONFIG_DIR;
-if (!rawDir) {
-  throw new Error('[habsum] HABSUM_CONFIG_DIR is required (must point to your data directory)');
-}
-
-const DATA_DIR = resolve(rawDir);
-const DB_PATH = join(DATA_DIR, 'habsum.db');
+const DB_PATH = getDatabasePath();
+const DATA_DIR = dirname(DB_PATH);
 try {
   mkdirSync(DATA_DIR, { recursive: true });
 } catch (e) {
@@ -31,6 +27,15 @@ db.exec(`
     username TEXT PRIMARY KEY,
     pin TEXT NOT NULL,
     admin INTEGER NOT NULL DEFAULT 0
+  );
+`);
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS email_settings (
+    provider TEXT PRIMARY KEY,
+    api_key TEXT NOT NULL,
+    from_email TEXT NOT NULL,
+    updated_at INTEGER NOT NULL
   );
 `);
 

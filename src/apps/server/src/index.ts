@@ -1,7 +1,8 @@
 import './utils/load-local-env.js';
-import { join, resolve } from 'node:path';
+import { dirname } from 'node:path';
 import { createApp } from './app.js';
 import { DatabaseRepository } from './repositories/database-repository.js';
+import getDatabasePath from './utils/get-database-path.js';
 
 const app = createApp();
 const databaseRepository = new DatabaseRepository();
@@ -10,9 +11,8 @@ const PORT = Number(process.env.PORT ?? 3001);
 const HOST = process.env.HOST ?? '0.0.0.0';
 
 const server = app.listen(PORT, HOST, () => {
-  const rawDir = process.env.HABSUM_CONFIG_DIR;
-  const dataDir = rawDir ? resolve(rawDir) : '(missing)';
-  const dbPath = rawDir ? join(dataDir, 'habsum.db') : '(missing)';
+  const dbPath = getDatabasePath();
+  const dataDir = dirname(dbPath);
   console.log(`[habsum] HABSUM_CONFIG_DIR=${dataDir}`);
   console.log(`[habsum] DB=${dbPath}`);
   console.log(`[habsum] server listening on http://${HOST}:${PORT}`);

@@ -1,5 +1,6 @@
 // Repository for Resend email delivery configuration and client interaction.
 import { Resend } from 'resend';
+import { EmailSettingsRepository } from './email-settings-repository.js';
 
 export type EmailMessage = {
   to: string;
@@ -9,28 +10,29 @@ export type EmailMessage = {
 };
 
 export class EmailRepository {
+  constructor(private readonly emailSettingsRepository = new EmailSettingsRepository()) {}
+
   configuredFromAddress(): string | null {
-    return process.env.RESEND_FROM?.trim() || null;
+    return this.emailSettingsRepository.getResendSettings()?.fromEmail ?? null;
   }
 
   async sendEmail(message: EmailMessage, deliveryName: string): Promise<void> {
-    const apiKey = process.env.RESEND_API_KEY?.trim();
-    if (!apiKey) {
-      const errorMessage = 'RESEND_API_KEY is not configured';
+    const settings = this.emailSettingsRepository.getResendSettings();
+    if (!settings?.apiKey) {
+      const errorMessage = 'Resend API key is not configured';
       console.error(`[habsum] ${errorMessage}; ${deliveryName} was not sent`);
       throw new Error(errorMessage);
     }
 
-    const from = this.configuredFromAddress();
-    if (!from) {
-      const errorMessage = 'RESEND_FROM is not configured';
+    if (!settings.fromEmail) {
+      const errorMessage = 'Resend sender email is not configured';
       console.error(`[habsum] ${errorMessage}; ${deliveryName} was not sent`);
       throw new Error(errorMessage);
     }
 
-    const resend = new Resend(apiKey);
+    const resend = new Resend(settings.apiKey);
     const { error } = await resend.emails.send({
-      from,
+      from: settings.fromEmail,
       to: message.to,
       subject: message.subject,
       html: message.html,

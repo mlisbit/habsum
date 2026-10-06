@@ -1,6 +1,11 @@
 import type { Habit } from '@habsum/types/common/habit';
 import type { FeatureFlagPostRequest, FeatureFlagPostResponse } from '@habsum/feature-flags/types';
-import type { DeveloperGetResponse } from '@habsum/types/api-responses/developer-get';
+import type { AdministratorGetResponse } from '@habsum/types/api-responses/administrator-get';
+import type {
+  AdministratorEmailSettingsPutRequest,
+  AdministratorEmailSettingsResponse,
+  AdministratorEmailTestResponse,
+} from '@habsum/types/api-responses/administrator-email-settings';
 import type { MeGetResponse } from '@habsum/types/api-responses/me-get';
 import type { HabitsResponse } from '@habsum/types/api-responses/habits-get';
 import type { HabitPatch, PatchHabitResponse } from '@habsum/types/api-responses/habit-patch';
@@ -95,7 +100,12 @@ export type {
   UserPasswordChangeRequest,
   UserPasswordChangeResponse,
 } from '@habsum/types/api-responses/user-password-change';
-export type { DeveloperGetResponse } from '@habsum/types/api-responses/developer-get';
+export type { AdministratorGetResponse } from '@habsum/types/api-responses/administrator-get';
+export type {
+  AdministratorEmailSettingsPutRequest,
+  AdministratorEmailSettingsResponse,
+  AdministratorEmailTestResponse,
+} from '@habsum/types/api-responses/administrator-email-settings';
 export type {
   MeGetResponse,
   MeGetLoggedIn,
@@ -228,8 +238,26 @@ export async function loginWithOucToken(token: string) {
   });
 }
 
-export async function getDeveloper() {
-  return getRequest<DeveloperGetResponse>('/developer');
+export async function getAdministrator() {
+  return getRequest<AdministratorGetResponse>('/administrator');
+}
+
+export async function getAdministratorEmailSettings() {
+  return getRequest<AdministratorEmailSettingsResponse>('/administrator/email-settings');
+}
+
+export async function updateAdministratorEmailSettings(body: AdministratorEmailSettingsPutRequest) {
+  return request<AdministratorEmailSettingsResponse>('/administrator/email-settings', {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  });
+}
+
+export async function sendAdministratorTestEmail() {
+  return request<AdministratorEmailTestResponse>('/administrator/email-settings/test', {
+    method: 'POST',
+    body: JSON.stringify({}),
+  });
 }
 
 export async function updateFeatureFlag(body: FeatureFlagPostRequest) {

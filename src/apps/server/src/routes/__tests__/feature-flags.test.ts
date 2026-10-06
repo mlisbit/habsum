@@ -9,7 +9,7 @@ import { SESSION_COOKIE_NAME } from '../../utils/cookie-session-utils.js';
 const userAndAuthRepository = new UserAndAuthRepository();
 const mutableFlagKey = 'enable-user-account-creation';
 
-function developerSessionCookie(): string {
+function administratorSessionCookie(): string {
   if (userAndAuthRepository.countAdmins() === 0) {
     userAndAuthRepository.createInitialAdminUser('feature-flags-developer', 'secret');
   }
@@ -44,7 +44,7 @@ describe('/feature-flags', () => {
     ).toBe(true);
   });
 
-  it('only lets developers update configured flags and stores a UTC Unix timestamp', async () => {
+  it('only lets administrators update configured flags and stores a UTC Unix timestamp', async () => {
     const app = createApp();
 
     await request(app)
@@ -63,7 +63,7 @@ describe('/feature-flags', () => {
     vi.spyOn(Date, 'now').mockReturnValue(1_900_000_000_000);
     const response = await request(app)
       .post('/feature-flags')
-      .set('Cookie', developerSessionCookie())
+      .set('Cookie', administratorSessionCookie())
       .send({ key: mutableFlagKey, value: FEATURE_FLAG_ENABLED_VALUE })
       .expect(200);
 
@@ -82,7 +82,7 @@ describe('/feature-flags', () => {
     for (const key of ['show-version-in-footer', 'unknown-flag']) {
       await request(createApp())
         .post('/feature-flags')
-        .set('Cookie', developerSessionCookie())
+        .set('Cookie', administratorSessionCookie())
         .send({ key, value: FEATURE_FLAG_ENABLED_VALUE })
         .expect(400, { error: 'invalid feature flag key' });
     }

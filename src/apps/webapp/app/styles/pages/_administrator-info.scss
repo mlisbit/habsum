@@ -1,0 +1,40 @@
+@use 'functions';
+
+.administrator-info {
+  display: flex;
+  flex-direction: column;
+  gap: functions.spacing(3);
+  min-width: 0;
+}
+
+.administrator-info__loader {
+  width: 100%;
+}
+
+.administrator-info__clock-list {
+  margin: functions.spacing(2) 0 0;
+}
+
+.administrator-info__clock-row,
+.administrator-info__version-row {
+  display: grid;
+  gap: functions.spacing(1) functions.spacing(2);
+  grid-template-columns: minmax(0, 140px) 1fr;
+  align-items: start;
+  padding: functions.spacing(2) 0;
+  border-top: 1px solid var(--border-color-faint);
+
+  &:first-of-type {
+    border-top: none;
+    padding-top: 0;
+  }
+}
+
+.administrator-info__clock-value,
+.administrator-info__version-value {
+  margin: 0;
+}
+
+.administrator-info__version-list {
+  margin: functions.spacing(2) 0;
+}

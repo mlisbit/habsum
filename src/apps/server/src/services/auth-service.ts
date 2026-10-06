@@ -418,7 +418,7 @@ export class AuthService {
     token?: string,
   ): void {
     console.log(`[habsum] --- ${label} (dev preview) ---`);
-    console.log(`[habsum] from:    ${process.env.RESEND_FROM?.trim() ?? '(not set)'}`);
+    console.log(`[habsum] from:    ${this.emailService.getConfiguredFromAddress() ?? '(not set)'}`);
     console.log(`[habsum] to:      ${email}`);
     console.log(`[habsum] subject: ${content.subject}`);
     if (token) console.log(`[habsum] token:   ${token}`);

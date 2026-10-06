@@ -40,9 +40,6 @@ export const requireAdmin: RequestHandler = (req, res, next) => {
   next();
 };
 
-/** 401 / 403 unless logged in with the `DEVELOPER` capability. */
-export const requireDeveloper: RequestHandler = requireAdmin;
-
 /**
  * Requires `req.params.user` to match session user (parent route must define `:user`;
  * use `Router({ mergeParams: true })` on the mounted router).
