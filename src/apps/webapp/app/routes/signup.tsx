@@ -124,7 +124,7 @@ export default function SignupRoute() {
         </div>
       </div>
 
-      <Footer variant="full" />
+      <Footer />
     </div>
   );
 }

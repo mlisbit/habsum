@@ -154,14 +154,14 @@ export default function UserSettingsLayout() {
           />
         </nav>
         <div hidden={!isWide} className="settings__footer-slot settings__footer-slot--sidebar">
-          <Footer className="settings__footer" variant="compact" />
+          <Footer className="settings__footer" />
         </div>
       </aside>
       <main ref={mainRef} className="settings__main" tabIndex={-1}>
         <Outlet />
       </main>
       <div hidden={isWide} className="settings__footer-slot settings__footer-slot--page">
-        <Footer className="settings__footer settings__footer--page" variant="compact" />
+        <Footer className="settings__footer settings__footer--page" />
       </div>
     </div>
   );

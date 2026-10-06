@@ -6,7 +6,7 @@ import { FeatureFlagsProvider } from '@habsum/feature-flags/client/react';
 import { FEATURE_FLAG_KEYS } from '@habsum/feature-flags/feature-flags';
 import type { TrackingProvider } from '@habsum/tracking/client/provider';
 import { ConsoleTrackingProvider } from '@habsum/tracking/client/providers/console';
-import { UmamiTrackingProvider } from '@habsum/tracking/client/providers/umami';
+import { NoopTrackingProvider } from '@habsum/tracking/client/providers/noop';
 import { TrackingContextProvider, useTracking } from '@habsum/tracking/client/react';
 import { OucIndicator } from '~/components/OucIndicator';
 import { OucPopupBootstrap } from '~/components/OucPopupBootstrap';
@@ -21,9 +21,9 @@ import { getAuthMe as getServerAuthMe, getFeatureFlags } from '~/api.server';
 import { getOucSessionToken } from '~/ouc.client';
 import type { Route } from './+types/root';
 
-const trackingProvider: TrackingProvider = import.meta.env.PROD
-  ? new UmamiTrackingProvider()
-  : new ConsoleTrackingProvider();
+const trackingProvider: TrackingProvider = import.meta.env.DEV
+  ? new ConsoleTrackingProvider()
+  : new NoopTrackingProvider();
 
 export const links: LinksFunction = () => [
   { rel: 'stylesheet', href: stylesHref },

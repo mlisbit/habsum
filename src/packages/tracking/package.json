@@ -11,7 +11,7 @@
   "exports": {
     "./client/provider": "./src/client/tracking-provider.ts",
     "./client/providers/console": "./src/client/providers/console-tracking-provider.ts",
-    "./client/providers/umami": "./src/client/providers/umami-tracking-provider.ts",
+    "./client/providers/noop": "./src/client/providers/noop-tracking-provider.ts",
     "./client/react": "./src/client/react/tracking-context.tsx",
     "./client/spec": "./src/client/tracking-spec.ts",
     "./server/events/habit-action": "./src/server/events/habit-action.ts",

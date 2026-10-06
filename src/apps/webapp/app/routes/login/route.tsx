@@ -3,7 +3,6 @@ import { useEffect, useState } from 'react';
 import { useFeatureFlags } from '@habsum/feature-flags/client/react';
 import type { FeatureFlagKey } from '@habsum/feature-flags/feature-flags';
 import { useTracking } from '@habsum/tracking/client/react';
-import { Footer } from '~/components/Footer';
 import { HomeLink } from '~/components/HomeLink';
 import { Button } from '@habsum/ui/components/Button';
 import { InfoText } from '@habsum/ui/components/InfoText';
@@ -113,17 +112,6 @@ function LoginForm({
             void handleLogin();
           }}
         />
-        <p className="users-index__login-consent text-b-s text-light">
-          By logging in, you accept the{' '}
-          <Link to="/terms-of-service" className="text-link">
-            Terms
-          </Link>{' '}
-          and{' '}
-          <Link to="/privacy-policy" className="text-link">
-            Privacy Policy
-          </Link>
-          {'.'}
-        </p>
         {isFlagEnabled('enable-user-account-creation') ? (
           <p className="users-index__signup text-b-s text-light">
             Don&apos;t have an account?{' '}
@@ -191,8 +179,6 @@ export default function LoginRoute() {
           <LoginForm anotherAccountHint={currentUser != null} formDisabled={signOutBusy} />
         </div>
       </div>
-
-      <Footer variant="full" />
     </div>
   );
 }

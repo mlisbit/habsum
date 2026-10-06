@@ -10,7 +10,6 @@
     "./habit-helpers": "./src/habit-helpers.ts",
     "./habit-id": "./src/habit-id.ts",
     "./model-builders/habit": "./src/model-builders/habit.ts",
-    "./model-builders/widget": "./src/model-builders/widget.ts",
     "./strings": "./src/strings.ts",
     "./summation-hourly-bar-data": "./src/summation-hourly-bar-data.ts"
   },

@@ -275,7 +275,7 @@ export default function ResetPasswordRoute() {
         </div>
       </div>
 
-      <Footer variant="full" />
+      <Footer />
     </div>
   );
 }
