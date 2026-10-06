@@ -1,6 +1,6 @@
 // Domain operations for authentication, sessions, and password recovery.
 import { accountCreatedAtToApi } from '@habsum/types/common/day';
-import { PASSWORD_RESET_TOKEN_TTL_SECONDS } from '../constants.js';
+import { getPasswordResetUrl, PASSWORD_RESET_TOKEN_TTL_SECONDS } from '@habsum/utils/password';
 import isDevelopment from '../utils/is-development.js';
 import { getPassword, isPlausibleEmail, isSafeLoginId } from '../utils/request-utils.js';
 import getPackageVersion from '../utils/get-package-version.js';
@@ -23,11 +23,6 @@ const GENERIC_FORGOT_PASSWORD_RESULT = {
   ok: true,
   message: 'If an account exists for that email, reset instructions will be sent shortly.',
 } as const;
-
-function resetPasswordUrl(token: string): string {
-  const base = (process.env.HABSUM_WEBAPP_URL ?? 'http://localhost:3000').replace(/\/$/, '');
-  return `${base}/reset-password?token=${encodeURIComponent(token)}`;
-}
 
 function escapeHtml(text: string): string {
   return text
@@ -372,7 +367,7 @@ export class AuthService {
     email: string,
     resetToken: string,
   ): Promise<void> {
-    const resetUrl = resetPasswordUrl(resetToken);
+    const resetUrl = getPasswordResetUrl(resetToken, process.env.HABSUM_WEBAPP_URL);
     const displayName = this.userAndAuthRepository.getUserProfile(username).displayName?.trim();
     const greetingName = displayName || username;
     const content = passwordResetEmailContent(resetUrl, greetingName);
@@ -397,7 +392,7 @@ export class AuthService {
     displayName: string,
     setupToken: string,
   ): Promise<void> {
-    const setupUrl = resetPasswordUrl(setupToken);
+    const setupUrl = getPasswordResetUrl(setupToken, process.env.HABSUM_WEBAPP_URL);
     const content = inviteEmailContent(displayName, setupUrl);
 
     if (isDevelopment()) {

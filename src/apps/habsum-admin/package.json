@@ -1,0 +1,20 @@
+{
+  "name": "@habsum/admin",
+  "version": "0.1.33",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "habsum-admin": "./src/cli.ts"
+  },
+  "scripts": {
+    "list-users": "bun run src/cli.ts list-users",
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@habsum/types": "*",
+    "@habsum/utils": "*"
+  },
+  "engines": {
+    "bun": ">=1.0.0"
+  }
+}

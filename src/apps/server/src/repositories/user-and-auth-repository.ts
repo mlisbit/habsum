@@ -1,5 +1,9 @@
 // Repository for user, profile, session, and auth persistence operations.
-import { createHash, randomBytes } from 'node:crypto';
+import {
+  generatePasswordResetToken,
+  getPasswordResetTokenHash,
+  PASSWORD_RESET_TOKEN_TTL_SECONDS,
+} from '@habsum/utils/password';
 import {
   countAdmins,
   createInitialAdminUser,
@@ -34,21 +38,8 @@ import {
   setUserPassword,
   updateLoginPassword,
 } from './_private/db.js';
-import {
-  INVITE_TOKEN_TTL_SECONDS,
-  PASSWORD_RESET_TOKEN_BYTES,
-  PASSWORD_RESET_TOKEN_TTL_SECONDS,
-  type PasswordResetTokenPurpose,
-} from '../constants.js';
+import { INVITE_TOKEN_TTL_SECONDS, type PasswordResetTokenPurpose } from '../constants.js';
 import { sessionTtlSeconds } from '../utils/cookie-session-utils.js';
-
-function hashPasswordResetToken(token: string): string {
-  return createHash('sha256').update(token).digest('base64url');
-}
-
-function generatePasswordResetToken(): string {
-  return randomBytes(PASSWORD_RESET_TOKEN_BYTES).toString('base64url');
-}
 
 function tokenTtlSeconds(purpose: PasswordResetTokenPurpose): number {
   return purpose === 'invite' ? INVITE_TOKEN_TTL_SECONDS : PASSWORD_RESET_TOKEN_TTL_SECONDS;
@@ -189,7 +180,7 @@ export class UserAndAuthRepository {
   ): { token: string; expiresAt: number; id: number } {
     invalidateActivePasswordResetTokens(userId, purpose, nowSec);
     const token = generatePasswordResetToken();
-    const tokenHash = hashPasswordResetToken(token);
+    const tokenHash = getPasswordResetTokenHash(token);
     const expiresAt = nowSec + tokenTtlSeconds(purpose);
     const id = insertPasswordResetToken({
       userId,
@@ -207,7 +198,7 @@ export class UserAndAuthRepository {
   ): { id: number; userId: string; purpose: PasswordResetTokenPurpose } | null {
     const trimmed = token.trim();
     if (!trimmed) return null;
-    const row = findValidPasswordResetToken(hashPasswordResetToken(trimmed), nowSec);
+    const row = findValidPasswordResetToken(getPasswordResetTokenHash(trimmed), nowSec);
     if (!row) return null;
     return {
       id: row.id,

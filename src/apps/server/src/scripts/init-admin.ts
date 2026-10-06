@@ -1,11 +1,11 @@
 import { createInterface } from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
+import { generateTemporaryPassword } from '@habsum/utils/password';
 import { ConfigService } from '../services/config-service.js';
 import { DatabaseRepository } from '../repositories/database-repository.js';
 import { UserAndAuthRepository } from '../repositories/user-and-auth-repository.js';
 import isForbiddenUsername from '../utils/is-forbidden-username.js';
 import { isSafeConfigUserId } from '../utils/request-utils.js';
-import { generateTemporaryPassword } from '../utils/password-utils.js';
 
 const configService = new ConfigService();
 const databaseRepository = new DatabaseRepository();

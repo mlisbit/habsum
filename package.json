@@ -12,6 +12,7 @@
     "src/packages/habit-render",
     "src/packages/eslint",
     "src/packages/stylelint",
+    "src/apps/habsum-admin",
     "src/apps/server",
     "src/apps/webapp"
   ],
@@ -29,7 +30,8 @@
     "lint:css:run": "stylelint \"src/**/*.{css,scss}\"",
     "lint:css:fix": "npm run stylelint-plugins:build && npm run lint:css:run -- --fix",
     "lint:plugins:build": "npm run stylelint-plugins:build && npm run eslint-plugins:build",
-    "test": "npm-run-all test:webapp test:server",
+    "test": "npm-run-all test:admin test:webapp test:server",
+    "test:admin": "npm run test --workspace @habsum/admin",
     "test:webapp": "npm run test --workspace @habsum/webapp",
     "test:server": "npm run test --workspace @habsum/server",
     "secrets:check": "node scripts/check-staged-secrets.mjs",

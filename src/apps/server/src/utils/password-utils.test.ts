@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { hashPassword, isPasswordHashed, verifyPassword } from './password-utils.js';
+import {
+  getPasswordResetTokenHash,
+  getPasswordResetUrl,
+  hashPassword,
+  isPasswordHashed,
+  verifyPassword,
+} from '@habsum/utils/password';
 
 describe('password-hash', () => {
   it('hashes and verifies a password', () => {
@@ -21,5 +27,18 @@ describe('password-hash', () => {
     expect(isPasswordHashed('plain')).toBe(false);
     expect(verifyPassword('plain', 'plain')).toBe(true);
     expect(verifyPassword('other', 'plain')).toBe(false);
+  });
+});
+
+describe('password-reset helpers', () => {
+  it('hashes reset tokens deterministically', () => {
+    expect(getPasswordResetTokenHash('token')).toBe(getPasswordResetTokenHash('token'));
+    expect(getPasswordResetTokenHash('token')).not.toBe(getPasswordResetTokenHash('other'));
+  });
+
+  it('builds a reset URL without a duplicate slash', () => {
+    expect(getPasswordResetUrl('a token', 'https://example.com/')).toBe(
+      'https://example.com/reset-password?token=a%20token',
+    );
   });
 });

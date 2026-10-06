@@ -1,9 +1,9 @@
 // Central SQLite access layer for persisted user, auth, and habit data.
 import Database from 'better-sqlite3';
+import { hashPassword, isPasswordHashed, verifyPassword } from '@habsum/utils/password';
 import { randomBytes } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { join, resolve } from 'node:path';
-import { hashPassword, isPasswordHashed, verifyPassword } from '../../utils/password-utils.js';
 import { PASSWORD_RESET_COOLDOWN_SECONDS } from '../../constants.js';
 import { isAllowedUiTheme, isPlausibleEmail } from '../../utils/request-utils.js';
 

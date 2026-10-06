@@ -1,0 +1,12 @@
+#!/bin/sh
+
+set -eu
+
+repository_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+
+if [ -z "${HABSUM_CONFIG_DIR:-}" ]; then
+  HABSUM_CONFIG_DIR="$repository_dir/config"
+  export HABSUM_CONFIG_DIR
+fi
+
+exec "$repository_dir/src/apps/habsum-admin/src/cli.ts" "$@"
