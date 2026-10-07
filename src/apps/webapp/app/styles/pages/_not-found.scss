@@ -1,0 +1,46 @@
+@use 'functions';
+
+.not-found {
+  display: flex;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.not-found__main {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  padding-block: functions.spacing(8);
+}
+
+.not-found__card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: functions.spacing(4);
+  inline-size: min(100%, 30rem);
+  text-align: center;
+}
+
+.not-found__code {
+  margin-block: functions.spacing(3);
+  letter-spacing: -0.08em;
+  transform: scale(2.25);
+}
+
+.not-found__copy {
+  display: flex;
+  flex-direction: column;
+  gap: functions.spacing(2);
+}
+
+.not-found__home-action {
+  align-self: stretch;
+}
+
+@media (max-width: 32rem) {
+  .not-found__code {
+    transform: scale(1.85);
+  }
+}

@@ -24,5 +24,6 @@ export default [
       route('config', 'routes/users/$user/settings/config/route.tsx'),
     ]),
     route('users/:user/administrator/:section', 'routes/users/$user/administrator-redirect.tsx'),
+    route('*', 'routes/not-found/route.tsx'),
   ]),
 ] satisfies RouteConfig;
