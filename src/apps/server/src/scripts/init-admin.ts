@@ -38,8 +38,8 @@ async function promptUsername(): Promise<string> {
 async function main(): Promise<void> {
   configService.ensureConfigLayout();
 
-  if (userAndAuthRepository.countAdmins() > 0) {
-    console.log('An admin account already exists. No changes made.');
+  if (userAndAuthRepository.hasUsers()) {
+    console.log('A user account already exists. No changes made.');
     return;
   }
 
@@ -54,7 +54,12 @@ async function main(): Promise<void> {
   }
 
   const password = generateTemporaryPassword();
-  userAndAuthRepository.createInitialAdminUser(username, password);
+  const created = userAndAuthRepository.createFirstAdminUser(username, password);
+  if (!created) {
+    configService.deleteUserConfig(username);
+    console.log('A user account already exists. No changes made.');
+    return;
+  }
 
   console.log('');
   console.log('Initial admin created.');

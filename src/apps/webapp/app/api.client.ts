@@ -16,6 +16,10 @@ import type { MeGetResponse } from '@habsum/types/api-responses/me-get';
 import type { HabitsResponse } from '@habsum/types/api-responses/habits-get';
 import type { HabitPatch, PatchHabitResponse } from '@habsum/types/api-responses/habit-patch';
 import type { HistoryGetResponse } from '@habsum/types/api-responses/history-get';
+import type {
+  InitialUserPostRequest,
+  InitialUserPostResponse,
+} from '@habsum/types/api-responses/initial-user-post';
 import type { UsersPatchRequest } from '@habsum/types/api-responses/users-patch';
 import type {
   UserPasswordChangeRequest,
@@ -195,6 +199,13 @@ function getRequest<T>(path: string): Promise<T> {
 
 export async function getAuthMe() {
   return getRequest<MeGetResponse>('/users/me');
+}
+
+export async function createInitialUser(username: string, password: string) {
+  return request<InitialUserPostResponse>('/auth/initial-user', {
+    method: 'POST',
+    body: JSON.stringify({ username, password } satisfies InitialUserPostRequest),
+  });
 }
 
 export async function signupUser(email: string, password: string) {

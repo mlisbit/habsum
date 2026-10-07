@@ -90,6 +90,18 @@ describe('POST /auth/signup', () => {
 });
 
 describe('session routes', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('reports when the active database has no users', async () => {
+    vi.spyOn(UserAndAuthRepository.prototype, 'hasUsers').mockReturnValue(false);
+
+    const response = await request(createApp()).get('/auth/status').expect(200);
+
+    expect(response.body).toEqual({ hasUsers: false });
+  });
+
   it('logs in through /auth/login, resolves /users/me, and logs out through /auth/logout', async () => {
     configService.ensureConfigLayout();
     configService.createEmptyUserConfig('session-route-user');

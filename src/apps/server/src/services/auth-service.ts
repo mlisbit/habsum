@@ -10,6 +10,7 @@ import { UserService } from './user-service.js';
 import { UserAndAuthRepository } from '../repositories/user-and-auth-repository.js';
 import ServiceError from '../utils/classes/service-error.js';
 import { FeatureFlagService } from './feature-flag-service.js';
+import isForbiddenUsername from '../utils/is-forbidden-username.js';
 
 const PACKAGE_VERSION = getPackageVersion();
 
@@ -18,6 +19,7 @@ type SignupInput = { email?: unknown; password?: unknown };
 type ForgotPasswordInput = { email?: unknown };
 type ResetPasswordInput = { token?: unknown; newPassword?: unknown };
 type OucLoginInput = { token?: unknown };
+type InitialUserInput = { username?: unknown; password?: unknown };
 
 const GENERIC_FORGOT_PASSWORD_RESULT = {
   ok: true,
@@ -103,6 +105,56 @@ export class AuthService {
     private readonly userService = new UserService(configService, userAndAuthRepository),
     private readonly featureFlagService = new FeatureFlagService(),
   ) {}
+
+  getStatus() {
+    return { hasUsers: this.userAndAuthRepository.hasUsers() };
+  }
+
+  createInitialUser(body: InitialUserInput | undefined) {
+    if (this.userAndAuthRepository.hasUsers()) {
+      throw new ServiceError('conflict', 'the initial user already exists');
+    }
+
+    if (typeof body?.username !== 'string' || body.username.trim() === '') {
+      throw new ServiceError('bad_request', 'username is required');
+    }
+    const username = body.username.trim();
+    if (!isSafeLoginId(username) || isForbiddenUsername(username)) {
+      throw new ServiceError('bad_request', 'invalid username');
+    }
+
+    const password = getPassword(body.password);
+    if (password == null) {
+      throw new ServiceError('bad_request', 'password is required');
+    }
+
+    const configResult = this.configService.createEmptyUserConfig(username);
+    if (!configResult.ok) {
+      throw new ServiceError(
+        configResult.error.includes('already exists') ? 'conflict' : 'bad_request',
+        configResult.error,
+      );
+    }
+
+    let created: boolean;
+    try {
+      created = this.userAndAuthRepository.createFirstAdminUser(username, password);
+    } catch (error) {
+      this.configService.deleteUserConfig(username);
+      throw new ServiceError(
+        'internal',
+        error instanceof Error ? error.message : 'failed to create initial user',
+      );
+    }
+
+    if (!created) {
+      this.configService.deleteUserConfig(username);
+      throw new ServiceError('conflict', 'the initial user already exists');
+    }
+
+    const sessionId = this.userAndAuthRepository.createUserSession(username);
+    return { data: { ok: true as const, user: username }, sessionId };
+  }
 
   signup(body: SignupInput | undefined) {
     if (!this.featureFlagService.isFlagEnabled('enable-user-account-creation')) {

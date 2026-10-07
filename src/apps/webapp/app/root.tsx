@@ -1,4 +1,13 @@
-import { Link, Links, Meta, Outlet, Scripts, ScrollRestoration, useLoaderData } from 'react-router';
+import {
+  Link,
+  Links,
+  Meta,
+  Outlet,
+  Scripts,
+  ScrollRestoration,
+  redirect,
+  useLoaderData,
+} from 'react-router';
 import type { LinksFunction, MetaFunction } from 'react-router';
 import { useCallback } from 'react';
 import type { MeGetResponse } from '@habsum/types/api-responses/me-get';
@@ -17,7 +26,7 @@ import { getAuthMe as getClientAuthMe } from '~/api.client';
 import stylesHref from '~/styles/main.scss?url';
 import { UI_THEME_STORAGE_KEY } from '~/theme.shared';
 import { webappTrackingSpec } from '~/tracking-spec';
-import { getAuthMe as getServerAuthMe, getFeatureFlags } from '~/api.server';
+import { getAuthMe as getServerAuthMe, getAuthStatus, getFeatureFlags } from '~/api.server';
 import { getOucSessionToken } from '~/ouc.client';
 import type { Route } from './+types/root';
 
@@ -33,8 +42,17 @@ export const links: LinksFunction = () => [
 export const meta: MetaFunction = () => [{ title: 'habsum' }];
 
 export async function loader({ request }: Route.LoaderArgs) {
-  const [me, featureFlags] = await Promise.all([getServerAuthMe(request), getFeatureFlags()]);
-  return { me, featureFlags: featureFlags.flags };
+  const [me, authStatus, featureFlags] = await Promise.all([
+    getServerAuthMe(request),
+    getAuthStatus(),
+    getFeatureFlags(),
+  ]);
+  const isWelcomeRoute = new URL(request.url).pathname.replace(/\/$/, '') === '/welcome';
+
+  if (!authStatus.hasUsers && !isWelcomeRoute) return redirect('/welcome');
+  if (authStatus.hasUsers && isWelcomeRoute) return redirect('/');
+
+  return { me, authStatus, featureFlags: featureFlags.flags };
 }
 
 export async function clientLoader({ serverLoader }: Route.ClientLoaderArgs) {

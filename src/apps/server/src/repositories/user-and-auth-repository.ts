@@ -6,6 +6,7 @@ import {
 } from '@habsum/utils/password';
 import {
   countAdmins,
+  createFirstAdminUser,
   createInitialAdminUser,
   countUserEvents,
   createUserSession,
@@ -15,6 +16,7 @@ import {
   getFirstDate,
   getUserProfile,
   getUsernameForSession,
+  hasUsers,
   insertPasswordResetToken,
   invalidateActivePasswordResetTokens,
   isEmailUsedByOtherUser,
@@ -56,6 +58,10 @@ export class UserAndAuthRepository {
 
   createInitialAdminUser(username: string, password: string): void {
     createInitialAdminUser(username, password);
+  }
+
+  createFirstAdminUser(username: string, password: string): boolean {
+    return createFirstAdminUser(username, password);
   }
 
   isUserPasswordValid(username: string, password: string): boolean {
@@ -112,6 +118,10 @@ export class UserAndAuthRepository {
 
   listUserRows() {
     return listUserRows();
+  }
+
+  hasUsers(): boolean {
+    return hasUsers();
   }
 
   countUserEvents(username: string): number {

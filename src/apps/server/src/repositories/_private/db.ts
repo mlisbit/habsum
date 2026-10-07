@@ -436,6 +436,10 @@ const listUserRowsStmt = db.prepare<[], UserListRow>(`
   FROM users
 `);
 
+const hasUsersStmt = db.prepare<[], { has_users: number }>(`
+  SELECT EXISTS(SELECT 1 FROM users LIMIT 1) AS has_users
+`);
+
 const countUserEventsStmt = db.prepare<[string, string, string], { event_count: number }>(`
   SELECT
     (SELECT COUNT(*) FROM habit_summation_events WHERE user = ?) +
@@ -493,7 +497,16 @@ const createInitialAdminUserStmt = db.prepare<{
 `,
 );
 
-/** Creates the first admin account (call only when {@link countAdmins} is zero). */
+const createFirstAdminUserStmt = db.prepare<{
+  username: string;
+  passwordHash: string;
+  createdAt: string;
+}>(`
+  INSERT INTO users (username, pin, admin, display_name, theme, email, created_at)
+  SELECT @username, @passwordHash, 1, NULL, 'dark', NULL, @createdAt
+  WHERE NOT EXISTS (SELECT 1 FROM users)
+`);
+
 export function createInitialAdminUser(username: string, password: string): void {
   createInitialAdminUserStmt.run({
     username,
@@ -501,6 +514,18 @@ export function createInitialAdminUser(username: string, password: string): void
     createdAt: new Date().toISOString(),
   });
   backfillActiveHabitConfigVersion(username);
+}
+
+/** Atomically creates an administrator only when the database has no users. */
+export function createFirstAdminUser(username: string, password: string): boolean {
+  const result = createFirstAdminUserStmt.run({
+    username,
+    passwordHash: hashPassword(password),
+    createdAt: new Date().toISOString(),
+  });
+  if (result.changes === 0) return false;
+  backfillActiveHabitConfigVersion(username);
+  return true;
 }
 
 /** Updates the stored login password only; preserves `admin`. Returns whether a row existed. */
@@ -555,6 +580,10 @@ export function listUserRows(): Array<{
     lastLoginAt: row.last_login_at,
     webAndApiVersion: row.web_and_api_version,
   }));
+}
+
+export function hasUsers(): boolean {
+  return hasUsersStmt.get()?.has_users === 1;
 }
 
 export function countUserEvents(username: string): number {

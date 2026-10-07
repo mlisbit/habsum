@@ -1,4 +1,5 @@
 import type { HabitsResponse } from '@habsum/types/api-responses/habits-get';
+import type { AuthStatusGetResponse } from '@habsum/types/api-responses/auth-status-get';
 import type { FeatureFlagsGetResponse } from '@habsum/feature-flags/types';
 import type { MeGetResponse } from '@habsum/types/api-responses/me-get';
 import type { PatchHabitResponse } from '@habsum/types/api-responses/habit-patch';
@@ -53,6 +54,10 @@ export function getAuthMe(documentRequest: Request) {
       ...(cookie ? { cookie } : {}),
     },
   });
+}
+
+export function getAuthStatus() {
+  return request<AuthStatusGetResponse>('/auth/status');
 }
 
 export function getFeatureFlags() {
