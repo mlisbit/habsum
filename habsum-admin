@@ -4,9 +4,9 @@ set -eu
 
 repository_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 
-if [ -z "${HABSUM_CONFIG_DIR:-}" ]; then
-  HABSUM_CONFIG_DIR="$repository_dir/config"
-  export HABSUM_CONFIG_DIR
+if [ -z "${HABSUM_DB_PATH:-}" ]; then
+  HABSUM_DB_PATH="$repository_dir/config/habsum.db"
+  export HABSUM_DB_PATH
 fi
 
 exec "$repository_dir/src/apps/habsum-admin/src/cli.ts" "$@"

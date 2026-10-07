@@ -10,11 +10,11 @@ From the repository root, list every account and its derived product entitlement
 ./habsum-admin list-users
 ```
 
-The root command uses `./config` by default. Set `HABSUM_CONFIG_DIR` to inspect a different Habsum
-data directory:
+The root command uses `./config/habsum.db` by default. Set `HABSUM_DB_PATH` to inspect a different
+Habsum database:
 
 ```bash
-HABSUM_CONFIG_DIR=/data ./habsum-admin list-users
+HABSUM_DB_PATH=/data/habsum.db ./habsum-admin list-users
 ```
 
 The package also exposes a `habsum-admin` binary. Link it once to use the command without the `./`
@@ -25,10 +25,10 @@ cd src/apps/habsum-admin
 bun link
 ```
 
-You can then run it from anywhere with an explicit Habsum data directory:
+You can then run it from anywhere with an explicit Habsum database:
 
 ```bash
-HABSUM_CONFIG_DIR=/data habsum-admin list-users
+HABSUM_DB_PATH=/data/habsum.db habsum-admin list-users
 ```
 
 ## Reset a password

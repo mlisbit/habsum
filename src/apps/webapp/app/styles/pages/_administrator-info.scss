@@ -16,7 +16,8 @@
 }
 
 .administrator-info__clock-row,
-.administrator-info__version-row {
+.administrator-info__version-row,
+.administrator-info__database-row {
   display: grid;
   gap: functions.spacing(1) functions.spacing(2);
   grid-template-columns: minmax(0, 140px) 1fr;
@@ -31,10 +32,44 @@
 }
 
 .administrator-info__clock-value,
-.administrator-info__version-value {
+.administrator-info__version-value,
+.administrator-info__database-value {
   margin: 0;
 }
 
-.administrator-info__version-list {
+.administrator-info__version-list,
+.administrator-info__database-list {
   margin: functions.spacing(2) 0;
+}
+
+.administrator-info__database-content,
+.administrator-info__delete-modal-content,
+.administrator-info__delete-confirmation {
+  display: flex;
+  flex-direction: column;
+  gap: functions.spacing(2);
+}
+
+.administrator-info__delete-confirmation {
+  gap: functions.spacing(1);
+}
+
+.administrator-info__database-path {
+  overflow-wrap: anywhere;
+}
+
+.administrator-info__database-danger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: functions.spacing(2);
+  padding-top: functions.spacing(2);
+  border-top: 1px solid var(--border-color-faint);
+}
+
+@media (max-width: 520px) {
+  .administrator-info__database-danger {
+    align-items: stretch;
+    flex-direction: column;
+  }
 }

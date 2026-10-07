@@ -1234,5 +1234,5 @@ export function purgeUserData(user: string) {
 }
 
 export function closeDb() {
-  db.close();
+  if (db.open) db.close();
 }

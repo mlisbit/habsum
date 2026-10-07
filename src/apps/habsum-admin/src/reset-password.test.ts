@@ -8,11 +8,12 @@ import resetPassword from './reset-password.ts';
 
 const temporaryDirectories: string[] = [];
 
-function getTestConfigDirectory(): string {
+function getTestDatabasePath(): string {
   const directory = mkdtempSync(join(tmpdir(), 'habsum-admin-test-'));
   temporaryDirectories.push(directory);
 
-  const database = new Database(join(directory, 'habsum.db'));
+  const databasePath = join(directory, 'habsum.db');
+  const database = new Database(databasePath);
   database.exec(`
     CREATE TABLE users (
       username TEXT PRIMARY KEY,
@@ -33,7 +34,7 @@ function getTestConfigDirectory(): string {
     .run('alice', hashPassword('old password'));
   database.close();
 
-  return directory;
+  return databasePath;
 }
 
 afterEach(() => {
@@ -44,8 +45,8 @@ afterEach(() => {
 
 describe('resetPassword', () => {
   test('updates the password and invalidates existing reset links', async () => {
-    const configDir = getTestConfigDirectory();
-    const database = new Database(join(configDir, 'habsum.db'));
+    const databasePath = getTestDatabasePath();
+    const database = new Database(databasePath);
     database.exec(`
       INSERT INTO password_reset_tokens
         (user_id, token_hash, expires_at, created_at, purpose)
@@ -55,13 +56,13 @@ describe('resetPassword', () => {
 
     const output: string[] = [];
     await resetPassword('alice', {
-      configDir,
+      databasePath,
       readPassword: async () => 'new password',
       getNowSeconds: () => 1000,
       writeLine: (line) => output.push(line),
     });
 
-    const updatedDatabase = new Database(join(configDir, 'habsum.db'), { readonly: true });
+    const updatedDatabase = new Database(databasePath, { readonly: true });
     try {
       const user = updatedDatabase
         .query<{ pin: string }, []>("SELECT pin FROM users WHERE username = 'alice'")
@@ -83,11 +84,11 @@ describe('resetPassword', () => {
   });
 
   test('creates a valid reset link when the password is omitted', async () => {
-    const configDir = getTestConfigDirectory();
+    const databasePath = getTestDatabasePath();
     const output: string[] = [];
 
     await resetPassword('alice', {
-      configDir,
+      databasePath,
       webappUrl: 'https://example.com/',
       readPassword: async () => '  ',
       getToken: () => 'reset-token',
@@ -95,7 +96,7 @@ describe('resetPassword', () => {
       writeLine: (line) => output.push(line),
     });
 
-    const database = new Database(join(configDir, 'habsum.db'), { readonly: true });
+    const database = new Database(databasePath, { readonly: true });
     try {
       const token = database
         .query<{ tokenHash: string; expiresAt: number; createdAt: number; purpose: string }, []>(
@@ -126,12 +127,12 @@ describe('resetPassword', () => {
   });
 
   test('rejects an unknown account before prompting', async () => {
-    const configDir = getTestConfigDirectory();
+    const databasePath = getTestDatabasePath();
     let prompted = false;
 
     await expect(
       resetPassword('missing', {
-        configDir,
+        databasePath,
         readPassword: async () => {
           prompted = true;
           return 'password';

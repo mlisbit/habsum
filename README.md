@@ -8,8 +8,8 @@ A self-hosted YAML configurable habit tracking dashboard.
 
 ## Features
 
-- **YAML-configured users & habits**: define habits per user in `${HABSUM_CONFIG_DIR}/users/*.yaml`.
-- **SQLite persistence**: totals are stored in `${HABSUM_CONFIG_DIR}/habsum.db`.
+- **YAML-configured habits**: easily configure a user's habit configuration as YAML in the web app.
+- **SQLite persistence**: users, configuration, settings, and habit data share one database.
 - **Dashboard UI**: pick a user and update habit totals from the browser.
 - **Widgets**: habits can be rendered as either a counter (summation) or a quick-action button.
 - **Docker-friendly**: run the server in a container with a bind-mounted data directory.
@@ -37,36 +37,14 @@ habits:
     type: summation
 ```
 
-## Deploy via Docker
+Open `http://localhost:8882`.
 
-Use this single `docker compose` file (it runs **server + webapp** on one stack):
+## Development database path
 
-```yaml
-services:
-  server:
-    image: ghcr.io/mlisbit/habsum/habsum-server:main
-    environment:
-      PORT: '3001'
-      HABSUM_CONFIG_DIR: /data
-    volumes:
-      - ./data:/data
-    expose:
-      - '3001'
+Development uses `./config/habsum.db` by default. To use a different SQLite file while running both development apps, pass `--db`. Habsum creates the parent directory and database when needed.
 
-  web:
-    image: ghcr.io/mlisbit/habsum/habsum-webapp:main
-    ports:
-      - '8882:3000'
-    depends_on:
-      - server
-```
-
-### Start
+For a temporary development database on macOS:
 
 ```bash
-mkdir -p data/users
-
-docker compose up -d
+npm run dev -- --db="$(mktemp -d -t habsum)/habsum.db"
 ```
-
-Open `http://localhost:8882`.

@@ -1,22 +1,15 @@
 // Repository that owns persisted YAML user config versions in SQLite.
 import { mkdirSync } from 'node:fs';
-import { join, resolve } from 'node:path';
-import Database from 'better-sqlite3';
+import { dirname } from 'node:path';
 import { yamlString, type YAMLString } from '@habsum/types/common/misc';
+import getDatabasePath from '../utils/get-database-path.js';
+import { db } from './_private/db.js';
 
-const rawDir = process.env.HABSUM_CONFIG_DIR;
-if (!rawDir) {
-  throw new Error('[habsum] HABSUM_CONFIG_DIR is required (must point to your data directory)');
-}
-
-const DATA_DIR = resolve(rawDir);
-const DB_PATH = join(DATA_DIR, 'habsum.db');
+const DATA_DIR = dirname(getDatabasePath());
 const PREVIOUS_HABIT_CONFIG_VERSIONS_TO_KEEP = 2;
 
 mkdirSync(DATA_DIR, { recursive: true });
-const configDb = new Database(DB_PATH);
-configDb.pragma('journal_mode = WAL');
-configDb.exec(`
+db.exec(`
   CREATE TABLE IF NOT EXISTS habit_configs (
     user TEXT NOT NULL,
     version INTEGER NOT NULL,
@@ -35,11 +28,11 @@ type HabitConfigRow = {
   text: string;
 };
 
-const listHabitConfigUsersStmt = configDb.prepare<[], { user: string }>(`
+const listHabitConfigUsersStmt = db.prepare<[], { user: string }>(`
   SELECT DISTINCT user FROM habit_configs
 `);
 
-const getLatestHabitConfigStmt = configDb.prepare<[string], HabitConfigRow>(`
+const getLatestHabitConfigStmt = db.prepare<[string], HabitConfigRow>(`
   SELECT user, version, text
   FROM habit_configs
   WHERE user = ?
@@ -47,19 +40,19 @@ const getLatestHabitConfigStmt = configDb.prepare<[string], HabitConfigRow>(`
   LIMIT 1
 `);
 
-const getHabitConfigVersionStmt = configDb.prepare<[string, number], HabitConfigRow>(`
+const getHabitConfigVersionStmt = db.prepare<[string, number], HabitConfigRow>(`
   SELECT user, version, text
   FROM habit_configs
   WHERE user = ? AND version = ?
 `);
 
-const getNextHabitConfigVersionStmt = configDb.prepare<[string], { version: number }>(`
+const getNextHabitConfigVersionStmt = db.prepare<[string], { version: number }>(`
   SELECT coalesce(max(version), 0) + 1 AS version
   FROM habit_configs
   WHERE user = ?
 `);
 
-const insertHabitConfigStmt = configDb.prepare<{
+const insertHabitConfigStmt = db.prepare<{
   user: string;
   version: number;
   text: string;
@@ -68,7 +61,7 @@ const insertHabitConfigStmt = configDb.prepare<{
   VALUES (@user, @version, @text)
 `);
 
-const pruneHabitConfigVersionsStmt = configDb.prepare<{
+const pruneHabitConfigVersionsStmt = db.prepare<{
   user: string;
   oldestVersionToKeep: number;
 }>(`
@@ -76,13 +69,13 @@ const pruneHabitConfigVersionsStmt = configDb.prepare<{
   WHERE user = @user AND version < @oldestVersionToKeep
 `);
 
-const renameHabitConfigsStmt = configDb.prepare<{ fromUser: string; toUser: string }>(`
+const renameHabitConfigsStmt = db.prepare<{ fromUser: string; toUser: string }>(`
   UPDATE habit_configs
   SET user = @toUser
   WHERE user = @fromUser
 `);
 
-const deleteHabitConfigsStmt = configDb.prepare<[string], unknown>(`
+const deleteHabitConfigsStmt = db.prepare<[string], unknown>(`
   DELETE FROM habit_configs WHERE user = ?
 `);
 
@@ -91,7 +84,7 @@ function getLatestStoredConfig(user: string): HabitConfigRow | null {
 }
 
 function usersTableExists(): boolean {
-  const row = configDb
+  const row = db
     .prepare<
       [string],
       { name: string }
@@ -102,21 +95,21 @@ function usersTableExists(): boolean {
 
 function usersTableHasColumn(column: string): boolean {
   if (!usersTableExists()) return false;
-  const cols = configDb.prepare("PRAGMA table_info('users')").all() as Array<{ name: string }>;
+  const cols = db.prepare("PRAGMA table_info('users')").all() as Array<{ name: string }>;
   return cols.some((c) => c.name === column);
 }
 
 function ensureActiveHabitConfigVersionColumn(): boolean {
   if (!usersTableExists()) return false;
   if (!usersTableHasColumn('active_habit_config_version')) {
-    configDb.exec('ALTER TABLE users ADD COLUMN active_habit_config_version INTEGER');
+    db.exec('ALTER TABLE users ADD COLUMN active_habit_config_version INTEGER');
   }
   return true;
 }
 
 function getActiveHabitConfigVersion(user: string): number | null {
   if (!ensureActiveHabitConfigVersionColumn()) return null;
-  const row = configDb
+  const row = db
     .prepare<
       [string],
       { active_habit_config_version: number | null }
@@ -127,12 +120,13 @@ function getActiveHabitConfigVersion(user: string): number | null {
 
 function setActiveHabitConfigVersion(user: string, version: number | null): void {
   if (!ensureActiveHabitConfigVersionColumn()) return;
-  configDb
-    .prepare<{
-      user: string;
-      version: number | null;
-    }>('UPDATE users SET active_habit_config_version = @version WHERE username = @user')
-    .run({ user, version });
+  db.prepare<{
+    user: string;
+    version: number | null;
+  }>('UPDATE users SET active_habit_config_version = @version WHERE username = @user').run({
+    user,
+    version,
+  });
 }
 
 function getActiveStoredConfig(user: string): HabitConfigRow | null {
@@ -147,17 +141,15 @@ function getActiveStoredConfig(user: string): HabitConfigRow | null {
   return latest;
 }
 
-const writeUserConfigTextTransaction = configDb.transaction(
-  (user: string, content: YAMLString): void => {
-    const version = getNextHabitConfigVersionStmt.get(user)?.version ?? 1;
-    insertHabitConfigStmt.run({ user, version, text: content });
-    setActiveHabitConfigVersion(user, version);
-    pruneHabitConfigVersionsStmt.run({
-      user,
-      oldestVersionToKeep: version - PREVIOUS_HABIT_CONFIG_VERSIONS_TO_KEEP,
-    });
-  },
-);
+const writeUserConfigTextTransaction = db.transaction((user: string, content: YAMLString): void => {
+  const version = getNextHabitConfigVersionStmt.get(user)?.version ?? 1;
+  insertHabitConfigStmt.run({ user, version, text: content });
+  setActiveHabitConfigVersion(user, version);
+  pruneHabitConfigVersionsStmt.run({
+    user,
+    oldestVersionToKeep: version - PREVIOUS_HABIT_CONFIG_VERSIONS_TO_KEEP,
+  });
+});
 
 export class ConfigRepository {
   ensureLayout(): void {

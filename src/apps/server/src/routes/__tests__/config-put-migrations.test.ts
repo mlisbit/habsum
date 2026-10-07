@@ -1,4 +1,3 @@
-import { join } from 'node:path';
 import Database from 'better-sqlite3';
 import request from 'supertest';
 import { dayFromString } from '@habsum/types/common/day';
@@ -10,6 +9,7 @@ import { HabitRepository } from '../../repositories/habit-repository.js';
 import getHabitListDataQuery from '../../utils/get-habit-list-data-query.js';
 import { UserAndAuthRepository } from '../../repositories/user-and-auth-repository.js';
 import { SESSION_COOKIE_NAME } from '../../utils/cookie-session-utils.js';
+import getDatabasePath from '../../utils/get-database-path.js';
 
 const configService = new ConfigService();
 const habitRepository = new HabitRepository();
@@ -58,7 +58,7 @@ describe('PUT /users/:user/config migrations', () => {
       .expect(200);
     userAndAuthRepository.setUserPassword(user, 'test-password');
 
-    const sqlite = new Database(join(process.env.HABSUM_CONFIG_DIR!, 'habsum.db'));
+    const sqlite = new Database(getDatabasePath());
     try {
       const active = sqlite
         .prepare('SELECT active_habit_config_version FROM users WHERE username = ?')
@@ -96,7 +96,7 @@ describe('PUT /users/:user/config migrations', () => {
         .expect(200);
     }
 
-    const sqlite = new Database(join(process.env.HABSUM_CONFIG_DIR!, 'habsum.db'));
+    const sqlite = new Database(getDatabasePath());
     try {
       const rows = sqlite
         .prepare(

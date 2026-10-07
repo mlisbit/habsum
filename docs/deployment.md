@@ -7,8 +7,7 @@ Habsum is deployed as two separate Fly.io applications:
 - `habsum-api`
   - Express API
   - SQLite database
-  - YAML config storage
-  - Persistent Fly volume mounted at `/data`
+  - Persistent Fly volume mounted at `/app/src/apps/server/config`
 
 - `habsum-web`
   - Static React Router SPA served through Nginx
@@ -27,7 +26,7 @@ habsum-api.flycast:3001
 ↓
 Express API
 ↓
-SQLite + YAML configs (/data)
+SQLite database (`/app/src/apps/server/config/habsum.db`)
 ```
 
 ---
@@ -75,13 +74,12 @@ app.listen(PORT, '0.0.0.0');
 The API uses a persistent Fly volume mounted at:
 
 ```txt
-/data
+/app/src/apps/server/config
 ```
 
 This stores:
 
 - SQLite DB
-- YAML user configs
 
 The volume persists across deploys/restarts.
 
@@ -169,14 +167,14 @@ Run once after deploying to a fresh volume. The script exits without changes if 
 Locally:
 
 ```bash
-HABSUM_CONFIG_DIR="$(pwd)/config" npm run init-admin
+npm run init-admin
 ```
 
 On Fly (interactive SSH):
 
 ```bash
 fly ssh console --app habsum-api
-cd /app/src/apps/server && HABSUM_CONFIG_DIR=/data npm run init-admin
+cd /app/src/apps/server && npm run init-admin
 ```
 
 This creates the initial admin account with an empty habit config and prints a generated login password.

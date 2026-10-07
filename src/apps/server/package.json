@@ -5,9 +5,9 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "dev": "HABSUM_CONFIG_DIR=\"${INIT_CWD:-$PWD}/config\" tsx watch src/index.ts",
+    "dev": "tsx watch src/dev.ts",
     "build": "tsc -p tsconfig.json",
-    "start": "HABSUM_CONFIG_DIR=\"${INIT_CWD:-$PWD}/config\" node dist/index.js",
+    "start": "node --import tsx src/index.ts",
     "init-admin": "node --import tsx src/scripts/init-admin.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

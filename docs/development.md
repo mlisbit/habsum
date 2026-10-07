@@ -39,28 +39,41 @@ You can also build the Stylelint workspace directly: `npm run build --workspace 
 
 Configuration: [`.stylelintrc.json`](../.stylelintrc.json) (repo root), [`src/apps/webapp/eslint.config.mjs`](../src/apps/webapp/eslint.config.mjs).
 
-### Runtime data directory
+### Runtime database
 
-The server stores all runtime state under a single user-controlled directory:
+The server stores all runtime state in one SQLite database. By default it uses:
 
-- **SQLite DB**: `<HABSUM_CONFIG_DIR>/habsum.db`
-- **User configs**: `<HABSUM_CONFIG_DIR>/users/*.yaml`
+- `./config/habsum.db`
 
-Set `HABSUM_CONFIG_DIR` to point at that directory when starting the server. New accounts start
-with an empty habit config.
-
-Example (repo root):
+Start the development server from the repository root with:
 
 ```bash
-mkdir -p data
+npm run dev:server
+```
 
-HABSUM_CONFIG_DIR="$(pwd)/data" npm run dev:server
+To override the SQLite file location, pass a path to the server script. Missing parent directories
+and the database itself are created automatically:
+
+```bash
+npm run dev:server -- --db="$(pwd)/data/custom.db"
+```
+
+For an isolated temporary database on macOS:
+
+```bash
+npm run dev:server -- --db="$(mktemp -d -t habsum)/habsum.db"
 ```
 
 ### Run both apps
 
 ```bash
-HABSUM_CONFIG_DIR="$(pwd)/data" npm run dev
+npm run dev
+```
+
+To run both apps with a custom database:
+
+```bash
+npm run dev -- --db="$(pwd)/data/custom.db"
 ```
 
 The webapp runs on `http://localhost:3000` and proxies `/api/*` to the server on port `3001`.

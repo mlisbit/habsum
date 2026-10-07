@@ -36,11 +36,6 @@ async function promptUsername(): Promise<string> {
 }
 
 async function main(): Promise<void> {
-  if (!process.env.HABSUM_CONFIG_DIR) {
-    console.error('HABSUM_CONFIG_DIR is required (e.g. /data on Fly.io or ./config locally).');
-    process.exit(1);
-  }
-
   configService.ensureConfigLayout();
 
   if (userAndAuthRepository.countAdmins() > 0) {

@@ -2,6 +2,11 @@ import type { Habit } from '@habsum/types/common/habit';
 import type { FeatureFlagPostRequest, FeatureFlagPostResponse } from '@habsum/feature-flags/types';
 import type { AdministratorGetResponse } from '@habsum/types/api-responses/administrator-get';
 import type {
+  AdministratorDatabaseDeleteRequest,
+  AdministratorDatabaseDeleteResponse,
+  AdministratorDatabaseResponse,
+} from '@habsum/types/api-responses/administrator-database';
+import type {
   AdministratorEmailSettingsPutRequest,
   AdministratorEmailSettingsResponse,
   AdministratorEmailTestRequest,
@@ -102,6 +107,11 @@ export type {
   UserPasswordChangeResponse,
 } from '@habsum/types/api-responses/user-password-change';
 export type { AdministratorGetResponse } from '@habsum/types/api-responses/administrator-get';
+export type {
+  AdministratorDatabaseDeleteRequest,
+  AdministratorDatabaseDeleteResponse,
+  AdministratorDatabaseResponse,
+} from '@habsum/types/api-responses/administrator-database';
 export type {
   AdministratorEmailSettingsPutRequest,
   AdministratorEmailSettingsResponse,
@@ -242,6 +252,40 @@ export async function loginWithOucToken(token: string) {
 
 export async function getAdministrator() {
   return getRequest<AdministratorGetResponse>('/administrator');
+}
+
+export async function getAdministratorDatabase() {
+  return getRequest<AdministratorDatabaseResponse>('/administrator/database');
+}
+
+export async function downloadAdministratorDatabase(): Promise<Blob> {
+  const res = await fetch(`${SERVER_URL}${API_PREFIX}/administrator/database/download`, {
+    credentials: 'include',
+    headers: {
+      'x-habsum-web-version': WEBAPP_VERSION,
+      ...oucSessionRequestHeaders(),
+    },
+  });
+  if (!res.ok) {
+    const bodyText = await res.text();
+    let message = res.statusText;
+    try {
+      const body = JSON.parse(bodyText) as { error?: string };
+      if (body.error) message = body.error;
+    } catch {
+      if (bodyText) message = bodyText;
+    }
+    throw new ApiRequestError(res.status, message);
+  }
+  return res.blob();
+}
+
+export async function deleteAdministratorDatabase(confirmation: string) {
+  const body: AdministratorDatabaseDeleteRequest = { confirmation };
+  return request<AdministratorDatabaseDeleteResponse>('/administrator/database', {
+    method: 'DELETE',
+    body: JSON.stringify(body),
+  });
 }
 
 export async function getAdministratorEmailSettings() {

@@ -17,13 +17,14 @@
     "src/apps/webapp"
   ],
   "scripts": {
-    "dev:server": "HABSUM_CONFIG_DIR=\"$PWD/config\" npm --workspace src/apps/server run dev",
+    "dev:server": "npm --workspace src/apps/server run dev --",
     "dev:webapp": "npm --workspace src/apps/webapp run dev",
     "dev:ports:free": "node scripts/kill-dev-ports.mjs 3000 3001",
-    "dev": "npm run dev:ports:free && npm-run-all --parallel dev:server dev:webapp",
-    "start": "HABSUM_CONFIG_DIR=\"$PWD/config\" npm --workspace src/apps/server run start",
+    "dev": "npm run dev:ports:free && npm-run-all --parallel \"dev:server -- {@}\" dev:webapp --",
+    "start": "npm --workspace src/apps/server run start",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "init-admin": "npm --workspace src/apps/server run init-admin --",
     "lint": "npm run lint:plugins:build && npm run lint:js && npm run lint:css:run",
     "lint:js": "npm run lint:js --workspace @habsum/webapp && npm run lint:js --workspace @habsum/ui && npm run lint:js --workspace @habsum/habit-render",
     "lint:css": "npm run stylelint-plugins:build && npm run lint:css:run",

@@ -1,6 +1,8 @@
 import request from 'supertest';
+import type { IncomingMessage } from 'node:http';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../../app.js';
+import { DatabaseRepository } from '../../repositories/database-repository.js';
 import { db } from '../../repositories/_private/db.js';
 import { UserAndAuthRepository } from '../../repositories/user-and-auth-repository.js';
 import { EmailService } from '../../services/email-service.js';
@@ -37,6 +39,12 @@ describe('/administrator', () => {
   it('only lets administrators read or update email settings', async () => {
     const app = createApp();
     await request(app).get('/administrator/email-settings').expect(401);
+    await request(app).get('/administrator/database').expect(401);
+    await request(app).get('/administrator/database/download').expect(401);
+    await request(app)
+      .delete('/administrator/database')
+      .send({ confirmation: 'delete' })
+      .expect(401);
 
     userAndAuthRepository.setUserPassword('email-settings-regular', 'secret');
     const session = userAndAuthRepository.createUserSession('email-settings-regular', 3600);
@@ -45,6 +53,59 @@ describe('/administrator', () => {
       .set('Cookie', `${SESSION_COOKIE_NAME}=${session}`)
       .send({ provider: 'resend', apiKey: 're_secret', fromEmail: 'sender@example.com' })
       .expect(403);
+  });
+
+  it('returns the configured database path to an administrator', async () => {
+    const { cookie } = administratorSession();
+    const response = await request(createApp())
+      .get('/administrator/database')
+      .set('Cookie', cookie)
+      .expect(200);
+
+    expect(response.body).toEqual({
+      path: expect.stringMatching(/habsum\.db$/),
+    });
+  });
+
+  it('downloads a complete SQLite database file', async () => {
+    const { cookie } = administratorSession();
+    const response = await request(createApp())
+      .get('/administrator/database/download')
+      .set('Cookie', cookie)
+      .buffer(true)
+      .parse((res: IncomingMessage, callback: (error: Error | null, body?: Buffer) => void) => {
+        const chunks: Buffer[] = [];
+        res.on('data', (chunk: Buffer) => chunks.push(chunk));
+        res.on('end', () => callback(null, Buffer.concat(chunks)));
+      })
+      .expect('Content-Type', /application\/vnd\.sqlite3/)
+      .expect('Content-Disposition', 'attachment; filename="habsum.db"')
+      .expect(200);
+
+    expect(Buffer.isBuffer(response.body)).toBe(true);
+    expect(response.body.subarray(0, 16).toString()).toBe('SQLite format 3\u0000');
+  });
+
+  it('requires exact typed confirmation before deleting the database', async () => {
+    const { cookie } = administratorSession();
+    const deleteDatabase = vi
+      .spyOn(DatabaseRepository.prototype, 'delete')
+      .mockImplementation(() => {});
+    const app = createApp();
+
+    await request(app)
+      .delete('/administrator/database')
+      .set('Cookie', cookie)
+      .send({ confirmation: 'DELETE' })
+      .expect(400, { error: 'confirmation must be exactly "delete"' });
+    expect(deleteDatabase).not.toHaveBeenCalled();
+
+    await request(app)
+      .delete('/administrator/database')
+      .set('Cookie', cookie)
+      .send({ confirmation: 'delete' })
+      .expect(200, { ok: true });
+    expect(deleteDatabase).toHaveBeenCalledOnce();
   });
 
   it('stores and returns Resend settings to an administrator', async () => {

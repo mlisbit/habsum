@@ -1,9 +1,8 @@
-import { join, resolve } from 'node:path';
+import { resolve } from 'node:path';
 
 export default function getDatabasePath(): string {
-  const configDir = process.env.HABSUM_CONFIG_DIR;
-  if (!configDir) {
-    throw new Error('[habsum] HABSUM_CONFIG_DIR is required (must point to your data directory)');
-  }
-  return join(resolve(configDir), 'habsum.db');
+  const launchDirectory = process.env.INIT_CWD ?? process.cwd();
+  const databasePath = process.env.HABSUM_DB_PATH?.trim();
+  if (databasePath) return resolve(launchDirectory, databasePath);
+  return resolve(launchDirectory, 'config', 'habsum.db');
 }

@@ -15,7 +15,7 @@ type UserPasswordRow = {
 };
 
 type ResetPasswordOptions = {
-  configDir?: string;
+  databasePath?: string;
   webappUrl?: string;
   readPassword?: (question: string) => Promise<string>;
   getToken?: () => string;
@@ -44,7 +44,7 @@ export default async function resetPassword(
     throw new Error('user is required.');
   }
 
-  const database = getHabsumDatabase(options.configDir, 'read-write');
+  const database = getHabsumDatabase(options.databasePath, 'read-write');
   try {
     const user = database
       .query<UserPasswordRow, [string]>('SELECT pin AS passwordHash FROM users WHERE username = ?')

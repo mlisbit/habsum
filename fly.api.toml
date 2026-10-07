@@ -6,11 +6,10 @@ primary_region = "sjc"
 
 [env]
   PORT = "3001"
-  HABSUM_CONFIG_DIR = "/data"
 
 [mounts]
   source = "habsum_data"
-  destination = "/data"
+  destination = "/app/src/apps/server/config"
 
 [http_service]
   internal_port = 3001

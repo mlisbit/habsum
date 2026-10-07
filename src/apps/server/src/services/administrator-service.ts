@@ -4,6 +4,12 @@ import type {
   AdministratorEmailTestRequest,
   AdministratorEmailTestResponse,
 } from '@habsum/types/api-responses/administrator-email-settings';
+import type {
+  AdministratorDatabaseDeleteRequest,
+  AdministratorDatabaseDeleteResponse,
+  AdministratorDatabaseResponse,
+} from '@habsum/types/api-responses/administrator-database';
+import { DatabaseRepository } from '../repositories/database-repository.js';
 import { EmailSettingsRepository } from '../repositories/email-settings-repository.js';
 import { UserAndAuthRepository } from '../repositories/user-and-auth-repository.js';
 import ServiceError from '../utils/classes/service-error.js';
@@ -15,7 +21,41 @@ export class AdministratorService {
     private readonly emailSettingsRepository = new EmailSettingsRepository(),
     private readonly emailService = new EmailService(),
     private readonly userAndAuthRepository = new UserAndAuthRepository(),
+    private readonly databaseRepository = new DatabaseRepository(),
   ) {}
+
+  getDatabase(): AdministratorDatabaseResponse {
+    return { path: this.databaseRepository.getPath() };
+  }
+
+  getDatabaseFile(): Buffer {
+    try {
+      return this.databaseRepository.getFile();
+    } catch (error) {
+      throw new ServiceError(
+        'internal',
+        error instanceof Error ? error.message : 'failed to read database',
+      );
+    }
+  }
+
+  deleteDatabase(
+    body: AdministratorDatabaseDeleteRequest | undefined,
+  ): AdministratorDatabaseDeleteResponse {
+    if (body?.confirmation !== 'delete') {
+      throw new ServiceError('bad_request', 'confirmation must be exactly "delete"');
+    }
+
+    try {
+      this.databaseRepository.delete();
+    } catch (error) {
+      throw new ServiceError(
+        'internal',
+        error instanceof Error ? error.message : 'failed to delete database',
+      );
+    }
+    return { ok: true };
+  }
 
   getEmailSettings(): AdministratorEmailSettingsResponse {
     const settings = this.emailSettingsRepository.getResendSettings();

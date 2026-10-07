@@ -1,19 +1,19 @@
 import { existsSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { resolve } from 'node:path';
 import { Database } from 'bun:sqlite';
 
 type DatabaseAccess = 'read-only' | 'read-write';
 
 export default function getHabsumDatabase(
-  configDir = process.env.HABSUM_CONFIG_DIR,
+  configuredDatabasePath = process.env.HABSUM_DB_PATH,
   access: DatabaseAccess = 'read-only',
 ): Database {
-  const trimmedConfigDir = configDir?.trim();
-  if (!trimmedConfigDir) {
-    throw new Error('HABSUM_CONFIG_DIR is required and must point to the Habsum data directory.');
+  const trimmedDatabasePath = configuredDatabasePath?.trim();
+  if (!trimmedDatabasePath) {
+    throw new Error('HABSUM_DB_PATH is required and must point to the Habsum database file.');
   }
 
-  const databasePath = join(resolve(trimmedConfigDir), 'habsum.db');
+  const databasePath = resolve(trimmedDatabasePath);
   if (!existsSync(databasePath)) {
     throw new Error(`Habsum database not found at ${databasePath}.`);
   }
