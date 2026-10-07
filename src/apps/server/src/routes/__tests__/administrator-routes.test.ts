@@ -114,21 +114,37 @@ describe('/administrator', () => {
       .put('/administrator/email-settings')
       .set('Cookie', cookie)
       .send({
-        provider: 'resend',
-        apiKey: 're_super_secret',
-        fromEmail: 'sender@example.com',
+        emailProvider: {
+          name: 'resend',
+          apiKey: 're_super_secret',
+          email: 'sender@example.com',
+        },
       })
       .expect(200);
 
     expect(response.body).toEqual({
-      provider: 'resend',
-      apiKey: 're_super_secret',
-      fromEmail: 'sender@example.com',
+      emailProvider: {
+        name: 'resend',
+        apiKey: 're_super_secret',
+        email: 'sender@example.com',
+      },
       updatedAt: expect.any(Number),
     });
     expect(
       db.prepare("SELECT api_key FROM email_settings WHERE provider = 'resend'").get(),
     ).toEqual({ api_key: 're_super_secret' });
+  });
+
+  it('omits the email provider when email is not configured', async () => {
+    const { cookie } = administratorSession();
+
+    const response = await request(createApp())
+      .get('/administrator/email-settings')
+      .set('Cookie', cookie)
+      .expect(200);
+
+    expect(response.body).toEqual({ updatedAt: null });
+    expect(response.body).not.toHaveProperty('emailProvider');
   });
 
   it('rejects display-name sender formats', async () => {
@@ -137,9 +153,11 @@ describe('/administrator', () => {
       .put('/administrator/email-settings')
       .set('Cookie', cookie)
       .send({
-        provider: 'resend',
-        apiKey: 're_secret',
-        fromEmail: 'Habsum <sender@example.com>',
+        emailProvider: {
+          name: 'resend',
+          apiKey: 're_secret',
+          email: 'Habsum <sender@example.com>',
+        },
       })
       .expect(400, { error: 'invalid email address' });
   });
@@ -150,16 +168,15 @@ describe('/administrator', () => {
     await request(app)
       .put('/administrator/email-settings')
       .set('Cookie', cookie)
-      .send({ provider: 'resend', apiKey: 're_keep_me', fromEmail: 'first@example.com' })
+      .send({
+        emailProvider: { name: 'resend', apiKey: 're_keep_me', email: 'first@example.com' },
+      })
       .expect(200);
     await request(app)
       .put('/administrator/email-settings')
       .set('Cookie', cookie)
-      .send({ provider: 'resend', apiKey: '', fromEmail: '' })
+      .send({ emailProvider: { name: 'resend' } })
       .expect(200, {
-        provider: 'resend',
-        apiKey: '',
-        fromEmail: '',
         updatedAt: null,
       });
 
@@ -175,13 +192,13 @@ describe('/administrator', () => {
     await request(app)
       .put('/administrator/email-settings')
       .set('Cookie', cookie)
-      .send({ provider: 'resend', apiKey: 're_secret', fromEmail: '' })
+      .send({ emailProvider: { name: 'resend', apiKey: 're_secret' } })
       .expect(400, { error: 'email address is required' });
 
     await request(app)
       .put('/administrator/email-settings')
       .set('Cookie', cookie)
-      .send({ provider: 'resend', apiKey: '', fromEmail: 'sender@example.com' })
+      .send({ emailProvider: { name: 'resend', email: 'sender@example.com' } })
       .expect(400, { error: 'Resend API key is required' });
   });
 
@@ -195,7 +212,9 @@ describe('/administrator', () => {
     const response = await request(createApp())
       .post('/administrator/email-settings/test')
       .set('Cookie', cookie)
-      .send({ provider: 'resend', apiKey: 're_draft', fromEmail: 'draft@example.com' })
+      .send({
+        emailProvider: { name: 'resend', apiKey: 're_draft', email: 'draft@example.com' },
+      })
       .expect(200);
 
     expect(response.body).toEqual({ ok: true, recipient: 'admin@example.com' });
@@ -216,7 +235,9 @@ describe('/administrator', () => {
     await request(createApp())
       .post('/administrator/email-settings/test')
       .set('Cookie', cookie)
-      .send({ provider: 'resend', apiKey: 're_draft', fromEmail: 'not-an-email' })
+      .send({
+        emailProvider: { name: 'resend', apiKey: 're_draft', email: 'not-an-email' },
+      })
       .expect(400, { error: 'invalid email address' });
   });
 });

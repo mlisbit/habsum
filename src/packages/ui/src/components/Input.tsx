@@ -50,6 +50,7 @@ export type InputProps = Omit<
   disabled?: boolean;
   className?: string;
   inputClassName?: string;
+  error?: string;
   applyAriaLabel?: string;
   revertAriaLabel?: string;
   /** When `type` is `number`, allow a leading minus for signed integers (e.g. manual delta). */
@@ -67,6 +68,7 @@ export type InputProps = Omit<
  * Use `size="small"` for compact fields (e.g. settings forms).
  */
 export function Input({
+  id,
   value = '',
   type: fieldType = 'string',
   onChange,
@@ -79,6 +81,7 @@ export function Input({
   size = 'medium',
   className,
   inputClassName,
+  error,
   applyAriaLabel,
   revertAriaLabel,
   allowNegative = false,
@@ -88,9 +91,12 @@ export function Input({
   autoComplete,
   inputMode,
   pattern,
+  'aria-describedby': ariaDescribedBy,
+  'aria-invalid': ariaInvalid,
   ...inputProps
 }: InputProps) {
-  const inputId = useId();
+  const generatedInputId = useId();
+  const inputId = id ?? generatedInputId;
   const inputRef = useRef<HTMLInputElement>(null);
 
   const computeSeedDraft = (v: string) =>
@@ -116,6 +122,8 @@ export function Input({
 
   const canSubmit = draft.trim() !== '';
   const showDismissButton = alwaysDismissable || (dismissable && canSubmit);
+  const errorId = `${inputId}-error`;
+  const describedBy = [ariaDescribedBy, error ? errorId : undefined].filter(Boolean).join(' ');
 
   useLayoutEffect(() => {
     if (!autoFocus) return;
@@ -137,6 +145,7 @@ export function Input({
     !submittable && 'input--not-submittable',
     showDismissButton && 'input--dismissable',
     rejectFlash && 'input--reject-flash',
+    error && 'input--error',
     className,
   ]
     .filter(Boolean)
@@ -222,52 +231,61 @@ export function Input({
   ) : null;
 
   return (
-    <label className={rootClass} htmlFor={inputId}>
-      {submittable ? dismissButton : null}
-      <input
-        {...inputProps}
-        ref={inputRef}
-        id={inputId}
-        type={isPasswordField ? 'password' : 'text'}
-        role={isNumberField ? 'spinbutton' : undefined}
-        placeholder={placeholder}
-        inputMode={isNumberField ? 'numeric' : inputMode}
-        pattern={isNumberField ? (allowNegative ? '-?[0-9]*' : '[0-9]*') : pattern}
-        autoComplete={
-          isNumberField
-            ? 'off'
-            : isPasswordField
-              ? (autoComplete ?? 'current-password')
-              : autoComplete
-        }
-        aria-valuemin={isNumberField && !allowNegative ? 0 : undefined}
-        aria-valuenow={
-          isNumberField && draft !== '' && Number.isFinite(Number(draft))
-            ? Number(draft)
-            : undefined
-        }
-        className={['input__input', inputClassName].filter(Boolean).join(' ')}
-        value={draft}
-        onChange={(e) => handleDraftChange(e.target.value)}
-        disabled={disabled}
-        onKeyDown={handleKeyDown}
-      />
-      {!submittable ? dismissButton : null}
-      {submittable && (
-        <Button
-          type="primary"
-          size="medium"
-          icon="arrowUp"
-          circle
-          disabled={disabled || !canSubmit}
-          className="input__cta"
-          aria-label={applyAriaLabel}
-          onClick={() => {
-            if (!canSubmit) return;
-            onSubmit?.(draft);
-          }}
+    <>
+      <label className={rootClass} htmlFor={inputId}>
+        {submittable ? dismissButton : null}
+        <input
+          {...inputProps}
+          ref={inputRef}
+          id={inputId}
+          type={isPasswordField ? 'password' : 'text'}
+          role={isNumberField ? 'spinbutton' : undefined}
+          placeholder={placeholder}
+          inputMode={isNumberField ? 'numeric' : inputMode}
+          pattern={isNumberField ? (allowNegative ? '-?[0-9]*' : '[0-9]*') : pattern}
+          autoComplete={
+            isNumberField
+              ? 'off'
+              : isPasswordField
+                ? (autoComplete ?? 'current-password')
+                : autoComplete
+          }
+          aria-describedby={describedBy || undefined}
+          aria-invalid={error ? true : ariaInvalid}
+          aria-valuemin={isNumberField && !allowNegative ? 0 : undefined}
+          aria-valuenow={
+            isNumberField && draft !== '' && Number.isFinite(Number(draft))
+              ? Number(draft)
+              : undefined
+          }
+          className={['input__input', inputClassName].filter(Boolean).join(' ')}
+          value={draft}
+          onChange={(e) => handleDraftChange(e.target.value)}
+          disabled={disabled}
+          onKeyDown={handleKeyDown}
         />
-      )}
-    </label>
+        {!submittable ? dismissButton : null}
+        {submittable && (
+          <Button
+            type="primary"
+            size="medium"
+            icon="arrowUp"
+            circle
+            disabled={disabled || !canSubmit}
+            className="input__cta"
+            aria-label={applyAriaLabel}
+            onClick={() => {
+              if (!canSubmit) return;
+              onSubmit?.(draft);
+            }}
+          />
+        )}
+      </label>
+      {error ? (
+        <span id={errorId} className="input__error text-b-s text-error" aria-live="polite">
+          {error}
+        </span>
+      ) : null}
+    </>
   );
 }

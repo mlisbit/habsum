@@ -170,6 +170,7 @@ export function ModalProvider({ children }: { children: ReactNode }) {
   const [active, setActive] = useState<ActiveModal | null>(null);
   const activeRef = useRef<ActiveModal | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
+  const pointerStartedOnBackdropRef = useRef(false);
   const genRef = useRef(0);
   const closeAfterHistoryPopRef = useRef<{
     modal: ActiveModal;
@@ -326,7 +327,22 @@ export function ModalProvider({ children }: { children: ReactNode }) {
     <ModalContext.Provider value={value}>
       {children}
       {active ? (
-        <div className="modal__backdrop" role="presentation" onClick={closeModal}>
+        <div
+          className="modal__backdrop"
+          role="presentation"
+          onPointerDown={(event) => {
+            pointerStartedOnBackdropRef.current = event.target === event.currentTarget;
+          }}
+          onPointerCancel={() => {
+            pointerStartedOnBackdropRef.current = false;
+          }}
+          onClick={(event) => {
+            const shouldClose =
+              pointerStartedOnBackdropRef.current && event.target === event.currentTarget;
+            pointerStartedOnBackdropRef.current = false;
+            if (shouldClose) closeModal();
+          }}
+        >
           <div
             ref={dialogRef}
             className={[

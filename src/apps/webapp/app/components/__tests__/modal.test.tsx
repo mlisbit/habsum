@@ -23,6 +23,24 @@ function ModalHarness({ afterClose }: { afterClose: () => void }) {
   );
 }
 
+function BackdropModalHarness() {
+  const { present } = useModal();
+
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        present({
+          history: false,
+          content: <p>Select this modal text</p>,
+        });
+      }}
+    >
+      Open backdrop test
+    </button>
+  );
+}
+
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
@@ -50,5 +68,29 @@ describe('ModalProvider', () => {
 
     expect(afterClose).toHaveBeenCalledOnce();
     expect(screen.queryByRole('button', { name: 'Edit widget' })).toBeNull();
+  });
+
+  it('only closes from a pointer interaction that starts on the backdrop', () => {
+    render(
+      <ModalProvider>
+        <BackdropModalHarness />
+      </ModalProvider>,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open backdrop test' }));
+    const dialog = screen.getByRole('dialog');
+    const backdrop = dialog.parentElement!;
+
+    fireEvent.pointerDown(dialog);
+    fireEvent.pointerUp(backdrop);
+    fireEvent.click(backdrop);
+
+    expect(screen.getByRole('dialog')).toBeTruthy();
+
+    fireEvent.pointerDown(backdrop);
+    fireEvent.pointerUp(backdrop);
+    fireEvent.click(backdrop);
+
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 });

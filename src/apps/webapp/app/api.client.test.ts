@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { getAdministrator } from './api.client';
+import { ApiRequestError, createUser, getAdministrator } from './api.client';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -29,5 +29,29 @@ describe('API GET request deduplication', () => {
 
     await getAdministrator();
     expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('API errors', () => {
+  it('preserves structured validation response bodies', async () => {
+    const body = {
+      request: { username: 'existing' },
+      errors: { username: 'Username is already in use.' },
+    };
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(
+        async () =>
+          new Response(JSON.stringify(body), {
+            status: 409,
+            headers: { 'content-type': 'application/json' },
+          }),
+      ),
+    );
+
+    await expect(createUser({ username: 'existing' })).rejects.toMatchObject({
+      status: 409,
+      body,
+    } satisfies Partial<ApiRequestError>);
   });
 });

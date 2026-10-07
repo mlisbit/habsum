@@ -59,27 +59,34 @@ export class AdministratorService {
 
   getEmailSettings(): AdministratorEmailSettingsResponse {
     const settings = this.emailSettingsRepository.getResendSettings();
+    if (!settings) return { updatedAt: null };
     return {
-      provider: 'resend',
-      apiKey: settings?.apiKey ?? '',
-      fromEmail: settings?.fromEmail ?? '',
-      updatedAt: settings?.updatedAt ?? null,
+      emailProvider: {
+        name: 'resend',
+        ...(settings.apiKey ? { apiKey: settings.apiKey } : {}),
+        ...(settings.fromEmail ? { email: settings.fromEmail } : {}),
+      },
+      updatedAt: settings.updatedAt,
     };
   }
 
   updateEmailSettings(body: AdministratorEmailSettingsPutRequest | undefined) {
-    if (body?.provider !== 'resend') {
+    if (body?.emailProvider == null) {
+      this.emailSettingsRepository.deleteResendSettings();
+      return this.getEmailSettings();
+    }
+    if (body.emailProvider.name !== 'resend') {
       throw new ServiceError('bad_request', 'provider must be resend');
     }
-    if (typeof body.apiKey !== 'string') {
+    if (body.emailProvider.apiKey !== undefined && typeof body.emailProvider.apiKey !== 'string') {
       throw new ServiceError('bad_request', 'apiKey must be a string');
     }
-    if (typeof body.fromEmail !== 'string') {
-      throw new ServiceError('bad_request', 'fromEmail must be a string');
+    if (body.emailProvider.email !== undefined && typeof body.emailProvider.email !== 'string') {
+      throw new ServiceError('bad_request', 'email must be a string');
     }
 
-    const apiKey = body.apiKey.trim();
-    const fromEmail = body.fromEmail.trim();
+    const apiKey = body.emailProvider.apiKey?.trim() ?? '';
+    const fromEmail = body.emailProvider.email?.trim() ?? '';
     if (!apiKey && !fromEmail) {
       this.emailSettingsRepository.deleteResendSettings();
       return this.getEmailSettings();
@@ -110,13 +117,16 @@ export class AdministratorService {
     if (!isPlausibleEmail(recipient)) {
       throw new ServiceError('bad_request', 'your account does not have a valid email address');
     }
-    if (body?.provider !== 'resend') {
+    if (body?.emailProvider?.name !== 'resend') {
       throw new ServiceError('bad_request', 'provider must be resend');
     }
-    if (typeof body.apiKey !== 'string' || !body.apiKey.trim()) {
+    if (typeof body.emailProvider.apiKey !== 'string' || !body.emailProvider.apiKey.trim()) {
       throw new ServiceError('bad_request', 'Resend API key is required');
     }
-    if (typeof body.fromEmail !== 'string' || !isPlausibleEmail(body.fromEmail.trim())) {
+    if (
+      typeof body.emailProvider.email !== 'string' ||
+      !isPlausibleEmail(body.emailProvider.email.trim())
+    ) {
       throw new ServiceError('bad_request', 'invalid email address');
     }
 
@@ -129,7 +139,10 @@ export class AdministratorService {
           html: '<p>This test email was sent from the Habsum Administrator settings page.</p>',
           text: 'This test email was sent from the Habsum Administrator settings page.',
         },
-        { apiKey: body.apiKey.trim(), fromEmail: body.fromEmail.trim() },
+        {
+          apiKey: body.emailProvider.apiKey.trim(),
+          fromEmail: body.emailProvider.email.trim(),
+        },
       );
     } catch (error) {
       throw new ServiceError(

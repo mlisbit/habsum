@@ -91,6 +91,12 @@
   min-inline-size: 0;
 }
 
+.developer-page__add-user-field {
+  display: flex;
+  flex-direction: column;
+  gap: functions.spacing(1);
+}
+
 .developer-page__credentials {
   margin: 0;
   display: flex;

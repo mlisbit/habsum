@@ -38,18 +38,28 @@ export type ListUserItem = {
 
 export type ListUsersResponse = { users: ListUserItem[] };
 
-/** POST /users — admin creates an account from email (server assigns username + password). */
+/** POST /users — admin creates an account with a username, email, or both. */
 export type CreateUserRequest = {
-  email: string;
-  displayName?: string | null;
-  sendInviteEmail?: boolean;
+  displayName?: string;
+  email?: string;
+  username?: string;
+};
+
+export type CreateUserField = keyof CreateUserRequest;
+
+export type CreateUserFieldErrors = Partial<Record<CreateUserField, string>>;
+
+export type CreateUserValidationResult = {
+  request: CreateUserRequest;
+  errors: CreateUserFieldErrors;
 };
 
 export type CreateUserResponse = {
   ok: true;
   user: string;
   password: string;
-  inviteEmailSent?: boolean;
+  email?: string;
+  registrationUrl: string;
 };
 
 /** PATCH /users?name=… — admin generates a new temporary login password. */

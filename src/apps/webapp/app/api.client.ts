@@ -22,6 +22,11 @@ import type {
 } from '@habsum/types/api-responses/initial-user-post';
 import type { UsersPatchRequest } from '@habsum/types/api-responses/users-patch';
 import type {
+  UserInviteEmailPostRequest,
+  UserInviteEmailPostResponse,
+} from '@habsum/types/api-responses/user-invite-email-post';
+import type { UsernameAvailabilityGetResponse } from '@habsum/types/api-responses/username-availability-get';
+import type {
   UserPasswordChangeRequest,
   UserPasswordChangeResponse,
 } from '@habsum/types/api-responses/user-password-change';
@@ -135,11 +140,13 @@ const pendingGetRequests = new Map<string, Promise<unknown>>();
 
 export class ApiRequestError extends Error {
   readonly status: number;
+  readonly body: unknown;
 
-  constructor(status: number, message: string) {
+  constructor(status: number, message: string, body?: unknown) {
     super(message);
     this.name = 'ApiRequestError';
     this.status = status;
+    this.body = body;
   }
 }
 
@@ -175,13 +182,22 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const bodyText = await res.text();
   if (!res.ok) {
     let message = res.statusText;
+    let body: unknown;
     try {
-      const j = JSON.parse(bodyText) as { error?: string };
-      if (j.error) message = j.error;
+      body = JSON.parse(bodyText) as unknown;
+      if (
+        typeof body === 'object' &&
+        body !== null &&
+        'error' in body &&
+        typeof body.error === 'string'
+      ) {
+        message = body.error;
+      }
     } catch {
+      body = bodyText || undefined;
       if (bodyText) message = bodyText;
     }
-    throw new ApiRequestError(res.status, message);
+    throw new ApiRequestError(res.status, message, body);
   }
   return (bodyText ? (JSON.parse(bodyText) as T) : ({} as T)) as T;
 }
@@ -324,18 +340,22 @@ export async function updateFeatureFlag(body: FeatureFlagPostRequest) {
   });
 }
 
-export async function createUser(
-  email: string,
-  options?: { displayName?: string; sendInviteEmail?: boolean },
-) {
-  const body: CreateUserRequest = { email };
-  if (options?.displayName !== undefined) {
-    body.displayName = options.displayName.trim() || null;
-  }
-  if (options?.sendInviteEmail) {
-    body.sendInviteEmail = true;
-  }
+export async function createUser(body: CreateUserRequest) {
   return request<CreateUserResponse>('/users', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+export async function getUsernameAvailability(username: string) {
+  return getRequest<UsernameAvailabilityGetResponse>(
+    `/users/username-availability?username=${encodeURIComponent(username)}`,
+  );
+}
+
+export async function sendUserInviteEmail(user: string, registrationUrl: string) {
+  const body: UserInviteEmailPostRequest = { registrationUrl };
+  return request<UserInviteEmailPostResponse>(`/users/${encodeURIComponent(user)}/invite-email`, {
     method: 'POST',
     body: JSON.stringify(body),
   });

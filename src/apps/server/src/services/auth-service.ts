@@ -397,17 +397,45 @@ export class AuthService {
     if (sessionId) this.userAndAuthRepository.revokeUserSession(sessionId);
   }
 
-  async sendInviteEmail(user: string, email: string, displayName: string): Promise<void> {
-    const { token, id: tokenId } = this.userAndAuthRepository.issuePasswordResetToken(
-      user,
-      'invite',
-    );
-    try {
-      await this.sendInviteSetupEmail(email, displayName, token);
-    } catch (e) {
-      this.userAndAuthRepository.consumePasswordResetToken(tokenId);
-      throw e;
+  createInviteRegistrationUrl(user: string): string {
+    const { token } = this.userAndAuthRepository.issuePasswordResetToken(user, 'invite');
+    return getPasswordResetUrl(token, process.env.HABSUM_WEBAPP_URL);
+  }
+
+  async sendInviteEmail(user: string, registrationUrl: unknown) {
+    if (typeof registrationUrl !== 'string') {
+      throw new ServiceError('bad_request', 'registrationUrl is required');
     }
+
+    let token: string | null;
+    try {
+      token = new URL(registrationUrl).searchParams.get('token');
+    } catch {
+      throw new ServiceError('bad_request', 'invalid registration URL');
+    }
+    if (!token) throw new ServiceError('bad_request', 'invalid registration URL');
+
+    const invite = this.userAndAuthRepository.lookupValidPasswordResetToken(token);
+    if (!invite || invite.purpose !== 'invite' || invite.userId !== user) {
+      throw new ServiceError('bad_request', 'invalid or expired registration URL');
+    }
+
+    const profile = this.userAndAuthRepository.getUserProfile(user);
+    const email = profile.email?.trim() ?? '';
+    if (!isPlausibleEmail(email)) {
+      throw new ServiceError('bad_request', 'user does not have a valid email address');
+    }
+
+    try {
+      await this.sendInviteSetupEmail(email, profile.displayName?.trim() || user, token);
+    } catch (error) {
+      throw new ServiceError(
+        'unavailable',
+        error instanceof Error ? error.message : 'failed to send invite email',
+      );
+    }
+
+    return { ok: true as const, recipient: email };
   }
 
   private resolveUsernameForPasswordReset(email: string): string | null {

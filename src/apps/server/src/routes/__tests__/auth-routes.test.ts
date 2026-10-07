@@ -44,12 +44,12 @@ describe('POST /auth/signup', () => {
       .send({ email: 'self-signup@example.com', password: 'chosen-secret' })
       .expect(201);
 
-    expect(response.body).toEqual({ ok: true, user: 'self-signup' });
+    expect(response.body).toEqual({ ok: true, user: 'selfsignup' });
     const sessionCookie = response.headers['set-cookie']?.[0]?.split(';')[0];
     expect(sessionCookie).toMatch(/^habsum_sid=/);
-    expect(configService.loadUserConfig('self-signup')?.habits).toEqual([]);
-    expect(userAndAuthRepository.isUserPasswordValid('self-signup', 'chosen-secret')).toBe(true);
-    expect(userAndAuthRepository.getUserProfile('self-signup').email).toBe(
+    expect(configService.loadUserConfig('selfsignup')?.habits).toEqual([]);
+    expect(userAndAuthRepository.isUserPasswordValid('selfsignup', 'chosen-secret')).toBe(true);
+    expect(userAndAuthRepository.getUserProfile('selfsignup').email).toBe(
       'self-signup@example.com',
     );
 
@@ -58,7 +58,7 @@ describe('POST /auth/signup', () => {
       .set('Cookie', sessionCookie!)
       .expect(200);
     expect(meResponse.body).toMatchObject({
-      username: 'self-signup',
+      username: 'selfsignup',
       email: 'self-signup@example.com',
     });
   });

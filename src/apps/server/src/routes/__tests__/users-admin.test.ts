@@ -4,8 +4,8 @@ import { ProductEntitlement } from '@habsum/types/common/entitlement';
 import { yamlString } from '@habsum/types/common/misc';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../../app.js';
-import { AuthService } from '../../services/auth-service.js';
 import { ConfigService } from '../../services/config-service.js';
+import { EmailService } from '../../services/email-service.js';
 import { HabitRepository } from '../../repositories/habit-repository.js';
 import { UserAndAuthRepository } from '../../repositories/user-and-auth-repository.js';
 import { SESSION_COOKIE_NAME } from '../../utils/cookie-session-utils.js';
@@ -58,35 +58,125 @@ describe('POST /users', () => {
     expect(configService.loadUserConfig(res.body.user)?.habits).toEqual([]);
   });
 
-  it('stores display name and sends invite email when requested', async () => {
+  it('creates a user from an email and returns temporary registration details', async () => {
     const app = createApp();
-    const sendInviteEmail = vi.spyOn(AuthService.prototype, 'sendInviteEmail').mockResolvedValue();
 
     const res = await request(app).post('/users').set('Cookie', adminSessionCookie()).send({
       email: 'invited@example.com',
-      displayName: 'Alex',
-      sendInviteEmail: true,
+      displayName: 'Invited Person',
     });
 
     expect(res.status).toBe(201);
     expect(res.body).toMatchObject({
       ok: true,
       user: expect.any(String),
-      inviteEmailSent: true,
+      email: 'invited@example.com',
+      password: expect.any(String),
+      registrationUrl: expect.stringMatching(/^http:\/\/localhost:3000\/reset-password\?token=/),
     });
-    expect(sendInviteEmail).toHaveBeenCalledWith(res.body.user, 'invited@example.com', 'Alex');
+    expect(userAndAuthRepository.getUserProfile(res.body.user)).toMatchObject({
+      displayName: 'Invited Person',
+      email: 'invited@example.com',
+    });
   });
 
-  it('requires display name to send invite email', async () => {
+  it('creates a user from an explicit username', async () => {
     const app = createApp();
 
-    const res = await request(app).post('/users').set('Cookie', adminSessionCookie()).send({
-      email: 'missing-name@example.com',
-      sendInviteEmail: true,
-    });
+    const res = await request(app)
+      .post('/users')
+      .set('Cookie', adminSessionCookie())
+      .send({ username: 'invitedbyname' })
+      .expect(201);
 
-    expect(res.status).toBe(400);
-    expect(res.body).toEqual({ error: 'displayName is required to send invite email' });
+    expect(res.body).toMatchObject({
+      user: 'invitedbyname',
+      password: expect.any(String),
+      registrationUrl: expect.stringContaining('/reset-password?token='),
+    });
+    expect(res.body).not.toHaveProperty('email');
+  });
+
+  it('emails the returned registration URL to a newly created user', async () => {
+    const app = createApp();
+    const sendEmail = vi.spyOn(EmailService.prototype, 'sendEmail').mockResolvedValue();
+    const cookie = adminSessionCookie();
+    const created = await request(app)
+      .post('/users')
+      .set('Cookie', cookie)
+      .send({ email: 'email-invite@example.com' })
+      .expect(201);
+
+    await request(app)
+      .post(`/users/${created.body.user}/invite-email`)
+      .set('Cookie', cookie)
+      .send({ registrationUrl: created.body.registrationUrl })
+      .expect(200, { ok: true, recipient: 'email-invite@example.com' });
+
+    expect(sendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({
+        deliveryName: 'invite email',
+        to: 'email-invite@example.com',
+      }),
+    );
+  });
+
+  it('requires at least one email or username and accepts both', async () => {
+    const app = createApp();
+    const cookie = adminSessionCookie();
+
+    await request(app)
+      .post('/users')
+      .set('Cookie', cookie)
+      .send({})
+      .expect(400, {
+        request: {},
+        errors: { email: 'Enter an email or username.' },
+      });
+    await request(app)
+      .post('/users')
+      .set('Cookie', cookie)
+      .send({ email: 'invalid' })
+      .expect(400, {
+        request: { email: 'invalid' },
+        errors: { email: 'Enter a valid email address.' },
+      });
+    const both = await request(app)
+      .post('/users')
+      .set('Cookie', cookie)
+      .send({ email: 'both@example.com', username: 'both' })
+      .expect(201);
+    expect(both.body).toMatchObject({ user: 'both', email: 'both@example.com' });
+    expect(userAndAuthRepository.getUserProfile('both').email).toBe('both@example.com');
+    await request(app)
+      .post('/users')
+      .set('Cookie', cookie)
+      .send({ username: 'both' })
+      .expect(409, {
+        request: { username: 'both' },
+        errors: { username: 'Username is already in use.' },
+      });
+    await request(app)
+      .post('/users')
+      .set('Cookie', cookie)
+      .send({ username: 'validname', displayName: 123 })
+      .expect(400, {
+        request: { username: 'validname' },
+        errors: { displayName: 'Display name must be a string.' },
+      });
+  });
+
+  it('rejects usernames containing special characters with a field validation error', async () => {
+    const app = createApp();
+
+    await request(app)
+      .post('/users')
+      .set('Cookie', adminSessionCookie())
+      .send({ username: 'invited-user' })
+      .expect(400, {
+        request: { username: 'invited-user' },
+        errors: { username: 'Username can only contain letters and numbers.' },
+      });
   });
 });
 
@@ -170,5 +260,31 @@ describe('GET /users', () => {
       eventCount: 2,
       entitlements: [ProductEntitlement.BETA_TESTER],
     });
+  });
+});
+
+describe('GET /users/username-availability', () => {
+  it('checks configured and available usernames for administrators', async () => {
+    const app = createApp();
+
+    await request(app).get('/users/username-availability?username=availablename').expect(401);
+
+    const cookie = adminSessionCookie();
+    configService.createEmptyUserConfig('existingavailabilityuser');
+    await request(app)
+      .get('/users/username-availability?username=existingavailabilityuser')
+      .set('Cookie', cookie)
+      .expect(200, { available: false });
+    await request(app)
+      .get('/users/username-availability?username=availablename')
+      .set('Cookie', cookie)
+      .expect(200, { available: true });
+    await request(app)
+      .get('/users/username-availability?username=invalid-name')
+      .set('Cookie', cookie)
+      .expect(400, {
+        request: { username: 'invalid-name' },
+        errors: { username: 'Username can only contain letters and numbers.' },
+      });
   });
 });

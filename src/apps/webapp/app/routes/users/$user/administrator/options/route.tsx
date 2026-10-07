@@ -75,8 +75,8 @@ export default function AdministratorOptions() {
       .then((settings) => {
         if (cancelled) return;
         setEmailSettings(settings);
-        setResendFromEmail(settings.fromEmail);
-        setResendApiKey(settings.apiKey);
+        setResendFromEmail(settings.emailProvider?.email ?? '');
+        setResendApiKey(settings.emailProvider?.apiKey ?? '');
       })
       .catch((error) => {
         if (cancelled) return;
@@ -91,8 +91,9 @@ export default function AdministratorOptions() {
   const isEmailSettingsDirty = useMemo(() => {
     if (!emailSettings) return false;
     return (
-      resendApiKey.trim() !== emailSettings.apiKey ||
-      resendFromEmail.trim().toLowerCase() !== emailSettings.fromEmail.toLowerCase()
+      resendApiKey.trim() !== (emailSettings.emailProvider?.apiKey ?? '') ||
+      resendFromEmail.trim().toLowerCase() !==
+        (emailSettings.emailProvider?.email ?? '').toLowerCase()
     );
   }, [emailSettings, resendApiKey, resendFromEmail]);
 
@@ -104,8 +105,8 @@ export default function AdministratorOptions() {
 
   const revertDrafts = useCallback(() => {
     if (emailSettings) {
-      setResendApiKey(emailSettings.apiKey);
-      setResendFromEmail(emailSettings.fromEmail);
+      setResendApiKey(emailSettings.emailProvider?.apiKey ?? '');
+      setResendFromEmail(emailSettings.emailProvider?.email ?? '');
     }
     setDraftFeatureFlagValues(getFeatureFlagValues(featureFlags));
     setEmailSettingsError(null);
@@ -170,13 +171,15 @@ export default function AdministratorOptions() {
     try {
       if (isEmailSettingsDirty) {
         const settings = await updateAdministratorEmailSettings({
-          provider: 'resend',
-          fromEmail: resendFromEmail.trim(),
-          apiKey: resendApiKey.trim(),
+          emailProvider: {
+            name: 'resend',
+            email: resendFromEmail.trim() || undefined,
+            apiKey: resendApiKey.trim() || undefined,
+          },
         });
         setEmailSettings(settings);
-        setResendFromEmail(settings.fromEmail);
-        setResendApiKey(settings.apiKey);
+        setResendFromEmail(settings.emailProvider?.email ?? '');
+        setResendApiKey(settings.emailProvider?.apiKey ?? '');
       }
 
       await Promise.all(
@@ -207,9 +210,11 @@ export default function AdministratorOptions() {
     setSendingTestEmail(true);
     try {
       const response = await sendAdministratorTestEmail({
-        provider: 'resend',
-        apiKey: resendApiKey.trim(),
-        fromEmail: resendFromEmail.trim(),
+        emailProvider: {
+          name: 'resend',
+          apiKey: resendApiKey.trim(),
+          email: resendFromEmail.trim(),
+        },
       });
       showToast({ type: 'success', message: `Test email sent to ${response.recipient}.` });
     } catch (error) {

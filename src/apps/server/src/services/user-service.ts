@@ -1,6 +1,7 @@
 // Domain operations for user profiles, security, configuration, and data management.
 import { ProductEntitlement } from '@habsum/types/common/entitlement';
 import { accountCreatedAtToApi } from '@habsum/types/common/day';
+import hasOnlyUsernameCharacters from '../utils/has-only-username-characters.js';
 import isForbiddenUsername from '../utils/is-forbidden-username.js';
 import {
   isPlausibleEmail,
@@ -41,7 +42,7 @@ const MAX_USERNAME_LEN = 64;
 
 function usernameBaseFromEmail(email: string): string {
   const local = email.split('@')[0]?.trim().toLowerCase() ?? '';
-  let base = local.replace(/[^a-z0-9._-]+/g, '').replace(/^\.+|\.+$/g, '');
+  let base = local.replace(/[^a-z0-9]+/g, '');
   if (!base) base = 'user';
   if (base.length > MAX_USERNAME_LEN) base = base.slice(0, MAX_USERNAME_LEN);
   return base;
@@ -259,6 +260,7 @@ export class UserService {
 
   private isUsernameAvailable(candidate: string, taken: Set<string>): boolean {
     if (!isSafeConfigUserId(candidate)) return false;
+    if (!hasOnlyUsernameCharacters(candidate)) return false;
     if (isForbiddenUsername(candidate)) return false;
     if (taken.has(candidate)) return false;
     return true;

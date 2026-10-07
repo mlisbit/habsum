@@ -1,20 +1,24 @@
+export type AdministratorEmailProvider = {
+  name: 'resend';
+  apiKey?: string;
+  email?: string;
+};
+
 export type AdministratorEmailSettingsResponse = {
-  provider: 'resend';
-  apiKey: string;
-  fromEmail: string;
+  emailProvider?: AdministratorEmailProvider;
   updatedAt: number | null;
 };
 
 export type AdministratorEmailSettingsPutRequest = {
-  provider: 'resend';
-  fromEmail: string;
-  apiKey: string;
+  emailProvider?: AdministratorEmailProvider;
 };
 
 export type AdministratorEmailTestRequest = {
-  provider: 'resend';
-  apiKey: string;
-  fromEmail: string;
+  emailProvider: {
+    name: 'resend';
+    apiKey: string;
+    email: string;
+  };
 };
 
 export type AdministratorEmailTestResponse = {

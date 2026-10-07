@@ -16,10 +16,20 @@ usersRouter.delete('/users/:user', requireMatchingRouteUser, usersController.del
 // Used by the administrator page to list users and their account metadata.
 usersRouter.get('/users', requireAdmin, usersController.getUsers);
 
+// Used by the create-user modal to validate a username before submission.
+usersRouter.get(
+  '/users/username-availability',
+  requireAdmin,
+  usersController.getUsernameAvailability,
+);
+
 // Used by administrators to open an operate-under session for a selected user.
 usersRouter.post('/users/ouc', requireAdmin, usersController.postUsersOuc);
 
-// Used by the administrator page to create a user and optionally send an invitation.
+// Used by administrators to email a newly created user's registration link.
+usersRouter.post('/users/:user/invite-email', requireAdmin, usersController.postUserInviteEmail);
+
+// Used by the administrator page to create a user from a username, email, or both.
 usersRouter.post('/users', requireAdmin, usersController.postUsers);
 
 // Used by the administrator page to issue a temporary password for a user.

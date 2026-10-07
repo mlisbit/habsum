@@ -5,8 +5,9 @@ import {
   adminDeleteUser,
   adminResetUserPassword,
   createOucSession,
-  createUser,
+  getAdministratorEmailSettings,
   listUsers,
+  type AdministratorEmailSettingsResponse,
 } from '~/api.client';
 import { openOucWindow } from '~/ouc.client';
 import { SettingsPageCard } from '~/components/SettingsPageCard';
@@ -14,10 +15,12 @@ import { Button } from '@habsum/ui/components/Button';
 import { Hoverable } from '@habsum/ui/components/Hoverable';
 import type { IconName } from '@habsum/ui/components/Icon';
 import { InfoText } from '@habsum/ui/components/InfoText';
-import { Input } from '@habsum/ui/components/Input';
 import { Loader } from '@habsum/ui/components/Loader';
 import { ModalBody, ModalFooter, ModalHeader, useModal } from '@habsum/ui/contexts/modal';
 import { useToast } from '@habsum/ui/contexts/toast';
+import CreateUserModal from '~/components/admin/users/create-user-modal/CreateUserModal';
+import SuccessfulUserCreationModal from '~/components/admin/users/create-user-modal/SuccessfulUserCreationModal';
+import UserCredentialsModal from '~/components/admin/users/create-user-modal/UserCredentialsModal';
 
 function formatUnixTimeLocal(unixSeconds: number | null): string {
   if (unixSeconds == null) return 'Never';
@@ -91,224 +94,6 @@ function UserDetailsModal({ user, onClose }: { user: ListUserItem; onClose: () =
       </ModalBody>
       <ModalFooter>
         <Button type="primary" size="medium" text="Done" onClick={onClose} />
-      </ModalFooter>
-    </>
-  );
-}
-
-function isPlausibleEmail(value: string): boolean {
-  const t = value.trim().toLowerCase();
-  if (t === '') return false;
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(t);
-}
-
-type CreatedUserCredentials = {
-  user: string;
-  password: string;
-  email: string;
-  displayName?: string;
-  inviteEmailSent?: boolean;
-};
-
-type InviteUserModalProps = {
-  onCreated: (credentials: CreatedUserCredentials) => void;
-  onClose: () => void;
-};
-
-type UserCredentialsModalProps = {
-  title: string;
-  description: string;
-  user: string;
-  password: string;
-  email?: string;
-  onClose: () => void;
-};
-
-function UserCredentialsModal({
-  title,
-  description,
-  user,
-  password,
-  email,
-  onClose,
-}: UserCredentialsModalProps) {
-  return (
-    <>
-      <ModalHeader>{title}</ModalHeader>
-      <ModalBody className="developer-page__add-user-modal">
-        <p className="text-light text-b-m">{description}</p>
-        <dl className="developer-page__credentials">
-          {email ? (
-            <div className="developer-page__credentials-row">
-              <dt className="developer-page__credentials-term text-b-m text-light">Email</dt>
-              <dd className="developer-page__credentials-value text-b-m text-bold">{email}</dd>
-            </div>
-          ) : null}
-          <div className="developer-page__credentials-row">
-            <dt className="developer-page__credentials-term text-b-m text-light">Username</dt>
-            <dd className="developer-page__credentials-value text-b-m text-bold">{user}</dd>
-          </div>
-          <div className="developer-page__credentials-row">
-            <dt className="developer-page__credentials-term text-b-m text-light">
-              Temporary password
-            </dt>
-            <dd className="developer-page__credentials-value text-b-m text-bold developer-page__credentials-password">
-              {password}
-            </dd>
-          </div>
-        </dl>
-      </ModalBody>
-      <ModalFooter>
-        <Button type="primary" size="medium" text="Done" onClick={onClose} />
-      </ModalFooter>
-    </>
-  );
-}
-
-function UserCreatedCredentialsModal({
-  user,
-  password,
-  email,
-  onClose,
-}: CreatedUserCredentials & { onClose: () => void }) {
-  return (
-    <UserCredentialsModal
-      title="Account created"
-      description="Share these login details with the user."
-      user={user}
-      password={password}
-      email={email}
-      onClose={onClose}
-    />
-  );
-}
-
-function UserInvitedModal({
-  email,
-  displayName,
-  onClose,
-}: {
-  email: string;
-  displayName: string;
-  onClose: () => void;
-}) {
-  return (
-    <>
-      <ModalHeader>Invite sent</ModalHeader>
-      <ModalBody className="developer-page__add-user-modal">
-        <p className="text-light text-b-m">
-          An invite email was sent to {email} for {displayName}. They can set their password from
-          the link in that message.
-        </p>
-      </ModalBody>
-      <ModalFooter>
-        <Button type="primary" size="medium" text="Done" onClick={onClose} />
-      </ModalFooter>
-    </>
-  );
-}
-
-function InviteUserModal({ onCreated, onClose }: InviteUserModalProps) {
-  const [displayName, setDisplayName] = useState('');
-  const [email, setEmail] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const trimmedEmail = email.trim();
-  const trimmedDisplayName = displayName.trim();
-  const canCreate = isPlausibleEmail(trimmedEmail);
-  const canSendInvite = canCreate && trimmedDisplayName !== '';
-
-  const submit = async (sendInviteEmail: boolean) => {
-    const nextEmail = trimmedEmail.toLowerCase();
-    if (!isPlausibleEmail(nextEmail) || isSubmitting) return;
-    if (sendInviteEmail && trimmedDisplayName === '') return;
-
-    setError(null);
-    setIsSubmitting(true);
-    try {
-      const res = await createUser(nextEmail, {
-        displayName: trimmedDisplayName || undefined,
-        sendInviteEmail,
-      });
-      onCreated({
-        user: res.user,
-        password: res.password,
-        email: nextEmail,
-        displayName: trimmedDisplayName || undefined,
-        inviteEmailSent: res.inviteEmailSent,
-      });
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'failed to create user');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  return (
-    <>
-      <ModalHeader>Invite user</ModalHeader>
-      <ModalBody className="developer-page__add-user-modal">
-        <p className="text-light text-b-m">
-          Enter a display name and email address. Use Create to share a temporary password manually,
-          or Send email to deliver a setup link.
-        </p>
-        <Input
-          size="small"
-          className="developer-page__add-user-input"
-          placeholder="Display name"
-          disabled={isSubmitting}
-          dismissable
-          submittable={false}
-          autoCapitalize="words"
-          autoCorrect="off"
-          spellCheck={false}
-          autoComplete="name"
-          onChange={setDisplayName}
-        />
-        <Input
-          size="small"
-          className="developer-page__add-user-input"
-          placeholder="Email"
-          disabled={isSubmitting}
-          dismissable
-          submittable={false}
-          autoCapitalize="none"
-          autoCorrect="off"
-          spellCheck={false}
-          autoComplete="email"
-          inputMode="email"
-          onChange={setEmail}
-        />
-        {error ? (
-          <InfoText size="small" variant="error">
-            {error}
-          </InfoText>
-        ) : null}
-      </ModalBody>
-      <ModalFooter>
-        <Button
-          type="secondary"
-          size="medium"
-          text="Cancel"
-          disabled={isSubmitting}
-          className="mr-2"
-          onClick={onClose}
-        />
-        <Button
-          type="secondary"
-          size="medium"
-          text={isSubmitting ? 'Creating…' : 'Create'}
-          disabled={isSubmitting || !canCreate}
-          className="mr-2"
-          onClick={() => void submit(false)}
-        />
-        <Button
-          type="primary"
-          size="medium"
-          text={isSubmitting ? 'Sending…' : 'Send email'}
-          disabled={isSubmitting || !canSendInvite}
-          onClick={() => void submit(true)}
-        />
       </ModalFooter>
     </>
   );
@@ -498,6 +283,9 @@ function UserRowIconAction({ tooltip, icon, ariaLabel, onClick }: UserRowIconAct
 export default function AdministratorUsers() {
   const { user } = useParams();
   const [users, setUsers] = useState<ListUserItem[] | null>(null);
+  const [emailSettings, setEmailSettings] = useState<AdministratorEmailSettingsResponse | null>(
+    null,
+  );
   const [usersError, setUsersError] = useState<string | null>(null);
   const { present, closeModal } = useModal();
   const { showToast } = useToast();
@@ -505,10 +293,15 @@ export default function AdministratorUsers() {
   const loadUsers = useCallback(async () => {
     setUsersError(null);
     try {
-      const res = await listUsers();
-      setUsers(res.users);
+      const [usersResponse, emailSettingsResponse] = await Promise.all([
+        listUsers(),
+        getAdministratorEmailSettings().catch(() => null),
+      ]);
+      setUsers(usersResponse.users);
+      setEmailSettings(emailSettingsResponse);
     } catch (e) {
       setUsers(null);
+      setEmailSettings(null);
       setUsersError(e instanceof Error ? e.message : String(e));
     }
   }, []);
@@ -516,6 +309,10 @@ export default function AdministratorUsers() {
   useEffect(() => {
     void loadUsers();
   }, [loadUsers]);
+
+  const canSendInviteEmail = Boolean(
+    emailSettings?.emailProvider?.apiKey && emailSettings.emailProvider.email,
+  );
 
   return (
     <div className="developer-page">
@@ -525,37 +322,25 @@ export default function AdministratorUsers() {
         actions={
           <Button
             type="secondary"
-            text="Invite user"
+            text="Create user"
             onClick={() => {
               present({
                 content: (
-                  <InviteUserModal
+                  <CreateUserModal
                     onCreated={(credentials) => {
-                      closeModal();
                       void loadUsers();
-                      if (credentials.inviteEmailSent && credentials.displayName) {
-                        showToast({
-                          type: 'success',
-                          message: `Invite sent to ${credentials.email}.`,
-                        });
-                        present({
-                          content: (
-                            <UserInvitedModal
-                              email={credentials.email}
-                              displayName={credentials.displayName}
-                              onClose={closeModal}
-                            />
-                          ),
-                        });
-                        return;
-                      }
                       showToast({
                         type: 'success',
                         message: `Created user "${credentials.user}".`,
                       });
                       present({
+                        size: 'large',
                         content: (
-                          <UserCreatedCredentialsModal {...credentials} onClose={closeModal} />
+                          <SuccessfulUserCreationModal
+                            {...credentials}
+                            canSendEmail={canSendInviteEmail}
+                            onClose={closeModal}
+                          />
                         ),
                       });
                     }}

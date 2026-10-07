@@ -29,6 +29,14 @@
   }
 }
 
+.input--error {
+  border-color: var(--text-error);
+
+  &:focus-within {
+    box-shadow: var(--box-shadow-alert);
+  }
+}
+
 .input--small {
   gap: functions.spacing(1);
   padding-block: 2px;
@@ -88,4 +96,8 @@
 
 .input__cta {
   flex-shrink: 0;
+}
+
+.input__error {
+  display: block;
 }
