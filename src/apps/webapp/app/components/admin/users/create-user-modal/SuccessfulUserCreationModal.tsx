@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Button } from '@habsum/ui/components/Button';
+import { InfoText } from '@habsum/ui/components/InfoText';
+import { ModalBody, ModalFooter, ModalHeader } from '@habsum/ui/contexts/modal';
 import { useToast } from '@habsum/ui/contexts/toast';
 import { sendUserInviteEmail } from '~/api.client';
 import type { CreatedUserCredentials } from './CreateUserModal';
-import UserCredentialsModal from './UserCredentialsModal';
 
 type SuccessfulUserCreationModalProps = CreatedUserCredentials & {
   canSendEmail: boolean;
@@ -41,25 +42,60 @@ export default function SuccessfulUserCreationModal({
   const sendEmailAction =
     canSendEmail && email ? (
       <Button
-        type="primary"
+        type="secondary"
         size="medium"
         text={emailSent ? `Email sent to ${email}` : `Send email to ${email}`}
+        className="mr-2"
         disabled={sendingEmail || emailSent}
         onClick={() => void sendEmail()}
       />
     ) : undefined;
 
   return (
-    <UserCredentialsModal
-      title="Account created"
-      description="Share these login details with the user."
-      user={user}
-      password={password}
-      email={email}
-      registrationUrl={registrationUrl}
-      error={emailError}
-      footerAction={sendEmailAction}
-      onClose={onClose}
-    />
+    <>
+      <ModalHeader>Account created</ModalHeader>
+      <ModalBody className="developer-page__add-user-modal">
+        <p className="text-light text-b-m">Share these login details with the user.</p>
+        <dl className="developer-page__credentials">
+          {email ? (
+            <div className="developer-page__credentials-row">
+              <dt className="developer-page__credentials-term text-b-m text-light">Email</dt>
+              <dd className="developer-page__credentials-value text-b-m text-bold">{email}</dd>
+            </div>
+          ) : null}
+          <div className="developer-page__credentials-row">
+            <dt className="developer-page__credentials-term text-b-m text-light">Username</dt>
+            <dd className="developer-page__credentials-value text-b-m text-bold">{user}</dd>
+          </div>
+          <div className="developer-page__credentials-row">
+            <dt className="developer-page__credentials-term text-b-m text-light">
+              Temporary password
+            </dt>
+            <dd className="developer-page__credentials-value text-b-m text-bold developer-page__credentials-password">
+              {password}
+            </dd>
+          </div>
+          <div className="developer-page__credentials-row">
+            <dt className="developer-page__credentials-term text-b-m text-light">
+              Registration URL
+            </dt>
+            <dd className="developer-page__credentials-value text-b-m developer-page__credentials-password">
+              <a className="text-link" href={registrationUrl}>
+                {registrationUrl}
+              </a>
+            </dd>
+          </div>
+        </dl>
+        {emailError ? (
+          <InfoText size="small" variant="error">
+            {emailError}
+          </InfoText>
+        ) : null}
+      </ModalBody>
+      <ModalFooter>
+        {sendEmailAction}
+        <Button type="primary" size="medium" text="Done" onClick={onClose} />
+      </ModalFooter>
+    </>
   );
 }

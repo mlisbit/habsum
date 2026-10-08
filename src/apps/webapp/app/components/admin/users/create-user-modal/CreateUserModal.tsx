@@ -6,7 +6,7 @@ import { createUser } from '~/api.client';
 import CreateUserValidator, {
   type CreateUserFieldErrors,
   type CreateUserFormValues,
-} from './CreateUserValidator';
+} from '~/utils/validators/CreateUserValidator';
 
 export type CreatedUserCredentials = {
   user: string;

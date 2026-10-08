@@ -12,15 +12,14 @@ import {
 import { openOucWindow } from '~/ouc.client';
 import { SettingsPageCard } from '~/components/SettingsPageCard';
 import { Button } from '@habsum/ui/components/Button';
-import { Hoverable } from '@habsum/ui/components/Hoverable';
-import type { IconName } from '@habsum/ui/components/Icon';
+import { Dropdown } from '@habsum/ui/components/Dropdown';
+import { Icon } from '@habsum/ui/components/Icon';
 import { InfoText } from '@habsum/ui/components/InfoText';
 import { Loader } from '@habsum/ui/components/Loader';
 import { ModalBody, ModalFooter, ModalHeader, useModal } from '@habsum/ui/contexts/modal';
 import { useToast } from '@habsum/ui/contexts/toast';
 import CreateUserModal from '~/components/admin/users/create-user-modal/CreateUserModal';
 import SuccessfulUserCreationModal from '~/components/admin/users/create-user-modal/SuccessfulUserCreationModal';
-import UserCredentialsModal from '~/components/admin/users/create-user-modal/UserCredentialsModal';
 
 function formatUnixTimeLocal(unixSeconds: number | null): string {
   if (unixSeconds == null) return 'Never';
@@ -30,10 +29,6 @@ function formatUnixTimeLocal(unixSeconds: number | null): string {
     dateStyle: 'medium',
     timeStyle: 'short',
   }).format(d);
-}
-
-function formatCount(value: number, singular: string): string {
-  return `${value} ${singular}${value === 1 ? '' : 's'}`;
 }
 
 function formatEntitlements(entitlements: readonly string[]): string {
@@ -189,13 +184,33 @@ function ResetPasswordModal({ targetUsername, onDone, onClose }: ManageUserModal
   }
 
   return (
-    <UserCredentialsModal
-      title="New password"
-      description={`A new temporary password was generated for ${targetUsername}. Share it securely.`}
-      user={credentials.user}
-      password={credentials.password}
-      onClose={onClose}
-    />
+    <>
+      <ModalHeader>New password</ModalHeader>
+      <ModalBody className="developer-page__add-user-modal">
+        <p className="text-light text-b-m">
+          A new temporary password was generated for {targetUsername}. Share it securely.
+        </p>
+        <dl className="developer-page__credentials">
+          <div className="developer-page__credentials-row">
+            <dt className="developer-page__credentials-term text-b-m text-light">Username</dt>
+            <dd className="developer-page__credentials-value text-b-m text-bold">
+              {credentials.user}
+            </dd>
+          </div>
+          <div className="developer-page__credentials-row">
+            <dt className="developer-page__credentials-term text-b-m text-light">
+              Temporary password
+            </dt>
+            <dd className="developer-page__credentials-value text-b-m text-bold developer-page__credentials-password">
+              {credentials.password}
+            </dd>
+          </div>
+        </dl>
+      </ModalBody>
+      <ModalFooter>
+        <Button type="primary" size="medium" text="Done" onClick={onClose} />
+      </ModalFooter>
+    </>
   );
 }
 
@@ -254,29 +269,63 @@ function DeleteUserModal({ targetUsername, onDone, onClose }: ManageUserModalPro
   );
 }
 
-type UserRowIconActionProps = {
-  tooltip: string;
-  icon: IconName;
-  ariaLabel: string;
-  onClick: () => void;
+type UserActionsDropdownProps = {
+  username: string;
+  onOperateUnder: () => void;
+  onChangePassword: () => void;
+  onDelete: () => void;
 };
 
-function UserRowIconAction({ tooltip, icon, ariaLabel, onClick }: UserRowIconActionProps) {
+function UserActionsDropdown({
+  username,
+  onOperateUnder,
+  onChangePassword,
+  onDelete,
+}: UserActionsDropdownProps) {
+  const [open, setOpen] = useState(false);
+
+  const selectAction = (action: () => void) => {
+    setOpen(false);
+    action();
+  };
+
   return (
-    <Hoverable.Root>
-      <Hoverable.Anchor className="flex">
+    <Dropdown open={open} onOpenChange={setOpen}>
+      <Dropdown.Trigger
+        showIcon={false}
+        aria-label={`Actions for ${username}`}
+        className="developer-page__users-actions-trigger"
+      >
+        <Icon name="ellipsis-vertical" />
+      </Dropdown.Trigger>
+      <Dropdown.Content className="developer-page__users-actions-menu">
         <Button
           type="tertiary"
           size="medium"
-          icon={icon}
-          circle
-          aria-label={ariaLabel}
-          className="developer-page__users-list-action"
-          onClick={onClick}
+          icon="user-lock"
+          text="Operate under"
+          className="developer-page__users-actions-item"
+          onClick={() => selectAction(onOperateUnder)}
         />
-      </Hoverable.Anchor>
-      <Hoverable.Content side="top">{tooltip}</Hoverable.Content>
-    </Hoverable.Root>
+        <Button
+          type="tertiary"
+          size="medium"
+          icon="key-round"
+          text="Change password"
+          className="developer-page__users-actions-item"
+          onClick={() => selectAction(onChangePassword)}
+        />
+        <Button
+          type="tertiary"
+          color="danger"
+          size="medium"
+          icon="trash"
+          text="Delete user"
+          className="developer-page__users-actions-item"
+          onClick={() => selectAction(onDelete)}
+        />
+      </Dropdown.Content>
+    </Dropdown>
   );
 }
 
@@ -321,7 +370,7 @@ export default function AdministratorUsers() {
         className="developer-page__users"
         actions={
           <Button
-            type="secondary"
+            type="primary"
             text="Create user"
             onClick={() => {
               present({
@@ -352,7 +401,7 @@ export default function AdministratorUsers() {
           />
         }
       >
-        <div className="card-padding">
+        <div className="">
           {usersError ? (
             <p className="text-light text-b-m">Could not load users: {usersError}</p>
           ) : users == null ? (
@@ -360,113 +409,137 @@ export default function AdministratorUsers() {
           ) : users.length === 0 ? (
             <p className="text-light text-b-m">No users found.</p>
           ) : (
-            <ul className="developer-page__users-list">
-              {users.map((userRow) => {
-                const { username } = userRow;
-                const primaryName = userRow.displayName || username;
-                const summaryParts = [
-                  userRow.email || 'No email',
-                  `Last login: ${formatUnixTimeLocal(userRow.lastLoginAt)}`,
-                  formatCount(userRow.habitCount, 'habit'),
-                  formatCount(userRow.eventCount, 'event'),
-                ];
-                const isCurrentUser = username === user;
-                return (
-                  <li key={username} className="developer-page__users-list-row">
-                    <div className="developer-page__users-list-summary">
-                      <button
-                        type="button"
-                        className="text-color-link text-b-m mr-2"
-                        onClick={() => {
-                          present({
-                            content: <UserDetailsModal user={userRow} onClose={closeModal} />,
-                          });
-                        }}
-                      >
-                        {primaryName}
-                      </button>
-                      <span className="developer-page__users-list-meta text-b-s text-light">
-                        {summaryParts.join(' · ')}
-                      </span>
-                    </div>
-                    {!isCurrentUser ? (
-                      <div className="developer-page__users-list-actions">
-                        <UserRowIconAction
-                          tooltip="ouc"
-                          icon="user-lock"
-                          ariaLabel={`Open operate-under session for ${username}`}
-                          onClick={() => {
-                            void (async () => {
-                              try {
-                                const res = await createOucSession(username);
-                                const opened = openOucWindow(res.user, res.token);
-                                showToast({
-                                  type: opened ? 'success' : 'error',
-                                  message: opened
-                                    ? `Opened "${username}" in a new operate-under window.`
-                                    : `Could not open operate-under window for "${username}". Allow pop-ups and try again.`,
-                                });
-                              } catch (e) {
-                                showToast({
-                                  type: 'error',
-                                  message:
-                                    e instanceof Error
-                                      ? e.message
-                                      : 'Failed to create operate-under session.',
-                                });
-                              }
-                            })();
-                          }}
-                        />
-                        <UserRowIconAction
-                          tooltip="Change password"
-                          icon="key-round"
-                          ariaLabel={`Change password for ${username}`}
-                          onClick={() => {
-                            present({
-                              content: (
-                                <ResetPasswordModal
-                                  targetUsername={username}
-                                  onDone={() => {
+            <div className="developer-page__users-table-scroll">
+              <table className="developer-page__users-table" aria-label="Users">
+                <thead>
+                  <tr>
+                    <th
+                      scope="col"
+                      className="developer-page__users-table-cell developer-page__users-table-heading"
+                    >
+                      Username
+                    </th>
+                    <th
+                      scope="col"
+                      className="developer-page__users-table-cell developer-page__users-table-heading"
+                    >
+                      Last activity
+                    </th>
+                    <th
+                      scope="col"
+                      className="developer-page__users-table-cell developer-page__users-table-heading developer-page__users-table-count"
+                    >
+                      Habits
+                    </th>
+                    <th
+                      scope="col"
+                      className="developer-page__users-table-cell developer-page__users-table-heading developer-page__users-table-count"
+                    >
+                      Events
+                    </th>
+                    <th
+                      scope="col"
+                      aria-label="Actions"
+                      className="developer-page__users-table-cell developer-page__users-table-heading developer-page__users-table-actions-heading"
+                    />
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((userRow) => {
+                    const { username } = userRow;
+                    const isCurrentUser = username === user;
+                    return (
+                      <tr key={username} className="developer-page__users-table-row">
+                        <th scope="row" className="developer-page__users-table-cell">
+                          <button
+                            type="button"
+                            className="text-color-link text-b-m"
+                            onClick={() => {
+                              present({
+                                content: <UserDetailsModal user={userRow} onClose={closeModal} />,
+                              });
+                            }}
+                          >
+                            {username}
+                          </button>
+                        </th>
+                        <td className="developer-page__users-table-cell text-b-m text-light">
+                          {formatUnixTimeLocal(userRow.lastLoginAt)}
+                        </td>
+                        <td className="developer-page__users-table-cell developer-page__users-table-count text-b-m">
+                          {userRow.habitCount}
+                        </td>
+                        <td className="developer-page__users-table-cell developer-page__users-table-count text-b-m">
+                          {userRow.eventCount}
+                        </td>
+                        <td className="developer-page__users-table-cell developer-page__users-table-actions">
+                          {!isCurrentUser ? (
+                            <UserActionsDropdown
+                              username={username}
+                              onOperateUnder={() => {
+                                void (async () => {
+                                  try {
+                                    const res = await createOucSession(username);
+                                    const opened = openOucWindow(res.user, res.token);
                                     showToast({
-                                      type: 'success',
-                                      message: `Generated a new password for "${username}".`,
+                                      type: opened ? 'success' : 'error',
+                                      message: opened
+                                        ? `Opened "${username}" in a new operate-under window.`
+                                        : `Could not open operate-under window for "${username}". Allow pop-ups and try again.`,
                                     });
-                                  }}
-                                  onClose={closeModal}
-                                />
-                              ),
-                            });
-                          }}
-                        />
-                        <UserRowIconAction
-                          tooltip="Delete user"
-                          icon="trash"
-                          ariaLabel={`Delete user ${username}`}
-                          onClick={() => {
-                            present({
-                              content: (
-                                <DeleteUserModal
-                                  targetUsername={username}
-                                  onDone={() => {
+                                  } catch (e) {
                                     showToast({
-                                      type: 'success',
-                                      message: `Deleted user "${username}".`,
+                                      type: 'error',
+                                      message:
+                                        e instanceof Error
+                                          ? e.message
+                                          : 'Failed to create operate-under session.',
                                     });
-                                    void loadUsers();
-                                  }}
-                                  onClose={closeModal}
-                                />
-                              ),
-                            });
-                          }}
-                        />
-                      </div>
-                    ) : null}
-                  </li>
-                );
-              })}
-            </ul>
+                                  }
+                                })();
+                              }}
+                              onChangePassword={() => {
+                                present({
+                                  content: (
+                                    <ResetPasswordModal
+                                      targetUsername={username}
+                                      onDone={() => {
+                                        showToast({
+                                          type: 'success',
+                                          message: `Generated a new password for "${username}".`,
+                                        });
+                                      }}
+                                      onClose={closeModal}
+                                    />
+                                  ),
+                                });
+                              }}
+                              onDelete={() => {
+                                present({
+                                  content: (
+                                    <DeleteUserModal
+                                      targetUsername={username}
+                                      onDone={() => {
+                                        showToast({
+                                          type: 'success',
+                                          message: `Deleted user "${username}".`,
+                                        });
+                                        void loadUsers();
+                                      }}
+                                      onClose={closeModal}
+                                    />
+                                  ),
+                                });
+                              }}
+                            />
+                          ) : null}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </SettingsPageCard>

@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ModalProvider } from '@habsum/ui/contexts/modal';
@@ -78,6 +78,48 @@ describe('Administrator user creation', () => {
     vi.clearAllMocks();
   });
 
+  it('shows users in a table without exposing their email addresses', async () => {
+    vi.mocked(getAdministratorEmailSettings).mockResolvedValue({ updatedAt: null });
+    vi.mocked(listUsers).mockResolvedValue({
+      users: [
+        {
+          username: 'admin',
+          displayName: 'Admin User',
+          email: 'admin@example.com',
+          lastLoginAt: null,
+          webAndApiVersion: null,
+          habitCount: 3,
+          eventCount: 12,
+          entitlements: [],
+        },
+      ],
+    });
+
+    const operator = userEvent.setup();
+    renderAdministratorUsers();
+
+    const table = await screen.findByRole('table', { name: 'Users' });
+    expect(
+      within(table)
+        .getAllByRole('columnheader')
+        .map((heading) => heading.textContent),
+    ).toEqual(['Username', 'Last activity', 'Habits', 'Events', '']);
+    const row = within(table).getByRole('row', { name: /admin/ });
+    expect(within(row).getByRole('rowheader').textContent).toBe('admin');
+    expect(within(row).queryByText('Admin User')).toBeNull();
+    expect(
+      within(row)
+        .getAllByRole('cell')
+        .map((cell) => cell.textContent),
+    ).toEqual(['Never', '3', '12', '']);
+    expect(screen.queryByText('admin@example.com')).toBeNull();
+
+    await operator.click(within(row).getByRole('button', { name: 'Actions for admin' }));
+    expect(screen.getByRole('button', { name: 'Operate under' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Change password' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Delete user' })).toBeTruthy();
+  });
+
   it('creates a user with email and username and offers email delivery when configured', async () => {
     vi.mocked(getAdministratorEmailSettings).mockResolvedValue({
       emailProvider: {
@@ -108,7 +150,11 @@ describe('Administrator user creation', () => {
     expect(screen.getByRole('dialog').classList.contains('modal__dialog--large')).toBe(true);
     expect(screen.getByRole('link', { name: /reset-password\?token=invite-token/ })).toBeTruthy();
 
-    await user.click(screen.getByRole('button', { name: 'Send email to invitee@example.com' }));
+    const sendEmailButton = screen.getByRole('button', {
+      name: 'Send email to invitee@example.com',
+    });
+    expect(sendEmailButton.classList.contains('button--secondary')).toBe(true);
+    await user.click(sendEmailButton);
     await waitFor(() =>
       expect(sendUserInviteEmail).toHaveBeenCalledWith(
         'invitee-example-com',

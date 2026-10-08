@@ -26,4 +26,8 @@
   .pl-#{$step} {
     padding-left: fn.spacing($step);
   }
+  .ph-#{$step} {
+    padding-left: fn.spacing($step);
+    padding-right: fn.spacing($step);
+  }
 }

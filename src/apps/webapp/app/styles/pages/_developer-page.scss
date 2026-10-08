@@ -7,45 +7,49 @@
   min-width: 0;
 }
 
-.developer-page__users-list {
-  list-style: none;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: functions.spacing(1);
-}
-
 .developer-page__users-loader {
   width: 100%;
 }
 
-.developer-page__users-list-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: functions.spacing(2);
-  padding: functions.spacing(1) functions.spacing(2);
-  margin: 0;
-  border-radius: var(--border-radius-m);
-  overflow-wrap: anywhere;
+.developer-page__users-table-scroll {
+  max-width: 100%;
+  overflow-x: auto;
+}
 
-  &:hover {
-    background-color: var(--background-secondary);
+.developer-page__users-table {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+}
+
+.developer-page__users-table-cell {
+  padding: functions.spacing(2);
+  text-align: left;
+  vertical-align: middle;
+  border-block-end: 1px solid var(--border-color-faint);
+
+  &:first-child {
+    padding-left: functions.spacing(4);
   }
 }
 
-.developer-page__users-list-summary {
-  min-width: 0;
-  flex: 1;
-  display: flex;
-  gap: functions.spacing(1);
-  align-items: baseline;
-  flex-wrap: wrap;
+.developer-page__users-table-row:hover .developer-page__users-table-cell {
+  background-color: functions.lighten(var(--background-secondary));
 }
 
-.developer-page__users-list-meta {
-  min-width: 0;
-  overflow-wrap: anywhere;
+.developer-page__users-table-row:last-child .developer-page__users-table-cell {
+  border-block-end: 0;
+}
+
+.developer-page__users-table-count {
+  width: 1%;
+  text-align: center !important;
+  white-space: nowrap;
+}
+
+.developer-page__users-table-actions-heading {
+  width: 1%;
+  text-align: right !important;
 }
 
 .developer-page__user-details {
@@ -69,15 +73,27 @@
   overflow-wrap: anywhere;
 }
 
-.developer-page__users-list-actions {
-  display: flex;
-  align-items: center;
-  gap: functions.spacing(1);
+.developer-page__users-table-actions {
+  width: 1%;
+  text-align: right !important;
+}
+
+.developer-page__users-actions-trigger {
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
   flex-shrink: 0;
 }
 
-.developer-page__users-list-action {
-  flex-shrink: 0;
+.developer-page__users-actions-menu {
+  display: flex;
+  flex-direction: column;
+  gap: functions.spacing(1);
+}
+
+.developer-page__users-actions-item {
+  width: 100%;
+  text-align: left;
 }
 
 .developer-page__add-user-modal {

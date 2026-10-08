@@ -257,7 +257,7 @@ export default function AdministratorOptions() {
       ) : null}
 
       <SettingsPageCard
-        headerText="Resend Email Settings"
+        headerText="Email Settings"
         className="administrator-options__email-settings"
         actions={
           hasDraftEmailSettings ? (
