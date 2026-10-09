@@ -14,6 +14,7 @@ export type AdministratorEmailSettingsPutRequest = {
 };
 
 export type AdministratorEmailTestRequest = {
+  recipient: string;
   emailProvider: {
     name: 'resend';
     apiKey: string;

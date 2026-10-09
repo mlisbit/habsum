@@ -1,7 +1,7 @@
 import { Link, useNavigate } from 'react-router';
 import { useEffect, useState } from 'react';
-import { useFeatureFlags } from '@habsum/feature-flags/client/react';
-import type { FeatureFlagKey } from '@habsum/feature-flags/feature-flags';
+import type { FeatureFlagKey } from '@habsum/types/api-responses/feature-flags';
+import { useFeatureFlags } from '~/context/feature-flags';
 import { useTracking } from '@habsum/tracking/client/react';
 import { HomeLink } from '~/components/HomeLink';
 import { Button } from '@habsum/ui/components/Button';
@@ -22,7 +22,7 @@ function LoginForm({
   const navigate = useNavigate();
   const { signIn } = useAuth();
   const tracking = useTracking<typeof webappTrackingSpec>();
-  const { isFlagEnabled } = useFeatureFlags<FeatureFlagKey>();
+  const { getFlagValue } = useFeatureFlags<FeatureFlagKey>();
   const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -112,7 +112,7 @@ function LoginForm({
             void handleLogin();
           }}
         />
-        {isFlagEnabled('enable-user-account-creation') ? (
+        {getFlagValue('enable-user-account-creation') != null ? (
           <p className="users-index__signup text-b-s text-light">
             Don&apos;t have an account?{' '}
             <Link to="/signup" className="text-link">

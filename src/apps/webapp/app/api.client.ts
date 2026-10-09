@@ -1,5 +1,8 @@
 import type { Habit } from '@habsum/types/common/habit';
-import type { FeatureFlagPostRequest, FeatureFlagPostResponse } from '@habsum/feature-flags/types';
+import type {
+  FeatureFlagPostRequest,
+  FeatureFlagPostResponse,
+} from '@habsum/types/api-responses/feature-flags';
 import type { AdministratorGetResponse } from '@habsum/types/api-responses/administrator-get';
 import type {
   AdministratorDatabaseDeleteRequest,

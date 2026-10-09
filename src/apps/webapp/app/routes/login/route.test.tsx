@@ -1,13 +1,8 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { FeatureFlagsProvider } from '@habsum/feature-flags/client/react';
-import {
-  FEATURE_FLAG_ENABLED_VALUE,
-  FEATURE_FLAG_KEYS,
-  type FeatureFlagKey,
-} from '@habsum/feature-flags/feature-flags';
-import type { FeatureFlag } from '@habsum/feature-flags/types';
+import type { FeatureFlag, FeatureFlagKey } from '@habsum/types/api-responses/feature-flags';
+import { FeatureFlagsProvider } from '~/context/feature-flags';
 import LoginRoute from './route';
 
 vi.mock('@habsum/tracking/client/react', () => ({
@@ -32,12 +27,21 @@ function renderLogin(accountCreationValue: string | null) {
       key: 'enable-user-account-creation',
       value: accountCreationValue,
       lastModifiedAt: 1_900_000_000,
+      name: 'User registration',
+      description: 'Allow users to create their own accounts.',
+      options: {
+        noVerify: { text: 'With no email verification' },
+        verify: {
+          text: 'With email verification',
+          disabled: 'requires email configuration to be enabled',
+        },
+      },
     },
   ];
 
   return render(
     <MemoryRouter initialEntries={['/login']}>
-      <FeatureFlagsProvider flags={flags} flagKeys={FEATURE_FLAG_KEYS}>
+      <FeatureFlagsProvider flags={flags}>
         <LoginRoute />
       </FeatureFlagsProvider>
     </MemoryRouter>,
@@ -54,7 +58,7 @@ describe('login signup entry point', () => {
   });
 
   it('shows the signup link when account creation is enabled', () => {
-    renderLogin(FEATURE_FLAG_ENABLED_VALUE);
+    renderLogin('noVerify');
 
     expect(screen.getByRole('link', { name: 'Sign up' }).getAttribute('href')).toBe('/signup');
   });

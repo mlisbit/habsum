@@ -15,13 +15,14 @@ const configService = new ConfigService();
 const habitRepository = new HabitRepository();
 const userAndAuthRepository = new UserAndAuthRepository();
 const PACKAGE_VERSION = getPackageVersion();
+let adminSequence = 0;
 
 function adminSessionCookie(): string {
   configService.ensureConfigLayout();
-  if (userAndAuthRepository.countAdmins() === 0) {
-    userAndAuthRepository.createInitialAdminUser('admin', 'secret');
-  }
-  const adminSession = userAndAuthRepository.createUserSession('admin', 3600);
+  adminSequence += 1;
+  const username = `usersadmintest${adminSequence}`;
+  userAndAuthRepository.createInitialAdminUser(username, 'secret');
+  const adminSession = userAndAuthRepository.createUserSession(username, 3600);
   return `${SESSION_COOKIE_NAME}=${adminSession}`;
 }
 
@@ -45,12 +46,9 @@ describe('POST /users', () => {
       .send({ email: 'regular@example.com' })
       .expect(403);
 
-    userAndAuthRepository.createInitialAdminUser('admin', 'secret');
-    const adminSession = userAndAuthRepository.createUserSession('admin', 3600);
-
     const res = await request(app)
       .post('/users')
-      .set('Cookie', `${SESSION_COOKIE_NAME}=${adminSession}`)
+      .set('Cookie', adminSessionCookie())
       .send({ email: 'new-user@example.com' });
 
     expect(res.status).toBe(201);

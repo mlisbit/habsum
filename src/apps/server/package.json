@@ -14,7 +14,6 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@habsum/feature-flags": "*",
     "@habsum/tracking": "*",
     "@habsum/types": "*",
     "@habsum/utils": "*",

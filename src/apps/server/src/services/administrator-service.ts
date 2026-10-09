@@ -11,7 +11,6 @@ import type {
 } from '@habsum/types/api-responses/administrator-database';
 import { DatabaseRepository } from '../repositories/database-repository.js';
 import { EmailSettingsRepository } from '../repositories/email-settings-repository.js';
-import { UserAndAuthRepository } from '../repositories/user-and-auth-repository.js';
 import ServiceError from '../utils/classes/service-error.js';
 import { isPlausibleEmail } from '../utils/request-utils.js';
 import { EmailService } from './email-service.js';
@@ -20,7 +19,6 @@ export class AdministratorService {
   constructor(
     private readonly emailSettingsRepository = new EmailSettingsRepository(),
     private readonly emailService = new EmailService(),
-    private readonly userAndAuthRepository = new UserAndAuthRepository(),
     private readonly databaseRepository = new DatabaseRepository(),
   ) {}
 
@@ -110,15 +108,13 @@ export class AdministratorService {
   }
 
   async sendTestEmail(
-    username: string,
     body: AdministratorEmailTestRequest | undefined,
   ): Promise<AdministratorEmailTestResponse> {
-    const recipient = this.userAndAuthRepository.getUserProfile(username).email?.trim() ?? '';
-    if (!isPlausibleEmail(recipient)) {
-      throw new ServiceError('bad_request', 'your account does not have a valid email address');
-    }
     if (body?.emailProvider?.name !== 'resend') {
       throw new ServiceError('bad_request', 'provider must be resend');
+    }
+    if (typeof body.recipient !== 'string' || !isPlausibleEmail(body.recipient.trim())) {
+      throw new ServiceError('bad_request', 'invalid recipient email address');
     }
     if (typeof body.emailProvider.apiKey !== 'string' || !body.emailProvider.apiKey.trim()) {
       throw new ServiceError('bad_request', 'Resend API key is required');
@@ -134,7 +130,7 @@ export class AdministratorService {
       await this.emailService.sendEmailUsingSettings(
         {
           deliveryName: 'administrator test email',
-          to: recipient,
+          to: body.recipient.trim(),
           subject: 'Habsum test email',
           html: '<p>This test email was sent from the Habsum Administrator settings page.</p>',
           text: 'This test email was sent from the Habsum Administrator settings page.',
@@ -151,6 +147,6 @@ export class AdministratorService {
       );
     }
 
-    return { ok: true, recipient };
+    return { ok: true, recipient: body.recipient.trim() };
   }
 }

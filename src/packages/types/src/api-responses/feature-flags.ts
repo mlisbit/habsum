@@ -1,9 +1,23 @@
-export type FeatureFlag<TKey extends string = string> = {
+export type FeatureFlagKey = 'enable-user-account-creation';
+
+export type FeatureFlagState<TKey extends string = string> = {
   key: TKey;
-  /** `null` is disabled; any configured string value is enabled. */
+  /** `null` selects Disabled; otherwise this is a key from `options`. */
   value: string | null;
   /** Server UTC Unix timestamp in seconds. */
   lastModifiedAt: number;
+};
+
+export type FeatureFlag<TKey extends string = string> = FeatureFlagState<TKey> & {
+  name: string;
+  description: string;
+  options: Record<
+    string,
+    {
+      text: string;
+      disabled?: string;
+    }
+  >;
 };
 
 export type FeatureFlagsGetResponse<TKey extends string = string> = {

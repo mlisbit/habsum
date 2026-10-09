@@ -15,6 +15,7 @@
     "./api-responses/administrator-database": "./src/api-responses/administrator-database.ts",
     "./api-responses/administrator-email-settings": "./src/api-responses/administrator-email-settings.ts",
     "./api-responses/auth-status-get": "./src/api-responses/auth-status-get.ts",
+    "./api-responses/feature-flags": "./src/api-responses/feature-flags.ts",
     "./api-responses/habit-patch": "./src/api-responses/habit-patch.ts",
     "./api-responses/habits-get": "./src/api-responses/habits-get.ts",
     "./api-responses/history-get": "./src/api-responses/history-get.ts",

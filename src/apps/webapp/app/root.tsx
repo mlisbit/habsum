@@ -11,8 +11,6 @@ import {
 import type { LinksFunction, MetaFunction } from 'react-router';
 import { useCallback } from 'react';
 import type { MeGetResponse } from '@habsum/types/api-responses/me-get';
-import { FeatureFlagsProvider } from '@habsum/feature-flags/client/react';
-import { FEATURE_FLAG_KEYS } from '@habsum/feature-flags/feature-flags';
 import type { TrackingProvider } from '@habsum/tracking/client/provider';
 import { ConsoleTrackingProvider } from '@habsum/tracking/client/providers/console';
 import { NoopTrackingProvider } from '@habsum/tracking/client/providers/noop';
@@ -22,6 +20,7 @@ import { OucPopupBootstrap } from '~/components/OucPopupBootstrap';
 import { ModalProvider } from '@habsum/ui/contexts/modal';
 import { ToastProvider } from '@habsum/ui/contexts/toast';
 import { AuthProvider } from '~/context/auth';
+import { FeatureFlagsProvider } from '~/context/feature-flags';
 import { getAuthMe as getClientAuthMe } from '~/api.client';
 import stylesHref from '~/styles/main.scss?url';
 import { UI_THEME_STORAGE_KEY } from '~/theme.shared';
@@ -39,7 +38,7 @@ export const links: LinksFunction = () => [
   { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
 ];
 
-export const meta: MetaFunction = () => [{ title: 'habsum' }];
+export const meta: MetaFunction = () => [{ title: 'Habsum' }];
 
 export async function loader({ request }: Route.LoaderArgs) {
   const [me, authStatus, featureFlags] = await Promise.all([
@@ -140,7 +139,7 @@ export default function App() {
   const { featureFlags } = useLoaderData<typeof loader>();
 
   return (
-    <FeatureFlagsProvider flags={featureFlags} flagKeys={FEATURE_FLAG_KEYS}>
+    <FeatureFlagsProvider flags={featureFlags}>
       <TrackingContextProvider provider={trackingProvider} spec={webappTrackingSpec}>
         <AppContent />
       </TrackingContextProvider>

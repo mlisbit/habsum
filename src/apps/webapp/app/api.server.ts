@@ -1,6 +1,6 @@
 import type { HabitsResponse } from '@habsum/types/api-responses/habits-get';
 import type { AuthStatusGetResponse } from '@habsum/types/api-responses/auth-status-get';
-import type { FeatureFlagsGetResponse } from '@habsum/feature-flags/types';
+import type { FeatureFlagsGetResponse } from '@habsum/types/api-responses/feature-flags';
 import type { MeGetResponse } from '@habsum/types/api-responses/me-get';
 import type { PatchHabitResponse } from '@habsum/types/api-responses/habit-patch';
 import type { ListUsersResponse } from '@habsum/types/common/misc';

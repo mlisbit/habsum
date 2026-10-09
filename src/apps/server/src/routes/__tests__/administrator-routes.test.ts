@@ -202,9 +202,8 @@ describe('/administrator', () => {
       .expect(400, { error: 'Resend API key is required' });
   });
 
-  it('sends a test message to the signed-in administrator account email', async () => {
-    const { cookie, username } = administratorSession();
-    userAndAuthRepository.patchUserProfile(username, { email: 'admin@example.com' });
+  it('sends a test message to Resend without requiring an administrator email', async () => {
+    const { cookie } = administratorSession();
     const sendEmail = vi
       .spyOn(EmailService.prototype, 'sendEmailUsingSettings')
       .mockResolvedValue();
@@ -213,31 +212,64 @@ describe('/administrator', () => {
       .post('/administrator/email-settings/test')
       .set('Cookie', cookie)
       .send({
+        recipient: 'recipient@example.com',
         emailProvider: { name: 'resend', apiKey: 're_draft', email: 'draft@example.com' },
       })
       .expect(200);
 
-    expect(response.body).toEqual({ ok: true, recipient: 'admin@example.com' });
+    expect(response.body).toEqual({ ok: true, recipient: 'recipient@example.com' });
     expect(sendEmail).toHaveBeenCalledWith(
       expect.objectContaining({
         deliveryName: 'administrator test email',
-        to: 'admin@example.com',
+        to: 'recipient@example.com',
         subject: 'Habsum test email',
       }),
       { apiKey: 're_draft', fromEmail: 'draft@example.com' },
     );
   });
 
-  it('validates draft settings before sending a test message', async () => {
-    const { cookie, username } = administratorSession();
-    userAndAuthRepository.patchUserProfile(username, { email: 'admin@example.com' });
+  it('returns the Resend error when the test configuration is rejected', async () => {
+    const { cookie } = administratorSession();
+    vi.spyOn(EmailService.prototype, 'sendEmailUsingSettings').mockRejectedValue(
+      new Error('API key is not active'),
+    );
 
     await request(createApp())
       .post('/administrator/email-settings/test')
       .set('Cookie', cookie)
       .send({
+        recipient: 'recipient@example.com',
+        emailProvider: { name: 'resend', apiKey: 're_invalid', email: 'draft@example.com' },
+      })
+      .expect(503, { error: 'API key is not active' });
+  });
+
+  it('validates draft settings before sending a test message', async () => {
+    const { cookie } = administratorSession();
+
+    await request(createApp())
+      .post('/administrator/email-settings/test')
+      .set('Cookie', cookie)
+      .send({
+        recipient: 'recipient@example.com',
         emailProvider: { name: 'resend', apiKey: 're_draft', email: 'not-an-email' },
       })
       .expect(400, { error: 'invalid email address' });
+  });
+
+  it('validates the test email recipient', async () => {
+    const { cookie } = administratorSession();
+    const sendEmail = vi.spyOn(EmailService.prototype, 'sendEmailUsingSettings');
+
+    await request(createApp())
+      .post('/administrator/email-settings/test')
+      .set('Cookie', cookie)
+      .send({
+        recipient: 'not-an-email',
+        emailProvider: { name: 'resend', apiKey: 're_draft', email: 'draft@example.com' },
+      })
+      .expect(400, { error: 'invalid recipient email address' });
+
+    expect(sendEmail).not.toHaveBeenCalled();
   });
 });

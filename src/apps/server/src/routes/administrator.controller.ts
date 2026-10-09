@@ -59,8 +59,6 @@ export const administratorController = {
   },
 
   postEmailTest(req: Request<unknown, unknown, AdministratorEmailTestRequest>, res: Response) {
-    return sendAsyncServiceResult(res, () =>
-      administratorService.sendTestEmail(res.locals.sessionUser ?? '', req.body),
-    );
+    return sendAsyncServiceResult(res, () => administratorService.sendTestEmail(req.body));
   },
 };

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { MeGetLoggedOut } from '@habsum/types/api-responses/me-get';
 import { getAuthMe, getAuthStatus, getFeatureFlags } from '~/api.server';
-import { loader } from './root';
+import { loader, meta } from './root';
 
 vi.mock('~/api.server', () => ({
   getAuthMe: vi.fn(),
@@ -29,6 +29,10 @@ beforeEach(() => {
 });
 
 describe('root database status guard', () => {
+  it('uses the capitalized application title', () => {
+    expect(meta({} as Parameters<typeof meta>[0])).toEqual([{ title: 'Habsum' }]);
+  });
+
   it('redirects every other route to welcome when the database has no users', async () => {
     vi.mocked(getAuthStatus).mockResolvedValue({ hasUsers: false });
 

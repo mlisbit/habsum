@@ -13,25 +13,28 @@
   gap: functions.spacing(2);
 }
 
-.administrator-options__email-settings-content,
-.administrator-options__email-settings-fields,
-.administrator-options__email-settings-field {
-  display: flex;
-  flex-direction: column;
-  gap: functions.spacing(2);
-}
-
 .administrator-options__email-settings-loader {
   width: 100%;
 }
 
-.administrator-options__email-settings-field {
-  gap: functions.spacing(1);
+.administrator-options__email-provider-select,
+.administrator-options__feature-flag-select {
+  background: var(--background-input);
+  border: 1px solid var(--border-color-faint);
+  border-radius: var(--border-radius-m);
+  padding: functions.spacing(1, 2);
+  max-inline-size: 100%;
+  min-inline-size: 8rem;
+}
 
-  .input {
-    inline-size: 100%;
-    min-inline-size: 0;
-  }
+.administrator-options__feature-flag-select {
+  width: 100%;
+}
+
+.administrator-options__email-provider-select:focus-visible,
+.administrator-options__feature-flag-select:focus-visible {
+  outline: none;
+  box-shadow: var(--box-shadow-focus);
 }
 
 .administrator-options__feature-flags-list {
@@ -62,4 +65,12 @@
   flex-direction: column;
   gap: functions.spacing(1);
   overflow-wrap: anywhere;
+}
+
+.administrator-options__feature-flag-control {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: functions.spacing(1);
 }

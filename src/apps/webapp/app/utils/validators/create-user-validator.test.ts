@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { ApiRequestError } from '~/api.client';
-import CreateUserValidator from './CreateUserValidator';
+import CreateUserValidator from './create-user-validator';
 
 const validator = new CreateUserValidator(async () => ({ available: true }));
 

@@ -1,5 +1,4 @@
 import request from 'supertest';
-import { FEATURE_FLAG_ENABLED_VALUE } from '@habsum/feature-flags/feature-flags';
 import { yamlString } from '@habsum/types/common/misc';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../../app.js';
@@ -34,10 +33,7 @@ describe('POST /auth/signup', () => {
   });
 
   it('creates and authenticates an account while the feature is enabled', async () => {
-    featureFlagRepository.setFeatureFlagValue(
-      'enable-user-account-creation',
-      FEATURE_FLAG_ENABLED_VALUE,
-    );
+    featureFlagRepository.setFeatureFlagValue('enable-user-account-creation', 'noVerify');
 
     const response = await request(createApp())
       .post('/auth/signup')
@@ -64,10 +60,7 @@ describe('POST /auth/signup', () => {
   });
 
   it('validates signup input and rejects an email already in use', async () => {
-    featureFlagRepository.setFeatureFlagValue(
-      'enable-user-account-creation',
-      FEATURE_FLAG_ENABLED_VALUE,
-    );
+    featureFlagRepository.setFeatureFlagValue('enable-user-account-creation', 'noVerify');
     userAndAuthRepository.setUserPassword('existing-signup-user', 'secret');
     userAndAuthRepository.patchUserProfile('existing-signup-user', {
       email: 'existing-signup@example.com',

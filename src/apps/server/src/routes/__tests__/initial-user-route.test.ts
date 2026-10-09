@@ -1,15 +1,20 @@
 import request from 'supertest';
 import { ProductEntitlement } from '@habsum/types/common/entitlement';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createApp } from '../../app.js';
+import { FeatureFlagRepository } from '../../repositories/feature-flag-repository.js';
 import { ConfigService } from '../../services/config-service.js';
+import { FeatureFlagService } from '../../services/feature-flag-service.js';
 import { UserAndAuthRepository } from '../../repositories/user-and-auth-repository.js';
 
 describe('POST /auth/initial-user', () => {
-  it('creates and signs in the database first user as an administrator', async () => {
+  it('creates and signs in the first administrator while public registration is disabled', async () => {
     const app = createApp();
     const configService = new ConfigService();
     const userAndAuthRepository = new UserAndAuthRepository();
+    const featureFlagRepository = new FeatureFlagRepository();
+    featureFlagRepository.setFeatureFlagValue('enable-user-account-creation', null);
+    const getFlagValue = vi.spyOn(FeatureFlagService.prototype, 'getFlagValue');
 
     await request(app).post('/auth/initial-user').send({}).expect(400, {
       error: 'username is required',
@@ -29,6 +34,7 @@ describe('POST /auth/initial-user', () => {
       .expect(201);
 
     expect(response.body).toEqual({ ok: true, user: 'first-owner' });
+    expect(getFlagValue).not.toHaveBeenCalled();
     expect(configService.loadUserConfig('first-owner')?.habits).toEqual([]);
     expect(userAndAuthRepository.isUserAdmin('first-owner')).toBe(true);
     expect(userAndAuthRepository.isUserPasswordValid('first-owner', 'chosen-secret')).toBe(true);

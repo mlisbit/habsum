@@ -110,6 +110,7 @@ export class AuthService {
     return { hasUsers: this.userAndAuthRepository.hasUsers() };
   }
 
+  // Bootstrap access for an empty database must never depend on optional registration settings.
   createInitialUser(body: InitialUserInput | undefined) {
     if (this.userAndAuthRepository.hasUsers()) {
       throw new ServiceError('conflict', 'the initial user already exists');
@@ -157,7 +158,7 @@ export class AuthService {
   }
 
   signup(body: SignupInput | undefined) {
-    if (!this.featureFlagService.isFlagEnabled('enable-user-account-creation')) {
+    if (this.featureFlagService.getFlagValue('enable-user-account-creation') == null) {
       throw new ServiceError('forbidden', 'account creation is disabled');
     }
 
