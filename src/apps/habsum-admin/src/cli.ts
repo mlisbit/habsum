@@ -1,10 +1,12 @@
 #!/usr/bin/env bun
 
+import demoData from './commands/demo-data.ts';
 import addAdmin from './commands/add-admin.ts';
 import listUsers from './commands/list-users.ts';
 import resetPassword from './commands/reset-password.ts';
 
 const usage = `Usage:
+  habsum-admin demo-data [username]
   habsum-admin add-admin [username]
   habsum-admin list-users
   habsum-admin reset-password [username]
@@ -15,6 +17,13 @@ Environment:
 
 async function run(): Promise<void> {
   const [command, ...extraArguments] = Bun.argv.slice(2);
+
+  if (command === 'demo-data') {
+    if (extraArguments.length > 1)
+      throw new Error(`demo-data accepts at most one username.\n\n${usage}`);
+    await demoData(extraArguments[0]);
+    return;
+  }
 
   if (command === '--help' || command === '-h') {
     console.log(usage);

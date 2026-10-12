@@ -32,7 +32,7 @@ Rebuild the image and recreate the container after changing the Dockerfile.
 ## Local usage
 
 With Bun installed and workspace dependencies installed, run the package binary
-from the repository root with an explicit database path:
+from the repository root:
 
 ```bash
 HABSUM_DB=./config/habsum.db npm exec -- habsum-admin list-users
@@ -76,3 +76,25 @@ The database must already have been initialized by the server.
 
 `src/cli.ts` dispatches arguments to `src/commands`. Shared helpers live in
 `src/utils`, with tests alongside the modules they cover.
+
+## Generate demo data
+
+The username is optional: `habsum-admin demo-data` prompts for it first.
+
+```bash
+habsum-admin demo-data alice
+HABSUM_DB=./config/habsum2.db habsum-admin demo-data alice
+```
+
+Uses the user's active configuration (falling back to the latest version). Each
+habit gets data through today for its longest visible range: the configured bargraph
+period, 53 weeks aligned to Sunday for a daily heatmap, or 126 weeks aligned to
+Monday for a weekly heatmap. Habits without a visualization get today's data.
+Summation values are biased near and slightly above positive goals, with lower
+values and unlogged days mixed in. Select habits use configured options, favoring
+streak options; text habits get a sample note. Repeat schedules are respected.
+Existing entries are preserved, and all generated entries are written in one
+transaction. Running again may fill previously empty days.
+
+Without `HABSUM_DB`, all commands use `config/habsum.db` relative to the
+launch directory, matching the server default. The database must already exist.

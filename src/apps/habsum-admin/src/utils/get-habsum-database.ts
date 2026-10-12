@@ -9,11 +9,10 @@ export default function getHabsumDatabase(
   access: DatabaseAccess = 'read-only',
 ): Database {
   const trimmedDatabasePath = configuredDatabasePath?.trim();
-  if (!trimmedDatabasePath) {
-    throw new Error('HABSUM_DB is required and must point to the Habsum database file.');
-  }
-
-  const databasePath = resolve(trimmedDatabasePath);
+  const databasePath = resolve(
+    process.env.INIT_CWD ?? process.cwd(),
+    trimmedDatabasePath || 'config/habsum.db',
+  );
   if (!existsSync(databasePath)) {
     throw new Error(`Habsum database not found at ${databasePath}.`);
   }
