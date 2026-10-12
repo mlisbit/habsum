@@ -43,6 +43,8 @@ Open `http://localhost:8882`.
 
 Development uses `./config/habsum.db` by default. Set the `HABSUM_DB` environment variable to use a different SQLite file. Habsum creates the parent directory and database when needed.
 
+Initial administrator signup through `/welcome` requires an empty users table and `HABSUM_INITIAL_WEB_SIGNUP=true`. The flag defaults to disabled when unset; `compose.dev.yaml` enables it for development. The API rejects initial web signup when the flag is disabled, and the server logs the effective signup state at startup. When enabled for an empty database, `/auth/status` returns `{ "redirectPath": "/welcome" }`; otherwise it returns `{ "redirectPath": null }`.
+
 For Docker development, configure `HABSUM_DB` directly in the server’s `environment` section in `compose.dev.yaml`, then run:
 
 ```bash

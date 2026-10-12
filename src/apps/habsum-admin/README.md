@@ -1,8 +1,8 @@
 # Habsum Admin
 
 `habsum-admin` is a Bun command-line utility for inspecting a Habsum installation
-and resetting account passwords. Listing accounts opens the database read-only;
-resetting a password opens it read-write.
+creating administrator accounts and resetting account passwords. Listing accounts opens the database read-only;
+creating an administrator or resetting a password opens it read-write.
 
 ## Docker
 
@@ -24,7 +24,7 @@ docker exec -it <server-container> habsum-admin reset-password alice
 ```
 
 The CLI inherits `HABSUM_DB` from the server container's environment. In development,
-Compose sets it to `/app/config/habsum.db`, which is the same database the API uses.
+Compose sets it to `/app/config/habsum2.db`, which is the same database the API uses.
 The command does not create a missing database; start the API first to initialize it.
 
 Rebuild the image and recreate the container after changing the Dockerfile.
@@ -54,7 +54,25 @@ HABSUM_DB=/data/habsum.db habsum-admin list-users
 
 ## Reset a password
 
+The username is optional: `habsum-admin reset-password` prompts for it first.
 The `reset-password` command securely prompts for a new password. Entering a
 password updates the account directly. Leaving the prompt blank creates and prints
 a password-reset link that expires after 15 minutes. `HABSUM_WEBAPP_URL` controls
 the link's base URL and defaults to `http://localhost:3000`.
+
+## Add an administrator
+
+```bash
+docker compose -f compose.dev.yaml exec server habsum-admin add-admin alice
+```
+
+The username is optional: `habsum-admin add-admin` prompts for it first.
+The command prompts for a password and creates a new administrator with an empty
+habit configuration. Existing usernames and reserved names are rejected; it does
+not promote existing accounts. The web signup flag does not restrict this command.
+The database must already have been initialized by the server.
+
+## Source layout
+
+`src/cli.ts` dispatches arguments to `src/commands`. Shared helpers live in
+`src/utils`, with tests alongside the modules they cover.

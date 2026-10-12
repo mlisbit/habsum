@@ -2,7 +2,7 @@
 import { ProductEntitlement } from '@habsum/types/common/entitlement';
 import { accountCreatedAtToApi } from '@habsum/types/common/day';
 import hasOnlyUsernameCharacters from '../utils/has-only-username-characters.js';
-import isForbiddenUsername from '../utils/is-forbidden-username.js';
+import isForbiddenUsername from '@habsum/utils/is-forbidden-username';
 import {
   isPlausibleEmail,
   isSafeConfigUserId,

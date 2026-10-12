@@ -46,10 +46,11 @@ export async function loader({ request }: Route.LoaderArgs) {
     getAuthStatus(),
     getFeatureFlags(),
   ]);
-  const isWelcomeRoute = new URL(request.url).pathname.replace(/\/$/, '') === '/welcome';
-
-  if (!authStatus.hasUsers && !isWelcomeRoute) return redirect('/welcome');
-  if (authStatus.hasUsers && isWelcomeRoute) return redirect('/');
+  const currentPath = new URL(request.url).pathname.replace(/\/$/, '') || '/';
+  if (authStatus.redirectPath && currentPath !== authStatus.redirectPath) {
+    return redirect(authStatus.redirectPath);
+  }
+  if (!authStatus.redirectPath && currentPath === '/welcome') return redirect('/');
 
   return { me, authStatus, featureFlags: featureFlags.flags };
 }

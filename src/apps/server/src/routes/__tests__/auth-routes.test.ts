@@ -15,6 +15,7 @@ describe('POST /auth/signup', () => {
   afterEach(() => {
     featureFlagRepository.setFeatureFlagValue('enable-user-account-creation', null);
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
   });
 
   it('rejects direct API account creation while the feature is disabled', async () => {
@@ -85,14 +86,20 @@ describe('POST /auth/signup', () => {
 describe('session routes', () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
   });
 
-  it('reports when the active database has no users', async () => {
-    vi.spyOn(UserAndAuthRepository.prototype, 'hasUsers').mockReturnValue(false);
-
+  it.each([
+    [false, 'true', '/welcome'],
+    [true, 'true', null],
+    [false, 'false', null],
+    [true, 'false', null],
+    [false, undefined, null],
+  ])('reports redirect for hasUsers=%s and flag=%s', async (hasUsers, flag, redirectPath) => {
+    vi.stubEnv('HABSUM_INITIAL_WEB_SIGNUP', flag);
+    vi.spyOn(UserAndAuthRepository.prototype, 'hasUsers').mockReturnValue(hasUsers);
     const response = await request(createApp()).get('/auth/status').expect(200);
-
-    expect(response.body).toEqual({ hasUsers: false });
+    expect(response.body).toEqual({ redirectPath });
   });
 
   it('logs in through /auth/login, resolves /users/me, and logs out through /auth/logout', async () => {
@@ -222,6 +229,7 @@ describe('POST /auth/forgot-password', () => {
 
     sendSpy.mockRestore();
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
   });
 
   it('returns an error to the client when email delivery fails for a known user', async () => {
@@ -241,6 +249,7 @@ describe('POST /auth/forgot-password', () => {
     expect(res.body).toEqual({ error: 'Something went wrong with your request' });
 
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
   });
 });
 
@@ -286,6 +295,7 @@ describe('password reset token flow', () => {
     await request(app).get('/auth/reset-password').query({ token }).expect(400);
 
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
   });
 
   it('returns display name for invite tokens and auto-logs in after password set', async () => {

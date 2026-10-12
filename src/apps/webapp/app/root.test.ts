@@ -24,17 +24,17 @@ function getLoaderArgs(path: string): Parameters<typeof loader>[0] {
 
 beforeEach(() => {
   vi.mocked(getAuthMe).mockResolvedValue(loggedOut);
-  vi.mocked(getAuthStatus).mockResolvedValue({ hasUsers: true });
+  vi.mocked(getAuthStatus).mockResolvedValue({ redirectPath: null });
   vi.mocked(getFeatureFlags).mockResolvedValue({ flags: [] });
 });
 
-describe('root database status guard', () => {
+describe('root auth redirect guard', () => {
   it('uses the capitalized application title', () => {
     expect(meta({} as Parameters<typeof meta>[0])).toEqual([{ title: 'Habsum' }]);
   });
 
-  it('redirects every other route to welcome when the database has no users', async () => {
-    vi.mocked(getAuthStatus).mockResolvedValue({ hasUsers: false });
+  it('redirects every other route to welcome when initial web signup is enabled', async () => {
+    vi.mocked(getAuthStatus).mockResolvedValue({ redirectPath: '/welcome' });
 
     const response = await loader(getLoaderArgs('/login'));
 
@@ -43,15 +43,21 @@ describe('root database status guard', () => {
     expect((response as Response).headers.get('Location')).toBe('/welcome');
   });
 
-  it('allows the welcome route when the database has no users', async () => {
-    vi.mocked(getAuthStatus).mockResolvedValue({ hasUsers: false });
+  it('allows the welcome route when initial web signup is enabled', async () => {
+    vi.mocked(getAuthStatus).mockResolvedValue({ redirectPath: '/welcome' });
 
     const result = await loader(getLoaderArgs('/welcome'));
 
-    expect(result).toMatchObject({ authStatus: { hasUsers: false } });
+    expect(result).toMatchObject({ authStatus: { redirectPath: '/welcome' } });
   });
 
-  it('redirects away from welcome after the database has a user', async () => {
+  it('allows ordinary routes when no redirect is required', async () => {
+    expect(await loader(getLoaderArgs('/login'))).toMatchObject({
+      authStatus: { redirectPath: null },
+    });
+  });
+
+  it('redirects away from welcome when initial web signup is unavailable', async () => {
     const response = await loader(getLoaderArgs('/welcome'));
 
     expect(response).toBeInstanceOf(Response);

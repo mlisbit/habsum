@@ -12,7 +12,8 @@
     "./model-builders/habit": "./src/model-builders/habit.ts",
     "./password": "./src/password.ts",
     "./strings": "./src/strings.ts",
-    "./summation-hourly-bar-data": "./src/summation-hourly-bar-data.ts"
+    "./summation-hourly-bar-data": "./src/summation-hourly-bar-data.ts",
+    "./is-forbidden-username": "./src/is-forbidden-username.ts"
   },
   "dependencies": {
     "@habsum/types": "*"

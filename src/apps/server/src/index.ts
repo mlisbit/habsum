@@ -1,3 +1,5 @@
+import { UserAndAuthRepository } from './repositories/user-and-auth-repository.js';
+import getInitialWebSignupStatus from './utils/get-initial-web-signup-status.js';
 import { createApp } from './app.js';
 import { DatabaseRepository } from './repositories/database-repository.js';
 import getDatabasePath from './utils/get-database-path.js';
@@ -11,6 +13,9 @@ const HOST = process.env.HOST ?? '0.0.0.0';
 const server = app.listen(PORT, HOST, () => {
   const dbPath = getDatabasePath();
   console.log(`[habsum] DB=${dbPath}`);
+  console.log(
+    `[habsum] ${getInitialWebSignupStatus(new UserAndAuthRepository().hasUsers()).message}`,
+  );
   console.log(`[habsum] server listening on http://${HOST}:${PORT}`);
 });
 

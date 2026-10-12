@@ -6,9 +6,10 @@ import {
   PASSWORD_RESET_TOKEN_TTL_SECONDS,
   verifyPassword,
 } from '@habsum/utils/password';
-import type { Database } from 'bun:sqlite';
-import getHabsumDatabase from './get-habsum-database.ts';
-import getHiddenInput from './get-hidden-input.ts';
+import invalidateResetTokens from '../utils/invalidate-reset-tokens.ts';
+import getHabsumDatabase from '../utils/get-habsum-database.ts';
+import getInput from '../utils/get-input.ts';
+import getHiddenInput from '../utils/get-hidden-input.ts';
 
 type UserPasswordRow = {
   passwordHash: string;
@@ -17,31 +18,22 @@ type UserPasswordRow = {
 type ResetPasswordOptions = {
   databasePath?: string;
   webappUrl?: string;
+  readUsername?: (question: string) => Promise<string>;
   readPassword?: (question: string) => Promise<string>;
   getToken?: () => string;
   getNowSeconds?: () => number;
   writeLine?: (line: string) => void;
 };
 
-function invalidateResetTokens(database: Database, username: string, usedAt: number): void {
-  database
-    .query<never, [number, string]>(
-      `
-      UPDATE password_reset_tokens
-      SET used_at = ?
-      WHERE user_id = ? AND used_at IS NULL AND purpose = 'reset'
-    `,
-    )
-    .run(usedAt, username);
-}
-
 export default async function resetPassword(
-  username: string,
+  username?: string,
   options: ResetPasswordOptions = {},
 ): Promise<void> {
-  const normalizedUsername = username.trim();
+  const normalizedUsername = (
+    username ?? (await (options.readUsername ?? getInput)('Username: '))
+  ).trim();
   if (!normalizedUsername) {
-    throw new Error('user is required.');
+    throw new Error('username is required.');
   }
 
   const database = getHabsumDatabase(options.databasePath, 'read-write');

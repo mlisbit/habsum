@@ -1,4 +1,4 @@
-/** GET /auth/status — public login readiness for the active database. */
+/** GET /auth/status — initial web signup redirect for the active database. */
 export type AuthStatusGetResponse = {
-  hasUsers: boolean;
+  redirectPath: '/welcome' | null;
 };

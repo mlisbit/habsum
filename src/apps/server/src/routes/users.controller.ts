@@ -13,7 +13,7 @@ import type { Request, Response } from 'express';
 import { generateTemporaryPassword } from '@habsum/utils/password';
 import { isPlausibleEmail, isSafeConfigUserId } from '../utils/request-utils.js';
 import hasOnlyUsernameCharacters from '../utils/has-only-username-characters.js';
-import isForbiddenUsername from '../utils/is-forbidden-username.js';
+import isForbiddenUsername from '@habsum/utils/is-forbidden-username';
 import { UserAndAuthRepository } from '../repositories/user-and-auth-repository.js';
 import { AuthService } from '../services/auth-service.js';
 import { ConfigService } from '../services/config-service.js';

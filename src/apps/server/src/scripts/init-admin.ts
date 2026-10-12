@@ -4,7 +4,7 @@ import { generateTemporaryPassword } from '@habsum/utils/password';
 import { ConfigService } from '../services/config-service.js';
 import { DatabaseRepository } from '../repositories/database-repository.js';
 import { UserAndAuthRepository } from '../repositories/user-and-auth-repository.js';
-import isForbiddenUsername from '../utils/is-forbidden-username.js';
+import isForbiddenUsername from '@habsum/utils/is-forbidden-username';
 import { isSafeConfigUserId } from '../utils/request-utils.js';
 
 const configService = new ConfigService();

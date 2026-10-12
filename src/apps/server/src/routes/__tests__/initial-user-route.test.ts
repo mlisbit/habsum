@@ -1,6 +1,6 @@
 import request from 'supertest';
 import { ProductEntitlement } from '@habsum/types/common/entitlement';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../../app.js';
 import { FeatureFlagRepository } from '../../repositories/feature-flag-repository.js';
 import { ConfigService } from '../../services/config-service.js';
@@ -8,7 +8,22 @@ import { FeatureFlagService } from '../../services/feature-flag-service.js';
 import { UserAndAuthRepository } from '../../repositories/user-and-auth-repository.js';
 
 describe('POST /auth/initial-user', () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+  });
+
+  it.each([undefined, 'false'])('rejects initial web signup when the flag is %s', async (flag) => {
+    vi.stubEnv('HABSUM_INITIAL_WEB_SIGNUP', flag);
+    vi.spyOn(UserAndAuthRepository.prototype, 'hasUsers').mockReturnValue(false);
+    await request(createApp())
+      .post('/auth/initial-user')
+      .send({ username: 'blocked-owner', password: 'secret' })
+      .expect(403, { error: 'initial web signup is disabled' });
+    expect(new UserAndAuthRepository().resolveUsernameByLoginId('blocked-owner')).toBeNull();
+  });
   it('creates and signs in the first administrator while public registration is disabled', async () => {
+    vi.stubEnv('HABSUM_INITIAL_WEB_SIGNUP', 'true');
     const app = createApp();
     const configService = new ConfigService();
     const userAndAuthRepository = new UserAndAuthRepository();
@@ -47,7 +62,7 @@ describe('POST /auth/initial-user', () => {
       .expect(200);
     expect(meResponse.body).toMatchObject({ username: 'first-owner', admin: true });
     expect(meResponse.body.entitlements).toContain(ProductEntitlement.DEVELOPER);
-    await request(app).get('/auth/status').expect(200, { hasUsers: true });
+    await request(app).get('/auth/status').expect(200, { redirectPath: null });
 
     await request(app)
       .post('/auth/initial-user')

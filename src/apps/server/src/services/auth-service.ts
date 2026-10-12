@@ -1,4 +1,6 @@
 // Domain operations for authentication, sessions, and password recovery.
+import type { AuthStatusGetResponse } from '@habsum/types/api-responses/auth-status-get';
+import getInitialWebSignupStatus from '../utils/get-initial-web-signup-status.js';
 import { accountCreatedAtToApi } from '@habsum/types/common/day';
 import { getPasswordResetUrl, PASSWORD_RESET_TOKEN_TTL_SECONDS } from '@habsum/utils/password';
 import isDevelopment from '../utils/is-development.js';
@@ -10,7 +12,7 @@ import { UserService } from './user-service.js';
 import { UserAndAuthRepository } from '../repositories/user-and-auth-repository.js';
 import ServiceError from '../utils/classes/service-error.js';
 import { FeatureFlagService } from './feature-flag-service.js';
-import isForbiddenUsername from '../utils/is-forbidden-username.js';
+import isForbiddenUsername from '@habsum/utils/is-forbidden-username';
 
 const PACKAGE_VERSION = getPackageVersion();
 
@@ -106,14 +108,19 @@ export class AuthService {
     private readonly featureFlagService = new FeatureFlagService(),
   ) {}
 
-  getStatus() {
-    return { hasUsers: this.userAndAuthRepository.hasUsers() };
+  getStatus(): AuthStatusGetResponse {
+    const { enabled } = getInitialWebSignupStatus(this.userAndAuthRepository.hasUsers());
+    return { redirectPath: enabled ? '/welcome' : null };
   }
 
-  // Bootstrap access for an empty database must never depend on optional registration settings.
+  // Initial web signup requires explicit opt-in, independently of public registration settings.
   createInitialUser(body: InitialUserInput | undefined) {
     if (this.userAndAuthRepository.hasUsers()) {
       throw new ServiceError('conflict', 'the initial user already exists');
+    }
+
+    if (!getInitialWebSignupStatus(false).enabled) {
+      throw new ServiceError('forbidden', 'initial web signup is disabled');
     }
 
     if (typeof body?.username !== 'string' || body.username.trim() === '') {

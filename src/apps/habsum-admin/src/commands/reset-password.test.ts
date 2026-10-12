@@ -44,6 +44,30 @@ afterEach(() => {
 });
 
 describe('resetPassword', () => {
+  test('prompts for an omitted username', async () => {
+    const databasePath = getTestDatabasePath();
+    const prompts: string[] = [];
+    await resetPassword(undefined, {
+      databasePath,
+      readUsername: async (question) => {
+        prompts.push(question);
+        return ' alice ';
+      },
+      readPassword: async () => 'new secret',
+      writeLine: () => {},
+    });
+    expect(prompts).toEqual(['Username: ']);
+    const database = new Database(databasePath);
+    try {
+      const row = database
+        .query<{ pin: string }, []>("SELECT pin FROM users WHERE username = 'alice'")
+        .get()!;
+      expect(verifyPassword('new secret', row.pin)).toBe(true);
+    } finally {
+      database.close();
+    }
+  });
+
   test('updates the password and invalidates existing reset links', async () => {
     const databasePath = getTestDatabasePath();
     const database = new Database(databasePath);
