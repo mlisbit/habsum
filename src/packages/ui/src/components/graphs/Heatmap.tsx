@@ -1,5 +1,6 @@
 // exclusive-bem-block: heatmap
-import { useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+import useIsomorphicLayoutEffect from '../../hooks/use-isomorphic-layout-effect';
+import { useRef, useState, type CSSProperties } from 'react';
 import { Hoverable } from '@habsum/ui/components/Hoverable';
 import { classBuilder } from '@habsum/utils/class-builder';
 
@@ -72,7 +73,7 @@ export function Heatmap({ entries, className }: HeatmapProps) {
   const visibleColumns = entries.slice(-visibleColumnCount);
   const rootClassName = className == null ? 'heatmap' : `heatmap ${className}`;
 
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     const root = rootRef.current;
     if (!root) return undefined;
 

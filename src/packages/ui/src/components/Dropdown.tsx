@@ -1,3 +1,4 @@
+import useIsomorphicLayoutEffect from '../hooks/use-isomorphic-layout-effect';
 // exclusive-bem-block: dropdown
 import {
   createContext,
@@ -8,7 +9,6 @@ import {
   useContext,
   useEffect,
   useId,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -196,7 +196,7 @@ function DropdownContent({
     top: 0,
   });
 
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (!open) return;
 
     const update = () => {

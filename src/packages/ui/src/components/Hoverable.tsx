@@ -1,10 +1,11 @@
 // exclusive-bem-block: hover-layer
+import useIsomorphicLayoutEffect from '../hooks/use-isomorphic-layout-effect';
 import {
   createContext,
   forwardRef,
   useCallback,
   useContext,
-  useLayoutEffect,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -78,7 +79,7 @@ function HoverableRoot({ children, open: forcedOpen = false, openDelay = 60 }: H
     [forcedOpen, hoverOpen, beginHover, endHover],
   );
 
-  useLayoutEffect(
+  useEffect(
     () => () => {
       clearOpenTimer();
     },
@@ -149,7 +150,7 @@ function HoverableContent({
     top: 0,
   });
 
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (!open) return;
 
     const update = () => {

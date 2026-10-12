@@ -1,9 +1,9 @@
+import useIsomorphicLayoutEffect from '../hooks/use-isomorphic-layout-effect';
 import {
   createContext,
   useCallback,
   useContext,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -276,7 +276,7 @@ export function ModalProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('keydown', onKey);
   }, [active, closeModal]);
 
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (!active) return;
 
     const dialog = dialogRef.current;

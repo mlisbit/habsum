@@ -1,4 +1,5 @@
-import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import useIsomorphicLayoutEffect from '../hooks/use-isomorphic-layout-effect';
+import { useEffect, useId, useRef, useState } from 'react';
 import type { InputHTMLAttributes, KeyboardEvent } from 'react';
 import { Button } from './Button';
 
@@ -125,7 +126,7 @@ export function Input({
   const errorId = `${inputId}-error`;
   const describedBy = [ariaDescribedBy, error ? errorId : undefined].filter(Boolean).join(' ');
 
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (!autoFocus) return;
     queueMicrotask(() => inputRef.current?.focus());
   }, [autoFocus]);
