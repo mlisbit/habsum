@@ -2,9 +2,8 @@ import request from 'supertest';
 import { ProductEntitlement } from '@habsum/types/common/entitlement';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../../app.js';
-import { FeatureFlagRepository } from '../../repositories/feature-flag-repository.js';
+import { RegistrationSettingsRepository } from '../../repositories/registration-settings-repository.js';
 import { ConfigService } from '../../services/config-service.js';
-import { FeatureFlagService } from '../../services/feature-flag-service.js';
 import { UserAndAuthRepository } from '../../repositories/user-and-auth-repository.js';
 
 describe('POST /auth/initial-user', () => {
@@ -27,9 +26,8 @@ describe('POST /auth/initial-user', () => {
     const app = createApp();
     const configService = new ConfigService();
     const userAndAuthRepository = new UserAndAuthRepository();
-    const featureFlagRepository = new FeatureFlagRepository();
-    featureFlagRepository.setFeatureFlagValue('enable-user-account-creation', null);
-    const getFlagValue = vi.spyOn(FeatureFlagService.prototype, 'getFlagValue');
+    const registrationSettingsRepository = new RegistrationSettingsRepository();
+    registrationSettingsRepository.setAccountSignupEnabled(false);
 
     await request(app).post('/auth/initial-user').send({}).expect(400, {
       error: 'username is required',
@@ -49,7 +47,6 @@ describe('POST /auth/initial-user', () => {
       .expect(201);
 
     expect(response.body).toEqual({ ok: true, user: 'first-owner' });
-    expect(getFlagValue).not.toHaveBeenCalled();
     expect(configService.loadUserConfig('first-owner')?.habits).toEqual([]);
     expect(userAndAuthRepository.isUserAdmin('first-owner')).toBe(true);
     expect(userAndAuthRepository.isUserPasswordValid('first-owner', 'chosen-secret')).toBe(true);
@@ -62,7 +59,12 @@ describe('POST /auth/initial-user', () => {
       .expect(200);
     expect(meResponse.body).toMatchObject({ username: 'first-owner', admin: true });
     expect(meResponse.body.entitlements).toContain(ProductEntitlement.DEVELOPER);
-    await request(app).get('/auth/status').expect(200, { redirectPath: null });
+    await request(app)
+      .get('/auth/status')
+      .expect(200, {
+        redirectPath: null,
+        features: { accountSignup: false, forgotPassword: false },
+      });
 
     await request(app)
       .post('/auth/initial-user')

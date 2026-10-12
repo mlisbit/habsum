@@ -11,7 +11,8 @@ import { EmailService } from './email-service.js';
 import { UserService } from './user-service.js';
 import { UserAndAuthRepository } from '../repositories/user-and-auth-repository.js';
 import ServiceError from '../utils/classes/service-error.js';
-import { FeatureFlagService } from './feature-flag-service.js';
+import { RegistrationSettingsRepository } from '../repositories/registration-settings-repository.js';
+import { EmailSettingsRepository } from '../repositories/email-settings-repository.js';
 import isForbiddenUsername from '@habsum/utils/is-forbidden-username';
 
 const PACKAGE_VERSION = getPackageVersion();
@@ -105,12 +106,20 @@ export class AuthService {
     private readonly emailService = new EmailService(),
     private readonly userAndAuthRepository = new UserAndAuthRepository(),
     private readonly userService = new UserService(configService, userAndAuthRepository),
-    private readonly featureFlagService = new FeatureFlagService(),
+    private readonly registrationSettingsRepository = new RegistrationSettingsRepository(),
+    private readonly emailSettingsRepository = new EmailSettingsRepository(),
   ) {}
 
   getStatus(): AuthStatusGetResponse {
     const { enabled } = getInitialWebSignupStatus(this.userAndAuthRepository.hasUsers());
-    return { redirectPath: enabled ? '/welcome' : null };
+    const emailSettings = this.emailSettingsRepository.getResendSettings();
+    return {
+      redirectPath: enabled ? '/welcome' : null,
+      features: {
+        accountSignup: this.registrationSettingsRepository.isAccountSignupEnabled(),
+        forgotPassword: Boolean(emailSettings?.apiKey.trim() && emailSettings?.fromEmail.trim()),
+      },
+    };
   }
 
   // Initial web signup requires explicit opt-in, independently of public registration settings.
@@ -165,7 +174,7 @@ export class AuthService {
   }
 
   signup(body: SignupInput | undefined) {
-    if (this.featureFlagService.getFlagValue('enable-user-account-creation') == null) {
+    if (!this.registrationSettingsRepository.isAccountSignupEnabled()) {
       throw new ServiceError('forbidden', 'account creation is disabled');
     }
 
@@ -282,6 +291,9 @@ export class AuthService {
   }
 
   async forgotPassword(body: ForgotPasswordInput | undefined) {
+    if (!this.getStatus().features.forgotPassword) {
+      throw new ServiceError('forbidden', 'password recovery is disabled');
+    }
     const rawEmail = body?.email;
     if (typeof rawEmail !== 'string') {
       throw new ServiceError('bad_request', 'email is required');

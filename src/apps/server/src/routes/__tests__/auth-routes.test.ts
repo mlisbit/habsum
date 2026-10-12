@@ -1,25 +1,26 @@
+import { EmailSettingsRepository } from '../../repositories/email-settings-repository.js';
 import request from 'supertest';
 import { yamlString } from '@habsum/types/common/misc';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../../app.js';
 import { ConfigService } from '../../services/config-service.js';
 import { EmailService } from '../../services/email-service.js';
 import { UserAndAuthRepository } from '../../repositories/user-and-auth-repository.js';
-import { FeatureFlagRepository } from '../../repositories/feature-flag-repository.js';
+import { RegistrationSettingsRepository } from '../../repositories/registration-settings-repository.js';
 
 const configService = new ConfigService();
 const userAndAuthRepository = new UserAndAuthRepository();
-const featureFlagRepository = new FeatureFlagRepository();
+const registrationSettingsRepository = new RegistrationSettingsRepository();
 
 describe('POST /auth/signup', () => {
   afterEach(() => {
-    featureFlagRepository.setFeatureFlagValue('enable-user-account-creation', null);
+    registrationSettingsRepository.setAccountSignupEnabled(false);
     vi.restoreAllMocks();
     vi.unstubAllEnvs();
   });
 
   it('rejects direct API account creation while the feature is disabled', async () => {
-    featureFlagRepository.setFeatureFlagValue('enable-user-account-creation', null);
+    registrationSettingsRepository.setAccountSignupEnabled(false);
 
     const response = await request(createApp())
       .post('/auth/signup')
@@ -34,7 +35,7 @@ describe('POST /auth/signup', () => {
   });
 
   it('creates and authenticates an account while the feature is enabled', async () => {
-    featureFlagRepository.setFeatureFlagValue('enable-user-account-creation', 'noVerify');
+    registrationSettingsRepository.setAccountSignupEnabled(true);
 
     const response = await request(createApp())
       .post('/auth/signup')
@@ -61,7 +62,7 @@ describe('POST /auth/signup', () => {
   });
 
   it('validates signup input and rejects an email already in use', async () => {
-    featureFlagRepository.setFeatureFlagValue('enable-user-account-creation', 'noVerify');
+    registrationSettingsRepository.setAccountSignupEnabled(true);
     userAndAuthRepository.setUserPassword('existing-signup-user', 'secret');
     userAndAuthRepository.patchUserProfile('existing-signup-user', {
       email: 'existing-signup@example.com',
@@ -84,6 +85,37 @@ describe('POST /auth/signup', () => {
 });
 
 describe('session routes', () => {
+  it('reports feature availability and removes both legacy flag endpoints', async () => {
+    const emailSettings = new EmailSettingsRepository();
+    try {
+      registrationSettingsRepository.setAccountSignupEnabled(true);
+      emailSettings.setResendSettings({
+        apiKey: 're_test',
+        fromEmail: 'sender@example.com',
+        updatedAt: 1,
+      });
+      await request(createApp())
+        .get('/auth/status')
+        .expect(200, {
+          redirectPath: null,
+          features: { accountSignup: true, forgotPassword: true },
+        });
+      emailSettings.deleteResendSettings();
+      registrationSettingsRepository.setAccountSignupEnabled(false);
+      await request(createApp())
+        .get('/auth/status')
+        .expect(200, {
+          redirectPath: null,
+          features: { accountSignup: false, forgotPassword: false },
+        });
+      await request(createApp()).get('/feature-flags').expect(404);
+      await request(createApp()).post('/feature-flags').send({}).expect(404);
+    } finally {
+      emailSettings.deleteResendSettings();
+      registrationSettingsRepository.setAccountSignupEnabled(false);
+    }
+  });
+
   afterEach(() => {
     vi.restoreAllMocks();
     vi.unstubAllEnvs();
@@ -99,7 +131,10 @@ describe('session routes', () => {
     vi.stubEnv('HABSUM_INITIAL_WEB_SIGNUP', flag);
     vi.spyOn(UserAndAuthRepository.prototype, 'hasUsers').mockReturnValue(hasUsers);
     const response = await request(createApp()).get('/auth/status').expect(200);
-    expect(response.body).toEqual({ redirectPath });
+    expect(response.body).toMatchObject({
+      redirectPath,
+      features: { accountSignup: false, forgotPassword: false },
+    });
   });
 
   it('logs in through /auth/login, resolves /users/me, and logs out through /auth/logout', async () => {
@@ -153,6 +188,22 @@ describe('session routes', () => {
 });
 
 describe('POST /auth/forgot-password', () => {
+  beforeEach(() => {
+    new EmailSettingsRepository().setResendSettings({
+      apiKey: 're_test',
+      fromEmail: 'sender@example.com',
+      updatedAt: 1,
+    });
+  });
+  afterEach(() => new EmailSettingsRepository().deleteResendSettings());
+  it('rejects recovery requests when email is not configured', async () => {
+    new EmailSettingsRepository().deleteResendSettings();
+    await request(createApp())
+      .post('/auth/forgot-password')
+      .send({ email: 'known@example.com' })
+      .expect(403, { error: 'password recovery is disabled' });
+  });
+
   it('returns the same success message whether or not the email is registered', async () => {
     const app = createApp();
     const sendSpy = vi.spyOn(EmailService.prototype, 'sendEmail').mockResolvedValue(undefined);

@@ -52,3 +52,10 @@ docker compose -f compose.dev.yaml up --build
 ```
 
 Open `http://localhost:3000`. See [development setup](docs/development.md) for details.
+
+Authentication capabilities are returned by `/auth/status` in a `features` object:
+`accountSignup` reflects the administrator's User registration setting, and
+`forgotPassword` is available only when a complete email provider configuration
+is saved. The former `/feature-flags` API has been removed; existing registration
+preferences are migrated automatically. Registration settings are managed through
+`/administrator/registration-settings` (administrator access required).

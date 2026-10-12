@@ -1,8 +1,5 @@
 import type { Habit } from '@habsum/types/common/habit';
-import type {
-  FeatureFlagPostRequest,
-  FeatureFlagPostResponse,
-} from '@habsum/types/api-responses/feature-flags';
+import type { AdministratorRegistrationSettings } from '@habsum/types/api-responses/administrator-registration-settings';
 import type { AdministratorGetResponse } from '@habsum/types/api-responses/administrator-get';
 import type {
   AdministratorDatabaseDeleteRequest,
@@ -336,9 +333,15 @@ export async function sendAdministratorTestEmail(body: AdministratorEmailTestReq
   });
 }
 
-export async function updateFeatureFlag(body: FeatureFlagPostRequest) {
-  return request<FeatureFlagPostResponse>('/feature-flags', {
-    method: 'POST',
+export async function getAdministratorRegistrationSettings() {
+  return getRequest<AdministratorRegistrationSettings>('/administrator/registration-settings');
+}
+
+export async function updateAdministratorRegistrationSettings(
+  body: AdministratorRegistrationSettings,
+) {
+  return request<AdministratorRegistrationSettings>('/administrator/registration-settings', {
+    method: 'PUT',
     body: JSON.stringify(body),
   });
 }

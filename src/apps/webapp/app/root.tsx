@@ -20,12 +20,12 @@ import { OucPopupBootstrap } from '~/components/OucPopupBootstrap';
 import { ModalProvider } from '@habsum/ui/contexts/modal';
 import { ToastProvider } from '@habsum/ui/contexts/toast';
 import { AuthProvider } from '~/context/auth';
-import { FeatureFlagsProvider } from '~/context/feature-flags';
+import { FeaturesProvider } from '~/context/features';
 import { getAuthMe as getClientAuthMe } from '~/api.client';
 import stylesHref from '~/styles/main.scss?url';
 import { UI_THEME_STORAGE_KEY } from '~/theme.shared';
 import { webappTrackingSpec } from '~/tracking-spec';
-import { getAuthMe as getServerAuthMe, getAuthStatus, getFeatureFlags } from '~/api.server';
+import { getAuthMe as getServerAuthMe, getAuthStatus } from '~/api.server';
 import { getOucSessionToken } from '~/ouc.client';
 import type { Route } from './+types/root';
 
@@ -41,18 +41,14 @@ export const links: LinksFunction = () => [
 export const meta: MetaFunction = () => [{ title: 'Habsum' }];
 
 export async function loader({ request }: Route.LoaderArgs) {
-  const [me, authStatus, featureFlags] = await Promise.all([
-    getServerAuthMe(request),
-    getAuthStatus(),
-    getFeatureFlags(),
-  ]);
+  const [me, authStatus] = await Promise.all([getServerAuthMe(request), getAuthStatus()]);
   const currentPath = new URL(request.url).pathname.replace(/\/$/, '') || '/';
   if (authStatus.redirectPath && currentPath !== authStatus.redirectPath) {
     return redirect(authStatus.redirectPath);
   }
   if (!authStatus.redirectPath && currentPath === '/welcome') return redirect('/');
 
-  return { me, authStatus, featureFlags: featureFlags.flags };
+  return { me, authStatus };
 }
 
 export async function clientLoader({ serverLoader }: Route.ClientLoaderArgs) {
@@ -137,13 +133,13 @@ function AppContent() {
 }
 
 export default function App() {
-  const { featureFlags } = useLoaderData<typeof loader>();
+  const { authStatus } = useLoaderData<typeof loader>();
 
   return (
-    <FeatureFlagsProvider flags={featureFlags}>
+    <FeaturesProvider features={authStatus.features}>
       <TrackingContextProvider provider={trackingProvider} spec={webappTrackingSpec}>
         <AppContent />
       </TrackingContextProvider>
-    </FeatureFlagsProvider>
+    </FeaturesProvider>
   );
 }

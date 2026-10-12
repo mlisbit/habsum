@@ -237,14 +237,6 @@ db.exec(`
 `);
 
 db.exec(`
-  CREATE TABLE IF NOT EXISTS feature_flags (
-    key TEXT PRIMARY KEY,
-    value TEXT,
-    last_modified_at INTEGER NOT NULL
-  );
-`);
-
-db.exec(`
   CREATE TABLE IF NOT EXISTS password_reset_tokens (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id TEXT NOT NULL,

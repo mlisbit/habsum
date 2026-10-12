@@ -1,7 +1,6 @@
 import { Link, useNavigate } from 'react-router';
 import { useEffect, useState } from 'react';
-import type { FeatureFlagKey } from '@habsum/types/api-responses/feature-flags';
-import { useFeatureFlags } from '~/context/feature-flags';
+import { useFeatures } from '~/context/features';
 import { useTracking } from '@habsum/tracking/client/react';
 import { HomeLink } from '~/components/HomeLink';
 import { Button } from '@habsum/ui/components/Button';
@@ -22,7 +21,7 @@ function LoginForm({
   const navigate = useNavigate();
   const { signIn } = useAuth();
   const tracking = useTracking<typeof webappTrackingSpec>();
-  const { getFlagValue } = useFeatureFlags<FeatureFlagKey>();
+  const features = useFeatures();
   const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -91,9 +90,11 @@ function LoginForm({
           spellCheck={false}
           onChange={setPassword}
         />
-        <Link to="/forgot-password" className="text-b-s text-link users-index__forgot-password">
-          Forgot password?
-        </Link>
+        {features.forgotPassword ? (
+          <Link to="/forgot-password" className="text-b-s text-link users-index__forgot-password">
+            Forgot password?
+          </Link>
+        ) : null}
         <button type="submit" style={{ display: 'none' }} aria-hidden />
 
         {error ? (
@@ -112,7 +113,7 @@ function LoginForm({
             void handleLogin();
           }}
         />
-        {getFlagValue('enable-user-account-creation') != null ? (
+        {features.accountSignup ? (
           <p className="users-index__signup text-b-s text-light">
             Don&apos;t have an account?{' '}
             <Link to="/signup" className="text-link">

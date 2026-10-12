@@ -1,7 +1,6 @@
 import { Link, useNavigate } from 'react-router';
 import { useEffect, useState } from 'react';
-import type { FeatureFlagKey } from '@habsum/types/api-responses/feature-flags';
-import { useFeatureFlags } from '~/context/feature-flags';
+import { useFeatures } from '~/context/features';
 import { Button } from '@habsum/ui/components/Button';
 import { InfoText } from '@habsum/ui/components/InfoText';
 import { Input } from '@habsum/ui/components/Input';
@@ -18,8 +17,8 @@ function isPlausibleEmail(email: string): boolean {
 export default function SignupRoute() {
   const navigate = useNavigate();
   const { refresh } = useAuth();
-  const { getFlagValue } = useFeatureFlags<FeatureFlagKey>();
-  const accountCreationEnabled = getFlagValue('enable-user-account-creation') != null;
+  const features = useFeatures();
+  const accountCreationEnabled = features.accountSignup;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);

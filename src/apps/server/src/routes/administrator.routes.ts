@@ -34,3 +34,14 @@ administratorRouter.post(
   requireAdmin,
   administratorController.postEmailTest,
 );
+
+administratorRouter.get(
+  '/administrator/registration-settings',
+  requireAdmin,
+  administratorController.getRegistrationSettings,
+);
+administratorRouter.put(
+  '/administrator/registration-settings',
+  requireAdmin,
+  administratorController.putRegistrationSettings,
+);

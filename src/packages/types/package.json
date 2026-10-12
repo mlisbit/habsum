@@ -15,7 +15,6 @@
     "./api-responses/administrator-database": "./src/api-responses/administrator-database.ts",
     "./api-responses/administrator-email-settings": "./src/api-responses/administrator-email-settings.ts",
     "./api-responses/auth-status-get": "./src/api-responses/auth-status-get.ts",
-    "./api-responses/feature-flags": "./src/api-responses/feature-flags.ts",
     "./api-responses/habit-patch": "./src/api-responses/habit-patch.ts",
     "./api-responses/habits-get": "./src/api-responses/habits-get.ts",
     "./api-responses/history-get": "./src/api-responses/history-get.ts",
@@ -32,6 +31,7 @@
     "./api-responses/ouc-post": "./src/api-responses/ouc-post.ts",
     "./api-responses/forgot-password-post": "./src/api-responses/forgot-password-post.ts",
     "./api-responses/reset-password-get": "./src/api-responses/reset-password-get.ts",
-    "./api-responses/reset-password-post": "./src/api-responses/reset-password-post.ts"
+    "./api-responses/reset-password-post": "./src/api-responses/reset-password-post.ts",
+    "./api-responses/administrator-registration-settings": "./src/api-responses/administrator-registration-settings.ts"
   }
 }

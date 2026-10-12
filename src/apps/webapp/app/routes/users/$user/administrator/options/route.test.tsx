@@ -2,34 +2,30 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { FeatureFlag, FeatureFlagKey } from '@habsum/types/api-responses/feature-flags';
 import { ModalProvider } from '@habsum/ui/contexts/modal';
 import { ToastProvider } from '@habsum/ui/contexts/toast';
 import {
   getAdministratorEmailSettings,
+  updateAdministratorRegistrationSettings,
   sendAdministratorTestEmail,
   updateAdministratorEmailSettings,
 } from '~/api.client';
 import AdministratorOptions from './route';
 
 const authState = vi.hoisted(() => ({ email: 'admin@example.com' }));
-const featureFlagState = vi.hoisted(() => ({
-  flags: [] as FeatureFlag<FeatureFlagKey>[],
-}));
-
-vi.mock('~/context/feature-flags', () => ({
-  useFeatureFlags: () => ({ flags: featureFlagState.flags }),
-}));
-
 vi.mock('~/api.client', () => ({
   getAdministratorEmailSettings: vi.fn(),
   sendAdministratorTestEmail: vi.fn(),
   updateAdministratorEmailSettings: vi.fn(),
-  updateFeatureFlag: vi.fn(),
+  getAdministratorRegistrationSettings: vi.fn().mockResolvedValue({ accountSignup: false }),
+  updateAdministratorRegistrationSettings: vi.fn().mockResolvedValue({ accountSignup: true }),
 }));
 
 vi.mock('~/context/auth', () => ({
-  useAuth: () => ({ user: { email: authState.email } }),
+  useAuth: () => ({
+    user: { email: authState.email },
+    refresh: vi.fn().mockResolvedValue(undefined),
+  }),
 }));
 
 function renderAdministratorOptions() {
@@ -57,7 +53,6 @@ function renderAdministratorOptions() {
 describe('Administrator options', () => {
   beforeEach(() => {
     authState.email = 'admin@example.com';
-    featureFlagState.flags = [];
     vi.mocked(getAdministratorEmailSettings).mockResolvedValue({ updatedAt: null });
     vi.mocked(sendAdministratorTestEmail).mockImplementation(async ({ recipient }) => ({
       ok: true,
@@ -103,47 +98,31 @@ describe('Administrator options', () => {
     expect(emailCard?.contains(sendTestEmail)).toBe(true);
   });
 
-  it('shows feature flag options without implementation details', async () => {
-    const user = userEvent.setup();
-    featureFlagState.flags = [
-      {
-        key: 'enable-user-account-creation',
-        value: 'verify',
-        lastModifiedAt: 1_900_000_000,
-        name: 'User registration',
-        description: 'Allow users to create their own accounts.',
-        options: {
-          noVerify: { text: 'With no email verification' },
-          verify: {
-            text: 'With email verification',
-            disabled: 'requires email configuration to be enabled',
-          },
-        },
-      },
-    ];
-
+  it('nests user registration within the Features section', async () => {
     renderAdministratorOptions();
-
-    expect(screen.getByText('User registration')).toBeTruthy();
-    expect(screen.getByText('Allow users to create their own accounts.')).toBeTruthy();
-    expect(screen.queryByText('enable-user-account-creation')).toBeNull();
-    expect(screen.queryByText(/Last modified:/)).toBeNull();
-
-    const select = screen.getByRole('combobox', { name: 'User registration' });
+    const select = await screen.findByRole('combobox', { name: 'User registration' });
+    await waitFor(() => expect(select).toHaveProperty('disabled', false));
     expect(Array.from((select as HTMLSelectElement).options).map((option) => option.value)).toEqual(
-      ['', 'noVerify', 'verify'],
+      ['disabled', 'enabled'],
     );
-    expect(screen.getByRole('option', { name: 'With email verification' })).toHaveProperty(
-      'disabled',
-      true,
-    );
-    const warning = screen.getByText('requires email configuration to be enabled');
-    expect(select.parentElement?.contains(warning)).toBe(true);
-    expect(screen.queryByRole('option', { name: /requires email configuration/ })).toBeNull();
+    const featuresCard = screen.getByRole('heading', { name: 'Features' }).closest('.card');
+    expect(featuresCard?.contains(select)).toBe(true);
+    expect(
+      featuresCard?.contains(screen.getByText('Allow users to create their own accounts.')),
+    ).toBe(true);
+    expect(screen.queryByText('Feature Flags')).toBeNull();
+  });
 
-    await user.selectOptions(select, 'noVerify');
-    expect((select as HTMLSelectElement).value).toBe('noVerify');
-    expect(screen.queryByText('requires email configuration to be enabled')).toBeNull();
+  it('saves registration through its dedicated endpoint', async () => {
+    const user = userEvent.setup();
+    renderAdministratorOptions();
+    const select = await screen.findByRole('combobox', { name: 'User registration' });
+    await waitFor(() => expect(select).toHaveProperty('disabled', false));
+    await user.selectOptions(select, 'enabled');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() =>
+      expect(updateAdministratorRegistrationSettings).toHaveBeenCalledWith({ accountSignup: true }),
+    );
   });
 
   it('shows field errors when an incomplete configuration is tested', async () => {

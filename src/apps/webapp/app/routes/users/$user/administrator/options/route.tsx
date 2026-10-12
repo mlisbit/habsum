@@ -1,7 +1,6 @@
 // exclusive-bem-block: administrator-options
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useBlocker } from 'react-router';
-import type { FeatureFlagKey } from '@habsum/types/api-responses/feature-flags';
 import { Button } from '@habsum/ui/components/Button';
 import { InfoText } from '@habsum/ui/components/InfoText';
 import { Loader } from '@habsum/ui/components/Loader';
@@ -10,35 +9,45 @@ import { useToast } from '@habsum/ui/contexts/toast';
 import {
   getAdministratorEmailSettings,
   updateAdministratorEmailSettings,
-  updateFeatureFlag,
+  getAdministratorRegistrationSettings,
+  updateAdministratorRegistrationSettings,
   type AdministratorEmailSettingsResponse,
 } from '~/api.client';
 import { ResendConfig, type ResendConfigHandle } from '~/components/ResendConfig';
-import { useFeatureFlags } from '~/context/feature-flags';
+import { useAuth } from '~/context/auth';
 import { SettingsPageCard } from '~/components/SettingsPageCard';
 import { UnsavedChangesModal } from '~/components/UnsavedChangesModal';
 
-type FeatureFlagValues = Partial<Record<FeatureFlagKey, string | null>>;
 type EmailProviderName = 'none' | 'resend';
-
-function getFeatureFlagValues(
-  flags: readonly { key: FeatureFlagKey; value: string | null }[],
-): FeatureFlagValues {
-  return Object.fromEntries(flags.map((flag) => [flag.key, flag.value])) as FeatureFlagValues;
-}
 
 export default function AdministratorOptions() {
   const { showToast } = useToast();
-  const { flags: featureFlags } = useFeatureFlags<FeatureFlagKey>();
+  const { refresh } = useAuth();
+  const [savedAccountSignup, setSavedAccountSignup] = useState<boolean | null>(null);
+  const [accountSignup, setAccountSignup] = useState(false);
+  const [registrationError, setRegistrationError] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    getAdministratorRegistrationSettings()
+      .then((settings) => {
+        if (cancelled) return;
+        setSavedAccountSignup(settings.accountSignup);
+        setAccountSignup(settings.accountSignup);
+      })
+      .catch((error) => {
+        if (!cancelled)
+          setRegistrationError(error instanceof Error ? error.message : String(error));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const [emailSettings, setEmailSettings] = useState<AdministratorEmailSettingsResponse | null>(
     null,
   );
   const [emailSettingsError, setEmailSettingsError] = useState<string | null>(null);
   const [emailProviderName, setEmailProviderName] = useState<EmailProviderName>('none');
   const [resendConfigDirty, setResendConfigDirty] = useState(false);
-  const [draftFeatureFlagValues, setDraftFeatureFlagValues] = useState<FeatureFlagValues>(() =>
-    getFeatureFlagValues(featureFlags),
-  );
   const [saveBusy, setSaveBusy] = useState(false);
   const [sendingTestEmail, setSendingTestEmail] = useState(false);
   const { present, closeModal } = useModal();
@@ -72,11 +81,8 @@ export default function AdministratorOptions() {
     );
   }, [emailProviderName, emailSettings, resendConfigDirty]);
 
-  const changedFeatureFlags = useMemo(
-    () => featureFlags.filter((flag) => draftFeatureFlagValues[flag.key] !== flag.value),
-    [draftFeatureFlagValues, featureFlags],
-  );
-  const hasDirty = isEmailSettingsDirty || changedFeatureFlags.length > 0;
+  const isRegistrationDirty = savedAccountSignup !== null && accountSignup !== savedAccountSignup;
+  const hasDirty = isEmailSettingsDirty || isRegistrationDirty;
 
   const revertDrafts = useCallback(() => {
     if (emailSettings) {
@@ -84,9 +90,9 @@ export default function AdministratorOptions() {
     }
     resendConfigRef.current?.reset();
     setResendConfigDirty(false);
-    setDraftFeatureFlagValues(getFeatureFlagValues(featureFlags));
+    if (savedAccountSignup !== null) setAccountSignup(savedAccountSignup);
     setEmailSettingsError(null);
-  }, [emailSettings, featureFlags]);
+  }, [emailSettings, savedAccountSignup]);
 
   const blocker = useBlocker(hasDirty);
   const blockerRef = useRef(blocker);
@@ -143,14 +149,13 @@ export default function AdministratorOptions() {
         setResendConfigDirty(false);
       }
 
-      await Promise.all(
-        changedFeatureFlags.map((flag) =>
-          updateFeatureFlag({ key: flag.key, value: draftFeatureFlagValues[flag.key] ?? null }),
-        ),
-      );
-
+      if (isRegistrationDirty) {
+        const settings = await updateAdministratorRegistrationSettings({ accountSignup });
+        setSavedAccountSignup(settings.accountSignup);
+        setAccountSignup(settings.accountSignup);
+      }
+      await refresh();
       showToast({ type: 'success', message: 'Saved.' });
-      if (changedFeatureFlags.length > 0) window.location.reload();
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to save settings.';
       if (emailRequestPending && emailProviderName === 'resend') {
@@ -237,52 +242,32 @@ export default function AdministratorOptions() {
         ) : null}
       </SettingsPageCard>
 
-      <SettingsPageCard headerText="Feature Flags" className="administrator-options__feature-flags">
+      <SettingsPageCard headerText="Features">
         <div className="card-padding">
-          {featureFlags.length === 0 ? (
-            <p className="text-light text-b-m">No feature flags configured.</p>
-          ) : (
-            <ul className="administrator-options__feature-flags-list">
-              {featureFlags.map((flag) => {
-                const selectedValue = draftFeatureFlagValues[flag.key];
-                const selectedOption = selectedValue ? flag.options[selectedValue] : undefined;
-                return (
-                  <li key={flag.key} className="administrator-options__feature-flags-row">
-                    <div className="administrator-options__feature-flags-details">
-                      <strong className="text-b-m">{flag.name}</strong>
-                      <span className="text-light text-b-s">{flag.description}</span>
-                    </div>
-                    <div className="administrator-options__feature-flag-control">
-                      <select
-                        className="administrator-options__feature-flag-select text-b-m"
-                        aria-label={flag.name}
-                        value={selectedValue ?? ''}
-                        disabled={saveBusy || sendingTestEmail}
-                        onChange={(event) =>
-                          setDraftFeatureFlagValues((values) => ({
-                            ...values,
-                            [flag.key]: event.target.value || null,
-                          }))
-                        }
-                      >
-                        <option value="">Disabled</option>
-                        {Object.entries(flag.options).map(([value, option]) => (
-                          <option key={value} value={value} disabled={option.disabled != null}>
-                            {option.text}
-                          </option>
-                        ))}
-                      </select>
-                      {selectedOption?.disabled ? (
-                        <InfoText size="small" variant="warning" className="mt-1">
-                          {selectedOption.disabled}
-                        </InfoText>
-                      ) : null}
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
+          {registrationError ? (
+            <InfoText size="small" variant="error">
+              {registrationError}
+            </InfoText>
+          ) : null}
+          <div className="administrator-options__feature-row">
+            <div className="administrator-options__feature-details">
+              <label htmlFor="administrator-user-registration" className="text-b-m">
+                User registration
+              </label>
+              <span className="text-light text-b-s">Allow users to create their own accounts.</span>
+            </div>
+            <select
+              id="administrator-user-registration"
+              className="administrator-options__registration-select text-b-m"
+              aria-label="User registration"
+              value={accountSignup ? 'enabled' : 'disabled'}
+              disabled={savedAccountSignup === null || saveBusy || sendingTestEmail}
+              onChange={(event) => setAccountSignup(event.target.value === 'enabled')}
+            >
+              <option value="disabled">Disabled</option>
+              <option value="enabled">Enabled</option>
+            </select>
+          </div>
         </div>
       </SettingsPageCard>
     </div>

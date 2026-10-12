@@ -1,4 +1,5 @@
-import { Link } from 'react-router';
+import { useFeatures } from '~/context/features';
+import { Link, useNavigate } from 'react-router';
 import { useEffect, useState } from 'react';
 import { requestForgotPassword } from '~/api.client';
 import { Footer } from '~/components/Footer';
@@ -8,6 +9,11 @@ import { InfoText } from '@habsum/ui/components/InfoText';
 import { Input } from '@habsum/ui/components/Input';
 
 export default function ForgotPasswordRoute() {
+  const { forgotPassword } = useFeatures();
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!forgotPassword) navigate('/login', { replace: true });
+  }, [forgotPassword, navigate]);
   const [email, setEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -47,6 +53,8 @@ export default function ForgotPasswordRoute() {
       setIsSubmitting(false);
     }
   };
+
+  if (!forgotPassword) return null;
 
   const submitDisabled = isSubmitting || retryAfterSeconds > 0 || email.trim() === '';
 

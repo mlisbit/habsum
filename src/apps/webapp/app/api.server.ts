@@ -1,6 +1,5 @@
 import type { HabitsResponse } from '@habsum/types/api-responses/habits-get';
 import type { AuthStatusGetResponse } from '@habsum/types/api-responses/auth-status-get';
-import type { FeatureFlagsGetResponse } from '@habsum/types/api-responses/feature-flags';
 import type { MeGetResponse } from '@habsum/types/api-responses/me-get';
 import type { PatchHabitResponse } from '@habsum/types/api-responses/habit-patch';
 import type { ListUsersResponse } from '@habsum/types/common/misc';
@@ -58,10 +57,6 @@ export function getAuthMe(documentRequest: Request) {
 
 export function getAuthStatus() {
   return request<AuthStatusGetResponse>('/auth/status');
-}
-
-export function getFeatureFlags() {
-  return request<FeatureFlagsGetResponse>('/feature-flags');
 }
 
 export function getHabits(user: string) {
