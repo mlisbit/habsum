@@ -40,11 +40,12 @@ export default defineConfig({
     },
   },
   server: {
+    host: true,
     port: 3000,
     strictPort: true,
     proxy: {
       '/api': {
-        target: process.env.HABSUM_DEV_SERVER_URL ?? 'http://127.0.0.1:3001',
+        target: process.env.HABSUM_SERVER_URL ?? 'http://127.0.0.1:3001',
         changeOrigin: true,
         rewrite: (p) => p.replace(/^\/api/, ''),
       },

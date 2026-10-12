@@ -1,44 +1,60 @@
 # Habsum Admin
 
-`habsum-admin` is a Bun command-line utility for inspecting a Habsum installation. It opens the
-application database in read-only mode.
+`habsum-admin` is a Bun command-line utility for inspecting a Habsum installation
+and resetting account passwords. Listing accounts opens the database read-only;
+resetting a password opens it read-write.
 
-From the repository root, list every account and its derived product entitlements without using
-`bun run`:
+## Docker
 
-```bash
-./habsum-admin list-users
-```
+The development and server images include Bun and expose `habsum-admin` on PATH.
+No repository-root wrapper or manual linking is needed inside the container.
 
-The root command uses `./config/habsum.db` by default. Set `HABSUM_DB_PATH` to inspect a different
-Habsum database:
+From the repository root:
 
 ```bash
-HABSUM_DB_PATH=/data/habsum.db ./habsum-admin list-users
+docker compose -f compose.dev.yaml exec server habsum-admin list-users
+docker compose -f compose.dev.yaml exec server habsum-admin reset-password alice
 ```
 
-The package also exposes a `habsum-admin` binary. Link it once to use the command without the `./`
-prefix:
+Or with an existing server container's name:
+
+```bash
+docker exec <server-container> habsum-admin list-users
+docker exec -it <server-container> habsum-admin reset-password alice
+```
+
+The CLI inherits `HABSUM_DB` from the server container's environment. In development,
+Compose sets it to `/app/config/habsum.db`, which is the same database the API uses.
+The command does not create a missing database; start the API first to initialize it.
+
+Rebuild the image and recreate the container after changing the Dockerfile.
+
+## Local usage
+
+With Bun installed and workspace dependencies installed, run the package binary
+from the repository root with an explicit database path:
+
+```bash
+HABSUM_DB=./config/habsum.db npm exec -- habsum-admin list-users
+HABSUM_DB=./config/habsum.db npm exec -- habsum-admin reset-password alice
+```
+
+To expose `habsum-admin` on your Mac's PATH, link the package once:
 
 ```bash
 cd src/apps/habsum-admin
 bun link
 ```
 
-You can then run it from anywhere with an explicit Habsum database:
+You can then run it from anywhere:
 
 ```bash
-HABSUM_DB_PATH=/data/habsum.db habsum-admin list-users
+HABSUM_DB=/data/habsum.db habsum-admin list-users
 ```
 
 ## Reset a password
 
-Pass the account username to the `reset-password` command:
-
-```bash
-./habsum-admin reset-password alice
-```
-
-The command securely prompts for a new password. Entering a password updates the account directly.
-Leaving the prompt blank creates and prints a password-reset link that expires after 15 minutes.
-`HABSUM_WEBAPP_URL` controls the link's base URL and defaults to `http://localhost:3000`.
+The `reset-password` command securely prompts for a new password. Entering a
+password updates the account directly. Leaving the prompt blank creates and prints
+a password-reset link that expires after 15 minutes. `HABSUM_WEBAPP_URL` controls
+the link's base URL and defaults to `http://localhost:3000`.

@@ -1,4 +1,3 @@
-import './utils/load-local-env.js';
 import { createApp } from './app.js';
 import { DatabaseRepository } from './repositories/database-repository.js';
 import getDatabasePath from './utils/get-database-path.js';

@@ -8,7 +8,7 @@ const usage = `Usage:
   habsum-admin reset-password <user>
 
 Environment:
-  HABSUM_DB_PATH     Path to the habsum.db file
+  HABSUM_DB     Path to the habsum.db file
   HABSUM_WEBAPP_URL   Base URL used for generated password-reset links`;
 
 async function run(): Promise<void> {

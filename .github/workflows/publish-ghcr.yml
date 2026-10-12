@@ -24,10 +24,10 @@ jobs:
       matrix:
         include:
           - name: server
-            dockerfile: src/apps/server/Dockerfile
+            target: server
             image: habsum-server
           - name: webapp
-            dockerfile: src/apps/webapp/Dockerfile
+            target: webapp
             image: habsum-webapp
 
     steps:
@@ -62,7 +62,8 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ${{ matrix.dockerfile }}
+          file: Dockerfile
+          target: ${{ matrix.target }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}

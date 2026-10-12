@@ -51,17 +51,12 @@ Start the development server from the repository root with:
 npm run dev:server
 ```
 
-To override the SQLite file location, pass a path to the server script. Missing parent directories
-and the database itself are created automatically:
+To override the SQLite file location, set the `HABSUM_DB` environment variable.
+Missing parent directories and the database are created automatically. Relative paths
+resolve from the directory where npm was launched.
 
 ```bash
-npm run dev:server -- --db="$(pwd)/data/custom.db"
-```
-
-For an isolated temporary database on macOS:
-
-```bash
-npm run dev:server -- --db="$(mktemp -d -t habsum)/habsum.db"
+HABSUM_DB=./config/custom.db npm run dev:server
 ```
 
 ### Run both apps
@@ -70,10 +65,46 @@ npm run dev:server -- --db="$(mktemp -d -t habsum)/habsum.db"
 npm run dev
 ```
 
-To run both apps with a custom database:
+The webapp runs on `http://localhost:3000` and proxies `/api/*` to the server on port `3001`.
+
+### Docker development
+
+Build and start the development containers:
 
 ```bash
-npm run dev -- --db="$(pwd)/data/custom.db"
+docker compose -f compose.dev.yaml up --build
 ```
 
-The webapp runs on `http://localhost:3000` and proxies `/api/*` to the server on port `3001`.
+The webapp runs on `http://localhost:3000`; the API is available on port `3001`.
+Both apps watch the bind-mounted `src` directory. Dependencies are installed in the
+shared `development` target in the root `Dockerfile`. Compose supplies each app's
+development command. Workspace dependency directories use container volumes so
+Mac-installed dependencies are not loaded inside Linux containers.
+
+After changing package manifests or the lockfile, rebuild and refresh those volumes:
+
+```bash
+docker compose -f compose.dev.yaml up --build --renew-anon-volumes
+```
+
+Development settings are defined directly in `compose.dev.yaml`. In the server's
+`environment` section, `HABSUM_DB` is set to `/app/config/habsum.db`.
+`HABSUM_WEBAPP_URL` is set to `http://localhost:3000`. This browser-facing URL is
+used for password-reset emails, account invitations, and admin-generated reset links.
+
+To use a different database, change `HABSUM_DB` to another container path under
+`/app/config`, such as `/app/config/custom.db`. That directory is mounted from the
+host's `./config` directory so the database persists when containers are recreated.
+
+### Admin commands in Docker
+
+The development image includes Bun and the `habsum-admin` command. Run it inside
+the server container to use the `HABSUM_DB` value configured in Compose:
+
+```bash
+docker compose -f compose.dev.yaml exec server habsum-admin list-users
+docker compose -f compose.dev.yaml exec server habsum-admin reset-password alice
+```
+
+Compose provides an interactive terminal for the password prompt. After changing
+the Dockerfile, rebuild the image and recreate the container before using the command.

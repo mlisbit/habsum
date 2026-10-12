@@ -41,10 +41,12 @@ Open `http://localhost:8882`.
 
 ## Development database path
 
-Development uses `./config/habsum.db` by default. To use a different SQLite file while running both development apps, pass `--db`. Habsum creates the parent directory and database when needed.
+Development uses `./config/habsum.db` by default. Set the `HABSUM_DB` environment variable to use a different SQLite file. Habsum creates the parent directory and database when needed.
 
-For a temporary development database on macOS:
+For Docker development, configure `HABSUM_DB` directly in the server’s `environment` section in `compose.dev.yaml`, then run:
 
 ```bash
-npm run dev -- --db="$(mktemp -d -t habsum)/habsum.db"
+docker compose -f compose.dev.yaml up --build
 ```
+
+Open `http://localhost:3000`. See [development setup](docs/development.md) for details.

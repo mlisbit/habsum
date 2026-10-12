@@ -15,3 +15,5 @@ src/packages/eslint/dist
 
 # local runtime data (user-controlled)
 config/
+
+.env.docker
