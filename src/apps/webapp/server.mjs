@@ -12,7 +12,7 @@ import * as build from './build/server/index.js';
 const appDirectory = path.dirname(fileURLToPath(import.meta.url));
 const clientDirectory = path.join(appDirectory, 'build', 'client');
 const port = Number.parseInt(process.env.PORT ?? '3000', 10);
-const apiUpstream = new URL(process.env.API_UPSTREAM ?? 'http://127.0.0.1:3001');
+const apiUpstream = new URL(process.env.HABSUM_SERVER_URL ?? 'http://127.0.0.1:3001');
 const handleSsrRequest = createRequestListener({ build, mode: process.env.NODE_ENV });
 
 const contentTypes = new Map([

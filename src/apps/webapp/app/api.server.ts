@@ -6,8 +6,7 @@ import type { ListUsersResponse } from '@habsum/types/common/misc';
 import { toDateKeyWithTime } from '@habsum/utils/date';
 import { WEBAPP_VERSION } from '~/version';
 
-const SERVER_URL =
-  process.env.HABSUM_SERVER_URL ?? process.env.API_UPSTREAM ?? 'http://localhost:3001';
+const SERVER_URL = process.env.HABSUM_SERVER_URL ?? 'http://127.0.0.1:3001';
 
 function buildHabitPatchPayload(
   body:

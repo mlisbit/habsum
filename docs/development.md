@@ -1,110 +1,80 @@
-## Development
+# Development
 
-### Local (no Docker)
+## Overview
 
-Requirements:
+Webapp is built in React. Server is built with node. Admin utility is built with Bun (JS still tho). All typescript.
 
-- Node >= 20
-- npm
+## File structure
 
-Install:
+- `src/apps/*` contains the seeperate deployables -- web, api, and admin helper scripts.
+- `src/packages/*` contains shared packages used between web and API, or packages that by design have a strong seperation of concerns (for example "UI" which is only used by `web` but is technically easy to pull out and used by other applications.)
+- `src/packages/types` shared types used between web and api, including the API responses.
+
+If you're looking for more details into what a particular chunk of code does, there should be a README somewhere in the directory tree that'll have more information, ideally.
+
+## Local Development
+
+If you don't wanna use docker locally, the application can run with the following;
 
 ```bash
-npm install
+npm install && npm run dev
 ```
 
-This runs `prepare`, which builds custom lint tooling (Stylelint plugins under `src/packages/stylelint`, `eslint-plugin-habsum` under `src/packages/eslint`). If you change `.mts` sources in those packages, rebuild before running lint.
+But docker's the advised way to run the application, and that's run with:
 
-### Lint tooling
-
-**Build** (from repo root):
-
-| Command                           | Purpose                                                                      |
-| --------------------------------- | ---------------------------------------------------------------------------- |
-| `npm run stylelint-plugins:build` | Compile `@habsum/stylelint-plugins` (`src/packages/stylelint/src` → `dist/`) |
-| `npm run stylelint-plugins:watch` | Same, in watch mode                                                          |
-| `npm run eslint-plugins:build`    | Compile `eslint-plugin-habsum` (`src/packages/eslint` TypeScript → `dist/`)  |
-| `npm run eslint-plugins:watch`    | Same, in watch mode                                                          |
-
-You can also build the Stylelint workspace directly: `npm run build --workspace @habsum/stylelint-plugins`.
-
-**Run lint**:
-
-| Command                | What it checks                                                                              |
-| ---------------------- | ------------------------------------------------------------------------------------------- |
-| `npm run lint`         | Webapp ESLint (TS/TSX + exclusive BEM rule) and Stylelint on styles                         |
-| `npm run lint:js`      | Webapp only: runs `eslint .` in `@habsum/webapp` (same config as above)                     |
-| `npm run lint:css`     | Stylelint on `src/**/*.{css,scss}` (runs `stylelint-plugins:build` first via `prelint:css`) |
-| `npm run lint:css:fix` | Same with `--fix`                                                                           |
-
-Configuration: [`.stylelintrc.json`](../.stylelintrc.json) (repo root), [`src/apps/webapp/eslint.config.mjs`](../src/apps/webapp/eslint.config.mjs).
-
-### Runtime database
-
-The server stores all runtime state in one SQLite database. By default it uses:
-
-- `./config/habsum.db`
-
-Start the development server from the repository root with:
-
-```bash
-npm run dev:server
 ```
-
-To override the SQLite file location, set the `HABSUM_DB` environment variable.
-Missing parent directories and the database are created automatically. Relative paths
-resolve from the directory where npm was launched.
-
-```bash
-HABSUM_DB=./config/custom.db npm run dev:server
-```
-
-### Run both apps
-
-```bash
-npm run dev
-```
-
-The webapp runs on `http://localhost:3000` and proxies `/api/*` to the server on port `3001`.
-
-### Docker development
-
-Build and start the development containers:
-
-```bash
 docker compose -f compose.dev.yaml up --build
 ```
 
-The webapp runs on `http://localhost:3000`; the API is available on port `3001`.
-Both apps watch the bind-mounted `src` directory. Dependencies are installed in the
-shared `development` target in the root `Dockerfile`. Compose supplies each app's
-development command. Workspace dependency directories use container volumes so
-Mac-installed dependencies are not loaded inside Linux containers.
+Look at the `compose.dev.yaml` file to find some of the `env` variables used to configure the applciation -- but I'll outline some below.
 
-After changing package manifests or the lockfile, rebuild and refresh those volumes:
+The application is available on `http://localhost:3000` and the api is available on port `3001`.
 
-```bash
-docker compose -f compose.dev.yaml up --build --renew-anon-volumes
-```
+## Linting
 
-Development settings are defined directly in `compose.dev.yaml`. In the server's
-`environment` section, `HABSUM_DB` is set to `/app/config/habsum.db`.
-`HABSUM_WEBAPP_URL` is set to `http://localhost:3000`. This browser-facing URL is
-used for password-reset emails, account invitations, and admin-generated reset links.
+We use stylelint + eslint. They're pretty opinionated around following BEM. Here are some relevant commands:
 
-To use a different database, change `HABSUM_DB` to another container path under
-`/app/config`, such as `/app/config/custom.db`. That directory is mounted from the
-host's `./config` directory so the database persists when containers are recreated.
+- `npm run stylelint-plugins:build` Compile the lint rules, which for some reason are in typescript.
+- `npm run stylelint-plugins:watch`
+- `npm run eslint-plugins:build`
+- `npm run eslint-plugins:watch`
+- `npm run lint` run all linting.
+- `npm run lint:js`
+- `npm run lint:css` & `npm run lint:css:fix`
 
-### Admin commands in Docker
+Tests and lint rules run in precommit too.
 
-The development image includes Bun and the `habsum-admin` command. Run it inside
-the server container to use the `HABSUM_DB` value configured in Compose:
+## Environment variable options
 
-```bash
-docker compose -f compose.dev.yaml exec server habsum-admin list-users
-docker compose -f compose.dev.yaml exec server habsum-admin reset-password alice
-```
+- `HABSUM_INITIAL_WEB_SIGNUP` (server). `'true' || 'false'`. When `'true'`, when you initially start the application with an empty database, the initial person to visit the application can create an admin account. If your database already has users, this won't show anything. `'false'` is the opposite, and if you wanted to create a user, you'd use the admin tools `habsum-admin add-admin [username]` command available to you in the server docker container.
+- `HABSUM_DB` (server). Path to the sqlite DB. If you do not have DB, one will be created for you in `./config/habsum.db`.
 
-Compose provides an interactive terminal for the password prompt. After changing
-the Dockerfile, rebuild the image and recreate the container before using the command.
+## Admin utility
+
+Helpful utility for admins with the following commands:
+
+- `habsum-admin add-admin [username]`
+- `habsum-admin list-users`
+- `habsum-admin reset-password [username]`
+- `habsum-admin demo-data [username]` fills up the given users dashboard with fake data; you need to have the habits config configure tho.
+
+If you choose to run via Docker, it's available to you on the `server` service. Otherwise you can run it directly via `src/apps/habsum-admin` -- but you'll need to set a `HABSUM_DB` env variable pointing to the database.
+
+## Note on emails, password resets, and user account creation
+
+For context, the application was originally hosted on a third party site so friends can use it. They didn't really. But because of that, there's a whole "forgot password", "user account creation" flow. In order to get these to work there needed to be emails -- this all still exists in the code, and is available to you to use -- but you don't have to.
+
+If you decide you want emails, we only support [`resend`](https://resend.com) integration for now; you'll need an API key from them.
+
+Adding an email will enable users to;
+
+- sign up for their own accounts (admins still need to enable this feature though)
+- reset their own password with the email they have on their account. One thing to keep in mind tho; emails are no longer required -- admins can create accounts with no emails, but if a user creates an account, they'll require an email. It's in a weird state -- but essentially, I didn't want to force admins to provide emails for people.
+
+## Continued development
+
+Things can change -- but there shouldnt be any backward incompatible changes.
+
+Some more high level features I plan to add in the future;
+
+- public API. This will enable users to integrate easier with third party tools.
