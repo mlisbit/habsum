@@ -1,0 +1,165 @@
+name: Prepare release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: Version increment
+        type: choice
+        required: true
+        default: patch
+        options:
+          - patch
+          - minor
+          - major
+
+concurrency:
+  group: publish-release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAMESPACE: ${{ github.repository }}
+
+jobs:
+  lint:
+    uses: ./.github/workflows/lint.yml
+
+  test:
+    uses: ./.github/workflows/test.yml
+
+  prepare-release:
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      version: ${{ steps.release.outputs.version }}
+      commit: ${{ steps.release.outputs.commit }}
+    steps:
+      - name: Require the default branch
+        env:
+          SELECTED_REF: ${{ github.ref }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          test "$SELECTED_REF" = "refs/heads/$DEFAULT_BRANCH" || {
+            echo 'Releases must run from the default branch.'
+            exit 1
+          }
+
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+
+      - name: Prepare release commit and tag
+        id: release
+        env:
+          RELEASE_TYPE: ${{ inputs.release_type }}
+          RELEASE_RUN_ID: ${{ github.run_id }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          CHECKED_COMMIT: ${{ github.sha }}
+        run: |
+          # Re-running this workflow reuses its release instead of incrementing again.
+          existing=$(git log --format=%H --fixed-strings --grep="Release-run: $RELEASE_RUN_ID" -1)
+          if [ -n "$existing" ]; then
+            git checkout --detach "$existing"
+            version=$(node -p 'require("./package.json").version')
+          else
+            test "$(git rev-parse HEAD)" = "$CHECKED_COMMIT" || {
+              echo 'The default branch changed during checks. Start a new release run.'
+              exit 1
+            }
+            version=$(node scripts/bump-release-version.mjs "$RELEASE_TYPE")
+            git config user.name 'habsum-bot'
+            git config user.email 'habsum-bot@users.noreply.github.com'
+            git add package.json package-lock.json src/apps/*/package.json src/packages/*/package.json
+            git -c core.hooksPath=/dev/null commit -m "chore: version $version" -m "Release-run: $RELEASE_RUN_ID"
+          fi
+          commit=$(git rev-parse HEAD)
+          if git rev-parse "refs/tags/v$version" >/dev/null 2>&1; then
+            test "$(git rev-list -n 1 "v$version")" = "$commit"
+          else
+            git tag "v$version"
+          fi
+          if [ -n "$existing" ]; then
+            git push origin "refs/tags/v$version"
+          else
+            git push --atomic origin "HEAD:refs/heads/$DEFAULT_BRANCH" "refs/tags/v$version"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "commit=$commit" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          releases=$(gh api "repos/$GH_REPO/releases" --paginate --jq '.[].tag_name')
+          if ! grep -Fxq "v$VERSION" <<< "$releases"; then
+            gh release create "v$VERSION" --verify-tag --title "v$VERSION" --generate-notes
+          fi
+
+  publish:
+    needs: prepare-release
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: server
+            target: server
+            image: habsum-server
+          - name: webapp
+            target: webapp
+            image: habsum-webapp
+
+    steps:
+      - name: Checkout release
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.prepare-release.outputs.commit }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAMESPACE }}/${{ matrix.image }}
+          tags: |
+            type=raw,value=v${{ needs.prepare-release.outputs.version }}
+            type=raw,value=latest
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          target: ${{ matrix.target }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
