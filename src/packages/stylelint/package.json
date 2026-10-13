@@ -1,6 +1,6 @@
 {
   "name": "@habsum/stylelint-plugins",
-  "version": "0.1.34",
+  "version": "0.1.35",
   "private": true,
   "description": "Custom Stylelint rules for Habsum (BEM, spacing, theme tokens)",
   "type": "module",
