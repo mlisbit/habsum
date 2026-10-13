@@ -7,6 +7,8 @@ services:
     command: ['npm', '--workspace', 'src/apps/server', 'run', 'dev']
     environment:
       NODE_ENV: development
+      HABSUM_DEBUG: 'TRACE'
+      HABSUM_LOG_FORMAT: 'pretty'
       HOST: 0.0.0.0
       PORT: '3001'
       HABSUM_DB: /app/config/habsum2.db

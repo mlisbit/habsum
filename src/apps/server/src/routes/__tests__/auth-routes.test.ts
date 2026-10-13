@@ -162,6 +162,13 @@ describe('session routes', () => {
     expect(loggedOutMeRes.body.username).toBeNull();
   });
 
+  it.each([
+    [{ user: 'missing-login-user', password: 'wrong-password' }, 401],
+    [{ user: 'missing-login-user' }, 400],
+  ])('rejects invalid login attempts with status %s', async (body, statusCode) => {
+    await request(createApp()).post('/auth/login').send(body).expect(statusCode);
+  });
+
   it('does not rewrite legacy config when resolving an existing session', async () => {
     const user = 'legacy-session-route-user';
     configService.createEmptyUserConfig(user);

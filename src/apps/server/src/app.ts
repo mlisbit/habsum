@@ -8,9 +8,11 @@ import { dataRouter } from './routes/users/data.routes.js';
 import { habitsRouter } from './routes/users/habits.routes.js';
 import { securityRouter } from './routes/users/security.routes.js';
 import { administratorRouter } from './routes/administrator.routes.js';
+import apiTrace from './middleware/api-trace.js';
 
 export function createApp(): express.Application {
   const app = express();
+  app.use(apiTrace);
   app.use(
     cors({
       origin: true,
