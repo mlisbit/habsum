@@ -138,6 +138,7 @@ describe('session routes', () => {
   });
 
   it('logs in through /auth/login, resolves /users/me, and logs out through /auth/logout', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
     configService.ensureConfigLayout();
     configService.createEmptyUserConfig('session-route-user');
     userAndAuthRepository.setUserPassword('session-route-user', 'correct-password');
@@ -148,6 +149,9 @@ describe('session routes', () => {
       .send({ user: 'session-route-user', password: 'correct-password' })
       .expect(200);
     const sessionCookie = loginRes.headers['set-cookie']?.[0]?.split(';')[0];
+
+    expect(loginRes.headers['set-cookie']?.[0]).toContain('Path=/; HttpOnly; SameSite=Lax');
+    expect(loginRes.headers['set-cookie']?.[0]).not.toMatch(/;\s*Secure(?:;|$)/i);
 
     expect(sessionCookie).toMatch(/^habsum_sid=/);
     const meRes = await request(app).get('/users/me').set('Cookie', sessionCookie!).expect(200);

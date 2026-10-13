@@ -25,7 +25,7 @@ it('logs parsed request data and the complete final JSON response', async () => 
   expect(log).toHaveBeenCalledExactlyOnceWith(
     '[habsum] API TRACE',
     JSON.stringify({
-      request: { url: '/example?view=full', method: 'POST', data },
+      request: { url: '/example?view=full', method: 'POST', data, cookies: null },
       response: { statusCode: 201, data: { received: data } },
     }),
   );
@@ -44,7 +44,7 @@ it('captures streamed response chunks once and preserves the response', async ()
   expect(log).toHaveBeenCalledExactlyOnceWith(
     '[habsum] API TRACE',
     JSON.stringify({
-      request: { url: '/stream', method: 'GET' },
+      request: { url: '/stream', method: 'GET', cookies: null },
       response: { statusCode: 200, data: 'first last' },
     }),
   );
@@ -58,7 +58,7 @@ it.each(['/unknown-trace-route', '/users/me/settings'])(
     const response = await request(createApp()).get(url);
     const call = log.mock.calls.find(([label]) => label === '[habsum] API TRACE');
     const trace = JSON.parse(call![1]);
-    expect(trace.request).toEqual({ url, method: 'GET', data: {} });
+    expect(trace.request).toEqual({ url, method: 'GET', data: {}, cookies: null });
     expect(trace.response.statusCode).toBe(response.status);
     expect(response.status).toBeGreaterThanOrEqual(400);
     expect(trace.response.data).toEqual(
@@ -91,7 +91,7 @@ it.each([200, 201, 204, 400, 500])(
     await request(app).get('/api/habits').expect(status);
     const coloredStatus = status < 300 ? `\u001b[32m${status}\u001b[0m` : String(status);
     expect(log).toHaveBeenCalledExactlyOnceWith(
-      `\u001b[33m09:05:03 TRACE GET /api/habits → \u001b[0m${coloredStatus}\n${status === 204 ? '' : JSON.stringify(data, null, 2)}`,
+      `\u001b[33m09:05:03 TRACE GET /api/habits → \u001b[0m${coloredStatus}\n${status === 204 ? '' : JSON.stringify(data, null, 2)}\nRequest cookies: (none)`,
     );
   },
 );
@@ -107,3 +107,53 @@ it('retains request data in pretty logs', async () => {
   await request(app).post('/example').send({ name: 'Exercise' }).expect(200);
   expect(log.mock.calls[0][0]).toContain('Request data:\n{\n  "name": "Exercise"\n}');
 });
+
+it.each(['json', 'pretty'])(
+  'sanitizes passwords and traces matching cookies in %s logs',
+  async (format) => {
+    vi.stubEnv('HABSUM_DEBUG', 'TRACE');
+    vi.stubEnv('HABSUM_LOG_FORMAT', format);
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const app = express();
+    app.use(apiTrace);
+    app.use(express.json());
+    const data = {
+      password: 'private-secret',
+      forgotPassword: true,
+      passwordResetEnabled: false,
+      nested: [{ newPassword: 'other-secret', name: 'mac' }],
+    };
+    app.post('/example', (req, res) => {
+      res.setHeader(
+        'Set-Cookie',
+        'habsum_sid=session-secret; Path=/; HttpOnly; Secure; SameSite=Lax',
+      );
+      res.json(req.body);
+    });
+    await request(app)
+      .post('/example?password=query-secret&%50assword=encoded-secret&view=full')
+      .set('Cookie', 'habsum_sid=session-secret; password=cookie-secret')
+      .send(data)
+      .expect(200, data);
+
+    const output = log.mock.calls[0].join(' ');
+    for (const secret of [
+      'private-secret',
+      'other-secret',
+      'session-secret',
+      'cookie-secret',
+      'query-secret',
+      'encoded-secret',
+    ]) {
+      expect(output).not.toContain(secret);
+    }
+    expect(output).toContain('[REDACTED]');
+    expect(output).toMatch(/"forgotPassword":\s*true/);
+    expect(output).toMatch(/"passwordResetEnabled":\s*false/);
+    expect(output).toContain('/example?password=[REDACTED]&%50assword=[REDACTED]&view=full');
+    const fingerprints = output.match(/habsum_sid=\[sha256:[a-f0-9]{12}\]/g);
+    expect(fingerprints).toHaveLength(2);
+    expect(fingerprints![0]).toBe(fingerprints![1]);
+    expect(output).toContain('Path=/; HttpOnly; Secure; SameSite=Lax');
+  },
+);

@@ -1,4 +1,7 @@
 import type { RequestHandler, Response } from 'express';
+import getApiTraceData from '../utils/trace-utils/get-api-trace-data.js';
+import getApiTraceCookieHeader from '../utils/trace-utils/get-api-trace-cookie-header.js';
+import getApiTraceUrl from '../utils/trace-utils/get-api-trace-url.js';
 
 const apiTrace: RequestHandler = (req, res, next) => {
   if (process.env.HABSUM_DEBUG !== 'TRACE') {
@@ -6,7 +9,7 @@ const apiTrace: RequestHandler = (req, res, next) => {
     return;
   }
 
-  const url = req.originalUrl;
+  const url = getApiTraceUrl(req.originalUrl);
   const method = req.method;
   const chunks: Buffer[] = [];
   const write = res.write;
@@ -42,6 +45,13 @@ const apiTrace: RequestHandler = (req, res, next) => {
         // Preserve the actual response text if it is not valid JSON.
       }
     }
+    body = getApiTraceData(body);
+    const data = getApiTraceData(req.body);
+    const cookies = req.headers.cookie ? getApiTraceCookieHeader(req.headers.cookie) : null;
+    const setCookies = res.getHeader('set-cookie');
+    const responseCookies = (
+      Array.isArray(setCookies) ? setCookies : setCookies ? [setCookies] : []
+    ).map((cookie) => getApiTraceCookieHeader(String(cookie), { isResponseCookie: true }));
     if (process.env.HABSUM_LOG_FORMAT === 'pretty') {
       const now = new Date();
       const time = [now.getHours(), now.getMinutes(), now.getSeconds()]
@@ -54,18 +64,26 @@ const apiTrace: RequestHandler = (req, res, next) => {
       const responseData = typeof body === 'string' ? body : JSON.stringify(body, null, 2);
       const requestData =
         req.body && Object.keys(req.body).length > 0
-          ? `\nRequest data:\n${JSON.stringify(req.body, null, 2)}`
+          ? `\nRequest data:\n${JSON.stringify(data, null, 2)}`
           : '';
+      const cookieData = `\nRequest cookies: ${cookies ?? '(none)'}`;
+      const responseCookieData = responseCookies.length
+        ? `\nResponse Set-Cookie:\n${responseCookies.join('\n')}`
+        : '';
       console.log(
-        `\u001b[33m${time} TRACE ${method} ${url} → \u001b[0m${status}\n${responseData}${requestData}`,
+        `\u001b[33m${time} TRACE ${method} ${url} → \u001b[0m${status}\n${responseData}${requestData}${cookieData}${responseCookieData}`,
       );
       return;
     }
     console.log(
       '[habsum] API TRACE',
       JSON.stringify({
-        request: { url, method, data: req.body },
-        response: { statusCode: res.statusCode, data: body },
+        request: { url, method, data, cookies },
+        response: {
+          statusCode: res.statusCode,
+          data: body,
+          ...(responseCookies.length ? { cookies: responseCookies } : {}),
+        },
       }),
     );
   });

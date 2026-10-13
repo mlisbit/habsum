@@ -5,6 +5,7 @@ import { UserAndAuthRepository } from '../repositories/user-and-auth-repository.
 export const SESSION_COOKIE_NAME = 'habsum_sid';
 
 const DEFAULT_SESSION_TTL_SEC = 60 * 60 * 24 * 30;
+const SESSION_COOKIE_ATTRIBUTES = 'Path=/; HttpOnly; SameSite=Lax';
 
 export function sessionTtlSeconds(): number {
   const raw = process.env.HABSUM_SESSION_TTL_SECONDS;
@@ -12,16 +13,6 @@ export function sessionTtlSeconds(): number {
   const n = Number(raw);
   if (!Number.isFinite(n) || n <= 0) return DEFAULT_SESSION_TTL_SEC;
   return Math.floor(n);
-}
-
-export function sessionCookieUsesSecureFlag(): boolean {
-  return process.env.NODE_ENV === 'production' || process.env.HABSUM_SECURE_COOKIES === '1';
-}
-
-function cookieBaseAttrs(): string {
-  const attrs = [`Path=/`, `HttpOnly`, `SameSite=Lax`];
-  if (sessionCookieUsesSecureFlag()) attrs.push('Secure');
-  return attrs.join('; ');
 }
 
 /** Parse Cookie header into a map (first occurrence wins). */
@@ -52,12 +43,12 @@ export function getSessionCookieValue(cookieHeader: string | undefined): string 
 export function appendSessionCookie(res: Response, sessionId: string): void {
   const maxAge = sessionTtlSeconds();
   const value = encodeURIComponent(sessionId);
-  const line = `${SESSION_COOKIE_NAME}=${value}; Max-Age=${maxAge}; ${cookieBaseAttrs()}`;
+  const line = `${SESSION_COOKIE_NAME}=${value}; Max-Age=${maxAge}; ${SESSION_COOKIE_ATTRIBUTES}`;
   res.append('Set-Cookie', line);
 }
 
 export function appendClearSessionCookie(res: Response): void {
-  const line = `${SESSION_COOKIE_NAME}=; Path=/; Max-Age=0; ${cookieBaseAttrs()}`;
+  const line = `${SESSION_COOKIE_NAME}=; Max-Age=0; ${SESSION_COOKIE_ATTRIBUTES}`;
   res.append('Set-Cookie', line);
 }
 
