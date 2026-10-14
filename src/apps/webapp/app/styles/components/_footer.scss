@@ -8,3 +8,8 @@
     calc(functions.spacing(2) + env(safe-area-inset-bottom, 0px));
   text-align: right;
 }
+
+.footer__checking,
+.footer__update {
+  margin-right: functions.spacing(2);
+}

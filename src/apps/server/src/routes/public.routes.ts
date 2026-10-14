@@ -8,3 +8,5 @@ publicRouter.get('/health', publicController.getHealth);
 
 // Application metadata and feature availability used on every page.
 publicRouter.get('/application', publicController.getApplication);
+
+publicRouter.get('/application/updates', publicController.getApplicationUpdates);

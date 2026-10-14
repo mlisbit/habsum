@@ -50,6 +50,59 @@ it('captures streamed response chunks once and preserves the response', async ()
   );
 });
 
+it.each(['json', 'pretty'])(
+  'logs the sanitized unchanged JSON representation for conditional requests in %s format',
+  async (format) => {
+    vi.stubEnv('HABSUM_DEBUG', 'TRACE');
+    vi.stubEnv('HABSUM_LOG_FORMAT', format);
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const app = express();
+    app.use(apiTrace);
+    // Verify that TRACE captures the serialized representation, including JSON settings.
+    app.set('json replacer', (key: string, value: unknown) =>
+      key === 'internal' ? undefined : value,
+    );
+    const data = { version: '1.2.3', password: 'private-secret', internal: 'excluded' };
+    app.get('/version', (_req, res) => res.json(data));
+
+    const initial = await request(app).get('/version').expect(200);
+    expect(initial.body).toEqual({ version: '1.2.3', password: 'private-secret' });
+    expect(initial.headers.etag).toBeTruthy();
+    log.mockClear();
+    const unchanged = await request(app)
+      .get('/version')
+      .set('If-None-Match', initial.headers.etag)
+      .expect(304);
+    expect(unchanged.text).toBe('');
+    expect(unchanged.headers.etag).toBe(initial.headers.etag);
+    expect(log).toHaveBeenCalledTimes(1);
+    const sanitized = { version: '1.2.3', password: '[REDACTED]' };
+    if (format === 'json') {
+      expect(JSON.parse(log.mock.calls[0][1]).response).toEqual({
+        statusCode: 304,
+        data: sanitized,
+        dataSource: 'unchanged-representation',
+      });
+    } else {
+      expect(log.mock.calls[0][0]).toContain(
+        `304\nUnchanged representation (browser reused cached body):\n${JSON.stringify(sanitized, null, 2)}`,
+      );
+    }
+    expect(log.mock.calls[0].join(' ')).not.toContain('private-secret');
+    expect(log.mock.calls[0].join(' ')).not.toContain('excluded');
+  },
+);
+
+it('does not invent a representation when a 304 is sent without generated JSON', async () => {
+  vi.stubEnv('HABSUM_DEBUG', 'TRACE');
+  const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+  const app = express();
+  app.use(apiTrace);
+  app.get('/unchanged', (_req, res) => res.status(304).end());
+  await request(app).get('/unchanged').expect(304);
+  expect(JSON.parse(log.mock.calls[0][1]).response).toEqual({ statusCode: 304, data: '' });
+});
+
 it.each(['/unknown-trace-route', '/users/me/settings'])(
   'traces final API errors for %s',
   async (url) => {

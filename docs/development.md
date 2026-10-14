@@ -49,6 +49,8 @@ Tests and lint rules run in precommit too.
 - `HABSUM_INITIAL_WEB_SIGNUP` (server). `'true' || 'false'`. When `'true'`, when you initially start the application with an empty database, the initial person to visit the application can create an admin account. If your database already has users, this won't show anything. `'false'` is the opposite, and if you wanted to create a user, you'd use the admin tools `habsum-admin add-admin [username]` command available to you in the server docker container.
 - `HABSUM_DB` (server). Path to the sqlite DB. If you do not have DB, one will be created for you in `./config/habsum.db`.
 
+- `HABSUM_DEV_VERSION_OFFSET` (server). Set to `'true'` to add one patch to the GitHub update candidate for update testing. Enabled in development Compose. See [version offsets](development/version-offsets.md).
+
 ## Admin utility
 
 Helpful utility for admins with the following commands:

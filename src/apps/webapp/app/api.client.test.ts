@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ApiRequestError, createUser, getApplication } from './api.client';
+import { ApiRequestError, createUser, getApplication, getApplicationUpdates } from './api.client';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -54,4 +54,21 @@ describe('API errors', () => {
       body,
     } satisfies Partial<ApiRequestError>);
   });
+});
+
+it('sends the installed web version to the updates endpoint', async () => {
+  const data = [
+    {
+      updateText: 'update available v0.2.0',
+      url: 'https://github.com/mlisbit/habsum/releases',
+      style: 'info',
+    },
+  ];
+  const fetchMock = vi.fn(
+    async (_url: string, _init?: RequestInit) =>
+      new Response(JSON.stringify(data), { status: 200 }),
+  );
+  vi.stubGlobal('fetch', fetchMock);
+  expect(await getApplicationUpdates('0.1.36')).toEqual(data);
+  expect(fetchMock.mock.calls[0][0]).toContain('/application/updates?webVersion=0.1.36');
 });

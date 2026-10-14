@@ -13,6 +13,7 @@
     "./common/misc": "./src/common/misc.ts",
     "./api-responses/administrator-database": "./src/api-responses/administrator-database.ts",
     "./api-responses/administrator-email-settings": "./src/api-responses/administrator-email-settings.ts",
+    "./api-responses/application-updates-get": "./src/api-responses/application-updates-get.ts",
     "./api-responses/application-get": "./src/api-responses/application-get.ts",
     "./api-responses/habit-patch": "./src/api-responses/habit-patch.ts",
     "./api-responses/habits-get": "./src/api-responses/habits-get.ts",

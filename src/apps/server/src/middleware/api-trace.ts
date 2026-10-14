@@ -12,8 +12,20 @@ const apiTrace: RequestHandler = (req, res, next) => {
   const url = getApiTraceUrl(req.originalUrl);
   const method = req.method;
   const chunks: Buffer[] = [];
+  let jsonRepresentation: string | undefined;
+  const send = res.send;
   const write = res.write;
   const end = res.end;
+
+  res.send = function (this: Response, ...args: Parameters<Response['send']>) {
+    const [body] = args;
+    // Express serializes JSON before send(), then removes the body when its ETag matches.
+    if (this.getHeader('content-type')?.toString().includes('application/json')) {
+      if (typeof body === 'string') jsonRepresentation = body;
+      else if (Buffer.isBuffer(body)) jsonRepresentation = body.toString('utf8');
+    }
+    return Reflect.apply(send, this, args);
+  } as Response['send'];
 
   res.write = function (this: Response, ...args: Parameters<Response['write']>) {
     const [chunk, encoding] = args;
@@ -36,9 +48,16 @@ const apiTrace: RequestHandler = (req, res, next) => {
   } as Response['end'];
 
   res.once('finish', () => {
-    const text = Buffer.concat(chunks).toString('utf8');
+    const isUnchangedRepresentation = res.statusCode === 304 && jsonRepresentation !== undefined;
+    const text =
+      (isUnchangedRepresentation ? jsonRepresentation : undefined) ??
+      Buffer.concat(chunks).toString('utf8');
     let body: unknown = text;
-    if (res.getHeader('content-type')?.toString().includes('application/json') && text) {
+    if (
+      (isUnchangedRepresentation ||
+        res.getHeader('content-type')?.toString().includes('application/json')) &&
+      text
+    ) {
       try {
         body = JSON.parse(text);
       } catch {
@@ -62,6 +81,9 @@ const apiTrace: RequestHandler = (req, res, next) => {
           ? `\u001b[32m${res.statusCode}\u001b[0m`
           : String(res.statusCode);
       const responseData = typeof body === 'string' ? body : JSON.stringify(body, null, 2);
+      const responseLabel = isUnchangedRepresentation
+        ? 'Unchanged representation (browser reused cached body):\n'
+        : '';
       const requestData =
         req.body && Object.keys(req.body).length > 0
           ? `\nRequest data:\n${JSON.stringify(data, null, 2)}`
@@ -71,7 +93,7 @@ const apiTrace: RequestHandler = (req, res, next) => {
         ? `\nResponse Set-Cookie:\n${responseCookies.join('\n')}`
         : '';
       console.log(
-        `\u001b[33m${time} TRACE ${method} ${url} → \u001b[0m${status}\n${responseData}${requestData}${cookieData}${responseCookieData}`,
+        `\u001b[33m${time} TRACE ${method} ${url} → \u001b[0m${status}\n${responseLabel}${responseData}${requestData}${cookieData}${responseCookieData}`,
       );
       return;
     }
@@ -82,6 +104,7 @@ const apiTrace: RequestHandler = (req, res, next) => {
         response: {
           statusCode: res.statusCode,
           data: body,
+          ...(isUnchangedRepresentation ? { dataSource: 'unchanged-representation' } : {}),
           ...(responseCookies.length ? { cookies: responseCookies } : {}),
         },
       }),

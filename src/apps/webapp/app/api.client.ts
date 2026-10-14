@@ -1,3 +1,4 @@
+import type { ApplicationUpdatesGetResponse } from '@habsum/types/api-responses/application-updates-get';
 import type { Habit } from '@habsum/types/common/habit';
 import type { AdministratorRegistrationSettings } from '@habsum/types/api-responses/administrator-registration-settings';
 import type { ApplicationGetResponse } from '@habsum/types/api-responses/application-get';
@@ -273,6 +274,12 @@ export async function loginWithOucToken(token: string) {
     method: 'POST',
     body: JSON.stringify({ token }),
   });
+}
+
+export async function getApplicationUpdates(webVersion: string) {
+  return getRequest<ApplicationUpdatesGetResponse>(
+    `/application/updates?webVersion=${encodeURIComponent(webVersion)}`,
+  );
 }
 
 export async function getApplication() {
