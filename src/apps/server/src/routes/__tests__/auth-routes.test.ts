@@ -1,3 +1,4 @@
+import getPackageVersion from '../../utils/get-package-version.js';
 import { EmailSettingsRepository } from '../../repositories/email-settings-repository.js';
 import request from 'supertest';
 import { yamlString } from '@habsum/types/common/misc';
@@ -95,19 +96,31 @@ describe('session routes', () => {
         updatedAt: 1,
       });
       await request(createApp())
-        .get('/auth/status')
-        .expect(200, {
-          redirectPath: null,
-          features: { accountSignup: true, forgotPassword: true },
-        });
+        .get('/application')
+        .expect(200)
+        .expect((response: { body: unknown }) =>
+          expect(response.body).toEqual({
+            apiVersion: getPackageVersion(),
+            serverTime: expect.any(Object),
+            database: { path: expect.any(String) },
+            redirectPath: null,
+            features: { accountSignup: true, forgotPassword: true },
+          }),
+        );
       emailSettings.deleteResendSettings();
       registrationSettingsRepository.setAccountSignupEnabled(false);
       await request(createApp())
-        .get('/auth/status')
-        .expect(200, {
-          redirectPath: null,
-          features: { accountSignup: false, forgotPassword: false },
-        });
+        .get('/application')
+        .expect(200)
+        .expect((response: { body: unknown }) =>
+          expect(response.body).toEqual({
+            apiVersion: getPackageVersion(),
+            serverTime: expect.any(Object),
+            database: { path: expect.any(String) },
+            redirectPath: null,
+            features: { accountSignup: false, forgotPassword: false },
+          }),
+        );
       await request(createApp()).get('/feature-flags').expect(404);
       await request(createApp()).post('/feature-flags').send({}).expect(404);
     } finally {
@@ -130,7 +143,7 @@ describe('session routes', () => {
   ])('reports redirect for hasUsers=%s and flag=%s', async (hasUsers, flag, redirectPath) => {
     vi.stubEnv('HABSUM_INITIAL_WEB_SIGNUP', flag);
     vi.spyOn(UserAndAuthRepository.prototype, 'hasUsers').mockReturnValue(hasUsers);
-    const response = await request(createApp()).get('/auth/status').expect(200);
+    const response = await request(createApp()).get('/application').expect(200);
     expect(response.body).toMatchObject({
       redirectPath,
       features: { accountSignup: false, forgotPassword: false },

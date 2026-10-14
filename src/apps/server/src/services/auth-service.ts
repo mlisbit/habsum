@@ -1,5 +1,5 @@
 // Domain operations for authentication, sessions, and password recovery.
-import type { AuthStatusGetResponse } from '@habsum/types/api-responses/auth-status-get';
+import type { ApplicationGetResponse } from '@habsum/types/api-responses/application-get';
 import getInitialWebSignupStatus from '../utils/get-initial-web-signup-status.js';
 import { accountCreatedAtToApi } from '@habsum/types/common/day';
 import { getPasswordResetUrl, PASSWORD_RESET_TOKEN_TTL_SECONDS } from '@habsum/utils/password';
@@ -110,10 +110,11 @@ export class AuthService {
     private readonly emailSettingsRepository = new EmailSettingsRepository(),
   ) {}
 
-  getStatus(): AuthStatusGetResponse {
+  getStatus(): Pick<ApplicationGetResponse, 'apiVersion' | 'redirectPath' | 'features'> {
     const { enabled } = getInitialWebSignupStatus(this.userAndAuthRepository.hasUsers());
     const emailSettings = this.emailSettingsRepository.getResendSettings();
     return {
+      apiVersion: PACKAGE_VERSION,
       redirectPath: enabled ? '/welcome' : null,
       features: {
         accountSignup: this.registrationSettingsRepository.isAccountSignupEnabled(),

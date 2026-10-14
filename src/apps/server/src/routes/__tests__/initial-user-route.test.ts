@@ -1,3 +1,4 @@
+import getPackageVersion from '../../utils/get-package-version.js';
 import request from 'supertest';
 import { ProductEntitlement } from '@habsum/types/common/entitlement';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -60,11 +61,17 @@ describe('POST /auth/initial-user', () => {
     expect(meResponse.body).toMatchObject({ username: 'first-owner', admin: true });
     expect(meResponse.body.entitlements).toContain(ProductEntitlement.DEVELOPER);
     await request(app)
-      .get('/auth/status')
-      .expect(200, {
-        redirectPath: null,
-        features: { accountSignup: false, forgotPassword: false },
-      });
+      .get('/application')
+      .expect(200)
+      .expect((response: { body: unknown }) =>
+        expect(response.body).toEqual({
+          apiVersion: getPackageVersion(),
+          serverTime: expect.any(Object),
+          database: { path: expect.any(String) },
+          redirectPath: null,
+          features: { accountSignup: false, forgotPassword: false },
+        }),
+      );
 
     await request(app)
       .post('/auth/initial-user')

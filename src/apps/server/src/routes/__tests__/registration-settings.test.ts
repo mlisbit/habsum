@@ -45,7 +45,7 @@ describe('administrator registration settings', () => {
       .get('/administrator/registration-settings')
       .set('Cookie', cookie)
       .expect(200, { accountSignup: true });
-    const status = await request(app).get('/auth/status').expect(200);
+    const status = await request(app).get('/application').expect(200);
     expect(status.body.features.accountSignup).toBe(true);
   });
 });

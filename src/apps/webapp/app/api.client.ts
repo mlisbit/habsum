@@ -1,10 +1,9 @@
 import type { Habit } from '@habsum/types/common/habit';
 import type { AdministratorRegistrationSettings } from '@habsum/types/api-responses/administrator-registration-settings';
-import type { AdministratorGetResponse } from '@habsum/types/api-responses/administrator-get';
+import type { ApplicationGetResponse } from '@habsum/types/api-responses/application-get';
 import type {
   AdministratorDatabaseDeleteRequest,
   AdministratorDatabaseDeleteResponse,
-  AdministratorDatabaseResponse,
 } from '@habsum/types/api-responses/administrator-database';
 import type {
   AdministratorEmailSettingsPutRequest,
@@ -115,11 +114,10 @@ export type {
   UserPasswordChangeRequest,
   UserPasswordChangeResponse,
 } from '@habsum/types/api-responses/user-password-change';
-export type { AdministratorGetResponse } from '@habsum/types/api-responses/administrator-get';
+export type { ApplicationGetResponse } from '@habsum/types/api-responses/application-get';
 export type {
   AdministratorDatabaseDeleteRequest,
   AdministratorDatabaseDeleteResponse,
-  AdministratorDatabaseResponse,
 } from '@habsum/types/api-responses/administrator-database';
 export type {
   AdministratorEmailSettingsPutRequest,
@@ -277,12 +275,8 @@ export async function loginWithOucToken(token: string) {
   });
 }
 
-export async function getAdministrator() {
-  return getRequest<AdministratorGetResponse>('/administrator');
-}
-
-export async function getAdministratorDatabase() {
-  return getRequest<AdministratorDatabaseResponse>('/administrator/database');
+export async function getApplication() {
+  return getRequest<ApplicationGetResponse>('/application');
 }
 
 export async function downloadAdministratorDatabase(): Promise<Blob> {

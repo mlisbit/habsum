@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ApiRequestError, createUser, getAdministrator } from './api.client';
+import { ApiRequestError, createUser, getApplication } from './api.client';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -11,7 +11,7 @@ describe('API GET request deduplication', () => {
     const response = {
       ok: true,
       statusText: 'OK',
-      text: async () => JSON.stringify({ time: null, version: null }),
+      text: async () => JSON.stringify({ serverTime: null }),
     } as Response;
     const inFlightFetch = new Promise<Response>((resolve) => {
       resolveFetch = resolve;
@@ -19,15 +19,15 @@ describe('API GET request deduplication', () => {
     const fetchMock = vi.fn(() => inFlightFetch);
     vi.stubGlobal('fetch', fetchMock);
 
-    const first = getAdministrator();
-    const second = getAdministrator();
+    const first = getApplication();
+    const second = getApplication();
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
 
     resolveFetch(response);
     await Promise.all([first, second]);
 
-    await getAdministrator();
+    await getApplication();
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 });

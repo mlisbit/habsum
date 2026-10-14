@@ -1,24 +1,16 @@
-import type { AdministratorGetResponse } from '@habsum/types/api-responses/administrator-get';
+import { ApplicationService } from '../services/application-service.js';
+import { sendServiceResult } from '../utils/controller-result-utils.js';
 import type { HealthResponse } from '@habsum/types/common/misc';
 import type { Request, Response } from 'express';
-import getPackageVersion from '../utils/get-package-version.js';
-import { getApiServerTimeSnapshot } from '../utils/server-time-utils.js';
 
-const PACKAGE_VERSION = getPackageVersion();
+const applicationService = new ApplicationService();
 
 export const publicController = {
+  getApplication(_req: Request, res: Response) {
+    return sendServiceResult(res, () => applicationService.getApplication());
+  },
   getHealth(_req: Request, res: Response) {
     const body: HealthResponse = { ok: true };
-    return res.json(body);
-  },
-
-  getAdministrator(_req: Request, res: Response) {
-    const body: AdministratorGetResponse = {
-      time: getApiServerTimeSnapshot(),
-      version: {
-        currentVersion: PACKAGE_VERSION,
-      },
-    };
     return res.json(body);
   },
 };

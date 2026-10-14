@@ -70,7 +70,7 @@ it.each(['/unknown-trace-route', '/users/me/settings'])(
 it.each([undefined, 'DEBUG', 'trace'])('does not trace when HABSUM_DEBUG is %s', async (level) => {
   vi.stubEnv('HABSUM_DEBUG', level);
   const log = vi.spyOn(console, 'log').mockImplementation(() => {});
-  await request(createApp()).get('/auth/status').expect(200);
+  await request(createApp()).get('/application').expect(200);
   expect(log).not.toHaveBeenCalled();
 });
 

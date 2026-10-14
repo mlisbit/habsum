@@ -1,19 +1,14 @@
 // exclusive-bem-block: administrator-info
 import { useEffect, useState } from 'react';
+import { useRouteLoaderData } from 'react-router';
+import type { loader as rootLoader } from '~/root';
 import { Button } from '@habsum/ui/components/Button';
 import { InfoText } from '@habsum/ui/components/InfoText';
 import { Input } from '@habsum/ui/components/Input';
 import { Loader } from '@habsum/ui/components/Loader';
 import { ModalBody, ModalFooter, ModalHeader, useModal } from '@habsum/ui/contexts/modal';
 import { useToast } from '@habsum/ui/contexts/toast';
-import {
-  deleteAdministratorDatabase,
-  downloadAdministratorDatabase,
-  getAdministrator,
-  getAdministratorDatabase,
-  type AdministratorDatabaseResponse,
-  type AdministratorGetResponse,
-} from '~/api.client';
+import { deleteAdministratorDatabase, downloadAdministratorDatabase } from '~/api.client';
 import { SettingsPageCard } from '~/components/SettingsPageCard';
 
 const clockFormat: Intl.DateTimeFormatOptions = {
@@ -105,10 +100,7 @@ function DeleteDatabaseModal({
 }
 
 export default function AdministratorInfo() {
-  const [administratorData, setAdministratorData] = useState<AdministratorGetResponse | null>(null);
-  const [administratorError, setAdministratorError] = useState<string | null>(null);
-  const [databaseData, setDatabaseData] = useState<AdministratorDatabaseResponse | null>(null);
-  const [databaseError, setDatabaseError] = useState<string | null>(null);
+  const rootData = useRouteLoaderData<typeof rootLoader>('root');
   const [downloadBusy, setDownloadBusy] = useState(false);
   const [databaseDeleted, setDatabaseDeleted] = useState(false);
   const [browserNow, setBrowserNow] = useState(() => new Date());
@@ -116,47 +108,14 @@ export default function AdministratorInfo() {
   const { showToast } = useToast();
 
   useEffect(() => {
-    let cancelled = false;
-    setAdministratorError(null);
-    getAdministrator()
-      .then((response) => {
-        if (!cancelled) setAdministratorData(response);
-      })
-      .catch((error) => {
-        if (cancelled) return;
-        setAdministratorData(null);
-        setAdministratorError(error instanceof Error ? error.message : String(error));
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    setDatabaseError(null);
-    getAdministratorDatabase()
-      .then((response) => {
-        if (!cancelled) setDatabaseData(response);
-      })
-      .catch((error) => {
-        if (cancelled) return;
-        setDatabaseData(null);
-        setDatabaseError(error instanceof Error ? error.message : String(error));
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
     const id = window.setInterval(() => setBrowserNow(new Date()), 1000);
     return () => window.clearInterval(id);
   }, []);
 
   const browserZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  const serverTime = administratorData?.time ?? null;
-  const version = administratorData?.version ?? null;
+  const databaseData = rootData?.application.database ?? null;
+  const serverTime = rootData?.application.serverTime ?? null;
+  const apiVersion = rootData?.application.apiVersion;
 
   const downloadDatabase = async () => {
     if (downloadBusy || databaseDeleted) return;
@@ -205,7 +164,6 @@ export default function AdministratorInfo() {
         headerText="Database"
         subtitle="Download the complete SQLite database or permanently delete it."
         className="administrator-info__database"
-        error={databaseError}
         actions={
           <Button
             type="secondary"
@@ -246,7 +204,7 @@ export default function AdministratorInfo() {
                 />
               </div>
             </>
-          ) : databaseError ? null : (
+          ) : (
             <Loader
               className="administrator-info__loader"
               label="Loading database information"
@@ -262,9 +220,7 @@ export default function AdministratorInfo() {
             <div className="administrator-info__clock-row">
               <dt className="text-b-m">Server (API)</dt>
               <dd className="administrator-info__clock-value text-b-m">
-                {administratorError ? (
-                  <span className="text-light">Could not load: {administratorError}</span>
-                ) : serverTime ? (
+                {serverTime ? (
                   <>
                     <div>{formatInstantInZone(serverTime.iso, serverTime.timezone)}</div>
                     <div className="text-light text-b-s">Time zone: {serverTime.timezone}</div>
@@ -291,15 +247,11 @@ export default function AdministratorInfo() {
 
       <SettingsPageCard headerText="Version" className="administrator-info__version">
         <div className="card-padding">
-          {administratorError ? (
-            <p className="text-light text-b-m">Could not load: {administratorError}</p>
-          ) : version ? (
+          {apiVersion ? (
             <dl className="administrator-info__version-list">
               <div className="administrator-info__version-row">
                 <dt className="text-b-m">Server</dt>
-                <dd className="administrator-info__version-value text-b-m">
-                  v{version.currentVersion}
-                </dd>
+                <dd className="administrator-info__version-value text-b-m">v{apiVersion}</dd>
               </div>
             </dl>
           ) : (

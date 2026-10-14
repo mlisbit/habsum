@@ -1,7 +1,3 @@
-export type AdministratorDatabaseResponse = {
-  path: string;
-};
-
 export type AdministratorDatabaseDeleteRequest = {
   confirmation: string;
 };

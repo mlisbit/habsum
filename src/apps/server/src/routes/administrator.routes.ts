@@ -5,11 +5,6 @@ import { administratorController } from './administrator.controller.js';
 export const administratorRouter = Router();
 
 administratorRouter.get(
-  '/administrator/database',
-  requireAdmin,
-  administratorController.getDatabase,
-);
-administratorRouter.get(
   '/administrator/database/download',
   requireAdmin,
   administratorController.downloadDatabase,

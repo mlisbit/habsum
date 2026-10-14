@@ -21,10 +21,6 @@ import {
 const authService = new AuthService();
 
 export const authController = {
-  getStatus(_req: Request, res: Response) {
-    return sendServiceResult(res, () => authService.getStatus());
-  },
-
   postInitialUser(req: Request<unknown, unknown, InitialUserPostRequest>, res: Response) {
     try {
       const result = authService.createInitialUser(req.body);

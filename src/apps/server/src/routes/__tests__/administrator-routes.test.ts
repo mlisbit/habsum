@@ -31,15 +31,19 @@ describe('/administrator', () => {
     vi.restoreAllMocks();
   });
 
-  it('uses the administrator URL for diagnostics', async () => {
-    await request(createApp()).get('/administrator').expect(200);
+  it('uses the application URL for diagnostics and removes the old endpoints', async () => {
+    const { cookie } = administratorSession();
+    await request(createApp()).get('/application').expect(200);
+    await request(createApp()).get('/auth/status').expect(404);
+    await request(createApp()).get('/administrator').expect(404);
+    await request(createApp()).get('/administrator/database').set('Cookie', cookie).expect(404);
     await request(createApp()).get('/developer').expect(404);
   });
 
   it('only lets administrators read or update email settings', async () => {
     const app = createApp();
     await request(app).get('/administrator/email-settings').expect(401);
-    await request(app).get('/administrator/database').expect(401);
+    await request(app).get('/administrator').expect(404);
     await request(app).get('/administrator/database/download').expect(401);
     await request(app)
       .delete('/administrator/database')
@@ -55,15 +59,15 @@ describe('/administrator', () => {
       .expect(403);
   });
 
-  it('returns the configured database path to an administrator', async () => {
-    const { cookie } = administratorSession();
-    const response = await request(createApp())
-      .get('/administrator/database')
-      .set('Cookie', cookie)
-      .expect(200);
+  it('returns the configured database path without authentication', async () => {
+    const response = await request(createApp()).get('/application').expect(200);
 
     expect(response.body).toEqual({
-      path: expect.stringMatching(/habsum\.db$/),
+      apiVersion: expect.any(String),
+      redirectPath: null,
+      features: { accountSignup: expect.any(Boolean), forgotPassword: expect.any(Boolean) },
+      serverTime: { iso: expect.any(String), timezone: expect.any(String) },
+      database: { path: expect.stringMatching(/habsum\.db$/) },
     });
   });
 

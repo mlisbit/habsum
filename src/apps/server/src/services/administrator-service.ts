@@ -9,7 +9,6 @@ import type {
 import type {
   AdministratorDatabaseDeleteRequest,
   AdministratorDatabaseDeleteResponse,
-  AdministratorDatabaseResponse,
 } from '@habsum/types/api-responses/administrator-database';
 import { DatabaseRepository } from '../repositories/database-repository.js';
 import { EmailSettingsRepository } from '../repositories/email-settings-repository.js';
@@ -35,10 +34,6 @@ export class AdministratorService {
     }
     this.registrationSettingsRepository.setAccountSignupEnabled(body.accountSignup);
     return this.getRegistrationSettings();
-  }
-
-  getDatabase(): AdministratorDatabaseResponse {
-    return { path: this.databaseRepository.getPath() };
   }
 
   getDatabaseFile(): Buffer {

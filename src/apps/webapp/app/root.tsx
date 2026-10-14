@@ -25,7 +25,7 @@ import { getAuthMe as getClientAuthMe } from '~/api.client';
 import stylesHref from '~/styles/main.scss?url';
 import { UI_THEME_STORAGE_KEY } from '~/theme.shared';
 import { webappTrackingSpec } from '~/tracking-spec';
-import { getAuthMe as getServerAuthMe, getAuthStatus } from '~/api.server';
+import { getAuthMe as getServerAuthMe, getApplication } from '~/api.server';
 import { getOucSessionToken } from '~/ouc.client';
 import type { Route } from './+types/root';
 
@@ -41,14 +41,14 @@ export const links: LinksFunction = () => [
 export const meta: MetaFunction = () => [{ title: 'Habsum' }];
 
 export async function loader({ request }: Route.LoaderArgs) {
-  const [me, authStatus] = await Promise.all([getServerAuthMe(request), getAuthStatus()]);
+  const [me, application] = await Promise.all([getServerAuthMe(request), getApplication()]);
   const currentPath = new URL(request.url).pathname.replace(/\/$/, '') || '/';
-  if (authStatus.redirectPath && currentPath !== authStatus.redirectPath) {
-    return redirect(authStatus.redirectPath);
+  if (application.redirectPath && currentPath !== application.redirectPath) {
+    return redirect(application.redirectPath);
   }
-  if (!authStatus.redirectPath && currentPath === '/welcome') return redirect('/');
+  if (!application.redirectPath && currentPath === '/welcome') return redirect('/');
 
-  return { me, authStatus };
+  return { me, application };
 }
 
 export async function clientLoader({ serverLoader }: Route.ClientLoaderArgs) {
@@ -133,10 +133,10 @@ function AppContent() {
 }
 
 export default function App() {
-  const { authStatus } = useLoaderData<typeof loader>();
+  const { application } = useLoaderData<typeof loader>();
 
   return (
-    <FeaturesProvider features={authStatus.features}>
+    <FeaturesProvider features={application.features}>
       <TrackingContextProvider provider={trackingProvider} spec={webappTrackingSpec}>
         <AppContent />
       </TrackingContextProvider>

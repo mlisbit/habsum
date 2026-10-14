@@ -24,10 +24,6 @@ export const administratorController = {
   ) {
     return sendServiceResult(res, () => administratorService.updateRegistrationSettings(req.body));
   },
-  getDatabase(_req: Request, res: Response) {
-    return sendServiceResult(res, () => administratorService.getDatabase());
-  },
-
   downloadDatabase(_req: Request, res: Response) {
     try {
       const databaseFile = administratorService.getDatabaseFile();

@@ -1,5 +1,5 @@
 import { createContext, useContext, type ReactNode } from 'react';
-import type { AuthFeatures } from '@habsum/types/api-responses/auth-status-get';
+import type { AuthFeatures } from '@habsum/types/api-responses/application-get';
 
 const FeaturesContext = createContext<AuthFeatures | null>(null);
 

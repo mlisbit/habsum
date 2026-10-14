@@ -3,9 +3,6 @@ import { authController } from './auth.controller.js';
 
 export const authRouter = Router();
 
-// Used by the login page to detect whether the active database needs its first user.
-authRouter.get('/auth/status', authController.getStatus);
-
 // Used once by a fresh installation to create its first administrator account.
 authRouter.post('/auth/initial-user', authController.postInitialUser);
 

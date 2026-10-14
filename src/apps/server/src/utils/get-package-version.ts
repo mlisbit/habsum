@@ -7,7 +7,7 @@ export default function getPackageVersion(): string {
 }
 
 function readPackageVersion(): string {
-  const fromEnv = process.env.HABSUM_VERSION ?? process.env.npm_package_version;
+  const fromEnv = process.env.npm_package_version;
   if (fromEnv) return stripVersionPrefix(fromEnv);
 
   try {
