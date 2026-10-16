@@ -13,23 +13,26 @@
     "src/packages/stylelint",
     "src/apps/habsum-admin",
     "src/apps/server",
-    "src/apps/webapp"
+    "src/apps/webapp",
+    "src/apps/homepage"
   ],
   "scripts": {
     "dev:server": "npm --workspace src/apps/server run dev",
     "dev:webapp": "npm --workspace src/apps/webapp run dev",
     "dev": "npm-run-all --parallel dev:server dev:webapp",
     "start": "npm --workspace src/apps/server run start",
+    "build:homepage": "npm --workspace @habsum/homepage run build",
+    "test:homepage": "npm --workspace @habsum/homepage run test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "init-admin": "npm --workspace src/apps/server run init-admin --",
     "lint": "npm run lint:plugins:build && npm run lint:js && npm run lint:css:run",
-    "lint:js": "npm run lint:js --workspace @habsum/webapp && npm run lint:js --workspace @habsum/ui && npm run lint:js --workspace @habsum/habit-render",
+    "lint:js": "npm run lint:js --workspace @habsum/webapp && npm run lint:js --workspace @habsum/ui && npm run lint:js --workspace @habsum/habit-render && npm run lint:js --workspace @habsum/homepage",
     "lint:css": "npm run stylelint-plugins:build && npm run lint:css:run",
     "lint:css:run": "stylelint \"src/**/*.{css,scss}\"",
     "lint:css:fix": "npm run stylelint-plugins:build && npm run lint:css:run -- --fix",
     "lint:plugins:build": "npm run stylelint-plugins:build && npm run eslint-plugins:build",
-    "test": "npm-run-all test:admin test:webapp test:server",
+    "test": "npm-run-all test:admin test:webapp test:server test:homepage",
     "test:admin": "npm run test --workspace @habsum/admin",
     "test:webapp": "npm run test --workspace @habsum/webapp",
     "test:server": "npm run test --workspace @habsum/server",
@@ -58,6 +61,9 @@
     ],
     "src/apps/webapp/**/*.{ts,tsx}": [
       "eslint --max-warnings=0 --config src/apps/webapp/eslint.config.mjs"
+    ],
+    "src/apps/homepage/**/*.{ts,tsx}": [
+      "eslint --max-warnings=0 --config src/apps/homepage/eslint.config.mjs"
     ],
     "src/packages/ui/**/*.{ts,tsx}": [
       "eslint --max-warnings=0 --config src/packages/ui/eslint.config.mjs"

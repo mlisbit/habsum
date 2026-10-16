@@ -6,6 +6,7 @@ node_modules
 **/.DS_Store
 src/apps/webapp/build
 src/apps/webapp/.cache
+src/apps/homepage/dist
 data
 npm-debug.log*
 yarn-debug.log*

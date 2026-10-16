@@ -10,6 +10,7 @@ src/apps/webapp/build
 src/apps/webapp/.cache
 src/apps/webapp/.react-router
 src/apps/webapp/public/build
+src/apps/homepage/dist
 src/packages/stylelint/dist
 src/packages/eslint/dist
 

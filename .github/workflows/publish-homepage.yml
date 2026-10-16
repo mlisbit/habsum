@@ -1,0 +1,70 @@
+name: Publish homepage
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/apps/homepage/**'
+      - 'src/packages/ui/**'
+      - 'src/packages/habit-render/**'
+      - 'src/packages/types/**'
+      - 'src/packages/utils/**'
+      - 'public/homepage/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/publish-homepage.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test homepage
+        run: npm run test:homepage
+
+      - name: Build static homepage
+        run: npm run build:homepage
+
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: src/apps/homepage/dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

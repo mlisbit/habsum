@@ -10,6 +10,7 @@ export type BarGraphLine = {
 
 type BarGraphProps = {
   data: BarGraphData;
+  className?: string;
   /** Fired when the pointer enters a bar (`value` is the datum total for that bucket, or `null` when empty). */
   onHover?: (detail: { key: string; value: number | null }) => void;
   /**
@@ -32,7 +33,7 @@ function barHeightPercent(value: number | null, scaleTop: number): number {
   return Math.max(0, Math.min(100, (value / scaleTop) * 100));
 }
 
-export function BarGraph({ data, onHover, lines = [] }: BarGraphProps) {
+export function BarGraph({ data, className, onHover, lines = [] }: BarGraphProps) {
   const entries = Object.entries(data);
   if (entries.length === 0) return null;
 
@@ -42,7 +43,7 @@ export function BarGraph({ data, onHover, lines = [] }: BarGraphProps) {
   const visibleLines = lines.filter((line) => line.value > 0 && values.some((v) => v > line.value));
 
   return (
-    <div className="bar-graph" role="presentation">
+    <div className={classBuilder({ 'bar-graph': true }, className)} role="presentation">
       <div className="bar-graph__wrap">
         {entries.map(([key, { value, hoverLabel, outline, dimmed, trackModifier }]) => {
           const trackClassName = classBuilder(

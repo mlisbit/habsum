@@ -1,0 +1,40 @@
+@use 'functions';
+
+.visualization-examples {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: functions.spacing(8);
+}
+
+.visualization-examples__card {
+  display: grid;
+  grid-template-rows: auto 1fr;
+  align-content: start;
+  gap: functions.spacing(4);
+  padding: functions.spacing(5);
+  background: var(--background);
+  border: 1px solid var(--border-color-faint);
+  border-radius: var(--border-radius-m);
+}
+
+.visualization-examples__content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  min-inline-size: 0;
+
+  // Match the seven heatmap cells and six gaps in each column.
+  block-size: calc(5.25rem + functions.spacing(6));
+}
+
+.visualization-examples__bar-graph {
+  block-size: 100%;
+  margin-block-start: 0;
+}
+
+@media (max-width: 800px) {
+  .visualization-examples {
+    grid-template-columns: 1fr;
+    gap: functions.spacing(6);
+  }
+}

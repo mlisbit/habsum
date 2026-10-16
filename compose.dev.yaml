@@ -43,3 +43,20 @@ services:
       - '3000:3000'
     depends_on:
       - server
+
+  homepage:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    command: ['npm', '--workspace', 'src/apps/homepage', 'run', 'dev']
+    environment:
+      NODE_ENV: development
+      CHOKIDAR_USEPOLLING: 'true'
+    volumes:
+      - ./src:/app/src
+      - ./public/homepage:/app/public/homepage:ro
+      - /app/src/apps/homepage/node_modules
+      - /app/src/packages/stylelint/node_modules
+    ports:
+      - '3002:3002'

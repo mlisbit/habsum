@@ -5,7 +5,6 @@ import { autocompletion, type Completion, type CompletionContext } from '@codemi
 import { yaml } from '@codemirror/lang-yaml';
 import { oneDark } from '@codemirror/theme-one-dark';
 import { yamlString, type YAMLString } from '@habsum/types/common/misc';
-import { getMediaQuerySnapshot, subscribeToMediaQuery } from '~/utils/media-query-store';
 
 const HABIT_TYPE_COMPLETIONS: Completion[] = [
   {
@@ -43,12 +42,13 @@ function habitTypeCompletion(context: CompletionContext) {
   };
 }
 
-function usePrefersDark() {
-  return useSyncExternalStore(
-    (onStoreChange) => subscribeToMediaQuery('(prefers-color-scheme: dark)', onStoreChange),
-    () => getMediaQuerySnapshot('(prefers-color-scheme: dark)'),
-    () => false,
-  );
+function subscribeToTheme(onStoreChange: () => void) {
+  const observer = new MutationObserver(onStoreChange);
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['data-theme'],
+  });
+  return () => observer.disconnect();
 }
 
 type ConfigYamlEditorProps = {
@@ -57,7 +57,11 @@ type ConfigYamlEditorProps = {
 };
 
 export function ConfigYamlEditor({ text, onChange }: ConfigYamlEditorProps) {
-  const prefersDark = usePrefersDark();
+  const isDarkTheme = useSyncExternalStore(
+    subscribeToTheme,
+    () => document.documentElement.dataset.theme === 'dark',
+    () => false,
+  );
 
   return (
     <div className="config-yaml-editor">
@@ -67,7 +71,7 @@ export function ConfigYamlEditor({ text, onChange }: ConfigYamlEditorProps) {
         extensions={[yaml(), autocompletion({ override: [habitTypeCompletion] })]}
         height="100%"
         minHeight="min(60vh, 640px)"
-        theme={prefersDark ? oneDark : 'light'}
+        theme={isDarkTheme ? oneDark : 'light'}
         basicSetup={{
           lineNumbers: true,
           foldGutter: true,

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#1c1d21" />
+    <meta
+      name="description"
+      content="Habsum is a self-hosted, highly configurable habit tracker. Pick how you want to track your habits."
+    />
+    <meta property="og:title" content="Habsum — Self-hosted habit tracker" />
+    <meta
+      property="og:description"
+      content="A self-hosted, highly configurable habit tracker. Pick how you want to track your habits."
+    />
+    <meta property="og:type" content="website" />
+    <link rel="icon" type="image/svg+xml" href="./icon.svg" />
+    <title>Habsum — Self-hosted habit tracker</title>
+    <script>
+      (() => {
+        let preference;
+        try {
+          preference = localStorage.getItem('habsum.uiThemePreference');
+        } catch {}
+        document.documentElement.dataset.theme =
+          preference === 'light' || preference === 'dark'
+            ? preference
+            : matchMedia('(prefers-color-scheme: light)').matches
+              ? 'light'
+              : 'dark';
+      })();
+    </script>
+    <script type="module" crossorigin src="./assets/index-CmWw0Ms3.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index--Zd0GHeY.css">
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>
+      Habsum is a self-hosted, highly configurable habit tracker.
+      <a href="https://github.com/mlisbit/habsum">View Habsum on GitHub</a>. Enable JavaScript to
+      explore the screenshots and features.
+    </noscript>
+  </body>
+</html>

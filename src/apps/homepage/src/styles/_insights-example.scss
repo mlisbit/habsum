@@ -1,0 +1,22 @@
+@use 'functions';
+
+.insights-example {
+  display: flex;
+  flex-wrap: nowrap;
+  block-size: 100%;
+  gap: functions.spacing(1);
+}
+
+.insights-example__card {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  block-size: 100%;
+  min-inline-size: 0;
+  padding: functions.spacing(1, 3);
+  border: 1px solid var(--pill-border);
+  border-radius: var(--border-radius-s);
+  background: var(--background-info-card);
+  overflow-wrap: anywhere;
+}

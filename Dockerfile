@@ -17,7 +17,7 @@ COPY --from=bun-runtime /usr/local/bin/bun /usr/local/bin/bun
 RUN ln -s /app/node_modules/.bin/habsum-admin /usr/local/bin/habsum-admin \
     && habsum-admin --help
 
-# Shared environment for the two development containers.
+# Shared environment for the development containers.
 FROM admin-tools AS development
 
 ENV NODE_ENV=development
@@ -38,6 +38,19 @@ CMD ["node", "--import", "tsx", "src/index.ts"]
 FROM dependencies AS webapp-build
 
 RUN npm --workspace src/apps/webapp run build
+
+# Static homepage image for production hosting.
+FROM dependencies AS homepage-build
+
+COPY public/homepage ./public/homepage
+
+RUN npm run build:homepage
+
+FROM nginx:alpine AS homepage
+
+COPY --from=homepage-build /app/src/apps/homepage/dist /usr/share/nginx/html
+
+EXPOSE 80
 
 # Standalone webapp image for publishing.
 FROM node:20-bookworm-slim AS webapp

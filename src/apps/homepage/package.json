@@ -1,0 +1,37 @@
+{
+  "name": "@habsum/homepage",
+  "version": "0.1.36",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "typecheck": "tsc",
+    "test": "vitest run",
+    "lint:js": "eslint ."
+  },
+  "dependencies": {
+    "@habsum/habit-render": "*",
+    "@habsum/types": "*",
+    "@habsum/ui": "*",
+    "lucide-react": "^1.9.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "@types/react": "^18.3.10",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.7.0",
+    "eslint": "9.39.1",
+    "eslint-plugin-habsum": "*",
+    "sass": "^1.99.0",
+    "typescript": "^5.6.2",
+    "typescript-eslint": "8.48.1",
+    "vite": "^5.4.8",
+    "vitest": "^3.0.9"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

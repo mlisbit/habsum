@@ -34,3 +34,6 @@ jobs:
 
       - name: Build webapp
         run: npm --workspace @habsum/webapp run build
+
+      - name: Build homepage
+        run: npm run build:homepage

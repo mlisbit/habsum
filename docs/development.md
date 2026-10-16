@@ -30,6 +30,20 @@ Look at the `compose.dev.yaml` file to find some of the `env` variables used to 
 
 The application is available on `http://localhost:3000` and the api is available on port `3001`.
 
+## Homepage
+
+`src/apps/homepage` is a separate React/Vite application using `@habsum/ui`. It builds to static files and does not need the Habsum API or a Node server at runtime.
+
+- Build with `npm run build:homepage`. Output is in `src/apps/homepage/dist`.
+- Development Compose runs Vite at `http://localhost:3002` with hot reload. Homepage source, shared packages, and screenshots are bind mounted, with polling enabled for Docker file changes. Source edits appear automatically without rebuilding the image.
+- After changing the Compose configuration or dependencies, rebuild and recreate just this service with `docker compose -f compose.dev.yaml up --build -d --no-deps homepage`.
+- The Dockerfile's `homepage` target serves the production static build using Nginx.
+- Homepage assets live in `public/homepage`. These are independent copies of the README screenshots; replace them here without changing the README.
+- Stars and the latest published release/date load from GitHub's public REST API in the browser, without a token. GitHub links remain available when the API is unavailable or rate limited.
+- The theme switch uses the same UI components, theme tokens, and saved preference as the main app.
+
+The **Publish homepage** workflow deploys to GitHub Pages on relevant pushes to `main`, or when run manually. In the repository's **Settings → Pages → Build and deployment**, set **Source** to **GitHub Actions** before the first deployment. Assets use relative URLs, so the build works at `/habsum/`, a custom domain, or the root of the local preview.
+
 ## Linting
 
 We use stylelint + eslint. They're pretty opinionated around following BEM. Here are some relevant commands:
