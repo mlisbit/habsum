@@ -25,6 +25,7 @@ beforeEach(() => {
   vi.mocked(getAuthMe).mockResolvedValue(loggedOut);
   vi.mocked(getApplication).mockResolvedValue({
     apiVersion: '1.2.3',
+    demoEnabled: false,
     serverTime: { iso: '2026-10-14T12:00:00Z', timezone: 'UTC' },
     database: { path: '/data/habsum.db' },
     redirectPath: null,
@@ -40,6 +41,7 @@ describe('root auth redirect guard', () => {
   it('redirects every other route to welcome when initial web signup is enabled', async () => {
     vi.mocked(getApplication).mockResolvedValue({
       apiVersion: '1.2.3',
+      demoEnabled: false,
       serverTime: { iso: '2026-10-14T12:00:00Z', timezone: 'UTC' },
       database: { path: '/data/habsum.db' },
       redirectPath: '/welcome',
@@ -56,6 +58,7 @@ describe('root auth redirect guard', () => {
   it('allows the welcome route when initial web signup is enabled', async () => {
     vi.mocked(getApplication).mockResolvedValue({
       apiVersion: '1.2.3',
+      demoEnabled: false,
       serverTime: { iso: '2026-10-14T12:00:00Z', timezone: 'UTC' },
       database: { path: '/data/habsum.db' },
       redirectPath: '/welcome',
@@ -78,6 +81,21 @@ describe('root auth redirect guard', () => {
         redirectPath: null,
         features: { accountSignup: false, forgotPassword: false },
       },
+    });
+  });
+
+  it('passes the server demo flag through to the client loader data', async () => {
+    vi.mocked(getApplication).mockResolvedValue({
+      apiVersion: '1.2.3',
+      demoEnabled: true,
+      serverTime: { iso: '2026-10-14T12:00:00Z', timezone: 'UTC' },
+      database: { path: '/data/habsum.db' },
+      redirectPath: null,
+      features: { accountSignup: false, forgotPassword: false },
+    });
+
+    expect(await loader(getLoaderArgs('/login'))).toMatchObject({
+      application: { demoEnabled: true },
     });
   });
 

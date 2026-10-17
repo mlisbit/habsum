@@ -26,7 +26,6 @@ type ConfigSettingsCardProps = {
   children?: ReactNode;
   actions?: ReactNode;
   subtitle?: ReactNode;
-  error?: string | null;
 };
 
 type ConfigSettingsProps = {
@@ -44,8 +43,7 @@ export function ConfigSettings({ user, mode, renderCard }: ConfigSettingsProps) 
   const [initialHabitOrderKey, setInitialHabitOrderKey] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [saveError, setSaveError] = useState<string | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
   const addHabitRef = useRef<(() => void) | null>(null);
   const { showToast } = useToast();
   const { present, closeModal } = useModal();
@@ -54,8 +52,7 @@ export function ConfigSettings({ user, mode, renderCard }: ConfigSettingsProps) 
   useEffect(() => {
     if (!user) return;
     setLoading(true);
-    setLoadError(null);
-    setSaveError(null);
+    setLoadFailed(false);
     getUserConfig(user)
       .then((r) => {
         setText(r.text);
@@ -66,9 +63,12 @@ export function ConfigSettings({ user, mode, renderCard }: ConfigSettingsProps) 
         setHabitOrder(order);
         setInitialHabitOrderKey(habitOrderKey(order));
       })
-      .catch((e) => setLoadError(e instanceof Error ? e.message : String(e)))
+      .catch((e) => {
+        setLoadFailed(true);
+        showToast({ type: 'error', message: e instanceof Error ? e.message : String(e) });
+      })
       .finally(() => setLoading(false));
-  }, [user]);
+  }, [showToast, user]);
 
   const includeAbsentDaysInAverage = config?.includeAbsentDaysInAverage ?? false;
 
@@ -111,7 +111,6 @@ export function ConfigSettings({ user, mode, renderCard }: ConfigSettingsProps) 
   const onCancel = useCallback(() => {
     setText(initialText);
     setConfig(initialConfig);
-    setSaveError(null);
     const order = initialConfig?.habits.map((h) => h.name) ?? [];
     setHabitOrder(order);
     setInitialHabitOrderKey(habitOrderKey(order));
@@ -120,7 +119,6 @@ export function ConfigSettings({ user, mode, renderCard }: ConfigSettingsProps) 
   const onSave = useCallback(async () => {
     if (!user || !dirty) return;
     setSaving(true);
-    setSaveError(null);
     try {
       if (mode === 'habits') {
         if (config == null) throw new Error('config is not loaded');
@@ -139,7 +137,6 @@ export function ConfigSettings({ user, mode, renderCard }: ConfigSettingsProps) 
       showToast({ type: 'success', message: 'Saved.' });
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      setSaveError(msg);
       showToast({ type: 'error', message: msg });
     } finally {
       setSaving(false);
@@ -148,15 +145,10 @@ export function ConfigSettings({ user, mode, renderCard }: ConfigSettingsProps) 
 
   const onIncludeAbsentDaysInAverageChange = useCallback(
     (value: boolean) => {
-      try {
-        const nextConfig = config == null ? null : { ...config, includeAbsentDaysInAverage: value };
-        setConfig(nextConfig);
-        if (saveError != null) setSaveError(null);
-      } catch (e) {
-        setSaveError(e instanceof Error ? e.message : String(e));
-      }
+      const nextConfig = config == null ? null : { ...config, includeAbsentDaysInAverage: value };
+      setConfig(nextConfig);
     },
-    [config, saveError],
+    [config],
   );
 
   if (loading) {
@@ -170,12 +162,11 @@ export function ConfigSettings({ user, mode, renderCard }: ConfigSettingsProps) 
     );
   }
 
-  if (loadError) {
+  if (loadFailed) {
     return (
       <div className="config-page">
         {renderCard({
           headerText: configCardHeader,
-          error: loadError,
         })}
       </div>
     );
@@ -202,7 +193,6 @@ export function ConfigSettings({ user, mode, renderCard }: ConfigSettingsProps) 
 
       {renderCard({
         headerText: configCardHeader,
-        error: saveError,
         actions:
           mode === 'habits' ? (
             <Button
@@ -215,13 +205,7 @@ export function ConfigSettings({ user, mode, renderCard }: ConfigSettingsProps) 
           ) : null,
         children:
           mode === 'yaml' ? (
-            <ConfigYamlEditor
-              text={text}
-              onChange={(next) => {
-                setText(next);
-                if (saveError != null) setSaveError(null);
-              }}
-            />
+            <ConfigYamlEditor text={text} onChange={setText} />
           ) : (
             <ConfigGuiEditor
               config={config}
@@ -231,7 +215,6 @@ export function ConfigSettings({ user, mode, renderCard }: ConfigSettingsProps) 
               onConfigChange={(nextConfig) => {
                 setConfig(nextConfig);
                 setHabitOrder(nextConfig.habits.map((h) => h.name));
-                if (saveError != null) setSaveError(null);
               }}
               registerAddHabit={(fn) => {
                 addHabitRef.current = fn;

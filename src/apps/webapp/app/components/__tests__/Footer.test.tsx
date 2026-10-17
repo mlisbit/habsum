@@ -5,6 +5,10 @@ import { Footer } from '~/components/Footer';
 import { WEBAPP_VERSION } from '~/version';
 
 vi.mock('~/api.client', () => ({ getApplicationUpdates: vi.fn() }));
+vi.mock('react-router', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('react-router')>()),
+  useRouteLoaderData: () => ({ application: { demoEnabled: false } }),
+}));
 
 beforeEach(() => {
   vi.mocked(getApplicationUpdates).mockResolvedValue([]);

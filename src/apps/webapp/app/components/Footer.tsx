@@ -1,9 +1,12 @@
 import type { ApplicationUpdatesGetResponse } from '@habsum/types/api-responses/application-updates-get';
 import { useEffect, useState } from 'react';
+import { useRouteLoaderData } from 'react-router';
 import { getApplicationUpdates } from '~/api.client';
+import type { loader as rootLoader } from '~/root';
 import { WEBAPP_VERSION } from '~/version';
 
 export function Footer({ className }: { className?: string }) {
+  const rootData = useRouteLoaderData<typeof rootLoader>('root');
   const [updates, setUpdates] = useState<ApplicationUpdatesGetResponse | null>(null);
   const [checkingUpdates, setCheckingUpdates] = useState(true);
 
@@ -49,7 +52,10 @@ export function Footer({ className }: { className?: string }) {
           )}
         </span>
       ))}
-      <span className="footer__version">v{WEBAPP_VERSION}</span>
+      <span className="footer__version">
+        v{WEBAPP_VERSION}
+        {rootData?.application.demoEnabled ? ' Demo' : ''}
+      </span>
     </footer>
   );
 }

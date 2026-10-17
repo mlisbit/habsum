@@ -101,6 +101,7 @@ describe('session routes', () => {
         .expect((response: { body: unknown }) =>
           expect(response.body).toEqual({
             apiVersion: getPackageVersion(),
+            demoEnabled: false,
             serverTime: expect.any(Object),
             database: { path: expect.any(String) },
             redirectPath: null,
@@ -115,6 +116,7 @@ describe('session routes', () => {
         .expect((response: { body: unknown }) =>
           expect(response.body).toEqual({
             apiVersion: getPackageVersion(),
+            demoEnabled: false,
             serverTime: expect.any(Object),
             database: { path: expect.any(String) },
             redirectPath: null,

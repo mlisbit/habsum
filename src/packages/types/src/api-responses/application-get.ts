@@ -10,6 +10,7 @@ export type AuthFeatures = {
  */
 export type ApplicationGetResponse = {
   apiVersion: string;
+  demoEnabled: boolean;
   serverTime: ServerTimeResponse;
   database: { path: string };
   redirectPath: '/welcome' | null;

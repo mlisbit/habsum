@@ -3,6 +3,7 @@ import { ProductEntitlement } from '@habsum/types/common/entitlement';
 import { accountCreatedAtToApi } from '@habsum/types/common/day';
 import hasOnlyUsernameCharacters from '../utils/has-only-username-characters.js';
 import isForbiddenUsername from '@habsum/utils/is-forbidden-username';
+import { generateTemporaryPassword } from '@habsum/utils/password';
 import {
   isPlausibleEmail,
   isSafeConfigUserId,
@@ -13,6 +14,7 @@ import type { UserConfig } from '../types/userConfig.js';
 import { ConfigService } from './config-service.js';
 import { UserAndAuthRepository } from '../repositories/user-and-auth-repository.js';
 import ServiceError from '../utils/classes/service-error.js';
+import restrictForDemo from '../utils/restrict-for-demo.js';
 
 type UserPatchResult = {
   ok: true;
@@ -157,6 +159,7 @@ export class UserService {
     return { ok: true as const };
   }
 
+  @restrictForDemo()
   changePassword(user: string, body: PasswordChangeInput | undefined) {
     this.assertValidUserId(user);
 
@@ -184,6 +187,20 @@ export class UserService {
     return { ok: true as const };
   }
 
+  @restrictForDemo()
+  issueTemporaryPassword(user: string) {
+    this.assertValidUserId(user);
+    const password = generateTemporaryPassword();
+    if (!this.userAndAuthRepository.updateLoginPassword(user, password)) {
+      throw new ServiceError('not_found', 'user not found');
+    }
+    return { ok: true as const, user, password };
+  }
+
+  @restrictForDemo(
+    (_user: string, body: UserPatchInput | undefined) =>
+      body != null && ('username' in body || 'displayName' in body || 'email' in body),
+  )
   patchUser(user: string, body: UserPatchInput | undefined): UserPatchResult {
     this.assertValidUserId(user);
 
@@ -223,6 +240,7 @@ export class UserService {
     return { ok: true, username: user };
   }
 
+  @restrictForDemo()
   deleteUser(user: string): UserDeleteResult {
     this.assertValidUserId(user);
 

@@ -14,6 +14,7 @@ import ServiceError from '../utils/classes/service-error.js';
 import { RegistrationSettingsRepository } from '../repositories/registration-settings-repository.js';
 import { EmailSettingsRepository } from '../repositories/email-settings-repository.js';
 import isForbiddenUsername from '@habsum/utils/is-forbidden-username';
+import restrictForDemo from '../utils/restrict-for-demo.js';
 
 const PACKAGE_VERSION = getPackageVersion();
 
@@ -291,6 +292,7 @@ export class AuthService {
     };
   }
 
+  @restrictForDemo()
   async forgotPassword(body: ForgotPasswordInput | undefined) {
     if (!this.getStatus().features.forgotPassword) {
       throw new ServiceError('forbidden', 'password recovery is disabled');
@@ -358,6 +360,7 @@ export class AuthService {
     };
   }
 
+  @restrictForDemo()
   resetPassword(body: ResetPasswordInput | undefined) {
     const token = typeof body?.token === 'string' ? body.token.trim() : '';
     if (!token) {

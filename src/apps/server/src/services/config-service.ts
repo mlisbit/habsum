@@ -13,6 +13,7 @@ import YAMLConfigConvertor from '../utils/classes/yaml-config-convertor.js';
 import YAMLConfigParser from '../utils/classes/yaml-config-parser.js';
 import { isSafeConfigUserId } from '../utils/request-utils.js';
 import ServiceError from '../utils/classes/service-error.js';
+import restrictForDemo from '../utils/restrict-for-demo.js';
 
 const EMPTY_USER_CONFIG_TEXT = yamlString('habits: {}\n');
 
@@ -281,6 +282,7 @@ export class ConfigService {
     };
   }
 
+  @restrictForDemo()
   putUserConfig({ user, body = {} }: PutUserConfigInput) {
     if (!isSafeConfigUserId(user)) {
       throw new ServiceError('bad_request', 'invalid user');

@@ -1,5 +1,6 @@
 import type { HabitRowText } from '@habsum/types/common/habit';
 import ServiceError from '../../utils/classes/service-error.js';
+import restrictForDemo from '../../utils/restrict-for-demo.js';
 import type { HydratedHabitData } from '../../types/habit.types.js';
 import type { HabitDef } from '../../types/userConfig.js';
 import type {
@@ -18,6 +19,7 @@ export class TextHabitService implements HabitTypeService<HabitRowText> {
     private readonly repository: HabitMutationRepository,
   ) {}
 
+  @restrictForDemo()
   applyPatch({ user, date, body }: ApplyHabitPatchInput): void {
     const action = typeof body.action === 'string' ? body.action : undefined;
     if (action === 'clear') {

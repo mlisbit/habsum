@@ -271,13 +271,7 @@ export const usersController = {
       return res.status(404).json({ error: 'user not found' });
     }
 
-    const password = generateTemporaryPassword();
-    if (!userAndAuthRepository.updateLoginPassword(name, password)) {
-      return res.status(404).json({ error: 'user not found' });
-    }
-
-    const body = { ok: true as const, user: name, password };
-    return res.json(body);
+    return sendServiceResult(res, () => userService.issueTemporaryPassword(name));
   },
 
   deleteUsers(req: Request, res: Response) {
@@ -291,20 +285,9 @@ export const usersController = {
       return res.status(404).json({ error: 'user not found' });
     }
 
-    try {
-      userAndAuthRepository.purgeUserData(name);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : 'purge failed';
-      return res.status(400).json({ error: message });
-    }
-
-    const out = configService.deleteUserConfig(name);
-    if (!out.ok) {
-      const status = out.error === 'user not found' ? 404 : 400;
-      return res.status(status).json({ error: out.error });
-    }
-
-    userAndAuthRepository.deleteUserAuthRecord(out.user);
-    return res.json({ ok: true, user: out.user });
+    return sendServiceResult(res, () => {
+      const result = userService.deleteUser(name);
+      return { ok: result.ok, user: result.username };
+    });
   },
 };

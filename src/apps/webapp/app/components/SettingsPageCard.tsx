@@ -1,6 +1,5 @@
 import type { ElementType, ReactNode } from 'react';
 import { Button } from '@habsum/ui/components/Button';
-import { InfoText } from '@habsum/ui/components/InfoText';
 
 type SettingsPageCardProps = {
   headerText: string;
@@ -8,7 +7,6 @@ type SettingsPageCardProps = {
   actions?: ReactNode;
   onBack?: () => void;
   subtitle?: ReactNode;
-  error?: string | null;
   headerAs?: 'h2' | 'h3';
   headerClassName?: string;
   className?: string;
@@ -20,7 +18,6 @@ export function SettingsPageCard({
   actions,
   onBack,
   subtitle,
-  error,
   headerAs,
   headerClassName,
   className,
@@ -48,16 +45,6 @@ export function SettingsPageCard({
             <Heading className={resolvedHeaderClassName}>{headerText}</Heading>
             {subtitle != null ? (
               <div className="settings-header__subtitle text-light text-b-m">{subtitle}</div>
-            ) : null}
-            {error != null && error !== '' ? (
-              <InfoText
-                size="small"
-                variant="error"
-                className="settings-header__error"
-                id="settings-header-error"
-              >
-                {error}
-              </InfoText>
             ) : null}
           </div>
           {actions != null ? <div className="settings-header__actions">{actions}</div> : null}

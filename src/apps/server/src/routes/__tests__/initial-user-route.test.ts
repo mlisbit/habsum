@@ -66,6 +66,7 @@ describe('POST /auth/initial-user', () => {
       .expect((response: { body: unknown }) =>
         expect(response.body).toEqual({
           apiVersion: getPackageVersion(),
+          demoEnabled: false,
           serverTime: expect.any(Object),
           database: { path: expect.any(String) },
           redirectPath: null,
