@@ -184,11 +184,13 @@ describe('demo mode', () => {
       .query({ date })
       .set('Cookie', cookie)
       .expect(200);
-    expect(response.body.habits).toContainEqual({
-      name: habit,
-      type: 'text',
-      details: { text: 'Original note' },
-    });
+    expect(response.body.habits).toContainEqual(
+      expect.objectContaining({
+        name: habit,
+        type: 'text',
+        details: { text: 'Original note' },
+      }),
+    );
   });
 
   it('rejects password changes, recovery, and account deletion without changing credentials', async () => {

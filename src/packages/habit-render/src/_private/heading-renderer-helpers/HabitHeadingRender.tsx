@@ -1,17 +1,15 @@
 // exclusive-bem-block: habit-heading
 import { useCallback, type ComponentType, type ReactNode } from 'react';
-import type { Day } from '@habsum/types/common/day';
 import { Button } from '@habsum/ui/components/Button';
 import { Icon } from '@habsum/ui/components/Icon';
 import { useModal } from '@habsum/ui/contexts/modal';
 import { classBuilder } from '@habsum/utils/class-builder';
-import { habitDetailUrl } from '@habsum/utils/habit-id';
 import { HabitMenuModal } from './HabitMenuModal';
 
 type HabitHeadingRenderProps = {
   user: string;
   habitName: string;
-  viewDate: Day;
+  ctaUrl?: string;
   className?: string;
   pending?: boolean;
   goalHit?: boolean;
@@ -26,7 +24,7 @@ type HabitHeadingRenderProps = {
 export function HabitHeadingRender({
   user,
   habitName,
-  viewDate,
+  ctaUrl,
   className,
   pending = false,
   goalHit = false,
@@ -37,7 +35,6 @@ export function HabitHeadingRender({
   actions,
 }: HabitHeadingRenderProps) {
   const { present, closeModal, closeModalThen } = useModal();
-  const to = habitDetailUrl(user, habitName, viewDate);
   const openMenu = useCallback(() => {
     present({
       content: (
@@ -61,14 +58,14 @@ export function HabitHeadingRender({
         {goalHit ? (
           <Icon name="check" size="medium" className="habit-heading__goal-hit-check text-success" />
         ) : null}
-        {demo ? (
-          <span className="text-color-link text-h-m">{habitName}</span>
+        {demo || !ctaUrl ? (
+          <span className="text-h-m">{habitName}</span>
         ) : LinkComponent ? (
-          <LinkComponent className="text-color-link text-h-m" to={to}>
+          <LinkComponent className="text-color-link text-h-m" to={ctaUrl}>
             {habitName}
           </LinkComponent>
         ) : (
-          <a className="text-color-link text-h-m" href={to}>
+          <a className="text-color-link text-h-m" href={ctaUrl}>
             {habitName}
           </a>
         )}

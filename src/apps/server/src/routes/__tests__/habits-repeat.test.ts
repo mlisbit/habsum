@@ -24,6 +24,48 @@ describe('GET /users/:user/habits repeat config', () => {
     vi.useRealTimers();
   });
 
+  it('returns habit title URLs filtered to each requested day for every habit type', async () => {
+    const user = 'habits-title-link-user';
+    writeUserConfig(
+      user,
+      `habits:
+  Push ups:
+    type: summation
+  Morning routine:
+    type: single_select
+    options: [yes, no]
+  Journal:
+    type: text
+`,
+    );
+    userAndAuthRepository.setUserPassword(user, 'test-password');
+    const session = userAndAuthRepository.createUserSession(user, 3600);
+    const app = createApp();
+
+    for (const date of ['2026-07-22', '2026-07-23']) {
+      const response = await request(app)
+        .get(`/users/${user}/habits`)
+        .query({ date, today: '2026-07-23' })
+        .set('Cookie', `${SESSION_COOKIE_NAME}=${session}`)
+        .expect(200);
+
+      expect(response.body.habits).toEqual([
+        expect.objectContaining({
+          name: 'Push ups',
+          ctaUrl: `/users/${user}/habits/detail?filter=push-ups&date=${date}`,
+        }),
+        expect.objectContaining({
+          name: 'Morning routine',
+          ctaUrl: `/users/${user}/habits/detail?filter=morning-routine&date=${date}`,
+        }),
+        expect.objectContaining({
+          name: 'Journal',
+          ctaUrl: `/users/${user}/habits/detail?filter=journal&date=${date}`,
+        }),
+      ]);
+    }
+  });
+
   it('returns server-owned page copy with a familiar display name and dynamic subheader token', async () => {
     const user = 'habits-page-copy-user';
     writeUserConfig(

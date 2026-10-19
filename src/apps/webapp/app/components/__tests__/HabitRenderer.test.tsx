@@ -1,11 +1,13 @@
 import { act, cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { Link, MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import HabitRenderer from '@habsum/habit-render';
 import { ModalProvider } from '@habsum/ui/contexts/modal';
 import { ToastProvider } from '@habsum/ui/contexts/toast';
 import { dayFromString } from '@habsum/types/common/day';
 import type {
+  Habit,
   HabitRowSingleSelect,
   HabitRowSummation,
   HabitRowText,
@@ -13,6 +15,89 @@ import type {
 
 afterEach(() => {
   cleanup();
+});
+
+describe('HabitRenderer title navigation', () => {
+  const habits: Habit[] = [
+    { name: 'Push ups', type: 'summation', details: { goal: 100, total: null } },
+    {
+      name: 'Morning routine',
+      type: 'single_select',
+      details: { options: ['yes', 'no'], value: null },
+    },
+    { name: 'Journal', type: 'text', details: { text: null } },
+  ];
+
+  it.each(habits)('uses the API ctaUrl for a $type title', (habit) => {
+    const ctaUrl = '/api-selected-destination?date=2026-07-22';
+    render(
+      <ToastProvider>
+        <ModalProvider>
+          <HabitRenderer
+            user="athlete"
+            viewDate={dayFromString('2026-07-27')}
+            habit={{ ...habit, ctaUrl }}
+            onUpdate={vi.fn()}
+          />
+        </ModalProvider>
+      </ToastProvider>,
+    );
+
+    expect(screen.getByRole('link', { name: habit.name }).getAttribute('href')).toBe(ctaUrl);
+  });
+
+  it.each(habits)('renders a $type title without navigation when ctaUrl is absent', (habit) => {
+    render(
+      <ToastProvider>
+        <ModalProvider>
+          <HabitRenderer
+            user="athlete"
+            viewDate={dayFromString('2026-07-27')}
+            habit={habit}
+            onUpdate={vi.fn()}
+          />
+        </ModalProvider>
+      </ToastProvider>,
+    );
+
+    expect(screen.getByText(habit.name)).toBeTruthy();
+    expect(screen.queryByRole('link', { name: habit.name })).toBeNull();
+  });
+
+  it('navigates to the API destination through the supplied router link', async () => {
+    const user = userEvent.setup();
+    render(
+      <MemoryRouter>
+        <ToastProvider>
+          <ModalProvider>
+            <Routes>
+              <Route
+                path="/"
+                element={
+                  <HabitRenderer
+                    user="athlete"
+                    viewDate={dayFromString('2026-07-27')}
+                    habit={{ ...habits[0], ctaUrl: '/api-selected-destination' }}
+                    LinkComponent={({ to, className, children }) => (
+                      <Link className={className} to={to}>
+                        {children}
+                      </Link>
+                    )}
+                    onUpdate={vi.fn()}
+                  />
+                }
+              />
+              <Route path="/api-selected-destination" element={<p>Habit details</p>} />
+            </Routes>
+          </ModalProvider>
+        </ToastProvider>
+      </MemoryRouter>,
+    );
+
+    await user.click(screen.getByRole('link', { name: 'Push ups' }));
+
+    expect(screen.getByText('Habit details')).toBeTruthy();
+  });
 });
 
 describe('HabitRenderer pending actions', () => {
@@ -167,6 +252,7 @@ describe('HabitRenderer type-specific rendering', () => {
   it('uses demo rendering without heading navigation or a menu', () => {
     const habit: HabitRowSummation = {
       name: 'Squats',
+      ctaUrl: '/api-selected-destination',
       type: 'summation',
       details: {
         goal: null,

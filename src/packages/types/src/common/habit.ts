@@ -63,6 +63,8 @@ export type HabitWidgetBody =
 export type HabitWidget = HabitWidgetBase;
 
 export type HabitRenderModelFields = {
+  /** Title navigation destination. Omit to render the title without a link. */
+  ctaUrl?: string;
   widgets?: HabitWidget[];
 };
 

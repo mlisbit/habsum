@@ -4,6 +4,7 @@ import type { Day } from '@habsum/types/common/day';
 import type { Habit } from '@habsum/types/common/habit';
 import { fromDateKey } from '@habsum/utils/date';
 import { getProgress } from '@habsum/utils/habit-helpers';
+import { habitDetailUrl } from '@habsum/utils/habit-id';
 import type { UserConfig } from '../types/userConfig.js';
 
 type HabitResultBuilderInput = {
@@ -27,7 +28,10 @@ export class HabitResultBuilder {
       user,
       date: viewingDate,
       page: this.habitPageCopy(habits),
-      habits,
+      habits: habits.map((habit) => ({
+        ...habit,
+        ctaUrl: habitDetailUrl(user, habit.name, viewingDate),
+      })),
     };
   }
 

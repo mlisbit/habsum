@@ -23,6 +23,7 @@ export default class SummationHabitRenderer implements HabitRenderingInterface {
       <HabitHeadingRender
         {...headingProps}
         habitName={this.habit.name}
+        ctaUrl={this.habit.ctaUrl}
         goalHit={isGoalHit(this.habit)}
         onReset={() => onUpdate({ habit: this.habit.name, action: 'clear' })}
         demo={demo}

@@ -67,6 +67,7 @@ describe('text habits', () => {
     expect(firstDay.body.habits).toEqual([
       {
         name: 'journal',
+        ctaUrl: `/users/${user}/habits/detail?filter=journal&date=2026-07-22`,
         type: 'text',
         details: { text: 'First day\nSecond line' },
       },

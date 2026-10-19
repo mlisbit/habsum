@@ -73,9 +73,9 @@ export default class TextHabitRenderer implements HabitRenderingInterface {
       <div className={className}>
         <HabitHeadingRender
           {...headingProps}
-          viewDate={viewDate}
           pending={pending}
           habitName={this.habit.name}
+          ctaUrl={this.habit.ctaUrl}
           onReset={() => onUpdate({ habit: this.habit.name, action: 'clear' })}
           demo={demo}
           className="mb-4"

@@ -1,3 +1,8 @@
+## README policy
+
+- NEVER modify a README file unless the user explicitly requests a README edit.
+- If a README needs updating, bring it up with the user and describe the suggested change without modifying the file.
+
 ## Local server policy
 
 - Never run `npm run dev`, `dev:ports:free`, `kill`, or `pkill`.
