@@ -1,6 +1,6 @@
 {
   "name": "eslint-plugin-habsum",
-  "version": "0.1.38",
+  "version": "0.1.39",
   "private": true,
   "type": "module",
   "main": "./dist/index.mjs",
