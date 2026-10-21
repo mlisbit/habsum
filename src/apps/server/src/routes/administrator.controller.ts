@@ -1,4 +1,4 @@
-import type { AdministratorRegistrationSettings } from '@habsum/types/api-responses/administrator-registration-settings';
+import type { AdministratorApplicationSettings } from '@habsum/types/api-responses/administrator-application-settings';
 import type {
   AdministratorEmailSettingsPutRequest,
   AdministratorEmailTestRequest,
@@ -15,14 +15,14 @@ import {
 const administratorService = new AdministratorService();
 
 export const administratorController = {
-  getRegistrationSettings(_req: Request, res: Response) {
-    return sendServiceResult(res, () => administratorService.getRegistrationSettings());
+  getApplicationSettings(_req: Request, res: Response) {
+    return sendServiceResult(res, () => administratorService.getApplicationSettings());
   },
-  putRegistrationSettings(
-    req: Request<unknown, unknown, AdministratorRegistrationSettings>,
+  putApplicationSettings(
+    req: Request<unknown, unknown, AdministratorApplicationSettings>,
     res: Response,
   ) {
-    return sendServiceResult(res, () => administratorService.updateRegistrationSettings(req.body));
+    return sendServiceResult(res, () => administratorService.updateApplicationSettings(req.body));
   },
   downloadDatabase(_req: Request, res: Response) {
     try {

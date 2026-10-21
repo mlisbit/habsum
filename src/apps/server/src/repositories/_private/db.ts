@@ -7,6 +7,7 @@ import { dirname } from 'node:path';
 import { PASSWORD_RESET_COOLDOWN_SECONDS } from '../../constants.js';
 import getDatabasePath from '../../utils/get-database-path.js';
 import { isAllowedUiTheme, isPlausibleEmail } from '../../utils/request-utils.js';
+import migrateApplicationSettings from '../../utils/migrate-application-settings.js';
 
 const DB_PATH = getDatabasePath();
 const DATA_DIR = dirname(DB_PATH);
@@ -31,13 +32,17 @@ db.exec(`
 `);
 
 db.exec(`
-  CREATE TABLE IF NOT EXISTS email_settings (
-    provider TEXT PRIMARY KEY,
-    api_key TEXT NOT NULL,
-    from_email TEXT NOT NULL,
-    updated_at INTEGER NOT NULL
+  CREATE TABLE IF NOT EXISTS application_settings (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    account_signup INTEGER NOT NULL DEFAULT 0,
+    email_provider TEXT,
+    email_api_key TEXT,
+    email_from_email TEXT,
+    email_updated_at INTEGER
   );
 `);
+
+migrateApplicationSettings(db);
 
 const userColumns = db.prepare("PRAGMA table_info('users')").all() as Array<{
   name: string;

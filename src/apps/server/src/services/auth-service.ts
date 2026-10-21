@@ -11,7 +11,7 @@ import { EmailService } from './email-service.js';
 import { UserService } from './user-service.js';
 import { UserAndAuthRepository } from '../repositories/user-and-auth-repository.js';
 import ServiceError from '../utils/classes/service-error.js';
-import { RegistrationSettingsRepository } from '../repositories/registration-settings-repository.js';
+import { ApplicationSettingsRepository } from '../repositories/application-settings-repository.js';
 import { EmailSettingsRepository } from '../repositories/email-settings-repository.js';
 import isForbiddenUsername from '@habsum/utils/is-forbidden-username';
 import restrictForDemo from '../utils/restrict-for-demo.js';
@@ -108,7 +108,7 @@ export class AuthService {
     private readonly emailService = new EmailService(),
     private readonly userAndAuthRepository = new UserAndAuthRepository(),
     private readonly userService = new UserService(configService, userAndAuthRepository),
-    private readonly registrationSettingsRepository = new RegistrationSettingsRepository(),
+    private readonly applicationSettingsRepository = new ApplicationSettingsRepository(),
     private readonly emailSettingsRepository = new EmailSettingsRepository(),
   ) {}
 
@@ -119,7 +119,7 @@ export class AuthService {
       apiVersion: PACKAGE_VERSION,
       redirectPath: enabled ? '/welcome' : null,
       features: {
-        accountSignup: this.registrationSettingsRepository.isAccountSignupEnabled(),
+        accountSignup: this.applicationSettingsRepository.isAccountSignupEnabled(),
         forgotPassword: Boolean(emailSettings?.apiKey.trim() && emailSettings?.fromEmail.trim()),
       },
     };
@@ -177,7 +177,7 @@ export class AuthService {
   }
 
   signup(body: SignupInput | undefined) {
-    if (!this.registrationSettingsRepository.isAccountSignupEnabled()) {
+    if (!this.applicationSettingsRepository.isAccountSignupEnabled()) {
       throw new ServiceError('forbidden', 'account creation is disabled');
     }
 

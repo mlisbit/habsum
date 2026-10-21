@@ -7,21 +7,21 @@ import { createApp } from '../../app.js';
 import { ConfigService } from '../../services/config-service.js';
 import { EmailService } from '../../services/email-service.js';
 import { UserAndAuthRepository } from '../../repositories/user-and-auth-repository.js';
-import { RegistrationSettingsRepository } from '../../repositories/registration-settings-repository.js';
+import { ApplicationSettingsRepository } from '../../repositories/application-settings-repository.js';
 
 const configService = new ConfigService();
 const userAndAuthRepository = new UserAndAuthRepository();
-const registrationSettingsRepository = new RegistrationSettingsRepository();
+const applicationSettingsRepository = new ApplicationSettingsRepository();
 
 describe('POST /auth/signup', () => {
   afterEach(() => {
-    registrationSettingsRepository.setAccountSignupEnabled(false);
+    applicationSettingsRepository.setAccountSignupEnabled(false);
     vi.restoreAllMocks();
     vi.unstubAllEnvs();
   });
 
   it('rejects direct API account creation while the feature is disabled', async () => {
-    registrationSettingsRepository.setAccountSignupEnabled(false);
+    applicationSettingsRepository.setAccountSignupEnabled(false);
 
     const response = await request(createApp())
       .post('/auth/signup')
@@ -36,7 +36,7 @@ describe('POST /auth/signup', () => {
   });
 
   it('creates and authenticates an account while the feature is enabled', async () => {
-    registrationSettingsRepository.setAccountSignupEnabled(true);
+    applicationSettingsRepository.setAccountSignupEnabled(true);
 
     const response = await request(createApp())
       .post('/auth/signup')
@@ -63,7 +63,7 @@ describe('POST /auth/signup', () => {
   });
 
   it('validates signup input and rejects an email already in use', async () => {
-    registrationSettingsRepository.setAccountSignupEnabled(true);
+    applicationSettingsRepository.setAccountSignupEnabled(true);
     userAndAuthRepository.setUserPassword('existing-signup-user', 'secret');
     userAndAuthRepository.patchUserProfile('existing-signup-user', {
       email: 'existing-signup@example.com',
@@ -86,10 +86,10 @@ describe('POST /auth/signup', () => {
 });
 
 describe('session routes', () => {
-  it('reports feature availability and removes both legacy flag endpoints', async () => {
+  it('reports application feature availability', async () => {
     const emailSettings = new EmailSettingsRepository();
     try {
-      registrationSettingsRepository.setAccountSignupEnabled(true);
+      applicationSettingsRepository.setAccountSignupEnabled(true);
       emailSettings.setResendSettings({
         apiKey: 're_test',
         fromEmail: 'sender@example.com',
@@ -110,7 +110,7 @@ describe('session routes', () => {
           }),
         );
       emailSettings.deleteResendSettings();
-      registrationSettingsRepository.setAccountSignupEnabled(false);
+      applicationSettingsRepository.setAccountSignupEnabled(false);
       await request(createApp())
         .get('/application')
         .expect(200)
@@ -125,11 +125,9 @@ describe('session routes', () => {
             features: { accountSignup: false, forgotPassword: false },
           }),
         );
-      await request(createApp()).get('/feature-flags').expect(404);
-      await request(createApp()).post('/feature-flags').send({}).expect(404);
     } finally {
       emailSettings.deleteResendSettings();
-      registrationSettingsRepository.setAccountSignupEnabled(false);
+      applicationSettingsRepository.setAccountSignupEnabled(false);
     }
   });
 

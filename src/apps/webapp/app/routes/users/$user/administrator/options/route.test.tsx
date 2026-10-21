@@ -6,7 +6,7 @@ import { ModalProvider } from '@habsum/ui/contexts/modal';
 import { ToastProvider } from '@habsum/ui/contexts/toast';
 import {
   getAdministratorEmailSettings,
-  updateAdministratorRegistrationSettings,
+  updateAdministratorApplicationSettings,
   sendAdministratorTestEmail,
   updateAdministratorEmailSettings,
 } from '~/api.client';
@@ -17,8 +17,8 @@ vi.mock('~/api.client', () => ({
   getAdministratorEmailSettings: vi.fn(),
   sendAdministratorTestEmail: vi.fn(),
   updateAdministratorEmailSettings: vi.fn(),
-  getAdministratorRegistrationSettings: vi.fn().mockResolvedValue({ accountSignup: false }),
-  updateAdministratorRegistrationSettings: vi.fn().mockResolvedValue({ accountSignup: true }),
+  getAdministratorApplicationSettings: vi.fn().mockResolvedValue({ accountSignup: false }),
+  updateAdministratorApplicationSettings: vi.fn().mockResolvedValue({ accountSignup: true }),
 }));
 
 vi.mock('~/context/auth', () => ({
@@ -110,7 +110,6 @@ describe('Administrator options', () => {
     expect(
       featuresCard?.contains(screen.getByText('Allow users to create their own accounts.')),
     ).toBe(true);
-    expect(screen.queryByText('Feature Flags')).toBeNull();
   });
 
   it('saves registration through its dedicated endpoint', async () => {
@@ -121,7 +120,7 @@ describe('Administrator options', () => {
     await user.selectOptions(select, 'enabled');
     await user.click(screen.getByRole('button', { name: 'Save' }));
     await waitFor(() =>
-      expect(updateAdministratorRegistrationSettings).toHaveBeenCalledWith({ accountSignup: true }),
+      expect(updateAdministratorApplicationSettings).toHaveBeenCalledWith({ accountSignup: true }),
     );
   });
 

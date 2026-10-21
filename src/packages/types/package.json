@@ -33,6 +33,6 @@
     "./api-responses/forgot-password-post": "./src/api-responses/forgot-password-post.ts",
     "./api-responses/reset-password-get": "./src/api-responses/reset-password-get.ts",
     "./api-responses/reset-password-post": "./src/api-responses/reset-password-post.ts",
-    "./api-responses/administrator-registration-settings": "./src/api-responses/administrator-registration-settings.ts"
+    "./api-responses/administrator-application-settings": "./src/api-responses/administrator-application-settings.ts"
   }
 }

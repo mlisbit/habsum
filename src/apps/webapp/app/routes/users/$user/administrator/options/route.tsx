@@ -9,8 +9,8 @@ import { useToast } from '@habsum/ui/contexts/toast';
 import {
   getAdministratorEmailSettings,
   updateAdministratorEmailSettings,
-  getAdministratorRegistrationSettings,
-  updateAdministratorRegistrationSettings,
+  getAdministratorApplicationSettings,
+  updateAdministratorApplicationSettings,
   type AdministratorEmailSettingsResponse,
 } from '~/api.client';
 import { ResendConfig, type ResendConfigHandle } from '~/components/ResendConfig';
@@ -25,10 +25,10 @@ export default function AdministratorOptions() {
   const { refresh } = useAuth();
   const [savedAccountSignup, setSavedAccountSignup] = useState<boolean | null>(null);
   const [accountSignup, setAccountSignup] = useState(false);
-  const [registrationError, setRegistrationError] = useState<string | null>(null);
+  const [applicationSettingsError, setApplicationSettingsError] = useState<string | null>(null);
   useEffect(() => {
     let cancelled = false;
-    getAdministratorRegistrationSettings()
+    getAdministratorApplicationSettings()
       .then((settings) => {
         if (cancelled) return;
         setSavedAccountSignup(settings.accountSignup);
@@ -36,7 +36,7 @@ export default function AdministratorOptions() {
       })
       .catch((error) => {
         if (!cancelled)
-          setRegistrationError(error instanceof Error ? error.message : String(error));
+          setApplicationSettingsError(error instanceof Error ? error.message : String(error));
       });
     return () => {
       cancelled = true;
@@ -81,8 +81,9 @@ export default function AdministratorOptions() {
     );
   }, [emailProviderName, emailSettings, resendConfigDirty]);
 
-  const isRegistrationDirty = savedAccountSignup !== null && accountSignup !== savedAccountSignup;
-  const hasDirty = isEmailSettingsDirty || isRegistrationDirty;
+  const isApplicationSettingsDirty =
+    savedAccountSignup !== null && accountSignup !== savedAccountSignup;
+  const hasDirty = isEmailSettingsDirty || isApplicationSettingsDirty;
 
   const revertDrafts = useCallback(() => {
     if (emailSettings) {
@@ -149,8 +150,8 @@ export default function AdministratorOptions() {
         setResendConfigDirty(false);
       }
 
-      if (isRegistrationDirty) {
-        const settings = await updateAdministratorRegistrationSettings({ accountSignup });
+      if (isApplicationSettingsDirty) {
+        const settings = await updateAdministratorApplicationSettings({ accountSignup });
         setSavedAccountSignup(settings.accountSignup);
         setAccountSignup(settings.accountSignup);
       }
@@ -244,9 +245,9 @@ export default function AdministratorOptions() {
 
       <SettingsPageCard headerText="Features">
         <div className="card-padding">
-          {registrationError ? (
+          {applicationSettingsError ? (
             <InfoText size="small" variant="error">
-              {registrationError}
+              {applicationSettingsError}
             </InfoText>
           ) : null}
           <div className="administrator-options__feature-row">

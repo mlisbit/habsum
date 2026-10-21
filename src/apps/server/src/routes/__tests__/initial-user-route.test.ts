@@ -3,7 +3,7 @@ import request from 'supertest';
 import { ProductEntitlement } from '@habsum/types/common/entitlement';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../../app.js';
-import { RegistrationSettingsRepository } from '../../repositories/registration-settings-repository.js';
+import { ApplicationSettingsRepository } from '../../repositories/application-settings-repository.js';
 import { ConfigService } from '../../services/config-service.js';
 import { UserAndAuthRepository } from '../../repositories/user-and-auth-repository.js';
 
@@ -27,8 +27,8 @@ describe('POST /auth/initial-user', () => {
     const app = createApp();
     const configService = new ConfigService();
     const userAndAuthRepository = new UserAndAuthRepository();
-    const registrationSettingsRepository = new RegistrationSettingsRepository();
-    registrationSettingsRepository.setAccountSignupEnabled(false);
+    const applicationSettingsRepository = new ApplicationSettingsRepository();
+    applicationSettingsRepository.setAccountSignupEnabled(false);
 
     await request(app).post('/auth/initial-user').send({}).expect(400, {
       error: 'username is required',

@@ -31,12 +31,12 @@ administratorRouter.post(
 );
 
 administratorRouter.get(
-  '/administrator/registration-settings',
+  '/administrator/application-settings',
   requireAdmin,
-  administratorController.getRegistrationSettings,
+  administratorController.getApplicationSettings,
 );
 administratorRouter.put(
-  '/administrator/registration-settings',
+  '/administrator/application-settings',
   requireAdmin,
-  administratorController.putRegistrationSettings,
+  administratorController.putApplicationSettings,
 );

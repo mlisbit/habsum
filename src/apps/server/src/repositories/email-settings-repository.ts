@@ -17,9 +17,10 @@ type ResendEmailSettingsRow = {
 
 const getResendSettingsStatement = db.prepare<[], ResendEmailSettingsRow>(
   `
-    SELECT provider, api_key, from_email, updated_at
-    FROM email_settings
-    WHERE provider = 'resend'
+    SELECT email_provider AS provider, email_api_key AS api_key,
+           email_from_email AS from_email, email_updated_at AS updated_at
+    FROM application_settings
+    WHERE id = 1 AND email_provider = 'resend'
   `,
 );
 
@@ -29,17 +30,19 @@ const setResendSettingsStatement = db.prepare<{
   updatedAt: number;
 }>(
   `
-    INSERT INTO email_settings (provider, api_key, from_email, updated_at)
-    VALUES ('resend', @apiKey, @fromEmail, @updatedAt)
-    ON CONFLICT(provider) DO UPDATE SET
-      api_key = excluded.api_key,
-      from_email = excluded.from_email,
-      updated_at = excluded.updated_at
+    UPDATE application_settings SET
+      email_provider = 'resend',
+      email_api_key = @apiKey,
+      email_from_email = @fromEmail,
+      email_updated_at = @updatedAt
+    WHERE id = 1
   `,
 );
 
 const deleteResendSettingsStatement = db.prepare(
-  "DELETE FROM email_settings WHERE provider = 'resend'",
+  `UPDATE application_settings SET
+     email_provider = NULL, email_api_key = NULL, email_from_email = NULL, email_updated_at = NULL
+   WHERE id = 1`,
 );
 
 export class EmailSettingsRepository {

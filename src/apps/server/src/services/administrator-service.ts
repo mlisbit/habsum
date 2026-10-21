@@ -1,5 +1,5 @@
-import type { AdministratorRegistrationSettings } from '@habsum/types/api-responses/administrator-registration-settings';
-import { RegistrationSettingsRepository } from '../repositories/registration-settings-repository.js';
+import type { AdministratorApplicationSettings } from '@habsum/types/api-responses/administrator-application-settings';
+import { ApplicationSettingsRepository } from '../repositories/application-settings-repository.js';
 import type {
   AdministratorEmailSettingsPutRequest,
   AdministratorEmailSettingsResponse,
@@ -21,19 +21,19 @@ export class AdministratorService {
     private readonly emailSettingsRepository = new EmailSettingsRepository(),
     private readonly emailService = new EmailService(),
     private readonly databaseRepository = new DatabaseRepository(),
-    private readonly registrationSettingsRepository = new RegistrationSettingsRepository(),
+    private readonly applicationSettingsRepository = new ApplicationSettingsRepository(),
   ) {}
 
-  getRegistrationSettings(): AdministratorRegistrationSettings {
-    return { accountSignup: this.registrationSettingsRepository.isAccountSignupEnabled() };
+  getApplicationSettings(): AdministratorApplicationSettings {
+    return { accountSignup: this.applicationSettingsRepository.isAccountSignupEnabled() };
   }
 
-  updateRegistrationSettings(body: AdministratorRegistrationSettings | undefined) {
+  updateApplicationSettings(body: AdministratorApplicationSettings | undefined) {
     if (typeof body?.accountSignup !== 'boolean') {
       throw new ServiceError('bad_request', 'accountSignup must be a boolean');
     }
-    this.registrationSettingsRepository.setAccountSignupEnabled(body.accountSignup);
-    return this.getRegistrationSettings();
+    this.applicationSettingsRepository.setAccountSignupEnabled(body.accountSignup);
+    return this.getApplicationSettings();
   }
 
   getDatabaseFile(): Buffer {

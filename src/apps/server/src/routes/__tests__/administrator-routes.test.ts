@@ -6,6 +6,7 @@ import { DatabaseRepository } from '../../repositories/database-repository.js';
 import { db } from '../../repositories/_private/db.js';
 import { UserAndAuthRepository } from '../../repositories/user-and-auth-repository.js';
 import { EmailService } from '../../services/email-service.js';
+import { EmailSettingsRepository } from '../../repositories/email-settings-repository.js';
 import { SESSION_COOKIE_NAME } from '../../utils/cookie-session-utils.js';
 
 const userAndAuthRepository = new UserAndAuthRepository();
@@ -24,7 +25,7 @@ function administratorSession(): { cookie: string; username: string } {
 
 describe('/administrator', () => {
   beforeEach(() => {
-    db.prepare("DELETE FROM email_settings WHERE provider = 'resend'").run();
+    new EmailSettingsRepository().deleteResendSettings();
   });
 
   afterEach(() => {
@@ -137,7 +138,7 @@ describe('/administrator', () => {
       updatedAt: expect.any(Number),
     });
     expect(
-      db.prepare("SELECT api_key FROM email_settings WHERE provider = 'resend'").get(),
+      db.prepare('SELECT email_api_key AS api_key FROM application_settings WHERE id = 1').get(),
     ).toEqual({ api_key: 're_super_secret' });
   });
 
@@ -186,9 +187,7 @@ describe('/administrator', () => {
         updatedAt: null,
       });
 
-    expect(
-      db.prepare("SELECT api_key, from_email FROM email_settings WHERE provider = 'resend'").get(),
-    ).toBeUndefined();
+    expect(new EmailSettingsRepository().getResendSettings()).toBeNull();
   });
 
   it('rejects partially configured Resend settings', async () => {
