@@ -1,4 +1,4 @@
-import type { AdministratorApplicationSettings } from '@habsum/types/api-responses/administrator-application-settings';
+import type { AdministratorApplicationSettingsPutRequest } from '@habsum/types/api-responses/administrator-application-settings';
 import type {
   AdministratorEmailSettingsPutRequest,
   AdministratorEmailTestRequest,
@@ -19,7 +19,7 @@ export const administratorController = {
     return sendServiceResult(res, () => administratorService.getApplicationSettings());
   },
   putApplicationSettings(
-    req: Request<unknown, unknown, AdministratorApplicationSettings>,
+    req: Request<unknown, unknown, AdministratorApplicationSettingsPutRequest>,
     res: Response,
   ) {
     return sendServiceResult(res, () => administratorService.updateApplicationSettings(req.body));

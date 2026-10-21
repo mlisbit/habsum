@@ -1,6 +1,9 @@
 import type { ApplicationUpdatesGetResponse } from '@habsum/types/api-responses/application-updates-get';
 import type { Habit } from '@habsum/types/common/habit';
-import type { AdministratorApplicationSettings } from '@habsum/types/api-responses/administrator-application-settings';
+import type {
+  AdministratorApplicationSettings,
+  AdministratorApplicationSettingsPutRequest,
+} from '@habsum/types/api-responses/administrator-application-settings';
 import type { ApplicationGetResponse } from '@habsum/types/api-responses/application-get';
 import type {
   AdministratorDatabaseDeleteRequest,
@@ -343,7 +346,7 @@ export async function getAdministratorApplicationSettings() {
 }
 
 export async function updateAdministratorApplicationSettings(
-  body: AdministratorApplicationSettings,
+  body: AdministratorApplicationSettingsPutRequest,
 ) {
   return request<AdministratorApplicationSettings>('/administrator/application-settings', {
     method: 'PUT',

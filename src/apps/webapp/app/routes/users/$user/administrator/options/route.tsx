@@ -1,8 +1,10 @@
 // exclusive-bem-block: administrator-options
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useBlocker } from 'react-router';
+import { useBlocker, useRouteLoaderData } from 'react-router';
+import type { AdministratorApplicationSettings } from '@habsum/types/api-responses/administrator-application-settings';
 import { Button } from '@habsum/ui/components/Button';
 import { InfoText } from '@habsum/ui/components/InfoText';
+import { Input } from '@habsum/ui/components/Input';
 import { Loader } from '@habsum/ui/components/Loader';
 import { useModal } from '@habsum/ui/contexts/modal';
 import { useToast } from '@habsum/ui/contexts/toast';
@@ -17,22 +19,30 @@ import { ResendConfig, type ResendConfigHandle } from '~/components/ResendConfig
 import { useAuth } from '~/context/auth';
 import { SettingsPageCard } from '~/components/SettingsPageCard';
 import { UnsavedChangesModal } from '~/components/UnsavedChangesModal';
+import type { loader as rootLoader } from '~/root';
 
 type EmailProviderName = 'none' | 'resend';
 
 export default function AdministratorOptions() {
   const { showToast } = useToast();
   const { refresh } = useAuth();
-  const [savedAccountSignup, setSavedAccountSignup] = useState<boolean | null>(null);
+  const rootData = useRouteLoaderData<typeof rootLoader>('root');
+  const demoEnabled = rootData?.application.demoEnabled ?? false;
+  const [savedApplicationSettings, setSavedApplicationSettings] =
+    useState<AdministratorApplicationSettings | null>(null);
   const [accountSignup, setAccountSignup] = useState(false);
+  const [demoUsername, setDemoUsername] = useState('');
+  const [demoPassword, setDemoPassword] = useState('');
   const [applicationSettingsError, setApplicationSettingsError] = useState<string | null>(null);
   useEffect(() => {
     let cancelled = false;
     getAdministratorApplicationSettings()
       .then((settings) => {
         if (cancelled) return;
-        setSavedAccountSignup(settings.accountSignup);
+        setSavedApplicationSettings(settings);
         setAccountSignup(settings.accountSignup);
+        setDemoUsername(settings.demoUser.username);
+        setDemoPassword(settings.demoUser.password);
       })
       .catch((error) => {
         if (!cancelled)
@@ -82,7 +92,11 @@ export default function AdministratorOptions() {
   }, [emailProviderName, emailSettings, resendConfigDirty]);
 
   const isApplicationSettingsDirty =
-    savedAccountSignup !== null && accountSignup !== savedAccountSignup;
+    savedApplicationSettings !== null &&
+    (accountSignup !== savedApplicationSettings.accountSignup ||
+      (demoEnabled &&
+        (demoUsername !== savedApplicationSettings.demoUser.username ||
+          demoPassword !== savedApplicationSettings.demoUser.password)));
   const hasDirty = isEmailSettingsDirty || isApplicationSettingsDirty;
 
   const revertDrafts = useCallback(() => {
@@ -91,9 +105,13 @@ export default function AdministratorOptions() {
     }
     resendConfigRef.current?.reset();
     setResendConfigDirty(false);
-    if (savedAccountSignup !== null) setAccountSignup(savedAccountSignup);
+    if (savedApplicationSettings !== null) {
+      setAccountSignup(savedApplicationSettings.accountSignup);
+      setDemoUsername(savedApplicationSettings.demoUser.username);
+      setDemoPassword(savedApplicationSettings.demoUser.password);
+    }
     setEmailSettingsError(null);
-  }, [emailSettings, savedAccountSignup]);
+  }, [emailSettings, savedApplicationSettings]);
 
   const blocker = useBlocker(hasDirty);
   const blockerRef = useRef(blocker);
@@ -151,9 +169,14 @@ export default function AdministratorOptions() {
       }
 
       if (isApplicationSettingsDirty) {
-        const settings = await updateAdministratorApplicationSettings({ accountSignup });
-        setSavedAccountSignup(settings.accountSignup);
+        const settings = await updateAdministratorApplicationSettings({
+          accountSignup,
+          ...(demoEnabled ? { demoUser: { username: demoUsername, password: demoPassword } } : {}),
+        });
+        setSavedApplicationSettings(settings);
         setAccountSignup(settings.accountSignup);
+        setDemoUsername(settings.demoUser.username);
+        setDemoPassword(settings.demoUser.password);
       }
       await refresh();
       showToast({ type: 'success', message: 'Saved.' });
@@ -262,7 +285,7 @@ export default function AdministratorOptions() {
               className="administrator-options__registration-select text-b-m"
               aria-label="User registration"
               value={accountSignup ? 'enabled' : 'disabled'}
-              disabled={savedAccountSignup === null || saveBusy || sendingTestEmail}
+              disabled={savedApplicationSettings === null || saveBusy || sendingTestEmail}
               onChange={(event) => setAccountSignup(event.target.value === 'enabled')}
             >
               <option value="disabled">Disabled</option>
@@ -271,6 +294,43 @@ export default function AdministratorOptions() {
           </div>
         </div>
       </SettingsPageCard>
+
+      {demoEnabled ? (
+        <SettingsPageCard headerText="Demo user">
+          <div className="card-padding administrator-options__demo-fields">
+            <div className="administrator-options__demo-field">
+              <label htmlFor="administrator-demo-username" className="text-b-m">
+                Username
+              </label>
+              <Input
+                id="administrator-demo-username"
+                size="small"
+                value={demoUsername}
+                disabled={savedApplicationSettings === null || saveBusy || sendingTestEmail}
+                autoComplete="off"
+                autoCapitalize="none"
+                autoCorrect="off"
+                spellCheck={false}
+                onChange={setDemoUsername}
+              />
+            </div>
+            <div className="administrator-options__demo-field">
+              <label htmlFor="administrator-demo-password" className="text-b-m">
+                Password
+              </label>
+              <Input
+                id="administrator-demo-password"
+                type="password"
+                size="small"
+                value={demoPassword}
+                disabled={savedApplicationSettings === null || saveBusy || sendingTestEmail}
+                autoComplete="new-password"
+                onChange={setDemoPassword}
+              />
+            </div>
+          </div>
+        </SettingsPageCard>
+      ) : null}
     </div>
   );
 }

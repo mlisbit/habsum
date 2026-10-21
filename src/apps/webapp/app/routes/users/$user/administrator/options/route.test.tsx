@@ -1,11 +1,12 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { createMemoryRouter, RouterProvider } from 'react-router';
+import { createMemoryRouter, RouterProvider, useRouteLoaderData } from 'react-router';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ModalProvider } from '@habsum/ui/contexts/modal';
 import { ToastProvider } from '@habsum/ui/contexts/toast';
 import {
   getAdministratorEmailSettings,
+  getAdministratorApplicationSettings,
   updateAdministratorApplicationSettings,
   sendAdministratorTestEmail,
   updateAdministratorEmailSettings,
@@ -17,8 +18,13 @@ vi.mock('~/api.client', () => ({
   getAdministratorEmailSettings: vi.fn(),
   sendAdministratorTestEmail: vi.fn(),
   updateAdministratorEmailSettings: vi.fn(),
-  getAdministratorApplicationSettings: vi.fn().mockResolvedValue({ accountSignup: false }),
-  updateAdministratorApplicationSettings: vi.fn().mockResolvedValue({ accountSignup: true }),
+  getAdministratorApplicationSettings: vi.fn(),
+  updateAdministratorApplicationSettings: vi.fn(),
+}));
+
+vi.mock('react-router', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('react-router')>()),
+  useRouteLoaderData: vi.fn(),
 }));
 
 vi.mock('~/context/auth', () => ({
@@ -53,6 +59,15 @@ function renderAdministratorOptions() {
 describe('Administrator options', () => {
   beforeEach(() => {
     authState.email = 'admin@example.com';
+    vi.mocked(useRouteLoaderData).mockReturnValue({ application: { demoEnabled: false } });
+    vi.mocked(getAdministratorApplicationSettings).mockResolvedValue({
+      accountSignup: false,
+      demoUser: { username: '', password: '' },
+    });
+    vi.mocked(updateAdministratorApplicationSettings).mockImplementation(async (settings) => ({
+      accountSignup: settings.accountSignup,
+      demoUser: settings.demoUser ?? { username: '', password: '' },
+    }));
     vi.mocked(getAdministratorEmailSettings).mockResolvedValue({ updatedAt: null });
     vi.mocked(sendAdministratorTestEmail).mockImplementation(async ({ recipient }) => ({
       ok: true,
@@ -122,6 +137,72 @@ describe('Administrator options', () => {
     await waitFor(() =>
       expect(updateAdministratorApplicationSettings).toHaveBeenCalledWith({ accountSignup: true }),
     );
+  });
+
+  it('hides the demo user section when demo mode is disabled', async () => {
+    renderAdministratorOptions();
+    await screen.findByRole('combobox', { name: 'Email provider' });
+    expect(screen.queryByRole('heading', { name: 'Demo user' })).toBeNull();
+    expect(screen.queryByLabelText('Username')).toBeNull();
+    expect(screen.queryByLabelText('Password')).toBeNull();
+  });
+
+  it('loads, saves, and clears demo credentials with the application settings', async () => {
+    vi.mocked(useRouteLoaderData).mockReturnValue({ application: { demoEnabled: true } });
+    vi.mocked(getAdministratorApplicationSettings).mockResolvedValue({
+      accountSignup: true,
+      demoUser: { username: 'saved-demo', password: 'saved-password' },
+    });
+    const user = userEvent.setup();
+    renderAdministratorOptions();
+    const username = await screen.findByLabelText('Username');
+    const password = screen.getByLabelText('Password');
+    await waitFor(() => expect(username).toHaveProperty('value', 'saved-demo'));
+    expect(password).toHaveProperty('value', 'saved-password');
+    expect(password).toHaveProperty('type', 'password');
+    const card = screen.getByRole('heading', { name: 'Demo user' }).closest('.card');
+    expect(card?.contains(username)).toBe(true);
+    expect(card?.contains(password)).toBe(true);
+
+    await user.clear(username);
+    await user.type(username, 'new-demo');
+    await user.clear(password);
+    await user.type(password, 'new-password');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(screen.queryByText('You have unsaved changes.')).toBeNull());
+    expect(updateAdministratorApplicationSettings).toHaveBeenLastCalledWith({
+      accountSignup: true,
+      demoUser: { username: 'new-demo', password: 'new-password' },
+    });
+
+    await user.clear(username);
+    await user.clear(password);
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => expect(screen.queryByText('You have unsaved changes.')).toBeNull());
+    expect(updateAdministratorApplicationSettings).toHaveBeenLastCalledWith({
+      accountSignup: true,
+      demoUser: { username: '', password: '' },
+    });
+  });
+
+  it('restores demo credentials when edits are cancelled', async () => {
+    vi.mocked(useRouteLoaderData).mockReturnValue({ application: { demoEnabled: true } });
+    vi.mocked(getAdministratorApplicationSettings).mockResolvedValue({
+      accountSignup: false,
+      demoUser: { username: 'saved-demo', password: 'saved-password' },
+    });
+    const user = userEvent.setup();
+    renderAdministratorOptions();
+    const username = await screen.findByLabelText('Username');
+    const password = screen.getByLabelText('Password');
+    await waitFor(() => expect(username).toHaveProperty('disabled', false));
+    await user.type(username, '-edited');
+    await user.type(password, '-edited');
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(username).toHaveProperty('value', 'saved-demo');
+    expect(password).toHaveProperty('value', 'saved-password');
+    expect(screen.queryByText('You have unsaved changes.')).toBeNull();
+    expect(updateAdministratorApplicationSettings).not.toHaveBeenCalled();
   });
 
   it('shows field errors when an incomplete configuration is tested', async () => {

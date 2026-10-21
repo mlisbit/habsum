@@ -156,6 +156,7 @@ export class UserService {
     return { sessions };
   }
 
+  @restrictForDemo()
   deleteOtherSecuritySessions(user: string, currentSessionId: string | null) {
     this.assertValidUserId(user);
     if (currentSessionId == null) {
@@ -166,6 +167,7 @@ export class UserService {
     return { ok: true as const, revoked };
   }
 
+  @restrictForDemo()
   deleteSecuritySession(user: string, token: string, currentSessionId?: string) {
     this.assertValidUserId(user);
 

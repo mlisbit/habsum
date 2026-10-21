@@ -9,12 +9,14 @@ import { UserService } from '../../services/user-service.js';
 import { EmailService } from '../../services/email-service.js';
 import { EmailSettingsRepository } from '../../repositories/email-settings-repository.js';
 import { UserAndAuthRepository } from '../../repositories/user-and-auth-repository.js';
+import { ApplicationSettingsRepository } from '../../repositories/application-settings-repository.js';
 import { OUC_SESSION_HEADER, SESSION_COOKIE_NAME } from '../../utils/cookie-session-utils.js';
 
 const configService = new ConfigService();
 const userAndAuthRepository = new UserAndAuthRepository();
+const applicationSettingsRepository = new ApplicationSettingsRepository();
 const app = createServer(createApp());
-const forbidden = { error: 'This action is unavailable in demo mode.' };
+const forbidden = { error: 'Action prevented for demo users.' };
 const date = '2026-10-17';
 const configText = yamlString(`habits:
   journal:
@@ -78,6 +80,10 @@ afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllEnvs();
   new EmailSettingsRepository().deleteResendSettings();
+  applicationSettingsRepository.setApplicationSettings({
+    accountSignup: false,
+    demoUser: { username: '', password: '' },
+  });
 });
 
 describe('demo mode', () => {
@@ -89,8 +95,10 @@ describe('demo mode', () => {
     ['true', true],
   ])('exposes demoEnabled for HABSUM_ENABLE_DEMO=%s', async (flag, demoEnabled) => {
     vi.stubEnv('HABSUM_ENABLE_DEMO', flag);
-    vi.stubEnv('HABSUM_DEMO_USERNAME', 'demo-user');
-    vi.stubEnv('HABSUM_DEMO_PASSWORD', 'demo-password');
+    applicationSettingsRepository.setApplicationSettings({
+      accountSignup: false,
+      demoUser: { username: 'demo-user', password: 'demo-password' },
+    });
     const response = await request(app)
       .get('/application')
       .query({ demoEnabled: !demoEnabled })
@@ -107,14 +115,26 @@ describe('demo mode', () => {
     ['demo-user', undefined],
     ['', 'demo-password'],
     ['demo-user', ''],
+    [' ', 'demo-password'],
+    ['demo-user', ' '],
   ])('omits demo credentials when username=%s and password=%s', async (username, password) => {
     vi.stubEnv('HABSUM_ENABLE_DEMO', 'true');
-    vi.stubEnv('HABSUM_DEMO_USERNAME', username);
-    vi.stubEnv('HABSUM_DEMO_PASSWORD', password);
+    applicationSettingsRepository.setApplicationSettings({
+      accountSignup: false,
+      demoUser: { username: username ?? '', password: password ?? '' },
+    });
 
     const response = await request(app).get('/application').expect(200);
 
     expect(response.body.demoEnabled).toBe(true);
+    expect(response.body.demoUser).toBeNull();
+  });
+
+  it('ignores legacy environment credentials when no demo user is configured', async () => {
+    vi.stubEnv('HABSUM_ENABLE_DEMO', 'true');
+    vi.stubEnv('HABSUM_DEMO_USERNAME', 'legacy-demo');
+    vi.stubEnv('HABSUM_DEMO_PASSWORD', 'legacy-password');
+    const response = await request(app).get('/application').expect(200);
     expect(response.body.demoUser).toBeNull();
   });
 
@@ -266,6 +286,70 @@ describe('demo mode', () => {
     expect(configService.loadUserConfig(user)).toBeNull();
     expect(userAndAuthRepository.resolveUsernameByLoginId(user)).toBeNull();
   });
+
+  it('prevents demo users from revoking other sessions while allowing their own logout', async () => {
+    const { user, cookie } = await getDemoSession();
+    userAndAuthRepository.setUserDemo(user, true);
+    const otherSession = userAndAuthRepository.createUserSession(user, 3600);
+    const anotherSession = userAndAuthRepository.createUserSession(user, 3600);
+    const sessions = userAndAuthRepository.listSessionsForUsername(user);
+
+    await request(app)
+      .delete(`/users/${user}/security/sessions`)
+      .set('Cookie', cookie)
+      .expect(403, forbidden);
+    await request(app)
+      .delete(`/users/${user}/security/sessions/${otherSession.slice(0, 8)}`)
+      .set('Cookie', cookie)
+      .expect(403, forbidden);
+    expect(userAndAuthRepository.listSessionsForUsername(user)).toEqual(sessions);
+    const security = await request(app)
+      .get(`/users/${user}/security`)
+      .set('Cookie', cookie)
+      .expect(200);
+    expect(security.body.sessions).toHaveLength(3);
+
+    await request(app).post('/auth/logout').set('Cookie', cookie).expect(200, { ok: true });
+    expect(
+      userAndAuthRepository
+        .listSessionsForUsername(user)
+        .map((session) => session.id)
+        .sort(),
+    ).toEqual([otherSession, anotherSession].sort());
+  });
+
+  it.each(['normal', 'admin', 'ouc-header', 'ouc-cookie'])(
+    'allows session revocation for %s access',
+    async (access) => {
+      const { user, cookie } = await getDemoSession({ admin: access === 'admin' });
+      userAndAuthRepository.setUserDemo(user, true);
+      let headers: Record<string, string> = { Cookie: cookie };
+      if (access.startsWith('ouc')) {
+        const oucSession = userAndAuthRepository.createOucUserSession(user);
+        headers =
+          access === 'ouc-header'
+            ? { [OUC_SESSION_HEADER]: oucSession }
+            : { Cookie: `${SESSION_COOKIE_NAME}=${oucSession}` };
+      } else if (access === 'normal') {
+        vi.stubEnv('HABSUM_ENABLE_DEMO', 'false');
+      }
+      const otherSession = userAndAuthRepository.createUserSession(user, 3600);
+      await request(app)
+        .delete(`/users/${user}/security/sessions/${otherSession.slice(0, 8)}`)
+        .set(headers)
+        .expect(200, { ok: true });
+      expect(userAndAuthRepository.getUsernameForSession(otherSession)).toBeNull();
+      userAndAuthRepository.createUserSession(user, 3600);
+      const sessionCount = userAndAuthRepository.listSessionsForUsername(user).length;
+      await request(app)
+        .delete(`/users/${user}/security/sessions`)
+        .set(headers)
+        .expect(200, { ok: true, revoked: sessionCount - 1 });
+      const security = await request(app).get(`/users/${user}/security`).set(headers).expect(200);
+      expect(security.body.sessions).toHaveLength(1);
+      expect(security.body.sessions[0].isActive).toBe(true);
+    },
+  );
 
   it('keeps administrator tools protected from regular and operate-under sessions', async () => {
     const { user, cookie } = await getDemoSession();

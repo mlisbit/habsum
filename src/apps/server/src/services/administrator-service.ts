@@ -1,4 +1,7 @@
-import type { AdministratorApplicationSettings } from '@habsum/types/api-responses/administrator-application-settings';
+import type {
+  AdministratorApplicationSettings,
+  AdministratorApplicationSettingsPutRequest,
+} from '@habsum/types/api-responses/administrator-application-settings';
 import { ApplicationSettingsRepository } from '../repositories/application-settings-repository.js';
 import type {
   AdministratorEmailSettingsPutRequest,
@@ -25,14 +28,35 @@ export class AdministratorService {
   ) {}
 
   getApplicationSettings(): AdministratorApplicationSettings {
-    return { accountSignup: this.applicationSettingsRepository.isAccountSignupEnabled() };
+    return {
+      accountSignup: this.applicationSettingsRepository.isAccountSignupEnabled(),
+      demoUser: this.applicationSettingsRepository.getDemoUser(),
+    };
   }
 
-  updateApplicationSettings(body: AdministratorApplicationSettings | undefined) {
+  updateApplicationSettings(body: AdministratorApplicationSettingsPutRequest | undefined) {
     if (typeof body?.accountSignup !== 'boolean') {
       throw new ServiceError('bad_request', 'accountSignup must be a boolean');
     }
-    this.applicationSettingsRepository.setAccountSignupEnabled(body.accountSignup);
+    if (
+      body.demoUser !== undefined &&
+      (body.demoUser === null ||
+        typeof body.demoUser.username !== 'string' ||
+        typeof body.demoUser.password !== 'string')
+    ) {
+      throw new ServiceError(
+        'bad_request',
+        'demoUser must contain a username and password as strings',
+      );
+    }
+    this.applicationSettingsRepository.setApplicationSettings({
+      accountSignup: body.accountSignup,
+      ...(body.demoUser !== undefined
+        ? {
+            demoUser: { username: body.demoUser.username.trim(), password: body.demoUser.password },
+          }
+        : {}),
+    });
     return this.getApplicationSettings();
   }
 

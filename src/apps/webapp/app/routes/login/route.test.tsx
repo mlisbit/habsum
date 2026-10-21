@@ -103,21 +103,31 @@ describe('demo login', () => {
     expect(screen.queryByRole('button', { name: 'Login as demo user' })).toBeNull();
   });
 
-  it('shows the demo notice and disables the CTA when credentials are unavailable', () => {
-    vi.mocked(useRouteLoaderData).mockReturnValue({
-      application: { demoEnabled: true, demoUser: null },
-    });
-    renderLogin(false);
+  it.each([
+    null,
+    undefined,
+    {},
+    { username: 'demo-user' },
+    { password: 'demo-password' },
+    { username: '', password: 'demo-password' },
+    { username: 'demo-user', password: '' },
+    { username: ' ', password: 'demo-password' },
+    { username: 'demo-user', password: ' ' },
+  ])(
+    'shows the notice and hides the CTA when demo credentials are incomplete: %j',
+    (credentials) => {
+      vi.mocked(useRouteLoaderData).mockReturnValue({
+        application: { demoEnabled: true, demoUser: credentials },
+      });
+      renderLogin(false);
 
-    expect(
-      screen.getByText('This is a demo instance of Habsum. It is regularly reset.'),
-    ).toBeTruthy();
-    expect(screen.getByText('Functionality will be limited to prevent abuse')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Login as demo user' })).toHaveProperty(
-      'disabled',
-      true,
-    );
-  });
+      expect(
+        screen.getByText('This is a demo instance of Habsum. It is regularly reset.'),
+      ).toBeTruthy();
+      expect(screen.getByText('Functionality will be limited to prevent abuse')).toBeTruthy();
+      expect(screen.queryByRole('button', { name: 'Login as demo user' })).toBeNull();
+    },
+  );
 
   it('prefills both fields and clicks the normal login button after one second', async () => {
     vi.useFakeTimers();

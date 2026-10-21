@@ -79,18 +79,20 @@ function LoginForm({
         <div className="card users-index__demo">
           <p className="text-b-m">This is a demo instance of Habsum. It is regularly reset.</p>
           <p className="text-b-s text-light">Functionality will be limited to prevent abuse</p>
-          <Button
-            type="secondary"
-            text="Login as demo user"
-            disabled={!demoUser || isDemoLoginPending || isLoggingIn || formDisabled}
-            onClick={() => {
-              if (!demoUser) return;
-              setError(null);
-              setLoginId(demoUser.username);
-              setPassword(demoUser.password);
-              setIsDemoLoginPending(true);
-            }}
-          />
+          {demoUser?.username?.trim() && demoUser?.password?.trim() ? (
+            <Button
+              type="secondary"
+              text="Login as demo user"
+              disabled={isDemoLoginPending || isLoggingIn || formDisabled}
+              onClick={() => {
+                if (!demoUser) return;
+                setError(null);
+                setLoginId(demoUser.username);
+                setPassword(demoUser.password);
+                setIsDemoLoginPending(true);
+              }}
+            />
+          ) : null}
         </div>
       ) : null}
       <form

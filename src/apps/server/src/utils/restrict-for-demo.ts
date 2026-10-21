@@ -16,7 +16,7 @@ export default function restrictForDemo() {
         !context?.user?.isOucSession &&
         !context?.passwordRecovery?.account?.admin
       ) {
-        throw new ServiceError('forbidden', 'This action is unavailable in demo mode.');
+        throw new ServiceError('forbidden', 'Action prevented for demo users.');
       }
       return method.apply(this, args);
     };

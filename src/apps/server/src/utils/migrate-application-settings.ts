@@ -9,6 +9,22 @@ type EmailSettingsRow = {
 
 export default function migrateApplicationSettings(database: Database): void {
   database.transaction(() => {
+    const columns = new Set(
+      database
+        .prepare<[], { name: string }>('PRAGMA table_info(application_settings)')
+        .all()
+        .map((column) => column.name),
+    );
+    if (!columns.has('demo_username')) {
+      database.exec(
+        "ALTER TABLE application_settings ADD COLUMN demo_username TEXT NOT NULL DEFAULT ''",
+      );
+    }
+    if (!columns.has('demo_password')) {
+      database.exec(
+        "ALTER TABLE application_settings ADD COLUMN demo_password TEXT NOT NULL DEFAULT ''",
+      );
+    }
     const previousTables = new Set(
       database
         .prepare<[], { name: string }>(

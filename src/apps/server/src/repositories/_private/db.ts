@@ -38,7 +38,9 @@ db.exec(`
     email_provider TEXT,
     email_api_key TEXT,
     email_from_email TEXT,
-    email_updated_at INTEGER
+    email_updated_at INTEGER,
+    demo_username TEXT NOT NULL DEFAULT '',
+    demo_password TEXT NOT NULL DEFAULT ''
   );
 `);
 

@@ -8,6 +8,7 @@ import type { ResendEmailSettings } from './email-settings-repository.js';
 
 type SettingsSnapshot = {
   accountSignup: boolean;
+  demoUser: { username: string; password: string };
   emailSettings: ResendEmailSettings | null;
   tables: string[];
 };
@@ -28,6 +29,7 @@ function initializeDatabase(path: string): SettingsSnapshot {
        import { db } from ${JSON.stringify(databaseUrl)};
        console.log(JSON.stringify({
          accountSignup: new ApplicationSettingsRepository().isAccountSignupEnabled(),
+         demoUser: new ApplicationSettingsRepository().getDemoUser(),
          emailSettings: new EmailSettingsRepository().getResendSettings(),
          tables: db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name LIKE '%settings'")
            .all().map(table => table.name),
@@ -51,6 +53,7 @@ describe('application settings storage', () => {
   it('defaults signup to disabled and preserves signup and email across server initialization', () => {
     expect(initializeDatabase(path)).toEqual({
       accountSignup: false,
+      demoUser: { username: '', password: '' },
       emailSettings: null,
       tables: ['application_settings'],
     });
@@ -58,13 +61,15 @@ describe('application settings storage', () => {
     try {
       database.exec(`UPDATE application_settings SET
         account_signup = 1, email_provider = 'resend', email_api_key = 're_saved',
-        email_from_email = 'saved@example.com', email_updated_at = 123 WHERE id = 1`);
+        email_from_email = 'saved@example.com', email_updated_at = 123,
+        demo_username = 'demo-user', demo_password = 'demo-password' WHERE id = 1`);
     } finally {
       database.close();
     }
 
     expect(initializeDatabase(path)).toEqual({
       accountSignup: true,
+      demoUser: { username: 'demo-user', password: 'demo-password' },
       emailSettings: {
         provider: 'resend',
         apiKey: 're_saved',
@@ -106,6 +111,7 @@ describe('application settings storage', () => {
 
     expect(initializeDatabase(path)).toEqual({
       accountSignup: signup && populated,
+      demoUser: { username: '', password: '' },
       emailSettings:
         email && populated
           ? {
@@ -115,6 +121,30 @@ describe('application settings storage', () => {
               updatedAt: 456,
             }
           : null,
+      tables: ['application_settings'],
+    });
+  });
+
+  it('adds demo fields to an existing application settings table without losing saved settings', () => {
+    const database = new Database(path);
+    try {
+      database.exec(`CREATE TABLE application_settings (
+        id INTEGER PRIMARY KEY CHECK (id = 1), account_signup INTEGER NOT NULL DEFAULT 0,
+        email_provider TEXT, email_api_key TEXT, email_from_email TEXT, email_updated_at INTEGER
+      );
+      INSERT INTO application_settings VALUES (1, 1, 'resend', 're_existing', 'sender@example.com', 456);`);
+    } finally {
+      database.close();
+    }
+    expect(initializeDatabase(path)).toEqual({
+      accountSignup: true,
+      demoUser: { username: '', password: '' },
+      emailSettings: {
+        provider: 'resend',
+        apiKey: 're_existing',
+        fromEmail: 'sender@example.com',
+        updatedAt: 456,
+      },
       tables: ['application_settings'],
     });
   });
