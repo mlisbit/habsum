@@ -15,6 +15,7 @@ import { RegistrationSettingsRepository } from '../repositories/registration-set
 import { EmailSettingsRepository } from '../repositories/email-settings-repository.js';
 import isForbiddenUsername from '@habsum/utils/is-forbidden-username';
 import restrictForDemo from '../utils/restrict-for-demo.js';
+import getDemoRestrictionContext from '../utils/get-demo-restriction-context.js';
 
 const PACKAGE_VERSION = getPackageVersion();
 
@@ -294,19 +295,26 @@ export class AuthService {
 
   @restrictForDemo()
   async forgotPassword(body: ForgotPasswordInput | undefined) {
+    const rawEmail = body?.email;
+    const email = typeof rawEmail === 'string' ? rawEmail.trim().toLowerCase() : '';
+    const recovery = getDemoRestrictionContext().getStore()?.passwordRecovery;
+    const resolvedUsername =
+      recovery?.kind === 'forgot' && recovery.email === email
+        ? (recovery.account?.username ?? null)
+        : email
+          ? this.resolveUsernameForPasswordReset(email)
+          : null;
+
     if (!this.getStatus().features.forgotPassword) {
       throw new ServiceError('forbidden', 'password recovery is disabled');
     }
-    const rawEmail = body?.email;
     if (typeof rawEmail !== 'string') {
       throw new ServiceError('bad_request', 'email is required');
     }
-    const email = rawEmail.trim().toLowerCase();
     if (!isPlausibleEmail(email)) {
       throw new ServiceError('bad_request', 'invalid email');
     }
 
-    const resolvedUsername = this.resolveUsernameForPasswordReset(email);
     if (!resolvedUsername && isDevelopment()) {
       console.log(`[habsum] forgot-password: no account for ${email} (generic success returned)`);
     }
@@ -363,6 +371,14 @@ export class AuthService {
   @restrictForDemo()
   resetPassword(body: ResetPasswordInput | undefined) {
     const token = typeof body?.token === 'string' ? body.token.trim() : '';
+    const recovery = getDemoRestrictionContext().getStore()?.passwordRecovery;
+    const row =
+      recovery?.kind === 'reset' && recovery.token === token
+        ? recovery.resetToken
+        : token
+          ? this.userAndAuthRepository.lookupValidPasswordResetToken(token)
+          : null;
+
     if (!token) {
       throw new ServiceError('bad_request', 'token is required');
     }
@@ -372,7 +388,6 @@ export class AuthService {
       throw new ServiceError('bad_request', 'new password is required');
     }
 
-    const row = this.userAndAuthRepository.lookupValidPasswordResetToken(token);
     if (!row) {
       throw new ServiceError('bad_request', 'invalid or expired reset link');
     }

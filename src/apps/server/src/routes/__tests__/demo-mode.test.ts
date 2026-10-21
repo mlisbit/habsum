@@ -5,8 +5,11 @@ import { yamlString } from '@habsum/types/common/misc';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../../app.js';
 import { ConfigService } from '../../services/config-service.js';
+import { UserService } from '../../services/user-service.js';
+import { EmailService } from '../../services/email-service.js';
+import { EmailSettingsRepository } from '../../repositories/email-settings-repository.js';
 import { UserAndAuthRepository } from '../../repositories/user-and-auth-repository.js';
-import { SESSION_COOKIE_NAME } from '../../utils/cookie-session-utils.js';
+import { OUC_SESSION_HEADER, SESSION_COOKIE_NAME } from '../../utils/cookie-session-utils.js';
 
 const configService = new ConfigService();
 const userAndAuthRepository = new UserAndAuthRepository();
@@ -28,14 +31,15 @@ const configText = yamlString(`habits:
 `);
 let userNumber = 0;
 
-async function getDemoSession() {
+async function getDemoSession({ admin = false }: { admin?: boolean } = {}) {
   vi.stubEnv('HABSUM_ENABLE_DEMO', 'false');
   const user = `demo-mode-${++userNumber}`;
   const created = configService.createEmptyUserConfig(user);
   if (!created.ok) throw new Error(created.error);
   const written = configService.writeUserConfigText(user, configText);
   if (!written.ok) throw new Error(written.error);
-  userAndAuthRepository.setUserPassword(user, 'original-password');
+  if (admin) userAndAuthRepository.createInitialAdminUser(user, 'original-password');
+  else userAndAuthRepository.setUserPassword(user, 'original-password');
   userAndAuthRepository.patchUserProfile(user, {
     displayName: 'Demo User',
     email: `${user}@example.com`,
@@ -71,7 +75,9 @@ afterAll(
 );
 
 afterEach(() => {
+  vi.restoreAllMocks();
   vi.unstubAllEnvs();
+  new EmailSettingsRepository().deleteResendSettings();
 });
 
 describe('demo mode', () => {
@@ -83,11 +89,33 @@ describe('demo mode', () => {
     ['true', true],
   ])('exposes demoEnabled for HABSUM_ENABLE_DEMO=%s', async (flag, demoEnabled) => {
     vi.stubEnv('HABSUM_ENABLE_DEMO', flag);
+    vi.stubEnv('HABSUM_DEMO_USERNAME', 'demo-user');
+    vi.stubEnv('HABSUM_DEMO_PASSWORD', 'demo-password');
     const response = await request(app)
       .get('/application')
       .query({ demoEnabled: !demoEnabled })
       .expect(200);
     expect(response.body.demoEnabled).toBe(demoEnabled);
+    expect(response.body.demoUser).toEqual(
+      demoEnabled ? { username: 'demo-user', password: 'demo-password' } : null,
+    );
+  });
+
+  it.each([
+    [undefined, undefined],
+    [undefined, 'demo-password'],
+    ['demo-user', undefined],
+    ['', 'demo-password'],
+    ['demo-user', ''],
+  ])('omits demo credentials when username=%s and password=%s', async (username, password) => {
+    vi.stubEnv('HABSUM_ENABLE_DEMO', 'true');
+    vi.stubEnv('HABSUM_DEMO_USERNAME', username);
+    vi.stubEnv('HABSUM_DEMO_PASSWORD', password);
+
+    const response = await request(app).get('/application').expect(200);
+
+    expect(response.body.demoEnabled).toBe(true);
+    expect(response.body.demoUser).toBeNull();
   });
 
   it.each([
@@ -215,60 +243,339 @@ describe('demo mode', () => {
     expect(configService.readUserConfigText(user)).toBe(configText);
   });
 
-  it('rejects administrator password resets and account deletion', async () => {
+  it('allows administrator password resets and account deletion', async () => {
     const { app, user } = await getDemoSession();
     const admin = `${user}admin`;
     userAndAuthRepository.createInitialAdminUser(admin, 'admin-password');
     const session = userAndAuthRepository.createUserSession(admin, 3600);
     const adminCookie = `${SESSION_COOKIE_NAME}=${session}`;
-    await request(app)
+    const response = await request(app)
       .patch('/users')
       .query({ name: user })
       .set('Cookie', adminCookie)
       .send({})
-      .expect(403, forbidden);
+      .expect(200);
+    expect(response.body).toEqual({ ok: true, user, password: expect.any(String) });
+    expect(userAndAuthRepository.isUserPasswordValid(user, response.body.password)).toBe(true);
+    expect(userAndAuthRepository.isUserPasswordValid(user, 'original-password')).toBe(false);
     await request(app)
       .delete('/users')
       .query({ name: user })
       .set('Cookie', adminCookie)
+      .expect(200, { ok: true, user });
+    expect(configService.loadUserConfig(user)).toBeNull();
+    expect(userAndAuthRepository.resolveUsernameByLoginId(user)).toBeNull();
+  });
+
+  it('keeps administrator tools protected from regular and operate-under sessions', async () => {
+    const { user, cookie } = await getDemoSession();
+    const admin = `${user}admin`;
+    userAndAuthRepository.createInitialAdminUser(admin, 'admin-password');
+    const adminSession = userAndAuthRepository.createUserSession(admin, 3600);
+    const adminCookie = `${SESSION_COOKIE_NAME}=${adminSession}`;
+    const oucSession = userAndAuthRepository.createOucUserSession(user);
+
+    for (const method of ['patch', 'delete'] as const) {
+      await request(app)[method]('/users').query({ name: user }).expect(401);
+      await request(app)
+        [method]('/users')
+        .query({ name: user })
+        .set('Cookie', cookie)
+        .send({ actingUsername: admin })
+        .expect(403, { error: 'forbidden' });
+      await request(app)
+        [method]('/users')
+        .query({ name: user })
+        .set('Cookie', adminCookie)
+        .set(OUC_SESSION_HEADER, oucSession)
+        .expect(403, { error: 'forbidden' });
+    }
+    await request(app)
+      .patch(`/users/${user}`)
+      .set('Cookie', cookie)
+      .send({ displayName: 'Changed name', actingUsername: admin })
       .expect(403, forbidden);
     expect(userAndAuthRepository.isUserPasswordValid(user, 'original-password')).toBe(true);
     expect(configService.readUserConfigText(user)).toBe(configText);
   });
 
-  it.each([undefined, 'false'])('allows ordinary edits when demo mode is %s', async (flag) => {
-    const { app, user, cookie } = await getDemoSession();
-    vi.stubEnv('HABSUM_ENABLE_DEMO', flag);
-    const renamedUser = `${user}renamed`;
+  it.each(['forged', 'expired', 'revoked', 'ordinary'])(
+    'does not bypass demo restrictions with a %s OUC header',
+    async (tokenType) => {
+      const { user, cookie } = await getDemoSession();
+      let sessionId = 'OUC_forged-session';
+      if (tokenType === 'expired') {
+        sessionId = userAndAuthRepository.createOucUserSession(user, -1);
+      } else if (tokenType === 'revoked') {
+        sessionId = userAndAuthRepository.createOucUserSession(user);
+        userAndAuthRepository.revokeUserSession(sessionId);
+      } else if (tokenType === 'ordinary') {
+        sessionId = userAndAuthRepository.createUserSession(user, 3600);
+      }
+
+      await request(app)
+        .patch(`/users/${user}`)
+        .set('Cookie', cookie)
+        .set(OUC_SESSION_HEADER, sessionId)
+        .send({ displayName: 'Changed name' })
+        .expect(403, forbidden);
+
+      const { token } = userAndAuthRepository.issuePasswordResetToken(user, 'reset');
+      await request(app)
+        .post('/auth/reset-password')
+        .set(OUC_SESSION_HEADER, sessionId)
+        .send({ token, newPassword: 'changed-password' })
+        .expect(403, forbidden);
+      expect(userAndAuthRepository.getUserProfile(user).displayName).toBe('Demo User');
+      expect(userAndAuthRepository.isUserPasswordValid(user, 'original-password')).toBe(true);
+      expect(userAndAuthRepository.lookupValidPasswordResetToken(token)).not.toBeNull();
+    },
+  );
+
+  it('keeps OUC changes scoped to the account represented by the token', async () => {
+    const { user } = await getDemoSession();
+    const { user: otherUser } = await getDemoSession();
+    const sessionId = userAndAuthRepository.createOucUserSession(user);
+
     await request(app)
-      .patch(`/users/${user}`)
-      .set('Cookie', cookie)
-      .send({ username: renamedUser, displayName: 'New name', email: `${user}new@example.com` })
-      .expect(200);
-    expect(userAndAuthRepository.getUserProfile(renamedUser)).toMatchObject({
-      displayName: 'New name',
-      email: `${user}new@example.com`,
-    });
-    await request(app)
-      .put(`/users/${renamedUser}/config`)
-      .set('Cookie', cookie)
-      .send({ text: configText.replace('goal: 8', 'goal: 10') })
-      .expect(200);
-    expect(configService.loadUserConfig(renamedUser)?.habits).toContainEqual(
-      expect.objectContaining({ name: 'water', settings: expect.objectContaining({ goal: 10 }) }),
-    );
-    await request(app)
-      .patch(`/users/${renamedUser}/habits`)
-      .set('Cookie', cookie)
-      .send({ habit: 'journal', date, text: 'Updated note' })
-      .expect(200);
-    await request(app)
-      .post(`/users/${renamedUser}/password`)
-      .set('Cookie', cookie)
-      .send({ currentPassword: 'original-password', newPassword: 'changed-password' })
-      .expect(200);
-    expect(userAndAuthRepository.isUserPasswordValid(renamedUser, 'changed-password')).toBe(true);
-    await request(app).delete(`/users/${renamedUser}`).set('Cookie', cookie).expect(200);
-    expect(configService.loadUserConfig(renamedUser)).toBeNull();
+      .patch(`/users/${otherUser}`)
+      .set(OUC_SESSION_HEADER, sessionId)
+      .send({ displayName: 'Changed name' })
+      .expect(403, { error: 'forbidden' });
+
+    expect(userAndAuthRepository.getUserProfile(otherUser).displayName).toBe('Demo User');
   });
+
+  it.each(['admin', 'ouc'])(
+    'allows password recovery through an active %s session and isolates concurrent demo requests',
+    async (sessionType) => {
+      const { user, cookie } = await getDemoSession();
+      const { cookie: adminCookie } = await getDemoSession({ admin: true });
+      const headers =
+        sessionType === 'admin'
+          ? { Cookie: adminCookie }
+          : { [OUC_SESSION_HEADER]: userAndAuthRepository.createOucUserSession(user) };
+      new EmailSettingsRepository().setResendSettings({
+        apiKey: 're_test',
+        fromEmail: 'sender@example.com',
+        updatedAt: 1,
+      });
+      let releaseEmail!: () => void;
+      let emailStarted!: () => void;
+      const emailPending = new Promise<void>((resolve) => {
+        releaseEmail = resolve;
+      });
+      const emailReady = new Promise<void>((resolve) => {
+        emailStarted = resolve;
+      });
+      const sendEmail = vi
+        .spyOn(EmailService.prototype, 'sendEmail')
+        .mockImplementation(async () => {
+          emailStarted();
+          await emailPending;
+        });
+
+      const recovery = request(app)
+        .post('/auth/forgot-password')
+        .set(headers)
+        .send({ email: `${user}@example.com` })
+        .expect(200)
+        .then((response: { body: unknown }) => response);
+      await Promise.race([emailReady, recovery]);
+      try {
+        await request(app)
+          .patch(`/users/${user}`)
+          .set('Cookie', cookie)
+          .send({ displayName: 'Changed name' })
+          .expect(403, forbidden);
+        await request(app)
+          .post('/auth/forgot-password')
+          .send({ email: `${user}@example.com` })
+          .expect(403, forbidden);
+      } finally {
+        releaseEmail();
+        await recovery;
+      }
+
+      expect(sendEmail).toHaveBeenCalledOnce();
+      const resetUrl = sendEmail.mock.calls[0]?.[0].text.match(/Reset your password: (\S+)/)?.[1];
+      const token = new URL(resetUrl!).searchParams.get('token');
+      await request(app)
+        .post('/auth/reset-password')
+        .set(headers)
+        .send({ token, newPassword: 'changed-password' })
+        .expect(200, { ok: true });
+      expect(userAndAuthRepository.isUserPasswordValid(user, 'changed-password')).toBe(true);
+    },
+  );
+
+  it('still validates the current password for administrators', async () => {
+    const { user, cookie } = await getDemoSession({ admin: true });
+
+    await request(app)
+      .post(`/users/${user}/password`)
+      .set('Cookie', cookie)
+      .send({ currentPassword: 'wrong-password', newPassword: 'changed-password' })
+      .expect(401, { error: 'current password is incorrect' });
+
+    expect(userAndAuthRepository.isUserPasswordValid(user, 'original-password')).toBe(true);
+  });
+
+  it('requires request context for an administrator service call in demo mode', async () => {
+    const { user } = await getDemoSession({ admin: true });
+
+    expect(() => new UserService().patchUser(user, { displayName: 'Changed name' })).toThrow(
+      forbidden.error,
+    );
+    expect(userAndAuthRepository.getUserProfile(user).displayName).toBe('Demo User');
+  });
+
+  it('resolves recovery privileges from the requested account rather than other body fields', async () => {
+    const { user } = await getDemoSession();
+    const { user: admin } = await getDemoSession({ admin: true });
+    const { token } = userAndAuthRepository.issuePasswordResetToken(user, 'reset');
+    const { token: adminToken } = userAndAuthRepository.issuePasswordResetToken(admin, 'reset');
+    new EmailSettingsRepository().setResendSettings({
+      apiKey: 're_test',
+      fromEmail: 'sender@example.com',
+      updatedAt: 1,
+    });
+    const sendEmail = vi.spyOn(EmailService.prototype, 'sendEmail').mockResolvedValue();
+
+    await request(app)
+      .post('/auth/forgot-password')
+      .send({ email: `${user}@example.com`, token: adminToken, admin: true })
+      .expect(403, forbidden);
+    await request(app)
+      .post('/auth/reset-password')
+      .send({ token, email: `${admin}@example.com`, admin: true, newPassword: 'changed-password' })
+      .expect(403, forbidden);
+
+    expect(sendEmail).not.toHaveBeenCalled();
+    expect(userAndAuthRepository.isUserPasswordValid(user, 'original-password')).toBe(true);
+    expect(userAndAuthRepository.lookupValidPasswordResetToken(token)).not.toBeNull();
+  });
+
+  it('allows password recovery for administrator accounts without a signed-in session', async () => {
+    const { user } = await getDemoSession({ admin: true });
+    new EmailSettingsRepository().setResendSettings({
+      apiKey: 're_test',
+      fromEmail: 'sender@example.com',
+      updatedAt: 1,
+    });
+    const sendEmail = vi.spyOn(EmailService.prototype, 'sendEmail').mockResolvedValue();
+    const resolveUsername = vi.spyOn(UserAndAuthRepository.prototype, 'resolveUsernameByLoginId');
+    const lookupResetToken = vi.spyOn(
+      UserAndAuthRepository.prototype,
+      'lookupValidPasswordResetToken',
+    );
+
+    await request(app)
+      .post('/auth/forgot-password')
+      .send({ email: ` ${user.toUpperCase()}@EXAMPLE.COM ` })
+      .expect(200);
+
+    expect(resolveUsername).toHaveBeenCalledExactlyOnceWith(`${user}@example.com`);
+    expect(sendEmail).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ to: `${user}@example.com` }),
+    );
+    const resetUrl = sendEmail.mock.calls[0]?.[0].text.match(/Reset your password: (\S+)/)?.[1];
+    expect(resetUrl).toBeTruthy();
+    const token = new URL(resetUrl!).searchParams.get('token');
+    await request(app)
+      .post('/auth/reset-password')
+      .send({ token, newPassword: 'changed-password' })
+      .expect(200, { ok: true });
+    expect(lookupResetToken).toHaveBeenCalledExactlyOnceWith(token);
+    expect(userAndAuthRepository.isUserPasswordValid(user, 'changed-password')).toBe(true);
+    expect(userAndAuthRepository.isUserAdmin(user)).toBe(true);
+    expect(userAndAuthRepository.lookupValidPasswordResetToken(token!)).toBeNull();
+  });
+
+  it.each(['text', 'config'])('allows administrators to save %s configuration', async (format) => {
+    const { user, cookie } = await getDemoSession({ admin: true });
+    const response = await request(app)
+      .get(`/users/${user}/config`)
+      .set('Cookie', cookie)
+      .expect(200);
+
+    await request(app)
+      .put(`/users/${user}/config`)
+      .set('Cookie', cookie)
+      .send({ [format]: response.body[format] })
+      .expect(200, { ok: true, user });
+  });
+
+  it.each(['journal', 'weekly notes'])(
+    'allows administrators to update and clear %s',
+    async (habit) => {
+      const { user, cookie } = await getDemoSession({ admin: true });
+      for (const body of [{ text: 'Updated note' }, { text: '' }, { action: 'clear' }]) {
+        await request(app)
+          .patch(`/users/${user}/habits`)
+          .set('Cookie', cookie)
+          .send({ habit, date, ...body })
+          .expect(200);
+      }
+    },
+  );
+
+  it.each([
+    { flag: undefined, admin: false, ouc: null },
+    { flag: 'false', admin: false, ouc: null },
+    { flag: 'true', admin: true, ouc: null },
+    { flag: 'true', admin: false, ouc: 'header' },
+    { flag: 'true', admin: false, ouc: 'cookie' },
+  ])(
+    'allows ordinary edits with demo=$flag, admin=$admin and ouc=$ouc',
+    async ({ flag, admin, ouc }) => {
+      const { app, user, cookie } = await getDemoSession({ admin });
+      vi.stubEnv('HABSUM_ENABLE_DEMO', flag);
+      let headers: Record<string, string> = { Cookie: cookie };
+      if (ouc) {
+        const { cookie: adminCookie } = await getDemoSession({ admin: true });
+        const response = await request(app)
+          .post('/users/ouc')
+          .query({ name: user })
+          .set('Cookie', adminCookie)
+          .expect(201);
+        expect(response.body.token).toMatch(/^OUC_/);
+        headers =
+          ouc === 'header'
+            ? { [OUC_SESSION_HEADER]: response.body.token }
+            : { Cookie: `${SESSION_COOKIE_NAME}=${response.body.token}` };
+      }
+      const renamedUser = `${user}renamed`;
+      await request(app)
+        .patch(`/users/${user}`)
+        .set(headers)
+        .send({ username: renamedUser, displayName: 'New name', email: `${user}new@example.com` })
+        .expect(200);
+      expect(userAndAuthRepository.getUserProfile(renamedUser)).toMatchObject({
+        displayName: 'New name',
+        email: `${user}new@example.com`,
+      });
+      await request(app)
+        .put(`/users/${renamedUser}/config`)
+        .set(headers)
+        .send({ text: configText.replace('goal: 8', 'goal: 10') })
+        .expect(200);
+      expect(configService.loadUserConfig(renamedUser)?.habits).toContainEqual(
+        expect.objectContaining({ name: 'water', settings: expect.objectContaining({ goal: 10 }) }),
+      );
+      await request(app)
+        .patch(`/users/${renamedUser}/habits`)
+        .set(headers)
+        .send({ habit: 'journal', date, text: 'Updated note' })
+        .expect(200);
+      await request(app)
+        .post(`/users/${renamedUser}/password`)
+        .set(headers)
+        .send({ currentPassword: 'original-password', newPassword: 'changed-password' })
+        .expect(200);
+      expect(userAndAuthRepository.isUserPasswordValid(renamedUser, 'changed-password')).toBe(true);
+      await request(app).delete(`/users/${renamedUser}`).set(headers).expect(200);
+      expect(configService.loadUserConfig(renamedUser)).toBeNull();
+    },
+  );
 });

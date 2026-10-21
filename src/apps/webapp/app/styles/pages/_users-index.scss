@@ -66,6 +66,15 @@
   gap: functions.spacing(2);
 }
 
+.users-index__demo {
+  display: flex;
+  flex-direction: column;
+  gap: functions.spacing(2);
+  max-inline-size: 24rem;
+  margin-bottom: functions.spacing(3);
+  background: functions.lighten(var(--background-secondary));
+}
+
 .users-index__forgot-password {
   align-self: flex-end;
   margin-top: calc(-1 * functions.spacing(1));

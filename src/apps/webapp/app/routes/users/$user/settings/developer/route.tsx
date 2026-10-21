@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useParams } from 'react-router';
+import { useParams, useRouteLoaderData } from 'react-router';
 import type { ListUserItem } from '@habsum/types/common/misc';
+import { ProductEntitlement } from '@habsum/types/common/entitlement';
 import {
   adminDeleteUser,
   adminResetUserPassword,
+  adminSetUserDemoAccount,
   createOucSession,
   getAdministratorEmailSettings,
   listUsers,
@@ -20,6 +22,8 @@ import { ModalBody, ModalFooter, ModalHeader, useModal } from '@habsum/ui/contex
 import { useToast } from '@habsum/ui/contexts/toast';
 import CreateUserModal from '~/components/admin/users/create-user-modal/CreateUserModal';
 import SuccessfulUserCreationModal from '~/components/admin/users/create-user-modal/SuccessfulUserCreationModal';
+import { useAuth } from '~/context/auth';
+import type { loader as rootLoader } from '~/root';
 
 function formatUnixTimeLocal(unixSeconds: number | null): string {
   if (unixSeconds == null) return 'Never';
@@ -271,6 +275,10 @@ function DeleteUserModal({ targetUsername, onDone, onClose }: ManageUserModalPro
 
 type UserActionsDropdownProps = {
   username: string;
+  isCurrentUser: boolean;
+  isDemoUser: boolean;
+  demoAccountBusy: boolean;
+  onToggleDemoAccount?: () => void;
   onOperateUnder: () => void;
   onChangePassword: () => void;
   onDelete: () => void;
@@ -278,6 +286,10 @@ type UserActionsDropdownProps = {
 
 function UserActionsDropdown({
   username,
+  isCurrentUser,
+  isDemoUser,
+  demoAccountBusy,
+  onToggleDemoAccount,
   onOperateUnder,
   onChangePassword,
   onDelete,
@@ -299,31 +311,47 @@ function UserActionsDropdown({
         <Icon name="ellipsis-vertical" />
       </Dropdown.Trigger>
       <Dropdown.Content className="developer-page__users-actions-menu">
-        <Button
-          type="tertiary"
-          size="medium"
-          icon="user-lock"
-          text="Operate under"
-          className="developer-page__users-actions-item"
-          onClick={() => selectAction(onOperateUnder)}
-        />
-        <Button
-          type="tertiary"
-          size="medium"
-          icon="key-round"
-          text="Change password"
-          className="developer-page__users-actions-item"
-          onClick={() => selectAction(onChangePassword)}
-        />
-        <Button
-          type="tertiary"
-          color="danger"
-          size="medium"
-          icon="trash"
-          text="Delete user"
-          className="developer-page__users-actions-item"
-          onClick={() => selectAction(onDelete)}
-        />
+        {onToggleDemoAccount ? (
+          <Button
+            type="tertiary"
+            size="medium"
+            icon="circle-check"
+            text={isDemoUser ? 'Remove demo status' : 'Make demo account'}
+            aria-pressed={isDemoUser}
+            disabled={demoAccountBusy}
+            className="developer-page__users-actions-item"
+            onClick={() => selectAction(onToggleDemoAccount)}
+          />
+        ) : null}
+        {!isCurrentUser ? (
+          <>
+            <Button
+              type="tertiary"
+              size="medium"
+              icon="user-lock"
+              text="Operate under"
+              className="developer-page__users-actions-item"
+              onClick={() => selectAction(onOperateUnder)}
+            />
+            <Button
+              type="tertiary"
+              size="medium"
+              icon="key-round"
+              text="Change password"
+              className="developer-page__users-actions-item"
+              onClick={() => selectAction(onChangePassword)}
+            />
+            <Button
+              type="tertiary"
+              color="danger"
+              size="medium"
+              icon="trash"
+              text="Delete user"
+              className="developer-page__users-actions-item"
+              onClick={() => selectAction(onDelete)}
+            />
+          </>
+        ) : null}
       </Dropdown.Content>
     </Dropdown>
   );
@@ -331,6 +359,10 @@ function UserActionsDropdown({
 
 export default function AdministratorUsers() {
   const { user } = useParams();
+  const rootData = useRouteLoaderData<typeof rootLoader>('root');
+  const demoEnabled = rootData?.application.demoEnabled ?? false;
+  const { refresh } = useAuth();
+  const [updatingDemoUsername, setUpdatingDemoUsername] = useState<string | null>(null);
   const [users, setUsers] = useState<ListUserItem[] | null>(null);
   const [emailSettings, setEmailSettings] = useState<AdministratorEmailSettingsResponse | null>(
     null,
@@ -362,6 +394,35 @@ export default function AdministratorUsers() {
   const canSendInviteEmail = Boolean(
     emailSettings?.emailProvider?.apiKey && emailSettings.emailProvider.email,
   );
+
+  const handleToggleDemoAccount = async (userRow: ListUserItem) => {
+    if (!demoEnabled || updatingDemoUsername !== null) return;
+    const demoUser = !userRow.entitlements.includes(ProductEntitlement.DEMO_USER);
+    setUpdatingDemoUsername(userRow.username);
+    try {
+      const response = await adminSetUserDemoAccount(userRow.username, demoUser);
+      setUsers(
+        (current) =>
+          current?.map((row) =>
+            row.username === response.user ? { ...row, entitlements: response.entitlements } : row,
+          ) ?? null,
+      );
+      if (response.user === user) await refresh();
+      showToast({
+        type: 'success',
+        message: response.demoUser
+          ? `Made "${response.user}" a demo account.`
+          : `Removed demo status from "${response.user}".`,
+      });
+    } catch (error) {
+      showToast({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Failed to update demo account.',
+      });
+    } finally {
+      setUpdatingDemoUsername(null);
+    }
+  };
 
   return (
     <div className="developer-page">
@@ -473,9 +534,19 @@ export default function AdministratorUsers() {
                           {userRow.eventCount}
                         </td>
                         <td className="developer-page__users-table-cell developer-page__users-table-actions">
-                          {!isCurrentUser ? (
+                          {!isCurrentUser || demoEnabled ? (
                             <UserActionsDropdown
                               username={username}
+                              isCurrentUser={isCurrentUser}
+                              isDemoUser={userRow.entitlements.includes(
+                                ProductEntitlement.DEMO_USER,
+                              )}
+                              demoAccountBusy={updatingDemoUsername !== null}
+                              onToggleDemoAccount={
+                                demoEnabled
+                                  ? () => void handleToggleDemoAccount(userRow)
+                                  : undefined
+                              }
                               onOperateUnder={() => {
                                 void (async () => {
                                   try {

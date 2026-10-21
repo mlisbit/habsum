@@ -10,6 +10,18 @@ const userAndAuthRepository = new UserAndAuthRepository();
 const userService = new UserService();
 
 describe('UserService.entitlementsForUser', () => {
+  it('grants DEMO_USER only while the persisted demo flag is enabled', () => {
+    const username = 'entitlements-demo-user-test';
+    userAndAuthRepository.setUserPassword(username, 'test-password');
+    expect(userService.entitlementsForUser(username)).not.toContain(ProductEntitlement.DEMO_USER);
+
+    userAndAuthRepository.setUserDemo(username, true);
+    expect(userService.entitlementsForUser(username)).toContain(ProductEntitlement.DEMO_USER);
+
+    userAndAuthRepository.setUserDemo(username, false);
+    expect(userService.entitlementsForUser(username)).not.toContain(ProductEntitlement.DEMO_USER);
+  });
+
   it('grants NEW_USER when the account has no habit events', () => {
     const username = 'entitlements-new-user-test';
     userAndAuthRepository.setUserPassword(username, 'test-password');

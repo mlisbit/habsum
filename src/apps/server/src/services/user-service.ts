@@ -1,5 +1,9 @@
 // Domain operations for user profiles, security, configuration, and data management.
 import { ProductEntitlement } from '@habsum/types/common/entitlement';
+import type {
+  UserDemoAccountPutRequest,
+  UserDemoAccountPutResponse,
+} from '@habsum/types/api-responses/user-demo-account-put';
 import { accountCreatedAtToApi } from '@habsum/types/common/day';
 import hasOnlyUsernameCharacters from '../utils/has-only-username-characters.js';
 import isForbiddenUsername from '@habsum/utils/is-forbidden-username';
@@ -15,6 +19,7 @@ import { ConfigService } from './config-service.js';
 import { UserAndAuthRepository } from '../repositories/user-and-auth-repository.js';
 import ServiceError from '../utils/classes/service-error.js';
 import restrictForDemo from '../utils/restrict-for-demo.js';
+import isDemoEnabled from '../utils/is-demo-enabled.js';
 
 type UserPatchResult = {
   ok: true;
@@ -84,7 +89,32 @@ export class UserService {
     if (this.userAndAuthRepository.isUserAdmin(username)) {
       out.push(ProductEntitlement.DEVELOPER);
     }
+    if (this.userAndAuthRepository.isDemoUser(username)) {
+      out.push(ProductEntitlement.DEMO_USER);
+    }
     return out;
+  }
+
+  setDemoAccount(
+    user: string,
+    body: UserDemoAccountPutRequest | undefined,
+  ): UserDemoAccountPutResponse {
+    if (!isDemoEnabled()) {
+      throw new ServiceError('forbidden', 'Demo mode is disabled.');
+    }
+    this.assertValidUserId(user);
+    if (typeof body?.demoUser !== 'boolean') {
+      throw new ServiceError('bad_request', 'demoUser must be a boolean');
+    }
+    if (!this.userAndAuthRepository.setUserDemo(user, body.demoUser)) {
+      throw new ServiceError('not_found', 'user not found');
+    }
+    return {
+      ok: true,
+      user,
+      demoUser: body.demoUser,
+      entitlements: this.entitlementsForUser(user),
+    };
   }
 
   allocateUsernameForEmail(email: string): string | null {
@@ -197,11 +227,19 @@ export class UserService {
     return { ok: true as const, user, password };
   }
 
-  @restrictForDemo(
-    (_user: string, body: UserPatchInput | undefined) =>
-      body != null && ('username' in body || 'displayName' in body || 'email' in body),
-  )
   patchUser(user: string, body: UserPatchInput | undefined): UserPatchResult {
+    if (body != null && ('username' in body || 'displayName' in body || 'email' in body)) {
+      return this.patchUserAccount(user, body);
+    }
+    return this.applyUserPatch(user, body);
+  }
+
+  @restrictForDemo()
+  private patchUserAccount(user: string, body: UserPatchInput): UserPatchResult {
+    return this.applyUserPatch(user, body);
+  }
+
+  private applyUserPatch(user: string, body: UserPatchInput | undefined): UserPatchResult {
     this.assertValidUserId(user);
 
     const parsed = this.parseUserPatchBody(user, body ?? {});

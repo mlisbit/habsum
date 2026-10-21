@@ -81,6 +81,9 @@ if (!usersTableHasColumn('created_at')) {
 if (!usersTableHasColumn('beta_tester')) {
   db.exec('ALTER TABLE users ADD COLUMN beta_tester INTEGER NOT NULL DEFAULT 1');
 }
+if (!usersTableHasColumn('demo_user')) {
+  db.exec('ALTER TABLE users ADD COLUMN demo_user INTEGER NOT NULL DEFAULT 0');
+}
 if (!usersTableHasColumn('force_password_reset')) {
   db.exec('ALTER TABLE users ADD COLUMN force_password_reset INTEGER NOT NULL DEFAULT 0');
 }
@@ -128,6 +131,7 @@ function migrateUsersThemeToNullable(): void {
       email TEXT,
       created_at TEXT,
       beta_tester INTEGER NOT NULL DEFAULT 1,
+      demo_user INTEGER NOT NULL DEFAULT 0,
       force_password_reset INTEGER NOT NULL DEFAULT 0,
       last_login_at INTEGER,
       web_and_api_version TEXT,
@@ -135,12 +139,12 @@ function migrateUsersThemeToNullable(): void {
     );
 
     INSERT INTO users_theme_nullable (
-      username, pin, admin, display_name, theme, email, created_at, beta_tester,
+      username, pin, admin, display_name, theme, email, created_at, beta_tester, demo_user,
       force_password_reset, last_login_at, web_and_api_version, active_habit_config_version
     )
     SELECT
       username, pin, admin, display_name, theme, email, created_at,
-      COALESCE(beta_tester, 1), COALESCE(force_password_reset, 0), last_login_at,
+      COALESCE(beta_tester, 1), COALESCE(demo_user, 0), COALESCE(force_password_reset, 0), last_login_at,
       web_and_api_version, active_habit_config_version
     FROM users;
 
@@ -295,6 +299,7 @@ type HabitHydrationMetadataRow = {
 type UserPasswordRow = { passwordHash: string };
 type UserAdminRow = { admin: number };
 type UserBetaTesterRow = { beta_tester: number };
+type UserDemoRow = { demo_user: number };
 type UserProfileCols = {
   display_name: string | null;
   theme: string | null;
@@ -399,6 +404,14 @@ const getUserAdminStmt = db.prepare<[string], UserAdminRow>(
 
 const getUserBetaTesterStmt = db.prepare<[string], UserBetaTesterRow>(
   'SELECT beta_tester FROM users WHERE username = ?',
+);
+
+const getUserDemoStmt = db.prepare<[string], UserDemoRow>(
+  'SELECT demo_user FROM users WHERE username = ?',
+);
+
+const setUserDemoStmt = db.prepare<{ username: string; demoUser: number }>(
+  'UPDATE users SET demo_user = @demoUser WHERE username = @username',
 );
 
 const renameUserAuthRecordStmt = db.prepare<{ fromUsername: string; toUsername: string }>(`
@@ -664,6 +677,14 @@ export function isUserAdmin(username: string): boolean {
 export function isUserBetaTester(username: string): boolean {
   const row = getUserBetaTesterStmt.get(username);
   return row?.beta_tester === 1;
+}
+
+export function isDemoUser(username: string): boolean {
+  return getUserDemoStmt.get(username)?.demo_user === 1;
+}
+
+export function setUserDemo(username: string, demoUser: boolean): boolean {
+  return setUserDemoStmt.run({ username, demoUser: demoUser ? 1 : 0 }).changes > 0;
 }
 
 export function getUserProfile(username: string): {

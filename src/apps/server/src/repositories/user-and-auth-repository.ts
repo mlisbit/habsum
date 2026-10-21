@@ -23,6 +23,7 @@ import {
   isOucSessionId,
   isUserAdmin,
   isUserBetaTester,
+  isDemoUser,
   isUserPasswordValid,
   listUserRows,
   listSessionsForUsername,
@@ -38,6 +39,7 @@ import {
   revokeUserSession,
   revokeUserSessionByTokenPrefix,
   setUserPassword,
+  setUserDemo,
   updateLoginPassword,
 } from './_private/db.js';
 import { INVITE_TOKEN_TTL_SECONDS, type PasswordResetTokenPurpose } from '../constants.js';
@@ -161,6 +163,14 @@ export class UserAndAuthRepository {
 
   isUserBetaTester(username: string): boolean {
     return isUserBetaTester(username);
+  }
+
+  isDemoUser(username: string): boolean {
+    return isDemoUser(username);
+  }
+
+  setUserDemo(username: string, demoUser: boolean): boolean {
+    return setUserDemo(username, demoUser);
   }
 
   getFirstDate(username: string): string | null {

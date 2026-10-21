@@ -22,6 +22,10 @@ import type {
 } from '@habsum/types/api-responses/initial-user-post';
 import type { UsersPatchRequest } from '@habsum/types/api-responses/users-patch';
 import type {
+  UserDemoAccountPutRequest,
+  UserDemoAccountPutResponse,
+} from '@habsum/types/api-responses/user-demo-account-put';
+import type {
   UserInviteEmailPostRequest,
   UserInviteEmailPostResponse,
 } from '@habsum/types/api-responses/user-invite-email-post';
@@ -373,6 +377,14 @@ export async function adminResetUserPassword(name: string) {
   return request<AdminResetUserPasswordResponse>(`/users${qs}`, {
     method: 'PATCH',
     body: JSON.stringify({}),
+  });
+}
+
+export async function adminSetUserDemoAccount(name: string, demoUser: boolean) {
+  const body: UserDemoAccountPutRequest = { demoUser };
+  return request<UserDemoAccountPutResponse>(`/users/${encodeURIComponent(name)}/demo-account`, {
+    method: 'PUT',
+    body: JSON.stringify(body),
   });
 }
 

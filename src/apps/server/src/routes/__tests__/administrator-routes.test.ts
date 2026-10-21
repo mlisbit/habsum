@@ -65,6 +65,7 @@ describe('/administrator', () => {
     expect(response.body).toEqual({
       apiVersion: expect.any(String),
       demoEnabled: false,
+      demoUser: null,
       redirectPath: null,
       features: { accountSignup: expect.any(Boolean), forgotPassword: expect.any(Boolean) },
       serverTime: { iso: expect.any(String), timezone: expect.any(String) },

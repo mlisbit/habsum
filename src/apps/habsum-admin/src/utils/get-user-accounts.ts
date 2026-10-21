@@ -8,6 +8,7 @@ type UserRow = {
   username: string;
   admin: number;
   betaTester: number;
+  demoUser: number;
   hasActivity: number;
 };
 
@@ -17,6 +18,10 @@ export type UserAccount = {
 };
 
 export default function getUserAccounts(database: Database): UserAccount[] {
+  const hasDemoUserColumn = database
+    .query<{ name: string }, []>("PRAGMA table_info('users')")
+    .all()
+    .some((column) => column.name === 'demo_user');
   const rows = database
     .query<UserRow, []>(
       `
@@ -24,6 +29,7 @@ export default function getUserAccounts(database: Database): UserAccount[] {
         users.username,
         users.admin,
         users.beta_tester AS betaTester,
+        ${hasDemoUserColumn ? 'users.demo_user' : '0'} AS demoUser,
         (
           EXISTS (
             SELECT 1 FROM habit_summation_events
@@ -55,6 +61,9 @@ export default function getUserAccounts(database: Database): UserAccount[] {
     }
     if (row.admin === 1) {
       entitlements.push(ProductEntitlement.DEVELOPER);
+    }
+    if (row.demoUser === 1) {
+      entitlements.push(ProductEntitlement.DEMO_USER);
     }
 
     return { username: row.username, entitlements };

@@ -51,6 +51,8 @@ function formatEntitlement(entitlement: ProductEntitlement): string {
       return 'Beta Tester';
     case 'DEVELOPER':
       return 'Developer';
+    case 'DEMO_USER':
+      return 'Demo User';
     case 'NEW_USER':
       return 'New User';
     default:

@@ -1,10 +1,13 @@
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useParams, useRouteLoaderData } from 'react-router';
+import { ProductEntitlement } from '@habsum/types/common/entitlement';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ModalProvider } from '@habsum/ui/contexts/modal';
 import { ToastProvider } from '@habsum/ui/contexts/toast';
 import {
   ApiRequestError,
+  adminSetUserDemoAccount,
   createUser,
   getAdministratorEmailSettings,
   getUsernameAvailability,
@@ -12,6 +15,16 @@ import {
   sendUserInviteEmail,
 } from '~/api.client';
 import AdministratorUsers from './route';
+
+const authMocks = vi.hoisted(() => ({ refresh: vi.fn() }));
+
+vi.mock('react-router', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('react-router')>()),
+  useParams: vi.fn(),
+  useRouteLoaderData: vi.fn(),
+}));
+
+vi.mock('~/context/auth', () => ({ useAuth: () => ({ refresh: authMocks.refresh }) }));
 
 vi.mock('~/api.client', () => ({
   ApiRequestError: class ApiRequestError extends Error {
@@ -25,6 +38,7 @@ vi.mock('~/api.client', () => ({
   },
   adminDeleteUser: vi.fn(),
   adminResetUserPassword: vi.fn(),
+  adminSetUserDemoAccount: vi.fn(),
   createOucSession: vi.fn(),
   createUser: vi.fn(),
   getAdministratorEmailSettings: vi.fn(),
@@ -43,8 +57,18 @@ function renderAdministratorUsers() {
   );
 }
 
-describe('Administrator user creation', () => {
+describe('Administrator user management', () => {
   beforeEach(() => {
+    vi.mocked(useParams).mockReturnValue({ user: 'operator' });
+    vi.mocked(useRouteLoaderData).mockReturnValue({ application: { demoEnabled: false } });
+    authMocks.refresh.mockResolvedValue(undefined);
+    vi.mocked(getAdministratorEmailSettings).mockResolvedValue({ updatedAt: null });
+    vi.mocked(adminSetUserDemoAccount).mockImplementation(async (user, demoUser) => ({
+      ok: true,
+      user,
+      demoUser,
+      entitlements: demoUser ? [ProductEntitlement.DEMO_USER] : [],
+    }));
     vi.mocked(listUsers).mockResolvedValue({
       users: [
         {
@@ -71,6 +95,64 @@ describe('Administrator user creation', () => {
       recipient: 'invitee@example.com',
     });
     vi.mocked(getUsernameAvailability).mockResolvedValue({ available: true });
+  });
+
+  it('hides demo account actions when demo mode is disabled', async () => {
+    const operator = userEvent.setup();
+    renderAdministratorUsers();
+    await operator.click(await screen.findByRole('button', { name: 'Actions for admin' }));
+
+    expect(screen.queryByRole('button', { name: 'Make demo account' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Remove demo status' })).toBeNull();
+  });
+
+  it('sets and removes demo status and updates the displayed user entitlements', async () => {
+    vi.mocked(useRouteLoaderData).mockReturnValue({ application: { demoEnabled: true } });
+    const operator = userEvent.setup();
+    renderAdministratorUsers();
+    await operator.click(await screen.findByRole('button', { name: 'Actions for admin' }));
+    await operator.click(screen.getByRole('button', { name: 'Make demo account' }));
+
+    await waitFor(() => expect(adminSetUserDemoAccount).toHaveBeenCalledWith('admin', true));
+    expect(await screen.findByText('Made "admin" a demo account.')).toBeTruthy();
+    await operator.click(screen.getByRole('button', { name: 'admin' }));
+    expect(within(screen.getByRole('dialog')).getByText('DEMO_USER')).toBeTruthy();
+    await operator.click(screen.getByRole('button', { name: 'Done' }));
+
+    await operator.click(screen.getByRole('button', { name: 'Actions for admin' }));
+    expect(screen.queryByRole('button', { name: 'Make demo account' })).toBeNull();
+    await operator.click(screen.getByRole('button', { name: 'Remove demo status' }));
+    await waitFor(() => expect(adminSetUserDemoAccount).toHaveBeenCalledWith('admin', false));
+    expect(await screen.findByText('Removed demo status from "admin".')).toBeTruthy();
+    await operator.click(screen.getByRole('button', { name: 'Actions for admin' }));
+    expect(screen.getByRole('button', { name: 'Make demo account' })).toBeTruthy();
+  });
+
+  it('allows the current administrator to toggle demo status and refreshes their user model', async () => {
+    vi.mocked(useRouteLoaderData).mockReturnValue({ application: { demoEnabled: true } });
+    vi.mocked(useParams).mockReturnValue({ user: 'admin' });
+    const operator = userEvent.setup();
+    renderAdministratorUsers();
+    await operator.click(await screen.findByRole('button', { name: 'Actions for admin' }));
+    expect(screen.queryByRole('button', { name: 'Delete user' })).toBeNull();
+    await operator.click(screen.getByRole('button', { name: 'Make demo account' }));
+
+    await waitFor(() => expect(authMocks.refresh).toHaveBeenCalledOnce());
+    expect(adminSetUserDemoAccount).toHaveBeenCalledWith('admin', true);
+  });
+
+  it('shows update failures and keeps the previous demo status', async () => {
+    vi.mocked(useRouteLoaderData).mockReturnValue({ application: { demoEnabled: true } });
+    vi.mocked(adminSetUserDemoAccount).mockRejectedValue(new Error('Could not save demo status'));
+    const operator = userEvent.setup();
+    renderAdministratorUsers();
+    await operator.click(await screen.findByRole('button', { name: 'Actions for admin' }));
+    await operator.click(screen.getByRole('button', { name: 'Make demo account' }));
+
+    expect(await screen.findByText('Could not save demo status')).toBeTruthy();
+    await operator.click(screen.getByRole('button', { name: 'Actions for admin' }));
+    expect(screen.getByRole('button', { name: 'Make demo account' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Remove demo status' })).toBeNull();
   });
 
   afterEach(() => {

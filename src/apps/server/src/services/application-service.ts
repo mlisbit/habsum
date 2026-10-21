@@ -11,9 +11,14 @@ export class ApplicationService {
   ) {}
 
   getApplication(): ApplicationGetResponse {
+    const demoEnabled = isDemoEnabled();
+    const username = process.env.HABSUM_DEMO_USERNAME;
+    const password = process.env.HABSUM_DEMO_PASSWORD;
+
     return {
       ...this.authService.getStatus(),
-      demoEnabled: isDemoEnabled(),
+      demoEnabled,
+      demoUser: demoEnabled && username && password ? { username, password } : null,
       serverTime: getApiServerTimeSnapshot(),
       database: { path: this.databaseRepository.getPath() },
     };

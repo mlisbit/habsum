@@ -16,6 +16,9 @@ usersRouter.delete('/users/:user', requireMatchingRouteUser, usersController.del
 // Used by the administrator page to list users and their account metadata.
 usersRouter.get('/users', requireAdmin, usersController.getUsers);
 
+// Used by administrators to set or clear an account's demo flag when demo mode is enabled.
+usersRouter.put('/users/:user/demo-account', requireAdmin, usersController.putUserDemoAccount);
+
 // Used by the create-user modal to validate a username before submission.
 usersRouter.get(
   '/users/username-availability',

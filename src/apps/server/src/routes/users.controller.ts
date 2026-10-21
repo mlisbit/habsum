@@ -2,6 +2,7 @@ import type { CreateOucSessionResponse } from '@habsum/types/api-responses/ouc-p
 import type { UserInviteEmailPostRequest } from '@habsum/types/api-responses/user-invite-email-post';
 import type { UsernameAvailabilityGetResponse } from '@habsum/types/api-responses/username-availability-get';
 import type { UsersPatchRequest } from '@habsum/types/api-responses/users-patch';
+import type { UserDemoAccountPutRequest } from '@habsum/types/api-responses/user-demo-account-put';
 import type {
   CreateUserFieldErrors,
   CreateUserRequest,
@@ -101,6 +102,13 @@ export const usersController = {
 
   patchUser(req: Request<{ user: string }, unknown, UsersPatchRequest>, res: Response) {
     return sendServiceResult(res, () => userService.patchUser(req.params.user, req.body));
+  },
+
+  putUserDemoAccount(
+    req: Request<{ user: string }, unknown, UserDemoAccountPutRequest>,
+    res: Response,
+  ) {
+    return sendServiceResult(res, () => userService.setDemoAccount(req.params.user, req.body));
   },
 
   deleteUser(req: Request<{ user: string }>, res: Response) {

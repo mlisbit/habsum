@@ -9,7 +9,8 @@ function getTestDatabase(): Database {
     CREATE TABLE users (
       username TEXT PRIMARY KEY,
       admin INTEGER NOT NULL DEFAULT 0,
-      beta_tester INTEGER NOT NULL DEFAULT 1
+      beta_tester INTEGER NOT NULL DEFAULT 1,
+      demo_user INTEGER NOT NULL DEFAULT 0
     );
     CREATE TABLE habit_summation_events (user TEXT NOT NULL);
     CREATE TABLE habit_daily_selects (user TEXT NOT NULL);
@@ -19,6 +20,31 @@ function getTestDatabase(): Database {
 }
 
 describe('getUserAccounts', () => {
+  test('includes DEMO_USER for marked accounts', () => {
+    const database = getTestDatabase();
+    try {
+      database.exec("INSERT INTO users (username, demo_user) VALUES ('demo', 1)");
+      expect(getUserAccounts(database)).toEqual([
+        { username: 'demo', entitlements: ['NEW_USER', 'BETA_TESTER', 'DEMO_USER'] },
+      ]);
+    } finally {
+      database.close();
+    }
+  });
+
+  test('supports databases created before the demo flag was added', () => {
+    const database = getTestDatabase();
+    try {
+      database.exec('ALTER TABLE users DROP COLUMN demo_user');
+      database.exec("INSERT INTO users (username) VALUES ('legacy')");
+      expect(getUserAccounts(database)).toEqual([
+        { username: 'legacy', entitlements: ['NEW_USER', 'BETA_TESTER'] },
+      ]);
+    } finally {
+      database.close();
+    }
+  });
+
   test('lists accounts with entitlements matching the server rules', () => {
     const database = getTestDatabase();
     try {

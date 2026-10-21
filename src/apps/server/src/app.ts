@@ -9,6 +9,7 @@ import { habitsRouter } from './routes/users/habits.routes.js';
 import { securityRouter } from './routes/users/security.routes.js';
 import { administratorRouter } from './routes/administrator.routes.js';
 import apiTrace from './middleware/api-trace.js';
+import demoRestrictions from './middleware/demo-restrictions.js';
 
 export function createApp(): express.Application {
   const app = express();
@@ -20,6 +21,7 @@ export function createApp(): express.Application {
     }),
   );
   app.use(express.json());
+  app.use(demoRestrictions);
 
   app.use(publicRouter);
   app.use(administratorRouter);
