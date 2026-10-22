@@ -2,7 +2,7 @@ name: habsum
 
 services:
   server:
-    image: ${IMAGE_PREFIX}/habsum-server:${APP_VERSION}
+    image: ghcr.io/mlisbit/habsum/habsum-server:latest
     build:
       context: ..
       dockerfile: Dockerfile
@@ -14,7 +14,7 @@ services:
       HABSUM_DB: /app/src/apps/server/config/habsum.db
 
   web:
-    image: ${IMAGE_PREFIX}/habsum-webapp:${APP_VERSION}
+    image: ghcr.io/mlisbit/habsum/habsum-webapp:latest
     restart: always
     environment:
       PORT: '3000'

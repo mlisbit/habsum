@@ -1,6 +1,9 @@
 app = "habsum"
 primary_region = "sjc"
 
+[build]
+  image = "ghcr.io/mlisbit/habsum/habsum-server:latest"
+
 [build.compose]
   file = "compose.fly-demo.yaml"
 
