@@ -31,20 +31,28 @@ jobs:
       - name: Setup flyctl
         uses: superfly/flyctl-actions/setup-flyctl@master
 
-      - name: Deploy API
+      - name: Set release images
         env:
-          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
           IMAGE_PREFIX: ${{ steps.release.outputs.image_prefix }}
-          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+          APP_VERSION: ${{ steps.release.outputs.tag }}
         run: |
-          flyctl deploy --config docker/fly.api.toml --ha=false \
-            --image "$IMAGE_PREFIX/habsum-server:$RELEASE_TAG"
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          from string import Template
 
-      - name: Deploy web
+          compose = Path('docker/compose.fly-demo.yaml')
+          compose.write_text(Template(compose.read_text()).substitute(
+              IMAGE_PREFIX=os.environ['IMAGE_PREFIX'],
+              APP_VERSION=os.environ['APP_VERSION'],
+          ))
+          PY
+
+      - name: Deploy demo
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
           IMAGE_PREFIX: ${{ steps.release.outputs.image_prefix }}
-          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+          APP_VERSION: ${{ steps.release.outputs.tag }}
         run: |
-          flyctl deploy --config docker/fly.web.toml --ha=false \
-            --image "$IMAGE_PREFIX/habsum-webapp:$RELEASE_TAG"
+          flyctl deploy --config docker/fly.toml --ha=false \
+            --image "$IMAGE_PREFIX/habsum-server:$APP_VERSION"

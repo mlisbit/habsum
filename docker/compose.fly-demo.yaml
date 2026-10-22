@@ -1,0 +1,23 @@
+name: habsum
+
+services:
+  server:
+    image: ${IMAGE_PREFIX}/habsum-server:${APP_VERSION}
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: server
+    restart: always
+    environment:
+      HOST: 127.0.0.1
+      PORT: '3001'
+      HABSUM_DB: /app/src/apps/server/config/habsum.db
+
+  web:
+    image: ${IMAGE_PREFIX}/habsum-webapp:${APP_VERSION}
+    restart: always
+    environment:
+      PORT: '3000'
+      HABSUM_SERVER_URL: http://127.0.0.1:3001
+    depends_on:
+      - server
