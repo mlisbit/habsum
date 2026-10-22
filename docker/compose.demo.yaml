@@ -1,0 +1,23 @@
+name: habsum
+
+services:
+  server:
+    image: ghcr.io/mlisbit/habsum/habsum-server:${APP_VERSION}
+    restart: unless-stopped
+    environment:
+      PORT: '3001'
+      HABSUM_DB: /app/src/apps/server/config/habsum.db
+    volumes:
+      - ../data:/app/src/apps/server/config
+    expose:
+      - '3001'
+
+  web:
+    image: ghcr.io/mlisbit/habsum/habsum-webapp:${APP_VERSION}
+    restart: unless-stopped
+    environment:
+      HABSUM_SERVER_URL: http://server:3001
+    ports:
+      - '80:3000'
+    depends_on:
+      - server

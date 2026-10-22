@@ -1,7 +1,9 @@
+name: habsum
+
 services:
   server:
     build:
-      context: .
+      context: ..
       dockerfile: Dockerfile
       target: development
     command: ['npm', '--workspace', 'src/apps/server', 'run', 'dev']
@@ -18,17 +20,17 @@ services:
       HABSUM_WEBAPP_URL: http://localhost:3000
       HABSUM_ENABLE_DEMO: 'true'
     volumes:
-      - ./src:/app/src
+      - ../src:/app/src
       # Keep Linux workspace dependencies separate from the mounted Mac source.
       - /app/src/apps/webapp/node_modules
       - /app/src/packages/stylelint/node_modules
-      - ./config:/app/config
+      - ../config:/app/config
     ports:
       - '3001:3001'
 
   web:
     build:
-      context: .
+      context: ..
       dockerfile: Dockerfile
       target: development
     command: ['npm', '--workspace', 'src/apps/webapp', 'run', 'dev']
@@ -37,7 +39,7 @@ services:
       HABSUM_SERVER_URL: http://server:3001
       CHOKIDAR_USEPOLLING: 'true'
     volumes:
-      - ./src:/app/src
+      - ../src:/app/src
       - /app/src/apps/webapp/node_modules
       - /app/src/packages/stylelint/node_modules
     ports:
@@ -47,7 +49,7 @@ services:
 
   homepage:
     build:
-      context: .
+      context: ..
       dockerfile: Dockerfile
       target: development
     command: ['npm', '--workspace', 'src/apps/homepage', 'run', 'dev']
@@ -55,8 +57,8 @@ services:
       NODE_ENV: development
       CHOKIDAR_USEPOLLING: 'true'
     volumes:
-      - ./src:/app/src
-      - ./public/homepage:/app/public/homepage:ro
+      - ../src:/app/src
+      - ../public/homepage:/app/public/homepage:ro
       - /app/src/apps/homepage/node_modules
       - /app/src/packages/stylelint/node_modules
     ports:

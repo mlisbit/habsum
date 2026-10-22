@@ -1,0 +1,50 @@
+name: Deploy demo to Fly.io
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-fly
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout deployment configuration
+        uses: actions/checkout@v5
+
+      - name: Resolve latest published release
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag=$(gh api "repos/$GITHUB_REPOSITORY/releases/latest" --jq '.tag_name')
+          namespace=$(printf '%s' "$GITHUB_REPOSITORY" | tr '[:upper:]' '[:lower:]')
+          echo "Deploying release: $tag"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "image_prefix=ghcr.io/$namespace" >> "$GITHUB_OUTPUT"
+
+      - name: Setup flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy API
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          IMAGE_PREFIX: ${{ steps.release.outputs.image_prefix }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          flyctl deploy --config docker/fly.api.toml --ha=false \
+            --image "$IMAGE_PREFIX/habsum-server:$RELEASE_TAG"
+
+      - name: Deploy web
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          IMAGE_PREFIX: ${{ steps.release.outputs.image_prefix }}
+          RELEASE_TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          flyctl deploy --config docker/fly.web.toml --ha=false \
+            --image "$IMAGE_PREFIX/habsum-webapp:$RELEASE_TAG"

@@ -115,6 +115,6 @@ volumes:
 
 ## Development
 
-`docker compose -f compose.dev.yaml up --build`
+`docker compose -f docker/compose.dev.yaml up --build`
 
 More docs available in [`/docs/development.md`](/docs/development.md)
