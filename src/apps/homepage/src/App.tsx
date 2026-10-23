@@ -1,8 +1,7 @@
 // exclusive-bem-block: homepage
 import { ArrowUpRight, Check, CheckCheck, Hash, ListFilter, NotebookPen } from 'lucide-react';
-import { DOCS_URL, GITHUB_URL, RELEASES_URL } from './constants';
+import { DEMO_URL, DOCS_URL, GITHUB_URL, RELEASES_URL } from './constants';
 import Header from './components/Header';
-import GithubLink from './components/GithubLink';
 import HabitRecordingExample from './components/HabitRecordingExample';
 import VisualizationExamples from './components/VisualizationExamples';
 import { habitExamples } from './data/habit-examples';
@@ -75,7 +74,13 @@ export default function App() {
                 for each.
               </p>
               <div className="homepage__actions">
-                <GithubLink primary />
+                <a
+                  href={DEMO_URL}
+                  className="homepage__demo-link button button--primary text-b-l text-bold"
+                >
+                  <span>View demo</span>
+                  <ArrowUpRight size={18} aria-hidden="true" />
+                </a>
               </div>
               <a
                 href={RELEASES_URL}

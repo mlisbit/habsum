@@ -14,6 +14,7 @@ services:
       HABSUM_DB: /app/src/apps/server/config/habsum.db
       HABSUM_INITIAL_WEB_SIGNUP: 'true'
       HABSUM_ENABLE_DEMO: 'true'
+      HABSUM_WEBAPP_URL: https://demo.habsum.com
 
   web:
     image: ghcr.io/mlisbit/habsum/habsum-webapp:latest

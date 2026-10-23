@@ -87,6 +87,17 @@
   margin-block-start: functions.spacing(8);
 }
 
+.homepage__demo-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: functions.spacing(3);
+  min-block-size: 52px;
+  padding: functions.spacing(4, 6);
+  border: 1px solid transparent;
+  border-radius: var(--border-radius-s);
+}
+
 .homepage__release {
   display: flex;
   flex-wrap: wrap;

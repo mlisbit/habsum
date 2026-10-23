@@ -1,4 +1,4 @@
-app = "habsum"
+app = "habsum-demo"
 primary_region = "sjc"
 
 [build]
@@ -6,9 +6,6 @@ primary_region = "sjc"
 
 [build.compose]
   file = "compose.fly-demo.yaml"
-
-[env]
-  HABSUM_WEBAPP_URL = "https://habsum.fly.dev"
 
 [mounts]
   source = "habsum_data"
