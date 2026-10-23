@@ -1,6 +1,7 @@
-# Development
-
-## Overview
+---
+title: Overview
+description: development overview
+---
 
 Webapp is built in React. Server is built with node. Admin utility is built with Bun (JS still tho). All typescript.
 
@@ -57,25 +58,6 @@ We use stylelint + eslint. They're pretty opinionated around following BEM. Here
 - `npm run lint:css` & `npm run lint:css:fix`
 
 Tests and lint rules run in precommit too.
-
-## Environment variable options
-
-- `HABSUM_INITIAL_WEB_SIGNUP` (server). `'true' || 'false'`. When `'true'`, when you initially start the application with an empty database, the initial person to visit the application can create an admin account. If your database already has users, this won't show anything. `'false'` is the opposite, and if you wanted to create a user, you'd use the admin tools `habsum-admin add-admin [username]` command available to you in the server docker container.
-- `HABSUM_DB` (server). Path to the sqlite DB. If you do not have DB, one will be created for you in `./config/habsum.db`.
-- `HABSUM_ENABLE_DEMO` (server). Set to `'true'` to enable demo mode; defaults to disabled. The server exposes `demoEnabled` through `/application` for the client. Username, display name, email, habit configuration, note changes, password changes/recovery, and account deletion return HTTP 403 in this mode, including administrator password resets and user deletion. Theme changes and other habit tracking remain available.
-
-- `HABSUM_DEV_VERSION_OFFSET` (server). Set to `'true'` to add one patch to the GitHub update candidate for update testing. Enabled in development Compose. See [version offsets](development/version-offsets.md).
-
-## Admin utility
-
-Helpful utility for admins with the following commands:
-
-- `habsum-admin add-admin [username]`
-- `habsum-admin list-users`
-- `habsum-admin reset-password [username]`
-- `habsum-admin demo-data [username]` fills up the given users dashboard with fake data; you need to have the habits config configure tho.
-
-If you choose to run via Docker, it's available to you on the `server` service. Otherwise you can run it directly via `src/apps/habsum-admin` -- but you'll need to set a `HABSUM_DB` env variable pointing to the database.
 
 ## Note on emails, password resets, and user account creation
 

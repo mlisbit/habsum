@@ -24,6 +24,10 @@ export default defineConfig({
   integrations: [
     starlight({
       title: 'Habsum Docs',
+      sidebar: [
+        { label: 'Install', autogenerate: { directory: 'overview' } },
+        { label: 'Development', autogenerate: { directory: 'development' } },
+      ],
       customCss: ['./src/styles/docs-theme.scss'],
       components: {
         SiteTitle: './src/components/DocsBrand.astro',

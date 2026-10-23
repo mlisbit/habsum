@@ -6,7 +6,7 @@ import { slug } from 'github-slugger';
 
 const loader = docsLoader({
   generateId({ entry, data }) {
-    if (entry === 'development.md') return 'index';
+    if (entry === 'overview/quick-start.md') return 'index';
     if (typeof data.slug === 'string' && data.slug) return data.slug;
     return entry
       .replace(/\.[^.]+$/, '')

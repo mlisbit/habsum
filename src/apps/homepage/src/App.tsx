@@ -76,10 +76,16 @@ export default function App() {
               <div className="homepage__actions">
                 <a
                   href={DEMO_URL}
-                  className="homepage__demo-link button button--primary text-b-l text-bold"
+                  className="homepage__action-link button button--primary text-b-l text-bold"
                 >
-                  <span>View demo</span>
+                  <span>Try live demo</span>
                   <ArrowUpRight size={18} aria-hidden="true" />
+                </a>
+                <a
+                  href={DOCS_URL}
+                  className="homepage__action-link button button--primary button--muted text-b-l text-bold"
+                >
+                  Get Started
                 </a>
               </div>
               <a
