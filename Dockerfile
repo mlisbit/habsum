@@ -43,6 +43,7 @@ RUN npm --workspace src/apps/webapp run build
 FROM dependencies AS homepage-build
 
 COPY public/homepage ./public/homepage
+COPY docs ./docs
 
 RUN npm run build:homepage
 

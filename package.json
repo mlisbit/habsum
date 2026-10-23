@@ -14,7 +14,8 @@
     "src/apps/habsum-admin",
     "src/apps/server",
     "src/apps/webapp",
-    "src/apps/homepage"
+    "src/apps/homepage",
+    "src/apps/docs"
   ],
   "scripts": {
     "dev:server": "npm --workspace src/apps/server run dev",
@@ -22,6 +23,7 @@
     "dev": "npm-run-all --parallel dev:server dev:webapp",
     "start": "npm --workspace src/apps/server run start",
     "build:homepage": "npm --workspace @habsum/homepage run build",
+    "build:docs": "npm --workspace @habsum/docs run build",
     "test:homepage": "npm --workspace @habsum/homepage run test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

@@ -56,6 +56,7 @@ services:
     environment:
       NODE_ENV: development
       CHOKIDAR_USEPOLLING: 'true'
+      HABSUM_DOCS_URL: http://docs:3003
     volumes:
       - ../src:/app/src
       - ../public/homepage:/app/public/homepage:ro
@@ -63,3 +64,22 @@ services:
       - /app/src/packages/stylelint/node_modules
     ports:
       - '3002:3002'
+    depends_on:
+      - docs
+
+  docs:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+      target: development
+    command: ['npm', '--workspace', 'src/apps/docs', 'run', 'dev']
+    environment:
+      NODE_ENV: development
+      CHOKIDAR_USEPOLLING: 'true'
+    volumes:
+      - ../src:/app/src
+      - ../docs:/app/docs:ro
+      - /app/src/apps/docs/node_modules
+      - /app/src/apps/docs/.astro
+    ports:
+      - '3003:3003'

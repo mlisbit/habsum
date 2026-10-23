@@ -1,7 +1,9 @@
-## README policy
+## Markdown policy
 
-- NEVER modify a README file unless the user explicitly requests a README edit.
-- If a README needs updating, bring it up with the user and describe the suggested change without modifying the file.
+- NEVER create, edit, delete, rename, move, or automatically format a `.md` file unless the user explicitly requests that specific Markdown change.
+- This applies to all `.md` files, including READMEs, documentation, and `AGENTS.md`. Requests for code changes, new applications, or documentation infrastructure do not implicitly authorize Markdown changes.
+- If a Markdown file needs updating, describe the suggested change to the user without modifying the file.
+- An explicit request to update `AGENTS.md` authorizes the requested instruction edit only; it is not a standing exception for future Markdown changes.
 
 ## Local server policy
 

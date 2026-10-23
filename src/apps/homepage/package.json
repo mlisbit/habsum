@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build",
+    "build": "tsc && vite build && npm --workspace @habsum/docs run build",
     "typecheck": "tsc",
     "test": "vitest run",
     "lint:js": "eslint ."

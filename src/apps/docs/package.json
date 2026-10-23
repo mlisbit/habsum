@@ -1,0 +1,22 @@
+{
+  "name": "@habsum/docs",
+  "version": "0.1.39",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "typecheck": "astro sync && tsc --noEmit",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "^0.37.7",
+    "astro": "^5.18.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.2"
+  },
+  "engines": {
+    "node": "^20.3.0 || >=22.0.0"
+  }
+}

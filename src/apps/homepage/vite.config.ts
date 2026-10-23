@@ -10,6 +10,12 @@ export default defineConfig({
     host: true,
     port: 3002,
     strictPort: true,
+    proxy: {
+      '/docs': {
+        target: process.env.HABSUM_DOCS_URL || 'http://localhost:3003',
+        ws: true,
+      },
+    },
     watch: {
       usePolling: process.env.CHOKIDAR_USEPOLLING === 'true',
     },

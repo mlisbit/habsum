@@ -2,6 +2,7 @@ node_modules
 package-lock.json
 
 # build outputs
+src/apps/docs/.astro
 src/apps/server/dist
 src/apps/webapp/build
 src/apps/webapp/.cache
