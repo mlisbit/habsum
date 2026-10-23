@@ -1,0 +1,33 @@
+@use '@habsum/ui/styles/tokens';
+@use 'docs-brand';
+@use 'docs-header-link';
+
+:root {
+  --sl-font: var(--font-sans);
+  --sl-color-white: var(--text-color);
+  --sl-color-black: var(--background);
+  --sl-color-gray-1: var(--text-color);
+  --sl-color-gray-2: var(--text-muted);
+  --sl-color-gray-3: var(--text-muted);
+  --sl-color-gray-4: var(--border-color);
+  --sl-color-gray-5: var(--border-color-faint);
+  --sl-color-gray-6: var(--background-secondary);
+  --sl-color-gray-7: var(--background-input);
+  --sl-color-accent: var(--accent-selected);
+  --sl-color-accent-low: var(--heatmap-fill-positive-1);
+  --sl-color-accent-high: var(--text-accent);
+  --sl-color-text: var(--text-color);
+  --sl-color-text-accent: var(--text-accent);
+  --sl-color-text-invert: var(--text-inverse);
+  --sl-color-bg: var(--background);
+  --sl-color-bg-nav: var(--background-secondary);
+  --sl-color-bg-sidebar: var(--background);
+  --sl-color-bg-inline-code: var(--background-input);
+  --sl-color-bg-accent: var(--text-accent);
+  --sl-color-hairline-light: var(--border-color-faint);
+  --sl-color-hairline: var(--border-color-faint);
+  --sl-color-hairline-shade: var(--background-secondary);
+  --sl-shadow-sm: var(--elevation-shadow);
+  --sl-shadow-md: var(--elevation-shadow);
+  --sl-shadow-lg: var(--elevation-shadow);
+}

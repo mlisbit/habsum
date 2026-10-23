@@ -24,6 +24,11 @@ export default defineConfig({
   integrations: [
     starlight({
       title: 'Habsum Docs',
+      customCss: ['./src/styles/docs-theme.scss'],
+      components: {
+        SiteTitle: './src/components/DocsBrand.astro',
+        SocialIcons: './src/components/DocsHeaderLinks.astro',
+      },
       social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/mlisbit/habsum' }],
     }),
   ],

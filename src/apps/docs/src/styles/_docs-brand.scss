@@ -1,0 +1,38 @@
+/* stylelint-disable habsum/atomic-class-enforcer -- This Starlight header uses local typography instead of the UI's global text classes. */
+@use '@habsum/ui/styles/spacing' as functions;
+
+.docs-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: functions.spacing(2);
+  min-inline-size: 0;
+  color: var(--text-color);
+  /* stylelint-disable-next-line habsum/token-use-enforcer -- Starlight type scale. */
+  font-size: var(--sl-text-h4);
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.docs-brand__icon {
+  flex: 0 0 auto;
+  inline-size: 2rem;
+  block-size: 2rem;
+}
+
+.docs-brand__dot {
+  color: var(--text-accent);
+}
+
+.docs-brand:hover {
+  color: var(--text-accent);
+  text-decoration: none;
+}
+
+.docs-brand:focus-visible {
+  outline: 2px solid var(--accent-selected);
+  outline-offset: 3px;
+  border-radius: var(--border-radius-s);
+}

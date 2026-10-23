@@ -1,0 +1,10 @@
+/* stylelint-disable habsum/atomic-class-enforcer -- Starlight header links use local theme styling instead of the UI's global text classes. */
+.docs-header-link {
+  color: var(--text-muted);
+  text-decoration: none;
+
+  &:hover {
+    color: var(--text-accent);
+    text-decoration: underline;
+  }
+}

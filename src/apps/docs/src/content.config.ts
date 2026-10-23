@@ -2,8 +2,20 @@ import { readFile } from 'node:fs/promises';
 import { docsLoader } from '@astrojs/starlight/loaders';
 import { docsSchema } from '@astrojs/starlight/schema';
 import { defineCollection } from 'astro:content';
+import { slug } from 'github-slugger';
 
-const loader = docsLoader();
+const loader = docsLoader({
+  generateId({ entry, data }) {
+    if (entry === 'development.md') return 'index';
+    if (typeof data.slug === 'string' && data.slug) return data.slug;
+    return entry
+      .replace(/\.[^.]+$/, '')
+      .split('/')
+      .map((segment) => slug(segment))
+      .join('/')
+      .replace(/\/index$/, '');
+  },
+});
 
 export const collections = {
   docs: defineCollection({
