@@ -1,7 +1,6 @@
 // exclusive-bem-block: habit-heading
 import { useCallback, type ComponentType, type ReactNode } from 'react';
 import { Button } from '@habsum/ui/components/Button';
-import { Icon } from '@habsum/ui/components/Icon';
 import { useModal } from '@habsum/ui/contexts/modal';
 import { classBuilder } from '@habsum/utils/class-builder';
 import { HabitMenuModal } from './HabitMenuModal';
@@ -12,7 +11,6 @@ type HabitHeadingRenderProps = {
   ctaUrl?: string;
   className?: string;
   pending?: boolean;
-  goalHit?: boolean;
   LinkComponent?: ComponentType<{ to: string; className?: string; children: ReactNode }>;
   onNavigate?: (url: string) => void;
   onReset: () => Promise<void>;
@@ -27,7 +25,6 @@ export function HabitHeadingRender({
   ctaUrl,
   className,
   pending = false,
-  goalHit = false,
   LinkComponent,
   onNavigate,
   onReset,
@@ -55,9 +52,6 @@ export function HabitHeadingRender({
   return (
     <div className={classBuilder({}, ['habit-heading', className].filter(Boolean).join(' '))}>
       <div className="habit-heading__left">
-        {goalHit ? (
-          <Icon name="check" size="medium" className="habit-heading__goal-hit-check text-success" />
-        ) : null}
         {demo || !ctaUrl ? (
           <span className="text-h-m">{habitName}</span>
         ) : LinkComponent ? (
