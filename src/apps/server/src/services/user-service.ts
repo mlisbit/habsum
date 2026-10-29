@@ -368,20 +368,14 @@ export class UserService {
     let email: string | undefined;
     if ('email' in body) {
       hasEmail = true;
-      if (body.email === null) {
-        throw new ServiceError('bad_request', 'email is required');
-      }
       if (typeof body.email !== 'string') {
         throw new ServiceError('bad_request', 'email must be a string');
       }
       const t = body.email.trim().toLowerCase();
-      if (t === '') {
-        throw new ServiceError('bad_request', 'email is required');
-      }
-      if (!isPlausibleEmail(t)) {
+      if (t !== '' && !isPlausibleEmail(t)) {
         throw new ServiceError('bad_request', 'invalid email');
       }
-      if (this.userAndAuthRepository.isEmailUsedByOtherUser(t, user)) {
+      if (t !== '' && this.userAndAuthRepository.isEmailUsedByOtherUser(t, user)) {
         throw new ServiceError('conflict', 'email already in use');
       }
       email = t;

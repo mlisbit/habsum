@@ -395,7 +395,6 @@ export default function UserSettingsAccount() {
                       setDraftDisplay(v);
                       clearSaveFieldError('displayName');
                     }}
-                    placeholder="Optional"
                     dismissable
                     submittable={false}
                     autoCapitalize="words"
@@ -424,7 +423,6 @@ export default function UserSettingsAccount() {
                       setDraftEmail(v);
                       clearSaveFieldError('email');
                     }}
-                    placeholder="Required"
                     dismissable
                     submittable={false}
                     autoCapitalize="none"

@@ -738,10 +738,10 @@ export function patchUserProfile(
     sets.push('email = @email');
     const v = patch.email;
     const normalized = String(v).trim().toLowerCase();
-    if (!isPlausibleEmail(normalized)) {
+    if (normalized !== '' && !isPlausibleEmail(normalized)) {
       throw new Error('invalid email');
     }
-    params.email = normalized;
+    params.email = normalized || null;
   }
   if (sets.length === 0) return;
   const stmt = db.prepare(`UPDATE users SET ${sets.join(', ')} WHERE username = @username`);

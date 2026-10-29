@@ -31,10 +31,8 @@ export function validateAccountSave(input: AccountSavePayload): AccountErrorMap 
     addError(errors, 'username', 'Username cannot be empty.');
   }
 
-  const emailVal = input.email;
-  if (emailVal == null || String(emailVal).trim() === '') {
-    addError(errors, 'email', 'Email is required.');
-  } else if (!isPlausibleEmail(String(emailVal))) {
+  const emailVal = input.email?.trim();
+  if (emailVal && !isPlausibleEmail(emailVal)) {
     addError(errors, 'email', 'Enter a valid email address.');
   }
 
@@ -75,11 +73,6 @@ export function accountServerErrorToFieldMap(serverMessage: string): AccountErro
   }
 
   if (m === 'invalid email') {
-    addError(out, 'email', m);
-    return out;
-  }
-
-  if (m === 'email is required') {
     addError(out, 'email', m);
     return out;
   }
