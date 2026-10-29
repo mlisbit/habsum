@@ -10,6 +10,50 @@ const viewingDate = dayFromString('2026-07-23');
 
 describe('habit presenters', () => {
   it.each([
+    { sentiments: ['positive', 'negative'], compatible: true },
+    { sentiments: ['negative', 'positive'], compatible: true },
+    { sentiments: ['positive', 'positive'], compatible: false },
+    { sentiments: ['negative', 'negative'], compatible: false },
+    { sentiments: ['positive'], compatible: false },
+    { sentiments: [], compatible: false },
+    { sentiments: ['positive', 'negative', 'positive'], compatible: false },
+  ] as const)(
+    'only presents a compatible checkbox theme: $sentiments',
+    ({ sentiments, compatible }) => {
+      const definition: HabitDef<'single_select'> = {
+        name: 'Reading',
+        type: 'single_select',
+        repeat: [],
+        insights: [],
+        settings: {
+          options: sentiments.map((sentiment, index) => ({ label: `Option ${index}`, sentiment })),
+          theme: 'checkbox',
+        },
+      };
+      const presenter = new SingleSelectHabitPresenter(
+        definition,
+        {
+          name: 'Reading',
+          type: 'single_select',
+          dataStart: viewingDate,
+          dataEnd: viewingDate,
+          values: [{ date: viewingDate, value: 'Option 0' }],
+        },
+        { viewingDate, today: viewingDate },
+      );
+      for (const habit of [
+        presenter.present(),
+        presenter.getHistoryEvents(viewingDate, viewingDate)[0].habit,
+      ]) {
+        expect(habit.details).toHaveProperty('value', 'Option 0');
+        if (compatible) expect(habit.details).toHaveProperty('theme', 'checkbox');
+        else expect(habit.details).not.toHaveProperty('theme');
+      }
+      expect(definition.settings.theme).toBe('checkbox');
+    },
+  );
+
+  it.each([
     ['positive', '1 day'],
     ['negative', '0 days'],
   ] as const)(

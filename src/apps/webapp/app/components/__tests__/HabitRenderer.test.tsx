@@ -202,34 +202,93 @@ describe('HabitRenderer type-specific rendering', () => {
     expect(onUpdate).toHaveBeenCalledWith({ habit: 'Squats', action: 'clear' });
   });
 
-  it('renders single-select actions', () => {
+  it.each(['yes', 'no', null] as const)(
+    'shows the selected checkbox value on hover: %s',
+    async (value) => {
+      const user = userEvent.setup();
+      const habit: HabitRowSingleSelect = {
+        name: 'Morning routine',
+        type: 'single_select',
+        details: {
+          options: [
+            { label: 'yes', sentiment: 'positive' },
+            { label: 'no', sentiment: 'negative' },
+          ],
+          theme: 'checkbox',
+          value,
+        },
+      };
+
+      render(
+        <ToastProvider>
+          <ModalProvider>
+            <HabitRenderer
+              user="athlete"
+              viewDate={dayFromString('2026-07-27')}
+              habit={habit}
+              onUpdate={vi.fn()}
+            />
+          </ModalProvider>
+        </ToastProvider>,
+      );
+
+      const checkbox = screen.getByRole('button', {
+        name: `Morning routine: ${value ?? 'not set'}`,
+      });
+      await user.hover(checkbox);
+      if (value != null) {
+        expect((await screen.findByRole('tooltip')).textContent).toBe(value);
+      } else {
+        await act(async () => {
+          await new Promise((resolve) => setTimeout(resolve, 80));
+        });
+        expect(screen.queryByRole('tooltip')).toBeNull();
+        expect(checkbox.getAttribute('aria-describedby')).toBeNull();
+      }
+    },
+  );
+
+  it.each([
+    { value: null, next: 'Finished', state: null },
+    { value: 'Finished', next: 'Skipped', state: 'yes' },
+    { value: 'Skipped', next: null, state: 'no' },
+  ])('maps checkbox states to custom sentiment labels: $value', async ({ value, next, state }) => {
+    const user = userEvent.setup();
+    const onUpdate = vi.fn().mockResolvedValue(undefined);
     const habit: HabitRowSingleSelect = {
-      name: 'Morning routine',
+      name: 'Reading',
       type: 'single_select',
       details: {
         options: [
-          { label: 'yes', sentiment: 'positive' },
-          { label: 'no', sentiment: 'positive' },
+          { label: 'Skipped', sentiment: 'negative' },
+          { label: 'Finished', sentiment: 'positive' },
         ],
         theme: 'checkbox',
-        value: null,
+        value,
       },
     };
-
     render(
       <ToastProvider>
         <ModalProvider>
           <HabitRenderer
-            user="athlete"
+            user="reader"
             viewDate={dayFromString('2026-07-27')}
             habit={habit}
-            onUpdate={vi.fn()}
+            onUpdate={onUpdate}
           />
         </ModalProvider>
       </ToastProvider>,
     );
-
-    expect(screen.getByRole('button', { name: 'Morning routine: not set' })).toBeTruthy();
+    const checkbox = screen.getByRole('button', { name: `Reading: ${value ?? 'not set'}` });
+    if (state != null) expect(checkbox.classList.contains(`ternary-checkbox--${state}`)).toBe(true);
+    if (value != null) {
+      await user.hover(checkbox);
+      expect((await screen.findByRole('tooltip')).textContent).toBe(value);
+    }
+    await user.click(checkbox);
+    expect(onUpdate).toHaveBeenCalledWith(
+      next == null ? { habit: 'Reading', action: 'clear' } : { habit: 'Reading', value: next },
+    );
   });
 
   it.each(['None', 'A bit', null])(

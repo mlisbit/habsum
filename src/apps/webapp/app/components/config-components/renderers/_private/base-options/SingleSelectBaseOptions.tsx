@@ -1,30 +1,15 @@
 import type { ConfigHabitDraft } from '~/api.client';
 import { ConfigHabitOptionCards } from '../utils/ConfigHabitOptionCards';
-import type { SingleSelectOption } from '@habsum/types/common/habit';
-
-function hasYesNoOptions(options: string[]): boolean {
-  return options.length === 2 && options.includes('yes') && options.includes('no');
-}
+import { isCheckboxThemeCompatible } from '@habsum/types/common/habit';
 
 type SingleSelectBaseOptionsProps = {
   draft: ConfigHabitDraft;
-  habitOptions: string[];
   patch: (partial: Partial<ConfigHabitDraft>) => void;
 };
 
-export function SingleSelectBaseOptions({
-  draft,
-  habitOptions,
-  patch,
-}: SingleSelectBaseOptionsProps) {
-  const showCheckboxThemeToggle = hasYesNoOptions(habitOptions);
-
-  const setHabitOptions = (options: SingleSelectOption[]) => {
-    patch({
-      options,
-      ...(hasYesNoOptions(options.map((option) => option.label)) ? {} : { theme: '' }),
-    });
-  };
+export function SingleSelectBaseOptions({ draft, patch }: SingleSelectBaseOptionsProps) {
+  const showCheckboxThemeToggle =
+    draft.theme === 'checkbox' || isCheckboxThemeCompatible(draft.options);
 
   return (
     <div className="config-habit-modal__field config-habit-modal__field--option-pills">
@@ -37,7 +22,10 @@ export function SingleSelectBaseOptions({
       </div>
       <div className="config-habit-modal__control">
         <div className="config-habit-modal__field-control-stack">
-          <ConfigHabitOptionCards options={draft.options} onChange={setHabitOptions} />
+          <ConfigHabitOptionCards
+            options={draft.options}
+            onChange={(options) => patch({ options })}
+          />
           {showCheckboxThemeToggle ? (
             <div className="config-habit-modal__checkbox-field">
               <input

@@ -9,6 +9,14 @@ export type SingleSelectOption = {
   sentiment: OptionSentiment;
 };
 
+export function isCheckboxThemeCompatible(options: readonly SingleSelectOption[]): boolean {
+  return (
+    options.length === 2 &&
+    options.some((option) => option.sentiment === 'positive') &&
+    options.some((option) => option.sentiment === 'negative')
+  );
+}
+
 export type HabitHistory = {
   data: {
     user: {

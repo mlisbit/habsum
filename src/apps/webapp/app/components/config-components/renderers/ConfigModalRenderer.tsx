@@ -110,7 +110,6 @@ export function ConfigModalRenderer({
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [activeView, setActiveView] = useState<'habit' | 'streak-options'>('habit');
-  const habitOptions = draft.options.map((option) => option.label);
   const editingHabitName = draft.name.trim() || habit.name;
 
   const patch = (partial: Partial<ConfigHabitDraft>) => {
@@ -163,7 +162,7 @@ export function ConfigModalRenderer({
     case 'single_select':
       fields = (
         <>
-          <SingleSelectBaseOptions draft={draft} habitOptions={habitOptions} patch={patch} />
+          <SingleSelectBaseOptions draft={draft} patch={patch} />
 
           {repeatField}
 

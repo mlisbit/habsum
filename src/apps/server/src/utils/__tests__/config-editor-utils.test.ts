@@ -19,6 +19,21 @@ const previous = yamlString(`habits:
 `);
 
 describe('single-select config editing', () => {
+  it('preserves an incompatible configured theme for editing and saving', () => {
+    const text = yamlString(`habits:
+  Reading:
+    type: single_select
+    theme: checkbox
+    options:
+      - {label: A bit, sentiment: positive}
+      - {label: A lot, sentiment: positive}
+`);
+    const config = getConfigJson('reader', text);
+    expect(config.habits[0].theme).toBe('checkbox');
+    const saved = new YAMLConfigConvertor().convert(getUserConfigFromJson(config));
+    expect(getConfigJson('reader', saved)).toEqual(config);
+  });
+
   it('round-trips structured options and writes only frequency in streak_options', () => {
     const config = getConfigJson('reader', previous);
     const converted = new YAMLConfigConvertor().convert(getUserConfigFromJson(config));

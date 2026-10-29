@@ -319,7 +319,7 @@ export function addHabitToConfig(
             goal: null,
             options: [
               { label: 'yes', sentiment: 'positive' },
-              { label: 'no', sentiment: 'positive' },
+              { label: 'no', sentiment: 'negative' },
             ],
             theme: 'checkbox',
           }

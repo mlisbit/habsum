@@ -1,6 +1,10 @@
 // Presents one hydrated single-select habit for a specific viewing date.
 import type { Day } from '@habsum/types/common/day';
-import type { HabitRowSingleSelect, HabitWidget } from '@habsum/types/common/habit';
+import {
+  isCheckboxThemeCompatible,
+  type HabitRowSingleSelect,
+  type HabitWidget,
+} from '@habsum/types/common/habit';
 import type { HydratedHabitData } from '../../types/habit.types.js';
 import type { HabitDef } from '../../types/userConfig.js';
 import { SingleSelectHeatmapBuilder } from './_private/builders/heatmap/single-select-heatmap-builder.js';
@@ -51,7 +55,10 @@ export class SingleSelectHabitPresenter extends HabitPresenter<
           label,
           sentiment,
         })),
-        ...(this.definition.settings.theme ? { theme: this.definition.settings.theme } : {}),
+        ...(this.definition.settings.theme &&
+        isCheckboxThemeCompatible(this.definition.settings.options)
+          ? { theme: this.definition.settings.theme }
+          : {}),
         value: this.habitData.values.find((row) => row.date === viewingDate)?.value ?? null,
       },
       ...(widgets.length > 0 ? { widgets } : {}),

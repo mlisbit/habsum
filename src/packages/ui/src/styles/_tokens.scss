@@ -46,7 +46,7 @@ html[data-theme='dark'] {
   --pill-border: transparent;
   --pill-fill: #36383e;
   --pill-fill-selected: var(--accent-selected);
-  --pill-fill-selected-negative: var(--accent-red-1);
+  --pill-fill-selected-negative: color-mix(in srgb, var(--pill-fill) 60%, var(--accent-red-1) 40%);
 
   // accents
   --accent-selected: #6b987f;
@@ -141,7 +141,7 @@ html[data-theme='light'] {
   --pill-border: #c1bfbf;
   --pill-fill: #c6c6c6;
   --pill-fill-selected: var(--accent-selected);
-  --pill-fill-selected-negative: var(--accent-red-1);
+  --pill-fill-selected-negative: color-mix(in srgb, var(--pill-fill) 60%, var(--accent-red-1) 40%);
 
   // accents
   --accent-selected: #6b987f;

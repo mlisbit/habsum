@@ -28,7 +28,7 @@ export const habitExamples = {
     details: {
       options: [
         { label: 'yes', sentiment: 'positive' },
-        { label: 'no', sentiment: 'positive' },
+        { label: 'no', sentiment: 'negative' },
       ],
       theme: 'checkbox',
       value: null,

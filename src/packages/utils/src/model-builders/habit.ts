@@ -96,7 +96,7 @@ function stateForType(state: HabitModelBuilderState, type: HabitType): HabitMode
       type,
       options: [
         { label: 'yes', sentiment: 'positive' },
-        { label: 'no', sentiment: 'positive' },
+        { label: 'no', sentiment: 'negative' },
       ],
       theme: 'checkbox',
       value: state.value === 'yes' || state.value === 'no' ? state.value : null,

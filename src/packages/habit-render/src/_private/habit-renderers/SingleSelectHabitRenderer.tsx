@@ -7,19 +7,6 @@ import { TernaryCheckbox, type TernaryCheckboxValue } from '@habsum/ui/component
 import type HabitRenderingInterface from './HabitRenderingInterface';
 import type { HabitRenderingProps } from './HabitRenderingInterface';
 
-function isCheckboxTheme(habit: HabitRowSingleSelect): boolean {
-  return (
-    habit.details.theme === 'checkbox' &&
-    habit.details.options.length === 2 &&
-    habit.details.options.some(({ label }) => label === 'yes') &&
-    habit.details.options.some(({ label }) => label === 'no')
-  );
-}
-
-function toTernaryCheckboxValue(value: string | null): TernaryCheckboxValue {
-  return value === 'yes' || value === 'no' ? value : null;
-}
-
 function SingleSelectActions({
   habit,
   onUpdate,
@@ -27,23 +14,39 @@ function SingleSelectActions({
   habit: HabitRowSingleSelect;
   onUpdate: (patch: HabitPatch) => Promise<void>;
 }) {
-  const checkboxTheme = isCheckboxTheme(habit);
+  const checkboxTheme = habit.details.theme === 'checkbox';
+  const positiveValue = habit.details.options.find(
+    (option) => option.sentiment === 'positive',
+  )?.label;
+  const negativeValue = habit.details.options.find(
+    (option) => option.sentiment === 'negative',
+  )?.label;
+  const checkboxValue =
+    habit.details.value == null
+      ? null
+      : habit.details.value === positiveValue
+        ? 'yes'
+        : habit.details.value === negativeValue
+          ? 'no'
+          : null;
 
   const handleSelectChange = useCallback(
     async (nextValue: TernaryCheckboxValue) => {
       if (nextValue == null) {
         await onUpdate({ habit: habit.name, action: 'clear' });
       } else {
-        await onUpdate({ habit: habit.name, value: nextValue });
+        const value = nextValue === 'yes' ? positiveValue : negativeValue;
+        if (value != null) await onUpdate({ habit: habit.name, value });
       }
     },
-    [habit.name, onUpdate],
+    [habit.name, positiveValue, negativeValue, onUpdate],
   );
 
   if (checkboxTheme) {
     return (
       <TernaryCheckbox
-        value={toTernaryCheckboxValue(habit.details.value)}
+        value={checkboxValue}
+        valueLabel={habit.details.value ?? undefined}
         aria-label={`${habit.name}: ${habit.details.value ?? 'not set'}`}
         onChange={(nextValue) => {
           void handleSelectChange(nextValue);

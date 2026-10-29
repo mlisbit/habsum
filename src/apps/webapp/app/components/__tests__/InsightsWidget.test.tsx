@@ -35,6 +35,58 @@ function renderConfigModal(initialDraft: ConfigHabitDraft = draftFromHabit(habit
 
 afterEach(cleanup);
 
+describe('checkbox theme settings', () => {
+  it.each([
+    { sentiments: ['positive', 'negative'], show: true },
+    { sentiments: ['negative', 'positive'], show: true },
+    { sentiments: ['positive', 'positive'], show: false },
+    { sentiments: ['negative', 'negative'], show: false },
+    { sentiments: ['positive'], show: false },
+    { sentiments: ['positive', 'negative', 'positive'], show: false },
+  ] as const)(
+    'offers the theme based on sentiments, not labels: $sentiments',
+    ({ sentiments, show }) => {
+      renderConfigModal({
+        ...draftFromHabit(habit),
+        options: sentiments.map((sentiment, index) => ({ label: `Choice ${index}`, sentiment })),
+      });
+      expect(screen.queryByRole('checkbox', { name: 'Show as checkbox' }) != null).toBe(show);
+    },
+  );
+
+  it('keeps a configured theme when editing options makes them incompatible', () => {
+    const onDoneClick = renderConfigModal({ ...draftFromHabit(habit), theme: 'checkbox' });
+    fireEvent.change(screen.getByRole('combobox', { name: 'Sentiment for no' }), {
+      target: { value: 'positive' },
+    });
+    expect(
+      (screen.getByRole('checkbox', { name: 'Show as checkbox' }) as HTMLInputElement).checked,
+    ).toBe(true);
+    fireEvent.click(screen.getByRole('button', { name: 'Done' }));
+    expect(onDoneClick).toHaveBeenCalledWith(
+      'Read',
+      expect.objectContaining({ theme: 'checkbox' }),
+    );
+  });
+
+  it('lets an incompatible configured theme be unchecked, then hides the option', () => {
+    const onDoneClick = renderConfigModal({
+      ...draftFromHabit(habit),
+      theme: 'checkbox',
+      options: [
+        { label: 'A bit', sentiment: 'positive' },
+        { label: 'A lot', sentiment: 'positive' },
+      ],
+    });
+    const checkbox = screen.getByRole('checkbox', { name: 'Show as checkbox' });
+    expect((checkbox as HTMLInputElement).checked).toBe(true);
+    fireEvent.click(checkbox);
+    expect(screen.queryByRole('checkbox', { name: 'Show as checkbox' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Done' }));
+    expect(onDoneClick).toHaveBeenCalledWith('Read', expect.objectContaining({ theme: '' }));
+  });
+});
+
 describe('habit insights settings', () => {
   it('edits sentiment on each option card and preserves it when renamed', () => {
     const onDoneClick = renderConfigModal();
