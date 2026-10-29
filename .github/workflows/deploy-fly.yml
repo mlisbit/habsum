@@ -21,6 +21,7 @@ jobs:
         uses: superfly/flyctl-actions/setup-flyctl@master
 
       - name: Deploy demo
+        working-directory: docker
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
-        run: flyctl deploy docker --config fly.toml --ha=false
+        run: flyctl deploy --config fly.demo.toml --ha=false
