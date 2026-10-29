@@ -1,12 +1,6 @@
 import type { Habit, HabitRowSummation, SummationOptions } from '@habsum/types/common/habit';
 
-/** Habits that have numeric goals weigh this much vs “other” habits in the aggregate bar fraction. */
-const GOAL_WEIGHT = 4;
-
-/** Habits without (or with neutral) goals weigh one unit when averaging completion for the bar. */
-const OTHER_WEIGHT = 1;
-
-/** Denominator for `.total`; `done / PROGRESS_TOTAL_SCALE` equals weighted-average completion [0-1]. */
+/** Denominator for `.total`; `done / PROGRESS_TOTAL_SCALE` equals average completion [0-1]. */
 export const PROGRESS_TOTAL_SCALE = 10_000;
 
 export type DayProgressSlice = {
@@ -19,11 +13,11 @@ export type DayProgressSlice = {
 export type DayProgressBreakdown = {
   /** Summation habits with a positive goal: progress is min(total, goal) vs goal per habit. */
   goals: DayProgressSlice;
-  /** Habits without a goal: binary completion counts for captions (“N other habits”). */
+  /** Habits without a positive numeric goal: number with recorded data. */
   other: DayProgressSlice;
   /**
-   * Bar fill: numerator / denominator = weighted-average completion with higher weight on
-   * numeric goals than habits without usable goals.
+   * Bar fill: numerator / denominator = average completion, with each habit contributing
+   * an equal share and numeric goals contributing their completion fraction.
    */
   total: DayProgressSlice;
 };
@@ -65,11 +59,8 @@ function hasPositiveGoal(
   return isSummation(h) && h.details.goal != null && h.details.goal > 0;
 }
 
-function otherHabitCompleted(h: Habit): boolean {
-  if (h.type === 'single_select') return h.details.value != null;
-  if (h.type === 'text') return h.details.text != null && h.details.text !== '';
-  if (h.details.goal != null && h.details.goal > 0) return false;
-  return (h.details.total ?? 0) > 0;
+export function isHabitComplete(habit: Habit): boolean {
+  return hasPositiveGoal(habit) ? isGoalHit(habit) : hasHabitData(habit);
 }
 
 function habitCompletionFraction(h: Habit): number {
@@ -77,7 +68,7 @@ function habitCompletionFraction(h: Habit): number {
     const t = h.details.total ?? 0;
     return Math.min(Math.max(t / h.details.goal, 0), 1);
   }
-  return otherHabitCompleted(h) ? 1 : 0;
+  return isHabitComplete(h) ? 1 : 0;
 }
 
 export function getProgress(habits: readonly Habit[]): DayProgressBreakdown {
@@ -94,25 +85,21 @@ export function getProgress(habits: readonly Habit[]): DayProgressBreakdown {
   let goalsTotal = 0;
   let otherCurrent = 0;
   let otherTotal = 0;
-  let weightedSum = 0;
-  let weightTotal = 0;
+  let completionSum = 0;
 
   for (const h of habits) {
-    const w = hasPositiveGoal(h) ? GOAL_WEIGHT : OTHER_WEIGHT;
-    weightedSum += w * habitCompletionFraction(h);
-    weightTotal += w;
+    completionSum += habitCompletionFraction(h);
 
     if (hasPositiveGoal(h)) {
       goalsTotal += h.details.goal;
       goalsCurrent += Math.min(h.details.total ?? 0, h.details.goal);
     } else {
       otherTotal += 1;
-      if (otherHabitCompleted(h)) otherCurrent += 1;
+      if (isHabitComplete(h)) otherCurrent += 1;
     }
   }
 
-  const weightedCompletion = weightTotal > 0 ? weightedSum / weightTotal : 0;
-  const totalCurrent = Math.round(PROGRESS_TOTAL_SCALE * weightedCompletion);
+  const totalCurrent = Math.round(PROGRESS_TOTAL_SCALE * (completionSum / n));
 
   return {
     goals: { done: goalsCurrent, total: goalsTotal },

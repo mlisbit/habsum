@@ -5,7 +5,6 @@ import { useTodayDateKey } from '~/utils/use-today-date-key';
 import { Button } from '@habsum/ui/components/Button';
 import { DayNav } from '~/components/DayNav';
 import { Hoverable } from '@habsum/ui/components/Hoverable';
-import { Icon } from '@habsum/ui/components/Icon';
 import { ProgressBar } from '@habsum/ui/components/ProgressBar';
 import { Text as GhostText } from '@habsum/ui/components/ghosts/Text';
 import type { HabitsPageProgress } from '@habsum/types/api-responses/habits-get';
@@ -26,13 +25,14 @@ function useTimeLeftInDay(dateKey: string, tzOffsetMinutes: number): string {
 function formatTimeLeftInDay(dateKey: string, tzOffsetMinutes: number): string {
   const start = fromDateKey(dateKey, tzOffsetMinutes);
   const endExclusive = new Date(start.getTime() + 24 * 60 * 60 * 1000);
-  const endOfDay = new Date(endExclusive.getTime() - 1);
-  const now = Date.now();
-  if (now > endOfDay.getTime()) return '0h 0m';
-  const ms = endOfDay.getTime() - now;
-  const hours = Math.floor(ms / 3_600_000);
-  const minutes = Math.floor((ms % 3_600_000) / 60_000);
-  return `${hours}h ${minutes}m`;
+  const remainingMs = endExclusive.getTime() - Date.now();
+  if (remainingMs <= 0) return '0 hours';
+  const roundedHours = Math.round(remainingMs / 1_800_000) / 2;
+  if (roundedHours === 0) return 'less than half an hour';
+  if (roundedHours === 0.5) return 'half an hour';
+  const hours = Math.floor(roundedHours);
+  if (Number.isInteger(roundedHours)) return `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+  return `${hours} and a half hours`;
 }
 
 function renderCopyTemplate(template: string, variables: Record<string, string>): string {
@@ -153,11 +153,6 @@ export function TopNav({
             {isLoading ? (
               <p className="top-nav__progress-caption text-b-s text-light">
                 <GhostText mimic="text-b-s" width="8rem" />
-              </p>
-            ) : progress.isComplete && progress.caption ? (
-              <p className="top-nav__progress-caption top-nav__progress-caption--celebrate text-b-s text-light">
-                <Icon name="party" size="medium" className="top-nav__progress-party" />
-                <span>{progress.caption}</span>
               </p>
             ) : progress.caption ? (
               <p className="top-nav__progress-caption text-b-s text-light">{progress.caption}</p>

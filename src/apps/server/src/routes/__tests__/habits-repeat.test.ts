@@ -102,9 +102,9 @@ describe('GET /users/:user/habits repeat config', () => {
       subheader: '{{timeLeftInDay}} until end of day',
       progress: {
         percent: 0,
-        caption: '0% of goals completed · 1 other habit remaining',
+        caption: 'No progress, yet',
         isComplete: false,
-        ariaLabel: '0% weighted average habit completion for the day',
+        ariaLabel: '0% average habit completion for the day',
       },
     });
 
@@ -132,6 +132,7 @@ describe('GET /users/:user/habits repeat config', () => {
     expect(yesterday.body.page).toMatchObject({
       heading: 'Your day yesterday',
       subheader: 'June 30, 2999',
+      progress: { caption: 'No progress made' },
     });
 
     const withinPastWeek = await request(createApp())

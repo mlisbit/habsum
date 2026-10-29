@@ -3,7 +3,7 @@ import type { HabitsPageProgress, HabitsResponse } from '@habsum/types/api-respo
 import type { Day } from '@habsum/types/common/day';
 import type { Habit } from '@habsum/types/common/habit';
 import { fromDateKey } from '@habsum/utils/date';
-import { getProgress } from '@habsum/utils/habit-helpers';
+import { getProgress, hasHabitData, isHabitComplete } from '@habsum/utils/habit-helpers';
 import { habitDetailUrl } from '@habsum/utils/habit-id';
 import type { UserConfig } from '../types/userConfig.js';
 
@@ -37,7 +37,7 @@ export class HabitResultBuilder {
 
   private habitPageCopy(habits: readonly Habit[]): HabitsResponse['page'] {
     const { viewingDate, familiarName, firstRecordedDate, config, today, clientHour } = this.input;
-    const progress = habitPageProgress(habits);
+    const progress = habitPageProgress(habits, viewingDate === today);
     const showEmptyIntro = config.habits.length === 0;
     const isNewUser = firstRecordedDate === null;
 
@@ -114,7 +114,7 @@ function habitPageDateHeading(date: Day, today: Day): string {
   return monthDay(date);
 }
 
-function habitPageProgress(habits: readonly Habit[]): HabitsPageProgress {
+function habitPageProgress(habits: readonly Habit[], isToday: boolean): HabitsPageProgress {
   const progress = getProgress(habits);
   const { done, total } = progress.total;
   const percent = total > 0 && Number.isFinite(done) ? Math.round((done / total) * 100) : null;
@@ -128,34 +128,24 @@ function habitPageProgress(habits: readonly Habit[]): HabitsPageProgress {
     };
   }
 
-  const isComplete = percent === 100;
-  if (isComplete) {
+  const completedCount = habits.filter(isHabitComplete).length;
+  const isComplete = completedCount === habits.length;
+  const ariaLabel = `${percent}% average habit completion for the day`;
+  if (!habits.some(hasHabitData)) {
     return {
       percent,
-      caption: 'Completed all goals!',
+      caption: isToday ? 'No progress, yet' : 'No progress made',
       isComplete,
-      ariaLabel: `${percent}% weighted average habit completion for the day`,
+      ariaLabel,
     };
-  }
-
-  const parts: string[] = [];
-  const { goals, other } = progress;
-  const othersFullyLogged = other.total > 0 && other.done === other.total;
-
-  if (goals.total > 0) {
-    const completedPct = Math.round((goals.done / goals.total) * 100);
-    parts.push(`${completedPct}% of goals completed`);
-  }
-
-  if (other.total > 0 && !othersFullyLogged) {
-    const remaining = other.total - other.done;
-    parts.push(`${remaining} other habit${remaining === 1 ? '' : 's'} remaining`);
   }
 
   return {
     percent,
-    caption: parts.length > 0 ? parts.join(' · ') : null,
+    caption: isComplete
+      ? 'All habits completed!'
+      : `${completedCount} of ${habits.length} habit${habits.length === 1 ? '' : 's'} completed`,
     isComplete,
-    ariaLabel: `${percent}% weighted average habit completion for the day`,
+    ariaLabel,
   };
 }

@@ -57,18 +57,6 @@ $back-button-slot: 2.25rem; // matches `.button.button--icon` width
   text-align: right;
 }
 
-.top-nav__progress-caption--celebrate {
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: functions.spacing(1);
-  width: 100%;
-}
-
-.top-nav__progress-party {
-  flex-shrink: 0;
-}
-
 .top-nav__countdown {
   margin: functions.spacing(2) 0 0;
 }

@@ -19,9 +19,10 @@
   left: 0;
   top: 0;
   bottom: 0;
-  width: 0;
+  width: 100%;
   max-width: 100%;
   background: var(--accent-selected);
   border-radius: var(--border-radius-full);
-  transition: width 0.2s ease;
+  transform: translate3d(-100%, 0, 0);
+  transition: transform 0.2s ease;
 }

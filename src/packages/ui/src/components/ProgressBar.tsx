@@ -29,7 +29,11 @@ export function ProgressBar({ value, max, className, 'aria-label': ariaLabel }: 
       aria-valuenow={now}
       aria-label={ariaLabel ?? defaultAria}
     >
-      <div className="progress__fill" style={{ width: `${pct}%` }} aria-hidden />
+      <div
+        className="progress__fill"
+        style={{ transform: `translate3d(${pct - 100}%, 0, 0)` }}
+        aria-hidden
+      />
     </div>
   );
 }
