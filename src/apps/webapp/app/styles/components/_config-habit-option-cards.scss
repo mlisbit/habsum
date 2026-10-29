@@ -1,0 +1,51 @@
+@use 'functions';
+
+.config-habit-option-cards {
+  display: flex;
+  flex-flow: column nowrap;
+  gap: functions.spacing(1);
+  min-inline-size: 0;
+  inline-size: 100%;
+}
+
+.config-habit-option-cards__card {
+  display: flex;
+  align-items: center;
+  gap: functions.spacing(1);
+  inline-size: 100%;
+  min-block-size: 2.75rem;
+  padding: functions.spacing(1, 2);
+  border-radius: var(--border-radius-m);
+  background: var(--background-secondary);
+}
+
+.config-habit-option-cards__card .config-habit-option-cards__label {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+  padding: 0;
+  border: none;
+  border-radius: var(--border-radius-s);
+  background: transparent;
+}
+
+.config-habit-option-cards__sentiment {
+  flex: 0 0 auto;
+  padding: functions.spacing(1);
+  border: 1px solid var(--border-color-faint);
+  border-radius: var(--border-radius-s);
+  background: var(--background-input);
+}
+
+.config-habit-option-cards__sentiment:focus-visible {
+  outline: none;
+  box-shadow: var(--box-shadow-focus);
+}
+
+.config-habit-option-cards__add-input {
+  inline-size: 100%;
+  min-inline-size: 0;
+}
+
+.config-habit-option-cards__add {
+  align-self: flex-end;
+}

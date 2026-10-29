@@ -1,6 +1,6 @@
 import type { DayWithTime } from './day.js';
 import type { ProductEntitlement } from './entitlement.js';
-import type { HabitTheme, SummationOptions } from './habit.js';
+import type { HabitTheme, SingleSelectOption, SummationOptions } from './habit.js';
 
 declare const yamlStringBrand: unique symbol;
 
@@ -78,7 +78,7 @@ export type UserConfigJsonHabit = {
   repeat?: string[];
   /** Text-habit weekdays that start a fresh note window. Omitted means every day. */
   reset?: string[];
-  options?: string[];
+  options?: SingleSelectOption[];
   theme?: HabitTheme;
   summationOptions?: SummationOptions;
   data_visualization?: {
@@ -87,7 +87,6 @@ export type UserConfigJsonHabit = {
   };
   insights?: Array<'average' | 'current_streak' | 'longest_streak'>;
   streak_options?: {
-    options?: string[];
     frequency: string;
   };
 };
@@ -125,10 +124,9 @@ export type ConfigHabitDraft = {
   repeat: string[];
   reset: string[];
   quickAddItems: string[];
-  optionsText: string;
+  options: SingleSelectOption[];
   theme: HabitTheme | '';
   averageEnabled: boolean;
-  streakOptionsText: string;
   streakFrequencyPerWeek: string;
   streakShowCurrent: boolean;
   streakShowLongest: boolean;

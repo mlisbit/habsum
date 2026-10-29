@@ -18,7 +18,12 @@ describe('HistoryPagePresenter', () => {
           type: 'single_select',
           repeat: [...HABIT_REPEAT_DAYS],
           insights: [],
-          settings: { options: ['good', 'bad'] },
+          settings: {
+            options: [
+              { label: 'good', sentiment: 'positive' },
+              { label: 'bad', sentiment: 'negative' },
+            ],
+          },
         },
         {
           name: 'push ups',

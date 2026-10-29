@@ -47,7 +47,7 @@ export class SingleSelectHabitPresenter extends HabitPresenter<
       name: this.definition.name,
       type: 'single_select',
       details: {
-        options: this.definition.settings.options,
+        options: this.definition.settings.options.map((option) => option.label),
         ...(this.definition.settings.theme ? { theme: this.definition.settings.theme } : {}),
         value: this.habitData.values.find((row) => row.date === viewingDate)?.value ?? null,
       },
@@ -56,18 +56,21 @@ export class SingleSelectHabitPresenter extends HabitPresenter<
   }
 
   private getWidgets(): HabitWidget[] {
+    const eligibleOptions = this.definition.settings.options
+      .filter((option) => option.sentiment === 'positive')
+      .map((option) => option.label);
     const includeHeatmap = this.definition.data_visualization?.heatmap !== undefined;
     const includeCurrentStreak = this.definition.insights.includes('current_streak');
     const includeLongestStreak = this.definition.insights.includes('longest_streak');
     const heatmap = includeHeatmap
       ? new SingleSelectHeatmapBuilder(this.habitData, this.definition, this.context).build({
-          eligibleOptions: this.definition.streak_options?.options ?? [],
+          eligibleOptions,
         })
       : null;
     const streakInsights =
       (includeCurrentStreak || includeLongestStreak) && this.definition.streak_options
         ? new SingleSelectInsightsBuilder(this.habitData, this.definition, this.context).build({
-            eligibleOptions: this.definition.streak_options.options,
+            eligibleOptions,
             frequency: this.definition.streak_options.frequency,
           })
         : null;

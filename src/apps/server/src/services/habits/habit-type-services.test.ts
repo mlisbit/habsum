@@ -34,7 +34,10 @@ describe('habit type services', () => {
       repeat: ['thursday'],
       insights: [],
       settings: {
-        options: ['good', 'bad'],
+        options: [
+          { label: 'good', sentiment: 'positive' },
+          { label: 'bad', sentiment: 'negative' },
+        ],
       },
     };
     const service = new SingleSelectHabitService(definition, repository);

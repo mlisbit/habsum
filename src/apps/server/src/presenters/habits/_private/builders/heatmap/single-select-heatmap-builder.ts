@@ -19,8 +19,8 @@ export class SingleSelectHeatmapBuilder extends HeatmapBuilder<
   }
 
   protected getFillValue(value: string, eligible: ReadonlySet<string>): number {
-    const position = this.userRowConfig.settings.options.indexOf(value) + 1;
-    if (eligible.size === 0) return position > 0 ? position : 1;
+    const position =
+      this.userRowConfig.settings.options.findIndex((option) => option.label === value) + 1;
     if (!eligible.has(value)) return position > 0 ? -position : -1;
 
     const eligiblePosition = [...eligible].indexOf(value);

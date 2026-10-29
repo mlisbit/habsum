@@ -82,8 +82,10 @@ export default async function demoData(
               .run(user, habit.name, day, amount, user, habit.name, day);
             inserted += result.changes;
           } else if (habit.type === 'single_select') {
-            const options = habit.settings.options;
-            const eligible = habit.streak_options?.options ?? [];
+            const options = habit.settings.options.map((option) => option.label);
+            const eligible = habit.settings.options
+              .filter((option) => option.sentiment === 'positive')
+              .map((option) => option.label);
             const choices = eligible.length && random() < 0.75 ? eligible : options;
             if (!choices.length) continue;
             const value = choices[Math.floor(random() * choices.length)]!;

@@ -23,7 +23,12 @@ function getSingleSelectInsights({
     type: 'single_select',
     repeat: [],
     insights: [],
-    settings: { options: ['good', 'bad', 'none'] },
+    settings: {
+      options: ['good', 'bad', 'none'].map((label) => ({
+        label,
+        sentiment: label === 'good' ? 'positive' : 'negative',
+      })),
+    },
   };
   const hydratedHabit: Extract<HydratedHabitData, { type: 'single_select' }> = {
     name: definition.name,

@@ -34,7 +34,7 @@ export class SingleSelectHabitService implements HabitTypeService<HabitRowSingle
       throw new ServiceError('bad_request', 'value is required');
     }
     const options = this.habit.settings.options;
-    if (options.length > 0 && !options.includes(body.value)) {
+    if (options.length > 0 && !options.some((option) => option.label === body.value)) {
       throw new ServiceError('bad_request', 'invalid option');
     }
 

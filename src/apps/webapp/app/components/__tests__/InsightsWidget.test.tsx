@@ -9,28 +9,69 @@ const habit: UserConfigJsonHabit = {
   name: 'Read',
   type: 'single_select',
   goal: null,
-  options: ['yes', 'no'],
+  options: [
+    { label: 'yes', sentiment: 'positive' },
+    { label: 'no', sentiment: 'negative' },
+  ],
   insights: ['current_streak'],
-  streak_options: { options: ['yes'], frequency: '7d' },
+  streak_options: { frequency: '7d' },
 };
 
 function renderConfigModal(initialDraft: ConfigHabitDraft = draftFromHabit(habit)) {
+  const onDoneClick = vi.fn();
   render(
     <ModalProvider>
       <ConfigModalRenderer
         habit={habit}
         initialDraft={initialDraft}
-        onDoneClick={vi.fn()}
+        onDoneClick={onDoneClick}
         onRemoveClick={vi.fn()}
         onCancel={vi.fn()}
       />
     </ModalProvider>,
   );
+  return onDoneClick;
 }
 
 afterEach(cleanup);
 
 describe('habit insights settings', () => {
+  it('edits sentiment on each option card and preserves it when renamed', () => {
+    const onDoneClick = renderConfigModal();
+    fireEvent.change(screen.getByRole('combobox', { name: 'Sentiment for yes' }), {
+      target: { value: 'negative' },
+    });
+    fireEvent.click(screen.getByText('yes', { selector: '.pill__label' }));
+    const input = screen.getByDisplayValue('yes');
+    fireEvent.change(input, { target: { value: 'Read' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    fireEvent.click(screen.getByRole('button', { name: 'Done' }));
+    expect(onDoneClick).toHaveBeenCalledWith(
+      'Read',
+      expect.objectContaining({
+        options: [
+          { label: 'Read', sentiment: 'negative' },
+          { label: 'no', sentiment: 'negative' },
+        ],
+      }),
+    );
+  });
+
+  it('defaults newly added options to positive', () => {
+    const onDoneClick = renderConfigModal();
+    fireEvent.click(screen.getByRole('button', { name: 'Add' }));
+    const input = screen.getByPlaceholderText('New option');
+    fireEvent.change(input, { target: { value: 'A bit' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    fireEvent.click(screen.getByRole('button', { name: 'Done' }));
+    expect(onDoneClick).toHaveBeenCalledWith(
+      'Read',
+      expect.objectContaining({
+        options: expect.arrayContaining([{ label: 'A bit', sentiment: 'positive' }]),
+      }),
+    );
+  });
+
   it('shows the three insight options and streak-options CTA', () => {
     renderConfigModal();
 
@@ -51,7 +92,8 @@ describe('habit insights settings', () => {
 
     expect(screen.getByRole('heading', { name: 'Streak options for "Read"' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Back' })).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'yes' })).toBeTruthy();
+    expect(screen.queryByRole('combobox', { name: 'Sentiment for yes' })).toBeNull();
+    expect(screen.queryByText('Values that count toward maintaining a streak.')).toBeNull();
     expect(screen.getByRole('combobox', { name: 'Frequency' })).toBeTruthy();
 
     fireEvent.click(screen.getByRole('button', { name: 'Back' }));

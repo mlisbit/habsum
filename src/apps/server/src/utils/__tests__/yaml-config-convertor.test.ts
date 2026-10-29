@@ -18,12 +18,15 @@ const config: UserConfig = {
       type: 'single_select',
       repeat: ['monday', 'wednesday'],
       settings: {
-        options: ['yes', 'no'],
+        options: [
+          { label: 'yes', sentiment: 'positive' },
+          { label: 'no', sentiment: 'negative' },
+        ],
         theme: 'checkbox',
       },
       data_visualization: { heatmap: {} },
       insights: ['current_streak', 'longest_streak'],
-      streak_options: { options: ['yes'], frequency: '3d' },
+      streak_options: { frequency: '3d' },
     },
     {
       name: 'push ups',
@@ -35,7 +38,7 @@ const config: UserConfig = {
       },
       data_visualization: { heatmap: {}, bargraph: { period: '2w' } },
       insights: ['current_streak', 'average'],
-      streak_options: { options: ['100'], frequency: '5d' },
+      streak_options: { frequency: '5d' },
     },
   ],
 };
@@ -72,7 +75,7 @@ describe('YAMLConfigConvertor', () => {
           repeat: ['monday'],
           data_visualization: { heatmap: {} },
           insights: ['current_streak'],
-          streak_options: { options: [], frequency: '7d' },
+          streak_options: { frequency: '7d' },
           settings: {
             reset: ['saturday'],
           },

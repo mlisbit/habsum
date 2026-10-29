@@ -1,5 +1,10 @@
 // User habit config shapes shared by config parsing, services, repositories, and presentation.
-import type { HabitTheme, HabitType, SummationOptions } from '@habsum/types/common/habit';
+import type {
+  HabitTheme,
+  HabitType,
+  SingleSelectOption,
+  SummationOptions,
+} from '@habsum/types/common/habit';
 
 export type { HabitType };
 
@@ -12,7 +17,7 @@ export type SummationHabitSettings = {
 };
 
 export type SingleSelectHabitSettings = {
-  options: string[];
+  options: SingleSelectOption[];
   theme?: HabitTheme;
 };
 
@@ -39,8 +44,6 @@ type SharedHabitDef = {
   insights: HabitInsight[];
   /** Options shared by current- and longest-streak insights. */
   streak_options?: {
-    /** Single-select values that count toward the streak. Summations use the goal. */
-    options: string[];
     /** Target streak days per week, e.g. `3d`. */
     frequency: string;
   };
@@ -66,7 +69,7 @@ export type UserConfig = {
 export type RawHabitConfig = {
   type?: HabitType;
   goal?: number;
-  options?: string[];
+  options?: unknown;
   theme?: unknown;
   repeat?: unknown;
   reset?: unknown;

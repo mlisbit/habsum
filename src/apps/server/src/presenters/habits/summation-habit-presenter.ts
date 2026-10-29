@@ -101,7 +101,8 @@ export class SummationHabitPresenter extends HabitPresenter<
     const streakInsights =
       (includeCurrentStreak || includeLongestStreak) && this.definition.streak_options
         ? new SummationInsightsBuilder(this.habitData, this.definition, this.context).build({
-            eligibleOptions: this.definition.streak_options.options,
+            eligibleOptions:
+              this.definition.settings.goal == null ? [] : [String(this.definition.settings.goal)],
             frequency: this.definition.streak_options.frequency,
           })
         : null;

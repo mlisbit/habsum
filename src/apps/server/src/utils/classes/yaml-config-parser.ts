@@ -4,6 +4,7 @@ import {
   parseSummationOptionsFromRaw,
   type HabitTheme,
   type HabitType,
+  type SingleSelectOption,
 } from '@habsum/types/common/habit';
 import { DEFAULT_STREAK_FREQUENCY, formatStreakFrequency } from '@habsum/types/common/streak';
 import yaml from 'js-yaml';
@@ -143,6 +144,59 @@ function normalizeStreakFrequency(raw: unknown, habitName: string, legacy = fals
   return formatStreakFrequency(days);
 }
 
+function getSingleSelectOptions(rawHabit: RawHabitConfig, habitName: string): SingleSelectOption[] {
+  const raw = rawHabit.options;
+  if (raw == null) return [];
+  if (!Array.isArray(raw)) {
+    throw new YAMLConfigValidationError(`habit "${habitName}" options must be a yaml list`);
+  }
+  const labels = new Set<string>();
+  const options = raw.map((item): SingleSelectOption => {
+    const label = typeof item === 'string' ? item : isRecord(item) ? item.label : undefined;
+    if (typeof label !== 'string' || label.trim() === '') {
+      throw new YAMLConfigValidationError(`habit "${habitName}" options require a non-empty label`);
+    }
+    if (labels.has(label)) {
+      throw new YAMLConfigValidationError(`habit "${habitName}" has duplicate option "${label}"`);
+    }
+    labels.add(label);
+    const rawSentiment = isRecord(item) ? (item.sentiment ?? 'positive') : 'positive';
+    const sentiment =
+      rawSentiment === 'good' ? 'positive' : rawSentiment === 'bad' ? 'negative' : rawSentiment;
+    if (sentiment !== 'positive' && sentiment !== 'negative') {
+      throw new YAMLConfigValidationError(
+        `habit "${habitName}" option "${label}" sentiment must be positive or negative`,
+      );
+    }
+    return { label, sentiment };
+  });
+  const legacyStreak = isRecord(rawHabit.streak_options)
+    ? rawHabit.streak_options
+    : isRecord(rawHabit.streak)
+      ? rawHabit.streak
+      : undefined;
+  if (legacyStreak && Object.hasOwn(legacyStreak, 'options')) {
+    if (raw.some((item) => isRecord(item) && Object.hasOwn(item, 'sentiment'))) {
+      throw new YAMLConfigValidationError(
+        `habit "${habitName}" cannot mix option sentiments with legacy streak options`,
+      );
+    }
+    const eligible = new Set(
+      normalizeStreakOptionsList(
+        legacyStreak.options,
+        habitName,
+        [...labels],
+        rawHabit.streak_options != null ? 'streak_options.options' : 'streak.options',
+      ),
+    );
+    return options.map((option) => ({
+      ...option,
+      sentiment: eligible.has(option.label) ? 'positive' : 'negative',
+    }));
+  }
+  return options;
+}
+
 function normalizeDataVisualization(
   raw: unknown,
   habitName: string,
@@ -222,17 +276,12 @@ function normalizeStreakOptions(
       `habit "${habitName}" streak_options must be a yaml mapping`,
     );
   }
-  if (mainOptions.length === 0) {
+  if (type === 'summation' && mainOptions.length === 0) {
     throw new YAMLConfigValidationError(
       `habit "${habitName}" streak_options requires a configured goal`,
     );
   }
-  const options =
-    type === 'summation'
-      ? [...mainOptions]
-      : normalizeStreakOptionsList(raw.options, habitName, mainOptions, 'streak_options.options');
   return {
-    options,
     frequency: normalizeStreakFrequency(raw.frequency, habitName),
   };
 }
@@ -292,17 +341,7 @@ function normalizeLegacyPresentation(
     if (mainOptions.length === 0) {
       throw new YAMLConfigValidationError(`habit "${habitName}" streak requires a configured goal`);
     }
-    const options =
-      type === 'summation'
-        ? [...mainOptions]
-        : normalizeStreakOptionsList(
-            rawHabit.streak.options,
-            habitName,
-            mainOptions,
-            'streak.options',
-          );
     streakOptions = {
-      options,
       frequency: normalizeStreakFrequency(rawHabit.streak.frequency, habitName, true),
     };
     if (rawHabit.streak.show_current != null && typeof rawHabit.streak.show_current !== 'boolean') {
@@ -423,16 +462,13 @@ export default class YAMLConfigParser {
         }
         const rawHabit = def as RawHabitConfig;
         const type = normalizeHabitType(rawHabit.type, name);
-        const opts =
-          type === 'single_select' && Array.isArray(rawHabit.options)
-            ? rawHabit.options.filter((x) => typeof x === 'string')
-            : undefined;
+        const opts = type === 'single_select' ? getSingleSelectOptions(rawHabit, name) : [];
         const presentation = normalizePresentation(
           rawHabit,
           name,
           type,
           type === 'single_select'
-            ? (opts ?? [])
+            ? opts.map((option) => option.label)
             : rawHabit.goal != null
               ? [String(rawHabit.goal)]
               : [],
@@ -448,7 +484,7 @@ export default class YAMLConfigParser {
             ...shared,
             type,
             settings: {
-              options: opts ?? [],
+              options: opts,
               ...(theme ? { theme } : {}),
             },
           };

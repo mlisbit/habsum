@@ -48,7 +48,7 @@ describe('GET /users/:user/config', () => {
           type: 'single_select',
           goal: null,
           repeat: ['monday', 'wednesday'],
-          options: ['good', 'okay', 'bad'],
+          options: ['good', 'okay', 'bad'].map((label) => ({ label, sentiment: 'positive' })),
         },
         {
           name: 'push ups',

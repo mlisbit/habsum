@@ -1,13 +1,14 @@
 import yaml from 'js-yaml';
-import { isHabitTheme, type HabitTheme, type HabitType } from '@habsum/types/common/habit';
-import type {
-  UserConfigDeletion,
-  UserConfigJson,
-  UserConfigJsonHabit,
-  UserConfigMigration,
-  YAMLString,
+import type { HabitType } from '@habsum/types/common/habit';
+import {
+  yamlString,
+  type UserConfigDeletion,
+  type UserConfigJson,
+  type UserConfigJsonHabit,
+  type UserConfigMigration,
+  type YAMLString,
 } from '@habsum/types/common/misc';
-import { HABIT_REPEAT_DAYS, type HabitDef, type UserConfig } from '../types/userConfig.js';
+import type { HabitDef, UserConfig } from '../types/userConfig.js';
 import YAMLConfigParser from './classes/yaml-config-parser.js';
 
 type RawHabitEntry = {
@@ -18,14 +19,6 @@ type RawHabitEntry = {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value != null && typeof value === 'object' && !Array.isArray(value);
-}
-
-function getHabitTheme(raw: unknown, habitName: string): HabitTheme | undefined {
-  if (raw === undefined) return undefined;
-  if (!isHabitTheme(raw)) {
-    throw new Error(`habit "${habitName}" theme must be "checkbox"`);
-  }
-  return raw;
 }
 
 function parseConfigRoot(text: YAMLString): Record<string, unknown> {
@@ -61,7 +54,13 @@ function parseConfigHabitMigrationEntries(text: YAMLString): RawHabitEntry[] {
     const type = parseHabitType(def);
     const optionLabels =
       type === 'single_select' && Array.isArray(def.options)
-        ? def.options.filter((x): x is string => typeof x === 'string')
+        ? def.options.flatMap((option) =>
+            typeof option === 'string'
+              ? [option]
+              : isRecord(option) && typeof option.label === 'string'
+                ? [option.label]
+                : [],
+          )
         : [];
     return { name, type, optionLabels };
   });
@@ -124,67 +123,26 @@ export function getUserConfigJsonFromText(user: string, text: YAMLString): UserC
 }
 
 export function getUserConfigFromJson(config: UserConfigJson): UserConfig {
-  return {
-    user: config.user,
-    includeAbsentDaysInAverage: config.includeAbsentDaysInAverage,
-    habits: config.habits.map((habit): HabitDef => {
-      const dataVisualization = habit.data_visualization
-        ? {
-            ...(habit.data_visualization.heatmap !== undefined
-              ? { heatmap: habit.data_visualization.heatmap }
-              : {}),
-            ...(habit.data_visualization.bargraph
-              ? { bargraph: habit.data_visualization.bargraph }
-              : {}),
-          }
-        : undefined;
-      const shared = {
-        name: habit.name,
-        repeat: habit.repeat ?? [...HABIT_REPEAT_DAYS],
-        data_visualization: dataVisualization,
-        insights: habit.insights ?? [],
-        streak_options: habit.streak_options
-          ? {
-              options: habit.streak_options.options ?? [],
-              frequency: habit.streak_options.frequency,
-            }
-          : undefined,
-      };
-
-      if (habit.type === 'single_select') {
-        const theme = getHabitTheme(habit.theme, habit.name);
-        return {
-          ...shared,
-          type: habit.type,
-          settings: {
-            options: habit.options ?? [],
-            ...(theme ? { theme } : {}),
-          },
-        };
-      }
-      if (habit.type === 'text') {
-        return {
-          ...shared,
-          data_visualization: undefined,
-          insights: [],
-          streak_options: undefined,
-          type: habit.type,
-          settings: {
-            reset: habit.reset ?? [...HABIT_REPEAT_DAYS],
-          },
-        };
-      }
-
-      return {
-        ...shared,
-        type: habit.type,
-        settings: {
-          goal: habit.goal,
-          ...(habit.summationOptions ? { summationOptions: habit.summationOptions } : {}),
+  const habits = Object.fromEntries(
+    config.habits.map((habit) => {
+      const { name, summationOptions, ...definition } = habit;
+      return [
+        name,
+        {
+          ...definition,
+          ...(summationOptions ? { summation_options: summationOptions } : {}),
         },
-      };
+      ];
     }),
-  };
+  );
+  return new YAMLConfigParser(config.user).parse(
+    yamlString(
+      yaml.dump({
+        include_absent_days_in_average: config.includeAbsentDaysInAverage,
+        habits,
+      }),
+    ),
+  );
 }
 
 function parseConfigMigrationEntries(text: YAMLString): RawHabitEntry[] {

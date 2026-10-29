@@ -1,6 +1,6 @@
 import type { ConfigHabitDraft } from '~/api.client';
-import { ConfigHabitOptionsPills } from '../utils/ConfigHabitOptionPills';
-import { formatOptionLines } from '~/utils/configHabitDraft';
+import { ConfigHabitOptionCards } from '../utils/ConfigHabitOptionCards';
+import type { SingleSelectOption } from '@habsum/types/common/habit';
 
 function hasYesNoOptions(options: string[]): boolean {
   return options.length === 2 && options.includes('yes') && options.includes('no');
@@ -10,23 +10,19 @@ type SingleSelectBaseOptionsProps = {
   draft: ConfigHabitDraft;
   habitOptions: string[];
   patch: (partial: Partial<ConfigHabitDraft>) => void;
-  streakOptions: string[];
 };
 
 export function SingleSelectBaseOptions({
   draft,
   habitOptions,
   patch,
-  streakOptions,
 }: SingleSelectBaseOptionsProps) {
   const showCheckboxThemeToggle = hasYesNoOptions(habitOptions);
 
-  const setHabitOptions = (options: string[]) => {
-    const allowed = new Set(options);
+  const setHabitOptions = (options: SingleSelectOption[]) => {
     patch({
-      optionsText: formatOptionLines(options),
-      streakOptionsText: formatOptionLines(streakOptions.filter((opt) => allowed.has(opt))),
-      ...(hasYesNoOptions(options) ? {} : { theme: '' }),
+      options,
+      ...(hasYesNoOptions(options.map((option) => option.label)) ? {} : { theme: '' }),
     });
   };
 
@@ -35,12 +31,13 @@ export function SingleSelectBaseOptions({
       <div className="config-habit-modal__label">
         <label className="text-b-m">Values</label>
         <p className="config-habit-modal__field-info text-b-s text-light">
-          Values that can be selected when recording this habit.
+          Values you can select when recording this habit. “Positive” and “Negative” determine
+          streak eligibility and how values are colored.
         </p>
       </div>
       <div className="config-habit-modal__control">
         <div className="config-habit-modal__field-control-stack">
-          <ConfigHabitOptionsPills options={habitOptions} onChange={setHabitOptions} />
+          <ConfigHabitOptionCards options={draft.options} onChange={setHabitOptions} />
           {showCheckboxThemeToggle ? (
             <div className="config-habit-modal__checkbox-field">
               <input

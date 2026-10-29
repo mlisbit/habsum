@@ -68,7 +68,7 @@ function parseConfigDeletions(raw: unknown): string[] | null {
 function optionDeletionForPath(path: string, previousHabits: HabitDef[]): ConfigDeletion | null {
   for (const habit of previousHabits) {
     if (habit.type !== 'single_select') continue;
-    for (const option of habit.settings.options) {
+    for (const { label: option } of habit.settings.options) {
       if (`${habit.name}.${option}` === path) {
         return { habit: habit.name, option };
       }
@@ -103,9 +103,9 @@ function optionMigrationForHabitPair(
 ): { habit: string; fromOption: string; toOption: string } | null {
   if (previousHabit.type !== 'single_select' || nextHabit.type !== 'single_select') return null;
 
-  for (const fromOption of previousHabit.settings.options) {
+  for (const { label: fromOption } of previousHabit.settings.options) {
     if (`${previousHabit.name}.${fromOption}` !== fromPath) continue;
-    for (const toOption of nextHabit.settings.options) {
+    for (const { label: toOption } of nextHabit.settings.options) {
       if (`${nextHabit.name}.${toOption}` === toPath) {
         return { habit: nextHabit.name, fromOption, toOption };
       }

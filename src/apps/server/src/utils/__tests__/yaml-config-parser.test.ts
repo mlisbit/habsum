@@ -8,6 +8,122 @@ function fixture(name: string): YAMLString {
 }
 
 describe('YAMLConfigParser', () => {
+  it('reads previously saved good/bad sentiments as positive/negative', () => {
+    const config = new YAMLConfigParser('reader').parse(
+      yamlString(`habits:
+  Reading:
+    type: single_select
+    options:
+      - {label: None, sentiment: bad}
+      - {label: A bit, sentiment: good}
+`),
+    );
+    expect(config.habits[0]?.settings).toEqual({
+      options: [
+        { label: 'None', sentiment: 'negative' },
+        { label: 'A bit', sentiment: 'positive' },
+      ],
+    });
+  });
+
+  it('reads option sentiments and frequency without a separate streak option list', () => {
+    const config = new YAMLConfigParser('reader').parse(
+      yamlString(`habits:
+  Reading:
+    type: single_select
+    options:
+      - label: None
+        sentiment: negative
+      - label: A bit
+        sentiment: positive
+      - label: A lot
+    insights: [current_streak]
+    streak_options:
+      frequency: 7d
+`),
+    );
+    expect(config.habits[0]).toMatchObject({
+      settings: {
+        options: [
+          { label: 'None', sentiment: 'negative' },
+          { label: 'A bit', sentiment: 'positive' },
+          { label: 'A lot', sentiment: 'positive' },
+        ],
+      },
+      streak_options: { frequency: '7d' },
+    });
+    expect(config.habits[0]?.streak_options).not.toHaveProperty('options');
+  });
+
+  it('defaults old string options to positive when no explicit streak list exists', () => {
+    const config = new YAMLConfigParser('reader').parse(
+      yamlString(`habits:
+  Reading:
+    type: single_select
+    options: [None, A bit, A lot]
+`),
+    );
+    expect(config.habits[0]?.settings).toEqual({
+      options: [
+        { label: 'None', sentiment: 'positive' },
+        { label: 'A bit', sentiment: 'positive' },
+        { label: 'A lot', sentiment: 'positive' },
+      ],
+    });
+  });
+
+  it('preserves selections from the previous streak_options schema', () => {
+    const config = new YAMLConfigParser('reader').parse(
+      yamlString(`habits:
+  Reading:
+    type: single_select
+    options: [None, A bit, A lot]
+    insights: [current_streak]
+    streak_options:
+      options: [A bit, A lot]
+      frequency: 7d
+`),
+    );
+    expect(config.habits[0]?.settings).toEqual({
+      options: [
+        { label: 'None', sentiment: 'negative' },
+        { label: 'A bit', sentiment: 'positive' },
+        { label: 'A lot', sentiment: 'positive' },
+      ],
+    });
+  });
+
+  it.each([
+    ['[{label: Read, sentiment: neutral}]', 'sentiment must be positive or negative'],
+    ['[{label: ""}]', 'require a non-empty label'],
+    ['[Read, Read]', 'duplicate option'],
+  ])('rejects invalid options: %s', (options, message) => {
+    expect(() =>
+      new YAMLConfigParser('reader').parse(
+        yamlString(`habits:
+  Reading:
+    type: single_select
+    options: ${options}
+`),
+      ),
+    ).toThrow(message);
+  });
+
+  it('rejects conflicting legacy eligibility and explicit sentiments', () => {
+    expect(() =>
+      new YAMLConfigParser('reader').parse(
+        yamlString(`habits:
+  Reading:
+    type: single_select
+    options: [{label: Read, sentiment: negative}]
+    streak_options:
+      options: [Read]
+      frequency: 7d
+`),
+      ),
+    ).toThrow('cannot mix option sentiments with legacy streak options');
+  });
+
   it('parses legacy and new yaml config into the same user config model', () => {
     const parser = new YAMLConfigParser('yaml-parser-user');
     const legacyConfig = parser.parse(fixture('legacy-user-config.yaml'));
@@ -23,12 +139,15 @@ describe('YAMLConfigParser', () => {
           type: 'single_select',
           repeat: ['monday', 'wednesday'],
           settings: {
-            options: ['yes', 'no'],
+            options: [
+              { label: 'yes', sentiment: 'positive' },
+              { label: 'no', sentiment: 'negative' },
+            ],
             theme: 'checkbox',
           },
           data_visualization: { heatmap: {} },
           insights: ['current_streak', 'longest_streak'],
-          streak_options: { options: ['yes'], frequency: '3d' },
+          streak_options: { frequency: '3d' },
         },
         {
           name: 'push ups',
@@ -39,7 +158,7 @@ describe('YAMLConfigParser', () => {
           },
           data_visualization: { bargraph: { period: '2w' }, heatmap: {} },
           insights: ['current_streak', 'average'],
-          streak_options: { options: ['100'], frequency: '5d' },
+          streak_options: { frequency: '5d' },
         },
       ],
     });
@@ -84,7 +203,7 @@ describe('YAMLConfigParser', () => {
     expect(config.habits[0]).toMatchObject({
       data_visualization: { bargraph: { period: '3w' } },
       insights: ['longest_streak', 'average'],
-      streak_options: { options: ['100'], frequency: '7d' },
+      streak_options: { frequency: '7d' },
     });
   });
 

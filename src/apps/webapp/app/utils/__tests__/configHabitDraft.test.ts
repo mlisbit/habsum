@@ -8,7 +8,10 @@ describe('single-select data visualization config', () => {
       name: 'Read',
       type: 'single_select',
       goal: null,
-      options: ['yes', 'no'],
+      options: [
+        { label: 'yes', sentiment: 'positive' },
+        { label: 'no', sentiment: 'negative' },
+      ],
       data_visualization: { heatmap: {} },
     };
     const config: UserConfigJson = {
@@ -91,7 +94,10 @@ describe('single-select habit theme config', () => {
       name: 'Read',
       type: 'single_select',
       goal: null,
-      options: ['yes', 'no'],
+      options: [
+        { label: 'yes', sentiment: 'positive' },
+        { label: 'no', sentiment: 'negative' },
+      ],
       theme: 'checkbox',
     };
     const config: UserConfigJson = {

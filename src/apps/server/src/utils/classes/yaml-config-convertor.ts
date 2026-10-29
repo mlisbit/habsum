@@ -67,7 +67,6 @@ function habitToYamlDef(habit: HabitDef): Record<string, unknown> {
   }
   if (habit.type !== 'text' && habit.streak_options) {
     def.streak_options = {
-      ...(habit.type === 'single_select' ? { options: habit.streak_options.options } : {}),
       frequency: habit.streak_options.frequency,
     };
   }
@@ -78,11 +77,6 @@ function dumpHabitDef(def: Record<string, unknown>): string {
   const lines: string[] = [];
 
   for (const [key, value] of Object.entries(def)) {
-    if (key === 'options' && Array.isArray(value) && value.every((x) => typeof x === 'string')) {
-      lines.push(`options: ${formatStringListInline(value)}`);
-      continue;
-    }
-
     if (key === 'summation_options') {
       const inline = formatSummationOptionsInline(value);
       if (inline) {

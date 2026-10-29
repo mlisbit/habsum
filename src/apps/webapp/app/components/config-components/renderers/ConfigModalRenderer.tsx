@@ -10,7 +10,7 @@ import { SummationBaseOptions } from './_private/base-options/SummationBaseOptio
 import { ConfigHabitModalActions } from './_private/utils/ConfigHabitModalActions';
 import { DataVisualizationWidget } from './_private/widgets/DataVisualizationWidget';
 import { InsightsWidget, StreakOptionsFields } from './_private/widgets/InsightsWidget';
-import { HABIT_REPEAT_DAYS, isHabitDraftDirty, parseOptionLines } from '~/utils/configHabitDraft';
+import { HABIT_REPEAT_DAYS, isHabitDraftDirty } from '~/utils/configHabitDraft';
 
 type ConfigModalRendererProps = {
   habit: UserConfigJsonHabit;
@@ -110,8 +110,7 @@ export function ConfigModalRenderer({
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [activeView, setActiveView] = useState<'habit' | 'streak-options'>('habit');
-  const habitOptions = parseOptionLines(draft.optionsText);
-  const streakOptions = parseOptionLines(draft.streakOptionsText);
+  const habitOptions = draft.options.map((option) => option.label);
   const editingHabitName = draft.name.trim() || habit.name;
 
   const patch = (partial: Partial<ConfigHabitDraft>) => {
@@ -164,12 +163,7 @@ export function ConfigModalRenderer({
     case 'single_select':
       fields = (
         <>
-          <SingleSelectBaseOptions
-            draft={draft}
-            habitOptions={habitOptions}
-            patch={patch}
-            streakOptions={streakOptions}
-          />
+          <SingleSelectBaseOptions draft={draft} habitOptions={habitOptions} patch={patch} />
 
           {repeatField}
 
@@ -179,9 +173,7 @@ export function ConfigModalRenderer({
             <InsightsWidget
               type="single_select"
               draft={draft}
-              habitOptions={habitOptions}
               patch={patch}
-              streakOptions={streakOptions}
               onOpenStreakOptions={() => setActiveView('streak-options')}
             />
           </div>
@@ -230,13 +222,7 @@ export function ConfigModalRenderer({
         </ModalHeader>
         <ModalBody className="config-habit-modal">
           {habit.type === 'single_select' ? (
-            <StreakOptionsFields
-              type="single_select"
-              draft={draft}
-              habitOptions={habitOptions}
-              patch={patch}
-              streakOptions={streakOptions}
-            />
+            <StreakOptionsFields type="single_select" draft={draft} patch={patch} />
           ) : habit.type === 'summation' ? (
             <StreakOptionsFields type="summation" draft={draft} patch={patch} />
           ) : null}

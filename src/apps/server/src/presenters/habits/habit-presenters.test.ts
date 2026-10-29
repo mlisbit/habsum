@@ -9,6 +9,47 @@ import { TextHabitPresenter } from './text-habit-presenter.js';
 const viewingDate = dayFromString('2026-07-23');
 
 describe('habit presenters', () => {
+  it.each([
+    ['positive', '1 day'],
+    ['negative', '0 days'],
+  ] as const)(
+    'uses option sentiment %s for streaks without a streak option list',
+    (sentiment, expected) => {
+      const definition: HabitDef<'single_select'> = {
+        name: 'Reading',
+        type: 'single_select',
+        repeat: [],
+        insights: ['current_streak', 'longest_streak'],
+        streak_options: { frequency: '7d' },
+        data_visualization: { heatmap: {} },
+        settings: { options: [{ label: 'A bit', sentiment }] },
+      };
+      const habit = new SingleSelectHabitPresenter(
+        definition,
+        {
+          name: 'Reading',
+          type: 'single_select',
+          dataStart: viewingDate,
+          dataEnd: viewingDate,
+          values: [{ date: viewingDate, value: 'A bit' }],
+        },
+        { viewingDate, today: viewingDate, includeWidgets: true },
+      ).present();
+      const insights = habit.widgets
+        ?.flatMap((widget) => widget.body)
+        .find((body) => body.kind === 'insights');
+      expect(insights?.insights).toMatchObject([
+        { header: 'Current streak', description: expected },
+        ...(sentiment === 'positive' ? [{ header: 'Longest streak', description: expected }] : []),
+      ]);
+      const graph = habit.widgets
+        ?.flatMap((widget) => widget.body)
+        .find((body) => body.kind === 'streakGraph');
+      const fill = graph?.graph.data.flat().find((datum) => datum.date === viewingDate)?.fill;
+      expect(Math.sign(fill ?? 0)).toBe(sentiment === 'positive' ? 1 : -1);
+    },
+  );
+
   it('presents text for the viewing date without visualization widgets', () => {
     const definition: HabitDef<'text'> = {
       name: 'journal',
@@ -16,7 +57,7 @@ describe('habit presenters', () => {
       repeat: ['thursday'],
       data_visualization: { heatmap: {}, bargraph: { period: '1w' } },
       insights: ['current_streak', 'longest_streak'],
-      streak_options: { options: [], frequency: '7d' },
+      streak_options: { frequency: '7d' },
       settings: {
         reset: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'],
       },
@@ -97,7 +138,10 @@ describe('habit presenters', () => {
       repeat: ['thursday'],
       insights: [],
       settings: {
-        options: ['yes', 'no'],
+        options: [
+          { label: 'yes', sentiment: 'positive' },
+          { label: 'no', sentiment: 'negative' },
+        ],
         theme: 'checkbox',
       },
     };
@@ -132,11 +176,13 @@ describe('habit presenters', () => {
       repeat: [],
       insights: ['current_streak', 'longest_streak'],
       streak_options: {
-        options: ['good'],
         frequency: '7d',
       },
       settings: {
-        options: ['good', 'bad'],
+        options: [
+          { label: 'good', sentiment: 'positive' },
+          { label: 'bad', sentiment: 'negative' },
+        ],
       },
     };
     const habitData: Extract<HydratedHabitData, { type: 'single_select' }> = {
@@ -203,7 +249,10 @@ describe('habit presenters', () => {
       repeat: [],
       insights: [],
       settings: {
-        options: ['good', 'bad'],
+        options: [
+          { label: 'good', sentiment: 'positive' },
+          { label: 'bad', sentiment: 'negative' },
+        ],
       },
     };
     const habitData: Extract<HydratedHabitData, { type: 'single_select' }> = {

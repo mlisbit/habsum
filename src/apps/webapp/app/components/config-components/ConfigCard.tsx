@@ -16,7 +16,7 @@ function habitDetailLines(habit: UserConfigJsonHabit): string[] {
     lines.push(`Goal: ${habit.goal}`);
   }
   if (habit.type === 'single_select' && habit.options?.length) {
-    lines.push(`Options: ${habit.options.join(', ')}`);
+    lines.push(`Options: ${habit.options.map((option) => option.label).join(', ')}`);
   }
   if (habit.data_visualization?.heatmap !== undefined) lines.push('Heatmap enabled');
   if (habit.data_visualization?.bargraph) lines.push('Bar graph enabled');

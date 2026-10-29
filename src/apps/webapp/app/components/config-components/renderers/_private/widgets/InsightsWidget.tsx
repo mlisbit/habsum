@@ -2,8 +2,6 @@
 import { useState } from 'react';
 import { Button } from '@habsum/ui/components/Button';
 import type { ConfigHabitDraft } from '~/api.client';
-import { ConfigHabitStreakOptionsPills } from '../utils/ConfigHabitOptionPills';
-import { formatOptionLines } from '~/utils/configHabitDraft';
 import { classBuilder } from '~/utils/class-builder';
 import { Widget } from './Widget';
 
@@ -15,8 +13,6 @@ type BaseInsightsWidgetProps = {
 
 type SingleSelectInsightsWidgetProps = BaseInsightsWidgetProps & {
   type: 'single_select';
-  habitOptions: string[];
-  streakOptions: string[];
 };
 
 type SummationInsightsWidgetProps = BaseInsightsWidgetProps & {
@@ -33,8 +29,7 @@ function streakDefaults(props: InsightsWidgetProps): Partial<ConfigHabitDraft> {
   if (props.type === 'summation') {
     return props.draft.goal.trim() === '' ? { goal: '1' } : {};
   }
-  if (props.streakOptions.length > 0 || props.habitOptions.length === 0) return {};
-  return { streakOptionsText: formatOptionLines(props.habitOptions.slice(0, 1)) };
+  return {};
 }
 
 export function InsightsWidget(props: InsightsWidgetProps) {
@@ -150,38 +145,8 @@ export function StreakOptionsFields(props: StreakOptionsFieldsProps) {
       ? 'Reach the goal at least this many days each week to continue your streak.'
       : 'Complete this habit at least this many days each week to continue your streak.';
 
-  const setStreakOptions =
-    type === 'single_select'
-      ? (selected: string[]) => {
-          const selectedSet = new Set(selected);
-          patch({
-            streakOptionsText: formatOptionLines(
-              props.habitOptions.filter((option) => selectedSet.has(option)),
-            ),
-          });
-        }
-      : null;
-
   return (
     <div className="widget-config-insights__streak-modal-fields">
-      {type === 'single_select' ? (
-        <div className="config-habit-modal__field config-habit-modal__field--option-pills">
-          <div className="config-habit-modal__label">
-            <span className="text-b-m">Streak</span>
-            <p className="config-habit-modal__field-info text-b-s text-light">
-              Values that count toward maintaining a streak.
-            </p>
-          </div>
-          <div className="config-habit-modal__control">
-            <ConfigHabitStreakOptionsPills
-              options={props.habitOptions}
-              selected={props.streakOptions}
-              onChange={setStreakOptions ?? (() => undefined)}
-            />
-          </div>
-        </div>
-      ) : null}
-
       <div className="config-habit-modal__field">
         <div className="config-habit-modal__label">
           <label htmlFor="habit-streak-frequency" className="text-b-m">

@@ -36,10 +36,9 @@ export function isHabitDraftDirty(initial: ConfigHabitDraft, draft: ConfigHabitD
     !quickAddItemsEqual(initial.repeat, draft.repeat) ||
     !quickAddItemsEqual(initial.reset, draft.reset) ||
     !quickAddItemsEqual(initial.quickAddItems, draft.quickAddItems) ||
-    initial.optionsText !== draft.optionsText ||
+    JSON.stringify(initial.options) !== JSON.stringify(draft.options) ||
     initial.theme !== draft.theme ||
     initial.averageEnabled !== draft.averageEnabled ||
-    initial.streakOptionsText !== draft.streakOptionsText ||
     initial.streakFrequencyPerWeek !== draft.streakFrequencyPerWeek ||
     initial.streakShowCurrent !== draft.streakShowCurrent ||
     initial.streakShowLongest !== draft.streakShowLongest ||
@@ -48,21 +47,6 @@ export function isHabitDraftDirty(initial: ConfigHabitDraft, draft: ConfigHabitD
     initial.historyPeriodAmount !== draft.historyPeriodAmount ||
     initial.historyPeriodUnit !== draft.historyPeriodUnit
   );
-}
-
-function parseLines(text: string): string[] {
-  return text
-    .split('\n')
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0);
-}
-
-export function parseOptionLines(text: string): string[] {
-  return parseLines(text);
-}
-
-export function formatOptionLines(lines: string[]): string {
-  return lines.join('\n');
 }
 
 export function sortQuickAddItems(items: string[]): string[] {
@@ -157,11 +141,10 @@ export function draftFromHabit(habit: UserConfigJsonHabit): ConfigHabitDraft {
         ? (habit.summationOptions?.increments ?? []).map((item) => String(item))
         : [],
     ),
-    optionsText: habit.type === 'single_select' ? (habit.options ?? []).join('\n') : '',
+    options:
+      habit.type === 'single_select' ? (habit.options ?? []).map((option) => ({ ...option })) : [],
     theme: habit.type === 'single_select' ? (habit.theme ?? '') : '',
     averageEnabled,
-    streakOptionsText:
-      habit.type === 'text' ? '' : (habit.streak_options?.options?.join('\n') ?? ''),
     streakFrequencyPerWeek: String(parseStreakFrequencyDays(habit.streak_options?.frequency)),
     streakShowCurrent: habit.type !== 'text' && habit.insights?.includes('current_streak') === true,
     streakShowLongest: habit.type !== 'text' && habit.insights?.includes('longest_streak') === true,
@@ -181,8 +164,8 @@ function draftToHabit(draft: ConfigHabitDraft): UserConfigJsonHabit {
   const repeat = normalizeDraftRepeat(draft.repeat);
 
   if (draft.type === 'single_select') {
-    const options = parseLines(draft.optionsText);
-    if (options.length === 0) {
+    const options = draft.options.map((option) => ({ ...option, label: option.label.trim() }));
+    if (options.length === 0 || options.some((option) => option.label === '')) {
       throw new Error('single select habits need at least one option');
     }
     const habit: UserConfigJsonHabit = {
@@ -194,16 +177,10 @@ function draftToHabit(draft: ConfigHabitDraft): UserConfigJsonHabit {
     if (repeat.length < HABIT_REPEAT_DAYS.length) habit.repeat = repeat;
     if (draft.theme !== '') habit.theme = draft.theme;
     if (draft.streakShowCurrent || draft.streakShowLongest) {
-      const allowed = new Set(options);
-      const streakOptions = parseLines(draft.streakOptionsText).filter((opt) => allowed.has(opt));
-      if (streakOptions.length === 0) {
-        throw new Error('tracking options must list at least one habit option');
-      }
       const frequency = formatStreakFrequency(
         parseOptionalPositiveInt(draft.streakFrequencyPerWeek) ?? 7,
       );
       habit.streak_options = {
-        options: streakOptions,
         frequency,
       };
     }
@@ -340,10 +317,18 @@ export function addHabitToConfig(
             name: habitName,
             type: 'single_select',
             goal: null,
-            options: ['yes', 'no'],
+            options: [
+              { label: 'yes', sentiment: 'positive' },
+              { label: 'no', sentiment: 'positive' },
+            ],
             theme: 'checkbox',
           }
-        : { name: habitName, type: 'single_select', goal: null, options: ['1', '2', '3'] };
+        : {
+            name: habitName,
+            type: 'single_select',
+            goal: null,
+            options: ['1', '2', '3'].map((label) => ({ label, sentiment: 'positive' })),
+          };
   } else if (type === 'text') {
     habit = { name: habitName, type: 'text', goal: null };
   } else {

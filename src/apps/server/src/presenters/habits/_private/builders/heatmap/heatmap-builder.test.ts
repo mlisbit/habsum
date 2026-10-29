@@ -68,7 +68,12 @@ function getTestSingleSelectStreakGraph(
     type: 'single_select',
     repeat: [],
     insights: [],
-    settings: { options: [...selectableValues] },
+    settings: {
+      options: selectableValues.map((label) => ({
+        label,
+        sentiment: streakEligibleOptions.includes(label) ? 'positive' : 'negative',
+      })),
+    },
   };
   const builder = new SingleSelectHeatmapBuilder(hydratedHabit, userRowConfig, {
     viewingDate: viewDate,

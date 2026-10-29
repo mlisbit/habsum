@@ -2,6 +2,13 @@ import type { BarGraphData } from './bar-chart.js';
 import type { StreakGraphData } from './streak.js';
 import type { SummationOptionInput, SummationOptions } from './summation-options.js';
 
+export type OptionSentiment = 'positive' | 'negative';
+
+export type SingleSelectOption = {
+  label: string;
+  sentiment: OptionSentiment;
+};
+
 export type HabitHistory = {
   data: {
     user: {
