@@ -19,3 +19,6 @@ src/packages/eslint/dist
 config/
 
 .env.docker
+
+# Generated during Docker builds.
+/THIRD_PARTY_NOTICES.md

@@ -9,6 +9,11 @@ COPY src ./src
 
 RUN npm ci
 
+COPY scripts/generate-third-party-notices.mjs ./scripts/
+
+# Include the full install: the server ships it, and the webapp bundles workspace dependencies.
+RUN npm run licenses:generate
+
 # The admin CLI uses Bun's SQLite API and the container's HABSUM_DB setting.
 FROM dependencies AS admin-tools
 
@@ -50,6 +55,7 @@ RUN npm run build:homepage
 FROM nginx:alpine AS homepage
 
 COPY --from=homepage-build /app/src/apps/homepage/dist /usr/share/nginx/html
+COPY --from=dependencies /app/THIRD_PARTY_NOTICES.md /app/THIRD_PARTY_NOTICES.md
 
 EXPOSE 80
 
@@ -67,6 +73,7 @@ COPY src ./src
 RUN npm ci --omit=dev --ignore-scripts --workspace @habsum/webapp
 
 COPY --from=webapp-build /app/src/apps/webapp/build ./src/apps/webapp/build
+COPY --from=dependencies /app/THIRD_PARTY_NOTICES.md ./THIRD_PARTY_NOTICES.md
 
 EXPOSE 3000
 

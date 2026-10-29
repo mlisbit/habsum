@@ -61,6 +61,13 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version: 22
+          cache: npm
+
+      - name: Install dependencies for release checks
+        run: npm ci --ignore-scripts
+
+      - name: Test third-party notices generation
+        run: node --test scripts/generate-third-party-notices.test.mjs
 
       - name: Prepare release commit and tag
         id: release
