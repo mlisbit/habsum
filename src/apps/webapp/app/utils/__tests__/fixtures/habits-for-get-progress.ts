@@ -54,7 +54,12 @@ export const habitsFixtureProgressMixed: readonly Habit[] = [
     name: 'alcohol',
     type: 'single_select',
     details: {
-      options: ['none', 'light', 'moderate', 'heavy'],
+      options: [
+        { label: 'none', sentiment: 'positive' },
+        { label: 'light', sentiment: 'positive' },
+        { label: 'moderate', sentiment: 'positive' },
+        { label: 'heavy', sentiment: 'positive' },
+      ],
       value: 'heavy',
     },
   },
@@ -82,7 +87,12 @@ export const habitsFixtureProgressSecond: readonly Habit[] = [
     name: 'alcohol',
     type: 'single_select',
     details: {
-      options: ['none', 'light', 'moderate', 'heavy'],
+      options: [
+        { label: 'none', sentiment: 'positive' },
+        { label: 'light', sentiment: 'positive' },
+        { label: 'moderate', sentiment: 'positive' },
+        { label: 'heavy', sentiment: 'positive' },
+      ],
       value: 'moderate',
     },
   },

@@ -11,8 +11,8 @@ function isCheckboxTheme(habit: HabitRowSingleSelect): boolean {
   return (
     habit.details.theme === 'checkbox' &&
     habit.details.options.length === 2 &&
-    habit.details.options.includes('yes') &&
-    habit.details.options.includes('no')
+    habit.details.options.some(({ label }) => label === 'yes') &&
+    habit.details.options.some(({ label }) => label === 'no')
   );
 }
 
@@ -54,13 +54,14 @@ function SingleSelectActions({
 
   return (
     <div className="habit-select__options">
-      {habit.details.options.map((option) => {
+      {habit.details.options.map(({ label: option, sentiment }) => {
         const selected = habit.details.value === option;
         const dim = habit.details.value != null && !selected;
         return (
           <TogglePill
             key={option}
             selected={selected}
+            negative={sentiment === 'negative'}
             className={
               dim ? 'habit-select__option habit-select__option--dim' : 'habit-select__option'
             }

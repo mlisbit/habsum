@@ -47,7 +47,10 @@ export class SingleSelectHabitPresenter extends HabitPresenter<
       name: this.definition.name,
       type: 'single_select',
       details: {
-        options: this.definition.settings.options.map((option) => option.label),
+        options: this.definition.settings.options.map(({ label, sentiment }) => ({
+          label,
+          sentiment,
+        })),
         ...(this.definition.settings.theme ? { theme: this.definition.settings.theme } : {}),
         value: this.habitData.values.find((row) => row.date === viewingDate)?.value ?? null,
       },

@@ -20,7 +20,9 @@ describe('single-select heatmap', () => {
       yamlString(`habits:
   read:
     type: single_select
-    options: [yes, no]
+    options:
+      - {label: yes, sentiment: positive}
+      - {label: no, sentiment: negative}
     history:
       displays: [heatmap]
       period: 3w
@@ -41,7 +43,10 @@ describe('single-select heatmap', () => {
     expect(res.status).toBe(200);
     expect(res.body.details).toMatchObject({
       value: 'yes',
-      options: ['yes', 'no'],
+      options: [
+        { label: 'yes', sentiment: 'positive' },
+        { label: 'no', sentiment: 'negative' },
+      ],
     });
     expect(res.body).not.toHaveProperty('value');
     expect(res.body).not.toHaveProperty('options');
@@ -66,7 +71,10 @@ describe('single-select heatmap', () => {
     expect(listRes.status).toBe(200);
     expect(listRes.body.habits?.[0]?.details).toMatchObject({
       value: 'yes',
-      options: ['yes', 'no'],
+      options: [
+        { label: 'yes', sentiment: 'positive' },
+        { label: 'no', sentiment: 'negative' },
+      ],
     });
     expect(listRes.body.habits?.[0]).not.toHaveProperty('value');
     expect(listRes.body.habits?.[0]).not.toHaveProperty('options');

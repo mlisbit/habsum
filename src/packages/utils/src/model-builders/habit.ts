@@ -15,7 +15,7 @@ type HabitModelBuilderState = {
   name: string;
   type: HabitType;
   goal: number | null;
-  options: string[];
+  options: HabitRowSingleSelect['details']['options'];
   theme?: HabitTheme;
   value: string | null;
   total: number | null;
@@ -39,7 +39,7 @@ type HabitModelBuilder = {
   withName(name: string): HabitModelBuilder;
   withType(type: HabitType): HabitModelBuilder;
   withGoal(goal: number | null): HabitModelBuilder;
-  withOptions(options: string[]): HabitModelBuilder;
+  withOptions(options: HabitRowSingleSelect['details']['options']): HabitModelBuilder;
   withTheme(theme: HabitTheme | undefined): HabitModelBuilder;
   withValue(value: string | null): HabitModelBuilder;
   withTotal(total: number | null): HabitModelBuilder;
@@ -94,7 +94,10 @@ function stateForType(state: HabitModelBuilderState, type: HabitType): HabitMode
     return {
       ...state,
       type,
-      options: ['yes', 'no'],
+      options: [
+        { label: 'yes', sentiment: 'positive' },
+        { label: 'no', sentiment: 'positive' },
+      ],
       theme: 'checkbox',
       value: state.value === 'yes' || state.value === 'no' ? state.value : null,
     };

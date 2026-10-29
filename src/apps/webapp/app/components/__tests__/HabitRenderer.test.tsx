@@ -23,7 +23,13 @@ describe('HabitRenderer title navigation', () => {
     {
       name: 'Morning routine',
       type: 'single_select',
-      details: { options: ['yes', 'no'], value: null },
+      details: {
+        options: [
+          { label: 'yes', sentiment: 'positive' },
+          { label: 'no', sentiment: 'positive' },
+        ],
+        value: null,
+      },
     },
     { name: 'Journal', type: 'text', details: { text: null } },
   ];
@@ -201,7 +207,10 @@ describe('HabitRenderer type-specific rendering', () => {
       name: 'Morning routine',
       type: 'single_select',
       details: {
-        options: ['yes', 'no'],
+        options: [
+          { label: 'yes', sentiment: 'positive' },
+          { label: 'no', sentiment: 'positive' },
+        ],
         theme: 'checkbox',
         value: null,
       },
@@ -222,6 +231,53 @@ describe('HabitRenderer type-specific rendering', () => {
 
     expect(screen.getByRole('button', { name: 'Morning routine: not set' })).toBeTruthy();
   });
+
+  it.each(['None', 'A bit', null])(
+    'uses option sentiments while keeping selection values as labels: %s',
+    async (value) => {
+      const user = userEvent.setup();
+      const onUpdate = vi.fn().mockResolvedValue(undefined);
+      const habit: HabitRowSingleSelect = {
+        name: 'Reading',
+        type: 'single_select',
+        details: {
+          options: [
+            { label: 'None', sentiment: 'negative' },
+            { label: 'A bit', sentiment: 'positive' },
+            { label: 'A lot', sentiment: 'positive' },
+          ],
+          value,
+        },
+      };
+
+      render(
+        <ToastProvider>
+          <ModalProvider>
+            <HabitRenderer
+              user="reader"
+              viewDate={dayFromString('2026-07-27')}
+              habit={habit}
+              onUpdate={onUpdate}
+            />
+          </ModalProvider>
+        </ToastProvider>,
+      );
+
+      const negativeOption = screen.getByRole('button', { name: 'None' });
+      const positiveOption = screen.getByRole('button', { name: 'A bit' });
+      expect(negativeOption.classList.contains('pill--selected-negative')).toBe(value === 'None');
+      expect(negativeOption.classList.contains('pill--selected')).toBe(value === 'None');
+      expect(positiveOption.classList.contains('pill--selected-negative')).toBe(false);
+      expect(positiveOption.classList.contains('pill--selected')).toBe(value === 'A bit');
+
+      await user.click(negativeOption);
+      expect(onUpdate).toHaveBeenCalledWith(
+        value === 'None'
+          ? { habit: 'Reading', action: 'clear' }
+          : { habit: 'Reading', value: 'None' },
+      );
+    },
+  );
 
   it('renders text actions', () => {
     const habit: HabitRowText = {

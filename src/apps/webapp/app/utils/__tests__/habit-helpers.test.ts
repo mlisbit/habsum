@@ -37,13 +37,24 @@ describe('getProgress', () => {
         {
           name: 'Reading',
           type: 'single_select',
-          details: { options: ['None', 'A bit', 'A lot'], value: 'A bit' },
+          details: {
+            options: [
+              { label: 'None', sentiment: 'positive' },
+              { label: 'A bit', sentiment: 'positive' },
+              { label: 'A lot', sentiment: 'positive' },
+            ],
+            value: 'A bit',
+          },
         },
         { name: 'Journal', type: 'text', details: { text: 'A thought.' } },
         {
           name: 'Take Multivitamin',
           type: 'single_select',
-          details: { options: ['yes'], theme: 'checkbox', value: 'yes' },
+          details: {
+            options: [{ label: 'yes', sentiment: 'positive' }],
+            theme: 'checkbox',
+            value: 'yes',
+          },
         },
       ]);
 
@@ -86,7 +97,7 @@ describe('getProgress', () => {
       isHabitComplete({
         name: 'Choice',
         type: 'single_select',
-        details: { options: ['yes'], value: '' },
+        details: { options: [{ label: 'yes', sentiment: 'positive' }], value: '' },
       }),
     ).toBe(false);
   });

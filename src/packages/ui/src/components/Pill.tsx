@@ -8,6 +8,7 @@ export type PillSize = 'large' | 'small';
 
 type TogglePillProps = {
   selected: boolean;
+  negative?: boolean;
   onToggle: (selected: boolean) => void;
   size?: PillSize;
   children: ReactNode;
@@ -15,6 +16,7 @@ type TogglePillProps = {
 
 export function TogglePill({
   selected,
+  negative = false,
   onToggle,
   size = 'large',
   children,
@@ -28,6 +30,7 @@ export function TogglePill({
       className={classBuilder(
         {
           'pill--selected': selected,
+          'pill--selected-negative': selected && negative,
           'pill--small text-b-s': size === 'small',
           'pill--large text-b-m': size === 'large',
         },

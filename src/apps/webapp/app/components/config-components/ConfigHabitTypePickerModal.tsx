@@ -20,7 +20,11 @@ const PREVIEW_SUMMATION_HABIT = build()
 const PREVIEW_SINGLE_SELECT_HABIT = build()
   .withName('Reading')
   .withType('single_select')
-  .withOptions(['None', 'not much', 'a lot'])
+  .withOptions([
+    { label: 'None', sentiment: 'positive' },
+    { label: 'not much', sentiment: 'positive' },
+    { label: 'a lot', sentiment: 'positive' },
+  ])
   .model();
 
 const PREVIEW_CHECKBOX_HABIT = build().withName('Reading').withType('checkbox').model();

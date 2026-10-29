@@ -13,12 +13,26 @@ export const habitExamples = {
   singleSelect: {
     name: 'Reading',
     type: 'single_select',
-    details: { options: ['None', 'A bit', 'A lot'], value: null },
+    details: {
+      options: [
+        { label: 'None', sentiment: 'positive' },
+        { label: 'A bit', sentiment: 'positive' },
+        { label: 'A lot', sentiment: 'positive' },
+      ],
+      value: null,
+    },
   },
   checkbox: {
     name: 'Take Multivitamin',
     type: 'single_select',
-    details: { options: ['yes', 'no'], theme: 'checkbox', value: null },
+    details: {
+      options: [
+        { label: 'yes', sentiment: 'positive' },
+        { label: 'no', sentiment: 'positive' },
+      ],
+      theme: 'checkbox',
+      value: null,
+    },
   },
   note: {
     name: 'Journal',

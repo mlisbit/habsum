@@ -19,7 +19,7 @@ export function CellHoverDisplay({ habits }: { habits: Habit[] }) {
               <div className="text-light text-b-m">
                 {h.details.value ?? '—'}
                 {h.details.options.length > 0 ? (
-                  <span> · {h.details.options.join(', ')}</span>
+                  <span> · {h.details.options.map(({ label }) => label).join(', ')}</span>
                 ) : null}
               </div>
             </div>

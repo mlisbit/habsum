@@ -75,7 +75,10 @@ describe('HistoryPagePresenter', () => {
         name: 'mood',
         type: 'single_select',
         details: {
-          options: ['good', 'bad'],
+          options: [
+            { label: 'good', sentiment: 'positive' },
+            { label: 'bad', sentiment: 'negative' },
+          ],
           value: null,
         },
       },
@@ -103,7 +106,10 @@ describe('HistoryPagePresenter', () => {
             name: 'mood',
             type: 'single_select',
             details: {
-              options: ['good', 'bad'],
+              options: [
+                { label: 'good', sentiment: 'positive' },
+                { label: 'bad', sentiment: 'negative' },
+              ],
               value: 'good',
             },
           },

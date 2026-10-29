@@ -162,7 +162,10 @@ describe('habit presenters', () => {
       name: 'mood',
       type: 'single_select',
       details: {
-        options: ['yes', 'no'],
+        options: [
+          { label: 'yes', sentiment: 'positive' },
+          { label: 'no', sentiment: 'negative' },
+        ],
         theme: 'checkbox',
         value: 'yes',
       },
@@ -278,7 +281,10 @@ describe('habit presenters', () => {
           name: 'mood',
           type: 'single_select',
           details: {
-            options: ['good', 'bad'],
+            options: [
+              { label: 'good', sentiment: 'positive' },
+              { label: 'bad', sentiment: 'negative' },
+            ],
             value: 'good',
           },
         },

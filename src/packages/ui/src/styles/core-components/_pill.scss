@@ -64,6 +64,10 @@
   }
 }
 
+.pill--selected-negative {
+  --pill-fill-selected: var(--pill-fill-selected-negative);
+}
+
 .pill--dismissable {
   cursor: default;
   pointer-events: none;

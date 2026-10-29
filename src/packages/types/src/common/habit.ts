@@ -110,7 +110,7 @@ type CompleteHabitTypeMap<T extends Record<HabitType, object>> = T;
 
 export type HabitDetailsByType = CompleteHabitTypeMap<{
   single_select: {
-    options: string[];
+    options: SingleSelectOption[];
     theme?: HabitTheme;
     value: string | null;
   };
