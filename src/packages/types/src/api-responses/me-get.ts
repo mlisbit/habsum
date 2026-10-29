@@ -29,8 +29,8 @@ export type MeGetLoggedIn = {
    */
   createdAt: DayWithTime;
   /**
-   * Granted capabilities: `BETA_TESTER` when enabled on the account in the server DB; `DEVELOPER`
-   * when the account may access developer tools; `NEW_USER` when the account has not logged any
+   * Granted capabilities: `ADMIN` when the account has administrator access;
+   * `NEW_USER` when the account has not logged any
    * daily selection, summation, or text entries yet; `DEMO_USER` when marked as a demo account.
    */
   entitlements: ProductEntitlement[];

@@ -45,25 +45,6 @@ function formatMemberSince(value: DayWithTime): string {
   return new Intl.DateTimeFormat(undefined, { month: 'long', year: 'numeric' }).format(d);
 }
 
-function formatEntitlement(entitlement: ProductEntitlement): string {
-  switch (entitlement) {
-    case 'BETA_TESTER':
-      return 'Beta Tester';
-    case 'DEVELOPER':
-      return 'Developer';
-    case 'DEMO_USER':
-      return 'Demo User';
-    case 'NEW_USER':
-      return 'New User';
-    default:
-      return entitlement;
-  }
-}
-
-function formatAccountType(entitlements: ProductEntitlement[]): string {
-  return entitlements.length > 0 ? entitlements.map(formatEntitlement).join(', ') : 'Standard';
-}
-
 function normDisplay(s: string): string {
   return s.trim();
 }
@@ -516,9 +497,9 @@ export default function UserSettingsAccount() {
                 </div>
               </div>
               <div className="account-page__meta-row">
-                <div className="account-page__meta-label text-b-m text-light">Account type</div>
+                <div className="account-page__meta-label text-b-m text-light">Entitlements</div>
                 <div className="account-page__meta-value text-b-m">
-                  {formatAccountType(saved.entitlements)}
+                  {saved.entitlements.join(', ') || 'Standard'}
                 </div>
               </div>
             </div>

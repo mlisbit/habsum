@@ -16,7 +16,7 @@ function getTestDatabasePath(): string {
     CREATE TABLE users (
       username TEXT PRIMARY KEY, pin TEXT NOT NULL, admin INTEGER DEFAULT 0,
       display_name TEXT, theme TEXT, email TEXT, created_at TEXT,
-      beta_tester INTEGER DEFAULT 1, active_habit_config_version INTEGER
+      active_habit_config_version INTEGER
     );
     CREATE TABLE habit_configs (
       user TEXT, version INTEGER, text TEXT,
@@ -71,12 +71,11 @@ describe('addAdmin', () => {
     try {
       const row = database
         .query<
-          { pin: string; admin: number; active_habit_config_version: number; beta_tester: number },
+          { pin: string; admin: number; active_habit_config_version: number },
           []
         >('SELECT * FROM users')
         .get()!;
       expect(row.admin).toBe(1);
-      expect(row.beta_tester).toBe(1);
       expect(row.active_habit_config_version).toBe(1);
       expect(row.pin).not.toBe('chosen secret');
       expect(verifyPassword('chosen secret', row.pin)).toBe(true);

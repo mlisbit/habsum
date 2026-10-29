@@ -10,6 +10,19 @@ const userAndAuthRepository = new UserAndAuthRepository();
 const userService = new UserService();
 
 describe('UserService.entitlementsForUser', () => {
+  it('grants ADMIN only to administrator accounts', () => {
+    const regular = 'entitlements-regular-account';
+    const admin = 'entitlements-admin-account';
+    userAndAuthRepository.setUserPassword(regular, 'test-password');
+    userAndAuthRepository.createInitialAdminUser(admin, 'test-password');
+
+    expect(userService.entitlementsForUser(regular)).toEqual([ProductEntitlement.NEW_USER]);
+    expect(userService.entitlementsForUser(admin)).toEqual([
+      ProductEntitlement.NEW_USER,
+      ProductEntitlement.ADMIN,
+    ]);
+  });
+
   it('grants DEMO_USER only while the persisted demo flag is enabled', () => {
     const username = 'entitlements-demo-user-test';
     userAndAuthRepository.setUserPassword(username, 'test-password');

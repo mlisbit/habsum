@@ -7,7 +7,6 @@ import type { Database } from 'bun:sqlite';
 type UserRow = {
   username: string;
   admin: number;
-  betaTester: number;
   demoUser: number;
   hasActivity: number;
 };
@@ -28,7 +27,6 @@ export default function getUserAccounts(database: Database): UserAccount[] {
       SELECT
         users.username,
         users.admin,
-        users.beta_tester AS betaTester,
         ${hasDemoUserColumn ? 'users.demo_user' : '0'} AS demoUser,
         (
           EXISTS (
@@ -56,11 +54,8 @@ export default function getUserAccounts(database: Database): UserAccount[] {
     if (row.hasActivity === 0) {
       entitlements.push(ProductEntitlement.NEW_USER);
     }
-    if (row.betaTester === 1) {
-      entitlements.push(ProductEntitlement.BETA_TESTER);
-    }
     if (row.admin === 1) {
-      entitlements.push(ProductEntitlement.DEVELOPER);
+      entitlements.push(ProductEntitlement.ADMIN);
     }
     if (row.demoUser === 1) {
       entitlements.push(ProductEntitlement.DEMO_USER);

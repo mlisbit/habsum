@@ -9,7 +9,6 @@ function getTestDatabase(): Database {
     CREATE TABLE users (
       username TEXT PRIMARY KEY,
       admin INTEGER NOT NULL DEFAULT 0,
-      beta_tester INTEGER NOT NULL DEFAULT 1,
       demo_user INTEGER NOT NULL DEFAULT 0
     );
     CREATE TABLE habit_summation_events (user TEXT NOT NULL);
@@ -25,7 +24,7 @@ describe('getUserAccounts', () => {
     try {
       database.exec("INSERT INTO users (username, demo_user) VALUES ('demo', 1)");
       expect(getUserAccounts(database)).toEqual([
-        { username: 'demo', entitlements: ['NEW_USER', 'BETA_TESTER', 'DEMO_USER'] },
+        { username: 'demo', entitlements: ['NEW_USER', 'DEMO_USER'] },
       ]);
     } finally {
       database.close();
@@ -38,7 +37,22 @@ describe('getUserAccounts', () => {
       database.exec('ALTER TABLE users DROP COLUMN demo_user');
       database.exec("INSERT INTO users (username) VALUES ('legacy')");
       expect(getUserAccounts(database)).toEqual([
-        { username: 'legacy', entitlements: ['NEW_USER', 'BETA_TESTER'] },
+        { username: 'legacy', entitlements: ['NEW_USER'] },
+      ]);
+    } finally {
+      database.close();
+    }
+  });
+
+  test('ignores the retired beta flag in legacy databases', () => {
+    const database = getTestDatabase();
+    try {
+      database.exec(`
+        ALTER TABLE users ADD COLUMN beta_tester INTEGER NOT NULL DEFAULT 1;
+        INSERT INTO users (username, admin) VALUES ('legacy', 1);
+      `);
+      expect(getUserAccounts(database)).toEqual([
+        { username: 'legacy', entitlements: ['NEW_USER', 'ADMIN'] },
       ]);
     } finally {
       database.close();
@@ -49,20 +63,20 @@ describe('getUserAccounts', () => {
     const database = getTestDatabase();
     try {
       database.exec(`
-        INSERT INTO users (username, admin, beta_tester) VALUES
-          ('zeta', 0, 0),
-          ('Admin', 1, 1),
-          ('beta', 0, 1);
+        INSERT INTO users (username, admin) VALUES
+          ('zeta', 0),
+          ('Admin', 1),
+          ('regular', 0);
         INSERT INTO habit_daily_selects (user) VALUES ('zeta');
-        INSERT INTO habit_summation_events (user) VALUES ('beta');
+        INSERT INTO habit_summation_events (user) VALUES ('regular');
       `);
 
       expect(getUserAccounts(database)).toEqual([
         {
           username: 'Admin',
-          entitlements: ['NEW_USER', 'BETA_TESTER', 'DEVELOPER'],
+          entitlements: ['NEW_USER', 'ADMIN'],
         },
-        { username: 'beta', entitlements: ['BETA_TESTER'] },
+        { username: 'regular', entitlements: [] },
         { username: 'zeta', entitlements: [] },
       ]);
     } finally {
@@ -75,11 +89,11 @@ describe('getUserAccountsOutput', () => {
   test('formats accounts as a readable table', () => {
     expect(
       getUserAccountsOutput([
-        { username: 'Admin', entitlements: ['NEW_USER', 'DEVELOPER'] },
+        { username: 'Admin', entitlements: ['NEW_USER', 'ADMIN'] },
         { username: 'zeta', entitlements: [] },
       ]),
     ).toBe(`USERNAME  ENTITLEMENTS
-Admin     NEW_USER, DEVELOPER
+Admin     NEW_USER, ADMIN
 zeta      (none)`);
   });
 

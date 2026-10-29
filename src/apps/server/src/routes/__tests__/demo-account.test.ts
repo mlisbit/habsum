@@ -48,7 +48,11 @@ describe('PUT /users/:user/demo-account', () => {
         listed.entitlements,
       ]) {
         expect(entitlements.includes(ProductEntitlement.DEMO_USER)).toBe(demoUser);
-        expect(entitlements).toContain(ProductEntitlement.BETA_TESTER);
+        expect(entitlements).toEqual(
+          demoUser
+            ? [ProductEntitlement.NEW_USER, ProductEntitlement.DEMO_USER]
+            : [ProductEntitlement.NEW_USER],
+        );
       }
     }
     expect(repository.isUserPasswordValid(user, 'original-password')).toBe(true);
@@ -65,7 +69,7 @@ describe('PUT /users/:user/demo-account', () => {
     const me = await request(app).get('/users/me').set('Cookie', adminCookie).expect(200);
     expect(me.body.admin).toBe(true);
     expect(me.body.entitlements).toEqual(
-      expect.arrayContaining([ProductEntitlement.DEVELOPER, ProductEntitlement.DEMO_USER]),
+      expect.arrayContaining([ProductEntitlement.ADMIN, ProductEntitlement.DEMO_USER]),
     );
     await request(app)
       .put(`/users/${admin}/demo-account`)

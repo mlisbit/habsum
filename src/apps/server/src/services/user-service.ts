@@ -83,11 +83,8 @@ export class UserService {
     if (this.userAndAuthRepository.getFirstDate(username) === null) {
       out.push(ProductEntitlement.NEW_USER);
     }
-    if (this.userAndAuthRepository.isUserBetaTester(username)) {
-      out.push(ProductEntitlement.BETA_TESTER);
-    }
     if (this.userAndAuthRepository.isUserAdmin(username)) {
-      out.push(ProductEntitlement.DEVELOPER);
+      out.push(ProductEntitlement.ADMIN);
     }
     if (this.userAndAuthRepository.isDemoUser(username)) {
       out.push(ProductEntitlement.DEMO_USER);

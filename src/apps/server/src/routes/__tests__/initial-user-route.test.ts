@@ -59,7 +59,7 @@ describe('POST /auth/initial-user', () => {
       .set('Cookie', sessionCookie!)
       .expect(200);
     expect(meResponse.body).toMatchObject({ username: 'first-owner', admin: true });
-    expect(meResponse.body.entitlements).toContain(ProductEntitlement.DEVELOPER);
+    expect(meResponse.body.entitlements).toContain(ProductEntitlement.ADMIN);
     await request(app)
       .get('/application')
       .expect(200)

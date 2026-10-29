@@ -22,7 +22,6 @@ import {
   isEmailUsedByOtherUser,
   isOucSessionId,
   isUserAdmin,
-  isUserBetaTester,
   isDemoUser,
   isUserPasswordValid,
   listUserRows,
@@ -159,10 +158,6 @@ export class UserAndAuthRepository {
 
   isUserAdmin(username: string): boolean {
     return isUserAdmin(username);
-  }
-
-  isUserBetaTester(username: string): boolean {
-    return isUserBetaTester(username);
   }
 
   isDemoUser(username: string): boolean {

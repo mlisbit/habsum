@@ -1,6 +1,5 @@
 import request from 'supertest';
 import { dayFromString } from '@habsum/types/common/day';
-import { ProductEntitlement } from '@habsum/types/common/entitlement';
 import { yamlString } from '@habsum/types/common/misc';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../../app.js';
@@ -234,7 +233,7 @@ describe('GET /users', () => {
       webAndApiVersion: null,
       habitCount: 2,
       eventCount: 2,
-      entitlements: [ProductEntitlement.BETA_TESTER],
+      entitlements: [],
     });
 
     const userSession = userAndAuthRepository.createUserSession('login-audit-user', 3600);
@@ -256,7 +255,7 @@ describe('GET /users', () => {
       webAndApiVersion: PACKAGE_VERSION,
       habitCount: 2,
       eventCount: 2,
-      entitlements: [ProductEntitlement.BETA_TESTER],
+      entitlements: [],
     });
   });
 });
