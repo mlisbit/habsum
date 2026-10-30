@@ -1,7 +1,8 @@
-// Converts the server UserConfig model into persisted YAML habit config text.
+// Serializes configuration data into persisted YAML habit config text.
 import yaml from 'js-yaml';
 import { yamlString, type YAMLString } from '@habsum/types/common/misc';
-import type { UserConfig, HabitDef, HabitInsight } from '../../types/userConfig.js';
+import type { ConfigData, HabitDef, HabitInsight } from '../../types/userConfig.js';
+import type { YAMLConfigSerializer as YAMLConfigSerializerInterface } from './types.js';
 
 const YAML_DUMP_OPTS = { lineWidth: -1, noRefs: true };
 const YAML_SCALAR_QUOTE_RE = /[\s:#\[\]{},'"\\&*!?|>%@`-]|^[-?]|^$/;
@@ -119,15 +120,16 @@ function dumpHabitBlock(habit: HabitDef): string {
   return `  ${habit.name}:\n${inner}`;
 }
 
-export default class YAMLConfigConvertor {
-  convert(config: UserConfig): YAMLString {
+export default class YAMLConfigSerializer implements YAMLConfigSerializerInterface {
+  serialize(config: ConfigData): YAMLString {
     const rootEntries: Record<string, unknown> = {};
     if (config.includeAbsentDaysInAverage) {
       rootEntries.include_absent_days_in_average = true;
     }
 
     const habitBlocks = config.habits.map(dumpHabitBlock);
-    const habitsYaml = `habits:\n${habitBlocks.join('\n\n')}`;
+    const habitsYaml =
+      habitBlocks.length > 0 ? `habits:\n${habitBlocks.join('\n\n')}` : 'habits: {}';
     const restEntries = Object.entries(rootEntries);
     if (restEntries.length === 0) return yamlString(`${habitsYaml}\n`);
 

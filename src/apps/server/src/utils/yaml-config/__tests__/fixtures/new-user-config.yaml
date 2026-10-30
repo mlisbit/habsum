@@ -1,3 +1,4 @@
+# version: 1
 include_absent_days_in_average: true
 
 habits:

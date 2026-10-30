@@ -17,6 +17,33 @@ function writeUserConfig(user: string, text: string) {
 }
 
 describe('GET /users/:user/config', () => {
+  it('attaches the requested user after parsing configuration data', () => {
+    const user = 'config-data-context-user';
+    const text = yamlString('user: ignored\nhabits: {}\n');
+    const expected = { user, includeAbsentDaysInAverage: false, habits: [] };
+
+    expect(configService.validateUserConfigText(user, text)).toEqual({
+      ok: true,
+      config: expected,
+    });
+    expect(configService.createEmptyUserConfig(user).ok).toBe(true);
+    expect(configService.writeUserConfigText(user, text).ok).toBe(true);
+    expect(configService.loadUserConfig(user)).toEqual(expected);
+  });
+
+  it('adds a single version comment when creating and saving raw configs', () => {
+    const user = 'config-version-comment-user';
+    expect(configService.createEmptyUserConfig(user).ok).toBe(true);
+    expect(configService.readUserConfigText(user)).toBe('# version: 1\nhabits: {}\n');
+
+    const text = yamlString('# My habits\nhabits: {}\n');
+    expect(configService.writeUserConfigText(user, text).ok).toBe(true);
+    const saved = configService.readUserConfigText(user)!;
+    expect(saved).toBe(`# version: 1\n${text}`);
+    expect(configService.writeUserConfigText(user, saved).ok).toBe(true);
+    expect(configService.readUserConfigText(user)).toBe(saved);
+  });
+
   it('returns parsed config json and habit cards', async () => {
     const user = 'config-json-user';
     writeUserConfig(
@@ -95,6 +122,7 @@ habits:
       .expect(200);
 
     expect(res.body.config.includeAbsentDaysInAverage).toBe(true);
+    expect(res.body.text.startsWith('# version: 1\n')).toBe(true);
     expect(res.body.text).toContain('include_absent_days_in_average: true');
     expect(res.body.text).toContain('repeat: [tuesday, thursday]');
   });
@@ -207,10 +235,27 @@ habits:
       .expect(200);
 
     const saved = configService.readUserConfigText(user);
+    expect(saved?.startsWith('# version: 1\n')).toBe(true);
     expect(saved).toContain('data_visualization:');
     expect(saved).toContain('insights:');
     expect(saved).toContain('streak_options:');
     expect(saved).not.toContain('history:');
     expect(saved).not.toContain('\n    streak:');
+  });
+
+  it('rejects unsupported commented versions without overwriting the config', async () => {
+    const user = 'config-unsupported-version-user';
+    writeUserConfig(user, 'habits: {}\n');
+    const saved = configService.readUserConfigText(user);
+    userAndAuthRepository.setUserPassword(user, 'test-password');
+    const session = userAndAuthRepository.createUserSession(user, 3600);
+
+    await request(createApp())
+      .put(`/users/${user}/config`)
+      .set('Cookie', `${SESSION_COOKIE_NAME}=${session}`)
+      .send({ text: '# version: 2\nhabits: {}\n' })
+      .expect(400, { error: 'unsupported yaml config version: 2' });
+
+    expect(configService.readUserConfigText(user)).toBe(saved);
   });
 });

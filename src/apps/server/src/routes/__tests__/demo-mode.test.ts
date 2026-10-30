@@ -18,7 +18,8 @@ const applicationSettingsRepository = new ApplicationSettingsRepository();
 const app = createServer(createApp());
 const forbidden = { error: 'Action prevented for demo users.' };
 const date = '2026-10-17';
-const configText = yamlString(`habits:
+const configText = yamlString(`# version: 1
+habits:
   journal:
     type: text
   weekly notes:

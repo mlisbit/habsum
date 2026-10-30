@@ -1,4 +1,3 @@
-// Domain operations for YAML user configuration persistence and migrations.
 import { yamlString, type UserConfigJson, type YAMLString } from '@habsum/types/common/misc';
 import {
   getConfigDeletions,
@@ -9,13 +8,10 @@ import {
 import { ConfigRepository } from '../repositories/config-repository.js';
 import { HabitRepository } from '../repositories/habit-repository.js';
 import type { HabitDef, UserConfig } from '../types/userConfig.js';
-import YAMLConfigConvertor from '../utils/classes/yaml-config-convertor.js';
-import YAMLConfigParser from '../utils/classes/yaml-config-parser.js';
+import YAMLConfig from '../utils/yaml-config/yaml-config.js';
 import { isSafeConfigUserId } from '../utils/request-utils.js';
 import ServiceError from '../utils/classes/service-error.js';
 import restrictForDemo from '../utils/restrict-for-demo.js';
-
-const EMPTY_USER_CONFIG_TEXT = yamlString('habits: {}\n');
 
 type GetUserConfigInput = {
   user: string;
@@ -179,11 +175,11 @@ function applyConfigDataMigrations(
 }
 
 export class ConfigService {
-  static readonly ConfigValidationError = YAMLConfigParser.ConfigValidationError;
+  static readonly ConfigValidationError = YAMLConfig.ConfigValidationError;
 
   constructor(
     private readonly repository = new ConfigRepository(),
-    private readonly yamlConfigConvertor = new YAMLConfigConvertor(),
+    private readonly yamlConfig = new YAMLConfig(),
     private readonly habitRepository = new HabitRepository(),
   ) {}
 
@@ -208,7 +204,8 @@ export class ConfigService {
     }
     const validation = this.validateUserConfigText(user, content);
     if (!validation.ok) return validation;
-    this.repository.writeUserConfigText(user, content);
+    const yamlConfig = new YAMLConfig(content);
+    this.repository.writeUserConfigText(user, yamlConfig.getVersionedText(content));
     return { ok: true };
   }
 
@@ -217,9 +214,10 @@ export class ConfigService {
     content: YAMLString,
   ): { ok: true; config: UserConfig } | { ok: false; error: string } {
     try {
-      return { ok: true, config: new YAMLConfigParser(user).parse(content) };
+      const yamlConfig = new YAMLConfig(content);
+      return { ok: true, config: { ...yamlConfig.parse(), user } };
     } catch (e) {
-      if (e instanceof YAMLConfigParser.ConfigValidationError) {
+      if (e instanceof YAMLConfig.ConfigValidationError) {
         return { ok: false, error: e.message };
       }
       return { ok: false, error: e instanceof Error ? e.message : 'invalid config' };
@@ -230,7 +228,7 @@ export class ConfigService {
     const text = this.repository.readUserConfigText(user);
     if (text == null) return null;
 
-    return new YAMLConfigParser(user).parse(text);
+    return { ...new YAMLConfig(text).parse(), user };
   }
 
   createEmptyUserConfig(user: string): { ok: true; user: string } | { ok: false; error: string } {
@@ -240,9 +238,13 @@ export class ConfigService {
       return { ok: false, error: `user "${user}" already exists` };
     }
 
-    const validation = this.validateUserConfigText(user, EMPTY_USER_CONFIG_TEXT);
+    const text = this.yamlConfig.getSerializer().serialize({
+      includeAbsentDaysInAverage: false,
+      habits: [],
+    });
+    const validation = this.validateUserConfigText(user, text);
     if (!validation.ok) return validation;
-    this.repository.writeUserConfigText(user, EMPTY_USER_CONFIG_TEXT);
+    this.repository.writeUserConfigText(user, text);
 
     return { ok: true, user };
   }
@@ -291,16 +293,17 @@ export class ConfigService {
     let text: YAMLString;
     if (typeof body.text === 'string') {
       try {
-        const config = new YAMLConfigParser(user).parse(yamlString(body.text));
-        text = this.yamlConfigConvertor.convert(config);
+        const content = yamlString(body.text);
+        const config = new YAMLConfig(content).parse();
+        text = this.yamlConfig.getSerializer().serialize(config);
       } catch (e) {
         throw new ServiceError('bad_request', e instanceof Error ? e.message : 'invalid config');
       }
     } else if (body.config != null) {
       try {
-        text = this.yamlConfigConvertor.convert(
-          getUserConfigFromJson(body.config as UserConfigJson),
-        );
+        text = this.yamlConfig
+          .getSerializer()
+          .serialize(getUserConfigFromJson(body.config as UserConfigJson));
       } catch (e) {
         throw new ServiceError('bad_request', e instanceof Error ? e.message : 'invalid config');
       }

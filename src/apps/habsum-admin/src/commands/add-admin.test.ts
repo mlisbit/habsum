@@ -82,7 +82,7 @@ describe('addAdmin', () => {
       expect(database.query('SELECT user, version, text FROM habit_configs').get()).toEqual({
         user: 'alice',
         version: 1,
-        text: 'habits: {}\n',
+        text: '# version: 1\nhabits: {}\n',
       });
       expect(output).toEqual(['Administrator account created for alice.']);
       let prompted = false;

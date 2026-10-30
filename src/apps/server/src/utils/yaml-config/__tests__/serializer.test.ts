@@ -1,16 +1,14 @@
 import { readFileSync } from 'node:fs';
 import { yamlString } from '@habsum/types/common/misc';
 import { describe, expect, it } from 'vitest';
-import type { UserConfig } from '../../types/userConfig.js';
-import YAMLConfigConvertor from '../classes/yaml-config-convertor.js';
-import YAMLConfigParser from '../classes/yaml-config-parser.js';
+import type { ConfigData } from '../../../types/userConfig.js';
+import YAMLConfig from '../yaml-config.js';
 
 function fixture(name: string): string {
   return readFileSync(new URL(`./fixtures/${name}`, import.meta.url), 'utf8');
 }
 
-const config: UserConfig = {
-  user: 'yaml-convertor-user',
+const config: ConfigData = {
   includeAbsentDaysInAverage: true,
   habits: [
     {
@@ -43,30 +41,31 @@ const config: UserConfig = {
   ],
 };
 
-describe('YAMLConfigConvertor', () => {
-  it('converts a user config model into persisted yaml text', () => {
-    expect(new YAMLConfigConvertor().convert(config)).toBe(fixture('new-user-config.yaml'));
-  });
-
-  it('converts parsed legacy yaml into the new persisted schema', () => {
-    const legacy = new YAMLConfigParser('legacy-convertor-user').parse(
-      yamlString(fixture('legacy-user-config.yaml')),
+describe('YAMLConfigSerializer', () => {
+  it('serializes configuration data into persisted yaml text without user context', () => {
+    expect(new YAMLConfig().getSerializer().serialize(config)).toBe(
+      fixture('new-user-config.yaml'),
     );
-    expect(new YAMLConfigConvertor().convert(legacy)).toBe(fixture('new-user-config.yaml'));
   });
 
-  it('produces yaml that can be parsed back into a user config model', () => {
-    const yaml = new YAMLConfigConvertor().convert(config);
-    expect(new YAMLConfigParser('round-trip-user').parse(yaml)).toMatchObject({
-      user: 'round-trip-user',
+  it('serializes parsed legacy yaml into the new persisted schema', () => {
+    const content = yamlString(fixture('legacy-user-config.yaml'));
+    const legacy = new YAMLConfig(content).parse();
+    expect(new YAMLConfig().getSerializer().serialize(legacy)).toBe(
+      fixture('new-user-config.yaml'),
+    );
+  });
+
+  it('produces yaml that can be parsed back into configuration data', () => {
+    const yaml = new YAMLConfig().getSerializer().serialize(config);
+    expect(new YAMLConfig(yaml).parse()).toMatchObject({
       includeAbsentDaysInAverage: true,
       habits: config.habits,
     });
   });
 
   it('writes text habit configuration without presentation options or daily text', () => {
-    const textConfig: UserConfig = {
-      user: 'text-user',
+    const textConfig: ConfigData = {
       includeAbsentDaysInAverage: false,
       habits: [
         {
@@ -83,7 +82,8 @@ describe('YAMLConfigConvertor', () => {
       ],
     };
 
-    expect(new YAMLConfigConvertor().convert(textConfig)).toBe(`habits:
+    expect(new YAMLConfig().getSerializer().serialize(textConfig)).toBe(`# version: 1
+habits:
   journal:
     type: text
     repeat: [monday]

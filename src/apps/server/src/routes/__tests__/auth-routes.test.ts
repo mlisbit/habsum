@@ -5,6 +5,7 @@ import { yamlString } from '@habsum/types/common/misc';
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../../app.js';
 import { ConfigService } from '../../services/config-service.js';
+import { ConfigRepository } from '../../repositories/config-repository.js';
 import { EmailService } from '../../services/email-service.js';
 import { UserAndAuthRepository } from '../../repositories/user-and-auth-repository.js';
 import { ApplicationSettingsRepository } from '../../repositories/application-settings-repository.js';
@@ -202,8 +203,7 @@ describe('session routes', () => {
       options: ['100']
       show_longest: true
 `);
-    const written = configService.writeUserConfigText(user, legacy);
-    if (!written.ok) throw new Error(written.error);
+    new ConfigRepository().writeUserConfigText(user, legacy);
     userAndAuthRepository.setUserPassword(user, 'correct-password');
     const session = userAndAuthRepository.createUserSession(user, 3600);
 

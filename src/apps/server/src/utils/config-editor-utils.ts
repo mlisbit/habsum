@@ -9,7 +9,7 @@ import {
   type YAMLString,
 } from '@habsum/types/common/misc';
 import type { HabitDef, UserConfig } from '../types/userConfig.js';
-import YAMLConfigParser from './classes/yaml-config-parser.js';
+import YAMLConfig from './yaml-config/yaml-config.js';
 
 type RawHabitEntry = {
   name: string;
@@ -68,14 +68,14 @@ function parseConfigHabitMigrationEntries(text: YAMLString): RawHabitEntry[] {
 
 export function getConfigJson(user: string, text: YAMLString): UserConfigJson {
   try {
-    const config = new YAMLConfigParser(user).parse(text);
+    const config = new YAMLConfig(text).parse();
     return {
-      user: config.user,
+      user,
       includeAbsentDaysInAverage: config.includeAbsentDaysInAverage,
       habits: config.habits.map(habitDefToConfigJson),
     };
   } catch (e) {
-    if (e instanceof YAMLConfigParser.ConfigValidationError) throw new Error(e.message);
+    if (e instanceof YAMLConfig.ConfigValidationError) throw new Error(e.message);
     throw e;
   }
 }
@@ -135,14 +135,14 @@ export function getUserConfigFromJson(config: UserConfigJson): UserConfig {
       ];
     }),
   );
-  return new YAMLConfigParser(config.user).parse(
-    yamlString(
-      yaml.dump({
-        include_absent_days_in_average: config.includeAbsentDaysInAverage,
-        habits,
-      }),
-    ),
+  // This intermediate document uses the version 1 YAML shape.
+  const content = yamlString(
+    yaml.dump({
+      include_absent_days_in_average: config.includeAbsentDaysInAverage,
+      habits,
+    }),
   );
+  return { ...new YAMLConfig(content).parse(), user: config.user };
 }
 
 function parseConfigMigrationEntries(text: YAMLString): RawHabitEntry[] {

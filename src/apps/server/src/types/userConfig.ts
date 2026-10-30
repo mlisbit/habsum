@@ -60,10 +60,13 @@ export type HabitDef<T extends HabitType = HabitType> = {
   };
 }[T];
 
-export type UserConfig = {
-  user: string;
+export type ConfigData = {
   includeAbsentDaysInAverage: boolean;
   habits: HabitDef[];
+};
+
+export type UserConfig = ConfigData & {
+  user: string;
 };
 
 export type RawHabitConfig = {

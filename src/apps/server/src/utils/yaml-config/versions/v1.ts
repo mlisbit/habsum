@@ -1,4 +1,3 @@
-// Parses persisted YAML habit config text into the server UserConfig model.
 import {
   isHabitTheme,
   parseSummationOptionsFromRaw,
@@ -11,19 +10,16 @@ import yaml from 'js-yaml';
 import type { YAMLString } from '@habsum/types/common/misc';
 import {
   HABIT_REPEAT_DAYS,
+  type ConfigData,
   type HabitDef,
   type HabitInsight,
   type RawHabitConfig,
   type RawUserConfig,
-  type UserConfig,
-} from '../../types/userConfig.js';
-
-class YAMLConfigValidationError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'YAMLConfigValidationError';
-  }
-}
+} from '../../../types/userConfig.js';
+import {
+  YAMLConfigValidationError,
+  type YAMLConfigParser as YAMLConfigParserInterface,
+} from '../types.js';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return value != null && typeof value === 'object' && !Array.isArray(value);
@@ -422,12 +418,8 @@ function normalizePresentation(
   };
 }
 
-export default class YAMLConfigParser {
-  static readonly ConfigValidationError = YAMLConfigValidationError;
-
-  constructor(private readonly user: string) {}
-
-  parse(content: YAMLString): UserConfig {
+export default class YAMLConfigParser implements YAMLConfigParserInterface {
+  parse(content: YAMLString): ConfigData {
     if (!content.trim()) {
       throw new YAMLConfigValidationError('config cannot be empty');
     }
@@ -440,10 +432,10 @@ export default class YAMLConfigParser {
     if (parsed != null && (typeof parsed !== 'object' || Array.isArray(parsed))) {
       throw new YAMLConfigValidationError('config must be a yaml mapping');
     }
-    return this.parseUserConfig(parsed);
+    return this.parseConfig(parsed);
   }
 
-  private parseUserConfig(parsed: unknown): UserConfig {
+  private parseConfig(parsed: unknown): ConfigData {
     if (parsed != null && !isRecord(parsed)) {
       throw new YAMLConfigValidationError('config must be a yaml mapping');
     }
@@ -454,7 +446,6 @@ export default class YAMLConfigParser {
     }
 
     return {
-      user: this.user,
       includeAbsentDaysInAverage: rawConfig.include_absent_days_in_average === true,
       habits: Object.entries(habits).map(([name, def]): HabitDef => {
         if (!isRecord(def)) {

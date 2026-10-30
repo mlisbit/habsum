@@ -1,15 +1,19 @@
 import { readFileSync } from 'node:fs';
 import { yamlString, type YAMLString } from '@habsum/types/common/misc';
 import { describe, expect, it } from 'vitest';
-import YAMLConfigParser from '../classes/yaml-config-parser.js';
+import YAMLConfig from '../yaml-config.js';
 
 function fixture(name: string): YAMLString {
   return yamlString(readFileSync(new URL(`./fixtures/${name}`, import.meta.url), 'utf8'));
 }
 
-describe('YAMLConfigParser', () => {
+function getConfigData(content: YAMLString) {
+  return new YAMLConfig(content).parse();
+}
+
+describe('YAMLConfigParser v1', () => {
   it('reads previously saved good/bad sentiments as positive/negative', () => {
-    const config = new YAMLConfigParser('reader').parse(
+    const config = getConfigData(
       yamlString(`habits:
   Reading:
     type: single_select
@@ -27,7 +31,7 @@ describe('YAMLConfigParser', () => {
   });
 
   it('reads option sentiments and frequency without a separate streak option list', () => {
-    const config = new YAMLConfigParser('reader').parse(
+    const config = getConfigData(
       yamlString(`habits:
   Reading:
     type: single_select
@@ -56,7 +60,7 @@ describe('YAMLConfigParser', () => {
   });
 
   it('defaults old string options to positive when no explicit streak list exists', () => {
-    const config = new YAMLConfigParser('reader').parse(
+    const config = getConfigData(
       yamlString(`habits:
   Reading:
     type: single_select
@@ -73,7 +77,7 @@ describe('YAMLConfigParser', () => {
   });
 
   it('preserves selections from the previous streak_options schema', () => {
-    const config = new YAMLConfigParser('reader').parse(
+    const config = getConfigData(
       yamlString(`habits:
   Reading:
     type: single_select
@@ -99,7 +103,7 @@ describe('YAMLConfigParser', () => {
     ['[Read, Read]', 'duplicate option'],
   ])('rejects invalid options: %s', (options, message) => {
     expect(() =>
-      new YAMLConfigParser('reader').parse(
+      getConfigData(
         yamlString(`habits:
   Reading:
     type: single_select
@@ -111,7 +115,7 @@ describe('YAMLConfigParser', () => {
 
   it('rejects conflicting legacy eligibility and explicit sentiments', () => {
     expect(() =>
-      new YAMLConfigParser('reader').parse(
+      getConfigData(
         yamlString(`habits:
   Reading:
     type: single_select
@@ -125,13 +129,11 @@ describe('YAMLConfigParser', () => {
   });
 
   it('parses legacy and new yaml config into the same user config model', () => {
-    const parser = new YAMLConfigParser('yaml-parser-user');
-    const legacyConfig = parser.parse(fixture('legacy-user-config.yaml'));
-    const newConfig = parser.parse(fixture('new-user-config.yaml'));
+    const legacyConfig = getConfigData(fixture('legacy-user-config.yaml'));
+    const newConfig = getConfigData(fixture('new-user-config.yaml'));
 
     expect(legacyConfig).toEqual(newConfig);
     expect(newConfig).toMatchObject({
-      user: 'yaml-parser-user',
       includeAbsentDaysInAverage: true,
       habits: [
         {
@@ -165,14 +167,14 @@ describe('YAMLConfigParser', () => {
   });
 
   it('throws a config validation error for invalid yaml config text', () => {
-    expect(() =>
-      new YAMLConfigParser('yaml-parser-user').parse(fixture('invalid-repeat.yaml')),
-    ).toThrow(YAMLConfigParser.ConfigValidationError);
+    expect(() => getConfigData(fixture('invalid-repeat.yaml'))).toThrow(
+      YAMLConfig.ConfigValidationError,
+    );
   });
 
   it('rejects unsupported habit themes', () => {
     expect(() =>
-      new YAMLConfigParser('yaml-parser-user').parse(
+      getConfigData(
         yamlString(`habits:
   mood:
     type: single_select
@@ -184,7 +186,7 @@ describe('YAMLConfigParser', () => {
   });
 
   it('parses independent average and streak insight visibility', () => {
-    const config = new YAMLConfigParser('insights-user').parse(
+    const config = getConfigData(
       yamlString(`habits:
   push ups:
     type: summation
@@ -208,7 +210,7 @@ describe('YAMLConfigParser', () => {
   });
 
   it('parses text habits while treating visualization and streak config as no-ops', () => {
-    const config = new YAMLConfigParser('text-user').parse(
+    const config = getConfigData(
       yamlString(`habits:
   journal:
     type: text
@@ -236,7 +238,7 @@ describe('YAMLConfigParser', () => {
   });
 
   it('defaults text habit reset to every day', () => {
-    const config = new YAMLConfigParser('text-user').parse(
+    const config = getConfigData(
       yamlString(`habits:
   journal:
     type: text
@@ -250,7 +252,7 @@ describe('YAMLConfigParser', () => {
 
   it('validates text habit reset using the repeat weekday options', () => {
     expect(() =>
-      new YAMLConfigParser('text-user').parse(
+      getConfigData(
         yamlString(`habits:
   journal:
     type: text
@@ -264,7 +266,7 @@ describe('YAMLConfigParser', () => {
 
   it('rejects unknown habit types', () => {
     expect(() =>
-      new YAMLConfigParser('yaml-parser-user').parse(
+      getConfigData(
         yamlString(`habits:
   mystery:
     type: something_else

@@ -1,6 +1,6 @@
 import { yamlString } from '@habsum/types/common/misc';
 import { toDateKey } from '@habsum/utils/date';
-import YAMLConfigParser from '../../../server/src/utils/classes/yaml-config-parser.ts';
+import YAMLConfig from '../../../server/src/utils/yaml-config/yaml-config.ts';
 import getHabsumDatabase from '../utils/get-habsum-database.ts';
 import getInput from '../utils/get-input.ts';
 import getDemoDataStart from '../utils/get-demo-data-start.ts';
@@ -43,7 +43,8 @@ export default async function demoData(
       )
       .get(user, account.active_habit_config_version);
     if (!config) throw new Error(`habit config not found: ${user}`);
-    const habits = new YAMLConfigParser(user).parse(yamlString(config.text)).habits;
+    const content = yamlString(config.text);
+    const habits = new YAMLConfig(content).parse().habits;
     let inserted = 0;
     database.transaction(() => {
       for (const habit of habits) {

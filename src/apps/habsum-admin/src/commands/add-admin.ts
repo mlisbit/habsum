@@ -1,5 +1,6 @@
 import { hashPassword } from '@habsum/utils/password';
 import isForbiddenUsername from '@habsum/utils/is-forbidden-username';
+import YAMLConfig from '../../../server/src/utils/yaml-config/yaml-config.ts';
 import getHabsumDatabase from '../utils/get-habsum-database.ts';
 import getInput from '../utils/get-input.ts';
 import getHiddenInput from '../utils/get-hidden-input.ts';
@@ -60,7 +61,13 @@ export default async function addAdmin(
           never,
           [string, string]
         >('INSERT INTO habit_configs (user, version, text) VALUES (?, 1, ?)')
-        .run(normalizedUsername, 'habits: {}\n');
+        .run(
+          normalizedUsername,
+          new YAMLConfig().getSerializer().serialize({
+            includeAbsentDaysInAverage: false,
+            habits: [],
+          }),
+        );
     })();
     writeLine(`Administrator account created for ${normalizedUsername}.`);
   } finally {
