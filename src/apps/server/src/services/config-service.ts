@@ -6,7 +6,7 @@ import {
   getUserConfigFromJson,
 } from '../utils/config-editor-utils.js';
 import { ConfigRepository } from '../repositories/config-repository.js';
-import { HabitRepository } from '../repositories/habit-repository.js';
+import { UserHabitRepository } from '../repositories/user-habit-repository.js';
 import type { UserConfig, HabitDef } from '../types/userConfig.js';
 import YAMLConfig from '../utils/yaml-config/yaml-config.js';
 import { isSafeConfigUserId } from '../utils/request-utils.js';
@@ -74,17 +74,15 @@ function optionDeletionForPath(path: string, previousHabits: HabitDef[]): Config
 }
 
 function applyConfigDataDeletions(
-  user: string,
   deletions: string[],
   previousHabits: HabitDef[],
-  habitRepository: HabitRepository,
+  habitRepository: UserHabitRepository,
 ): void {
   for (const path of deletions) {
     const deletion = optionDeletionForPath(path, previousHabits);
     if (!deletion) continue;
     habitRepository.applyConfigMutation({
       kind: 'delete_select_value',
-      user,
       habit: deletion.habit,
       value: deletion.option,
     });
@@ -143,11 +141,10 @@ function classifyConfigMigrations(
 }
 
 function applyConfigDataMigrations(
-  user: string,
   migrations: ConfigMigrationTuple[],
   previousHabits: HabitDef[],
   nextHabits: HabitDef[],
-  habitRepository: HabitRepository,
+  habitRepository: UserHabitRepository,
 ): void {
   const { habitRenames, optionRenames } = classifyConfigMigrations(
     migrations,
@@ -158,7 +155,6 @@ function applyConfigDataMigrations(
   for (const [fromHabit, toHabit] of habitRenames) {
     habitRepository.applyConfigMutation({
       kind: 'rename_habit',
-      user,
       from: fromHabit,
       to: toHabit,
     });
@@ -166,7 +162,6 @@ function applyConfigDataMigrations(
   for (const { habit, fromOption, toOption } of optionRenames) {
     habitRepository.applyConfigMutation({
       kind: 'rename_select_value',
-      user,
       habit,
       from: fromOption,
       to: toOption,
@@ -180,7 +175,8 @@ export class ConfigService {
   constructor(
     private readonly repository = new ConfigRepository(),
     private readonly yamlConfig = new YAMLConfig(),
-    private readonly habitRepository = new HabitRepository(),
+    private readonly getUserHabitRepository: (userId: string) => UserHabitRepository = (userId) =>
+      new UserHabitRepository(userId, this),
   ) {}
 
   ensureConfigLayout(): void {
@@ -330,19 +326,17 @@ export class ConfigService {
     if (!out.ok) {
       throw new ServiceError('bad_request', out.error);
     }
+    const habitRepository = this.getUserHabitRepository(user);
     if (configMigrations.length > 0) {
-      const nextConfig = this.loadUserConfig(user);
-      if (!nextConfig) throw new ServiceError('not_found', 'user not found');
       applyConfigDataMigrations(
-        user,
         configMigrations,
         previousConfig.habits,
-        nextConfig.habits,
-        this.habitRepository,
+        habitRepository.userConfig.habits,
+        habitRepository,
       );
     }
     if (configDeletions.length > 0) {
-      applyConfigDataDeletions(user, configDeletions, previousConfig.habits, this.habitRepository);
+      applyConfigDataDeletions(configDeletions, previousConfig.habits, habitRepository);
     }
 
     return { ok: true as const, user };

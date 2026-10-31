@@ -1,6 +1,6 @@
 import { dayFromString } from '@habsum/types/common/day';
 import { describe, expect, it } from 'vitest';
-import type { HabitMutation } from '../../repositories/habit-repository.js';
+import type { HabitMutation } from '../../repositories/user-habit-repository.js';
 import type { HabitDef } from '../../types/userConfig.js';
 import type { HabitMutationRepository } from './habit-type-service.js';
 import { SingleSelectHabitService } from './single-select-habit-service.js';
@@ -41,11 +41,9 @@ describe('habit type services', () => {
       },
     };
     const service = new SingleSelectHabitService(definition, repository);
-    service.applyPatch({ user: 'user', date, body: { value: 'bad' } });
+    service.applyPatch({ date, body: { value: 'bad' } });
 
-    expect(mutations).toEqual([
-      { kind: 'set_select', user: 'user', habit: 'mood', date, value: 'bad' },
-    ]);
+    expect(mutations).toEqual([{ kind: 'set_select', habit: 'mood', date, value: 'bad' }]);
   });
 
   it('keeps total mutations in the summation service', () => {
@@ -59,7 +57,6 @@ describe('habit type services', () => {
     };
     const service = new SummationHabitService(definition, repository);
     service.applyPatch({
-      user: 'user',
       date,
       body: { total: '5', clientCreatedAt: '2026-07-23 10:00:00' },
     });
@@ -67,7 +64,6 @@ describe('habit type services', () => {
     expect(mutations).toEqual([
       {
         kind: 'add_total',
-        user: 'user',
         habit: 'push ups',
         date,
         total: 5,
@@ -88,22 +84,20 @@ describe('habit type services', () => {
       },
     };
     const service = new TextHabitService(definition, repository);
-    service.applyPatch({ user: 'user', date, body: { text: 'A thought for today.' } });
+    service.applyPatch({ date, body: { text: 'A thought for today.' } });
 
     expect(mutations).toEqual([
       {
         kind: 'set_text',
-        user: 'user',
         habit: 'journal',
         date,
         text: 'A thought for today.',
       },
     ]);
 
-    service.applyPatch({ user: 'user', date, body: { text: '' } });
+    service.applyPatch({ date, body: { text: '' } });
     expect(mutations.at(-1)).toEqual({
       kind: 'clear_text',
-      user: 'user',
       habit: 'journal',
       date,
     });
@@ -122,12 +116,11 @@ describe('habit type services', () => {
     };
     const service = new TextHabitService(definition, repository);
 
-    service.applyPatch({ user: 'user', date, body: { text: '' } });
+    service.applyPatch({ date, body: { text: '' } });
 
     expect(mutations).toEqual([
       {
         kind: 'set_text',
-        user: 'user',
         habit: 'journal',
         date,
         text: '',

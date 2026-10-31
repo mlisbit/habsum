@@ -18,12 +18,11 @@ export class SingleSelectHabitService implements HabitTypeService<HabitRowSingle
     private readonly repository: HabitMutationRepository,
   ) {}
 
-  applyPatch({ user, date, body }: ApplyHabitPatchInput): void {
+  applyPatch({ date, body }: ApplyHabitPatchInput): void {
     const action = typeof body.action === 'string' ? body.action : undefined;
     if (action === 'clear') {
       this.repository.applyHabitMutation({
         kind: 'clear_select',
-        user,
         habit: this.habit.name,
         date,
       });
@@ -40,7 +39,6 @@ export class SingleSelectHabitService implements HabitTypeService<HabitRowSingle
 
     this.repository.applyHabitMutation({
       kind: 'set_select',
-      user,
       habit: this.habit.name,
       date,
       value: body.value,

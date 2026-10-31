@@ -20,7 +20,7 @@ export class SummationHabitService implements HabitTypeService<HabitRowSummation
     private readonly repository: HabitMutationRepository,
   ) {}
 
-  applyPatch({ user, date, body }: ApplyHabitPatchInput): void {
+  applyPatch({ date, body }: ApplyHabitPatchInput): void {
     const action = typeof body.action === 'string' ? body.action : 'add';
 
     if (action === 'delete_event') {
@@ -30,7 +30,6 @@ export class SummationHabitService implements HabitTypeService<HabitRowSummation
       }
       const removed = this.repository.applyHabitMutation({
         kind: 'delete_event',
-        user,
         habit: this.habit.name,
         date,
         eventId,
@@ -44,7 +43,6 @@ export class SummationHabitService implements HabitTypeService<HabitRowSummation
     if (action === 'clear') {
       this.repository.applyHabitMutation({
         kind: 'clear_total',
-        user,
         habit: this.habit.name,
         date,
       });
@@ -70,7 +68,6 @@ export class SummationHabitService implements HabitTypeService<HabitRowSummation
 
     this.repository.applyHabitMutation({
       kind: action === 'add' ? 'add_total' : 'set_total',
-      user,
       habit: this.habit.name,
       date,
       total,

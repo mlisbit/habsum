@@ -4,12 +4,11 @@ import { yamlString } from '@habsum/types/common/misc';
 import { describe, expect, it } from 'vitest';
 import { createApp } from '../../app.js';
 import { ConfigService } from '../../services/config-service.js';
-import { HabitRepository } from '../../repositories/habit-repository.js';
+import { UserHabitRepository } from '../../repositories/user-habit-repository.js';
 import { UserAndAuthRepository } from '../../repositories/user-and-auth-repository.js';
 import { SESSION_COOKIE_NAME } from '../../utils/cookie-session-utils.js';
 
 const configService = new ConfigService();
-const habitRepository = new HabitRepository();
 const userAndAuthRepository = new UserAndAuthRepository();
 
 function writeExportUserConfig(user: string) {
@@ -35,16 +34,15 @@ describe('GET /users/:user/data', () => {
     const user = 'export-data-user';
     writeExportUserConfig(user);
     userAndAuthRepository.setUserPassword(user, 'test-password');
+    const habitRepository = new UserHabitRepository(user, configService);
     habitRepository.applyHabitMutation({
       kind: 'set_select',
-      user,
       habit: 'mood',
       date: dayFromString('2026-01-02'),
       value: 'tricky, value',
     });
     habitRepository.applyHabitMutation({
       kind: 'add_total',
-      user,
       habit: 'push ups',
       date: dayFromString('2026-01-03'),
       total: 12,
@@ -52,7 +50,6 @@ describe('GET /users/:user/data', () => {
     });
     habitRepository.applyHabitMutation({
       kind: 'set_text',
-      user,
       habit: 'journal',
       date: dayFromString('2026-01-04'),
       text: 'line one\nline two',

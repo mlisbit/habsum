@@ -1,5 +1,9 @@
-// Repository that owns habit DB access and hydrated habit construction.
+// Repository that owns one user's habit config, DB access, and hydrated habit construction.
 import { dayFromString, type Day } from '@habsum/types/common/day';
+import type { ConfigService } from '../services/config-service.js';
+import type { UserConfig } from '../types/userConfig.js';
+import ServiceError from '../utils/classes/service-error.js';
+import getHabitInsightDataRange from '../utils/habits/get-habit-insight-data-range.js';
 import {
   addToTotal,
   deleteDailySelect,
@@ -26,6 +30,7 @@ import type {
   HabitDataRange,
   HabitDataRangeRequest,
   HabitDataSelection,
+  HabitListViewContext,
   HydratedHabitData,
 } from '../types/habit.types.js';
 
@@ -34,25 +39,24 @@ type LoadHydratedHabitsOptions = {
 };
 
 export type HabitMutation =
-  | { kind: 'set_select'; user: string; habit: string; date: Day; value: string }
-  | { kind: 'clear_select'; user: string; habit: string; date: Day }
-  | { kind: 'set_text'; user: string; habit: string; date: Day; text: string }
-  | { kind: 'clear_text'; user: string; habit: string; date: Day }
+  | { kind: 'set_select'; habit: string; date: Day; value: string }
+  | { kind: 'clear_select'; habit: string; date: Day }
+  | { kind: 'set_text'; habit: string; date: Day; text: string }
+  | { kind: 'clear_text'; habit: string; date: Day }
   | {
       kind: 'add_total' | 'set_total';
-      user: string;
       habit: string;
       date: Day;
       total: number;
       createdAt: string;
     }
-  | { kind: 'clear_total'; user: string; habit: string; date: Day }
-  | { kind: 'delete_event'; user: string; habit: string; date: Day; eventId: number };
+  | { kind: 'clear_total'; habit: string; date: Day }
+  | { kind: 'delete_event'; habit: string; date: Day; eventId: number };
 
 export type HabitConfigMutation =
-  | { kind: 'delete_select_value'; user: string; habit: string; value: string }
-  | { kind: 'rename_select_value'; user: string; habit: string; from: string; to: string }
-  | { kind: 'rename_habit'; user: string; from: string; to: string };
+  | { kind: 'delete_select_value'; habit: string; value: string }
+  | { kind: 'rename_select_value'; habit: string; from: string; to: string }
+  | { kind: 'rename_habit'; from: string; to: string };
 
 function selectValuesFromSeries(rows: Array<{ date: string; value: string }>) {
   return rows.map((row) => ({
@@ -124,71 +128,115 @@ function selectionRange(
   return selection.range === 'all' ? 'all' : resolveRange(selection.range, firstRecordedDate);
 }
 
-export class HabitRepository {
+export class UserHabitRepository {
+  readonly userConfig: UserConfig;
+
+  constructor(
+    private readonly userId: string,
+    userConfigService: Pick<ConfigService, 'loadUserConfig'>,
+  ) {
+    const userConfig = userConfigService.loadUserConfig(userId);
+    if (!userConfig) throw new ServiceError('not_found', 'user not found');
+    this.userConfig = userConfig;
+  }
+
+  getHabitListDataQuery({
+    viewDate,
+    today,
+  }: Pick<HabitListViewContext, 'viewDate' | 'today'>): HabitDataQuery {
+    return {
+      viewDate,
+      habits: this.userConfig.habits.map((habit) => ({
+        name: habit.name,
+        type: habit.type,
+        range: getHabitInsightDataRange(habit, viewDate, today),
+      })),
+    };
+  }
+
+  getHabitHistoryDataQuery({
+    habitNames,
+    viewDate,
+  }: {
+    habitNames: string[];
+    viewDate: Day;
+  }): HabitDataQuery {
+    return {
+      viewDate,
+      habits: habitNames.map((name) => {
+        const habit = this.userConfig.habits.find((habit) => habit.name === name);
+        if (!habit) throw new ServiceError('not_found', `habit not configured: ${name}`);
+        return { name: habit.name, type: habit.type, range: 'all' };
+      }),
+    };
+  }
+
   applyConfigMutation(mutation: HabitConfigMutation): void {
     switch (mutation.kind) {
       case 'delete_select_value':
-        deleteDailySelectValue(mutation.user, mutation.habit, mutation.value);
+        deleteDailySelectValue(this.userId, mutation.habit, mutation.value);
         return;
       case 'rename_select_value':
-        renameDailySelectValue(mutation.user, mutation.habit, mutation.from, mutation.to);
+        renameDailySelectValue(this.userId, mutation.habit, mutation.from, mutation.to);
         return;
       case 'rename_habit':
-        renameHabitData(mutation.user, mutation.from, mutation.to);
+        renameHabitData(this.userId, mutation.from, mutation.to);
     }
   }
 
   applyHabitMutation(mutation: HabitMutation): boolean {
-    const { user, habit, date } = mutation;
+    const { habit, date } = mutation;
     switch (mutation.kind) {
       case 'set_select':
-        setSelect(user, habit, date, mutation.value);
+        setSelect(this.userId, habit, date, mutation.value);
         return true;
       case 'clear_select':
-        deleteDailySelect(user, habit, date);
+        deleteDailySelect(this.userId, habit, date);
         return true;
       case 'set_text':
-        setHabitText(user, habit, date, mutation.text);
+        setHabitText(this.userId, habit, date, mutation.text);
         return true;
       case 'clear_text':
-        deleteHabitText(user, habit, date);
+        deleteHabitText(this.userId, habit, date);
         return true;
       case 'add_total':
-        addToTotal(user, habit, date, mutation.total, mutation.createdAt);
+        addToTotal(this.userId, habit, date, mutation.total, mutation.createdAt);
         return true;
       case 'set_total':
-        setTotal(user, habit, date, mutation.total, mutation.createdAt);
+        setTotal(this.userId, habit, date, mutation.total, mutation.createdAt);
         return true;
       case 'clear_total':
-        deleteSummationEventsForDay(user, habit, date);
+        deleteSummationEventsForDay(this.userId, habit, date);
         return true;
       case 'delete_event':
-        return deleteSummationEvent(user, habit, date, mutation.eventId);
+        return deleteSummationEvent(this.userId, habit, date, mutation.eventId);
     }
   }
 
-  getDataExport(user: string) {
+  getDataExport() {
     return {
-      dailySelects: getAllDailySelectsForUser(user),
-      summationEvents: getAllSummationEventsForUser(user),
-      texts: getAllHabitTextsForUser(user),
+      dailySelects: getAllDailySelectsForUser(this.userId),
+      summationEvents: getAllSummationEventsForUser(this.userId),
+      texts: getAllHabitTextsForUser(this.userId),
     };
   }
 
-  getDataMetadata(user: string): HabitDataMetadata {
-    const { firstDate, displayName: rawDisplayName } = getHabitHydrationMetadata(user);
+  getDataMetadata(): HabitDataMetadata {
+    const { firstDate, displayName: rawDisplayName } = getHabitHydrationMetadata(this.userId);
     const displayName = rawDisplayName?.trim();
     return {
-      familiarName: displayName?.split(/\s+/)[0] || user,
+      familiarName: displayName?.split(/\s+/)[0] || this.userId,
       firstRecordedDate: firstDate == null ? null : dayFromString(firstDate),
     };
   }
 
+  // Returns one data object per requested habit, scoped to this user and the requested date range.
+  // Each includes name/type, data bounds, and select values, texts, or summation events with daily totals.
   loadHydratedHabits(
     query: HabitDataQuery,
     { firstRecordedDate = null }: LoadHydratedHabitsOptions = {},
   ): HydratedHabitData[] {
-    const { user, viewDate } = query;
+    const { viewDate } = query;
     const ranges = new Map(
       query.habits.map((selection) => [
         selection.name,
@@ -209,25 +257,25 @@ export class HabitRepository {
       selectSelections.length === 0
         ? []
         : allSelectData
-          ? getAllDailySelectsForUser(user)
+          ? getAllDailySelectsForUser(this.userId)
           : hydrationRange
-            ? getDailySelectSeriesForUser(user, hydrationRange.start, hydrationRange.end)
+            ? getDailySelectSeriesForUser(this.userId, hydrationRange.start, hydrationRange.end)
             : [];
     const eventRows =
       summationSelections.length === 0
         ? []
         : allSummationData
-          ? getAllSummationEventsForUser(user)
+          ? getAllSummationEventsForUser(this.userId)
           : hydrationRange
-            ? getSummationEventSeriesForUser(user, hydrationRange.start, hydrationRange.end)
+            ? getSummationEventSeriesForUser(this.userId, hydrationRange.start, hydrationRange.end)
             : [];
     const textRows =
       textSelections.length === 0
         ? []
         : allTextData
-          ? getAllHabitTextsForUser(user)
+          ? getAllHabitTextsForUser(this.userId)
           : hydrationRange
-            ? getHabitTextSeriesForUser(user, hydrationRange.start, hydrationRange.end)
+            ? getHabitTextSeriesForUser(this.userId, hydrationRange.start, hydrationRange.end)
             : [];
     return query.habits.map((selection): HydratedHabitData => {
       const range = ranges.get(selection.name)!;

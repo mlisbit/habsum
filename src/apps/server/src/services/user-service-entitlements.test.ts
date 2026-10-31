@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { dayFromString } from '@habsum/types/common/day';
 import { ProductEntitlement } from '@habsum/types/common/entitlement';
-import { HabitRepository } from '../repositories/habit-repository.js';
+import { UserHabitRepository } from '../repositories/user-habit-repository.js';
 import { UserAndAuthRepository } from '../repositories/user-and-auth-repository.js';
 import { UserService } from './user-service.js';
+import { ConfigService } from './config-service.js';
 
-const habitRepository = new HabitRepository();
+const configService = new ConfigService();
 const userAndAuthRepository = new UserAndAuthRepository();
 const userService = new UserService();
 
@@ -44,10 +45,11 @@ describe('UserService.entitlementsForUser', () => {
 
   it('omits NEW_USER after a daily selection is stored', () => {
     const username = 'entitlements-returning-user-test';
+    configService.createEmptyUserConfig(username);
+    const habitRepository = new UserHabitRepository(username, configService);
     userAndAuthRepository.setUserPassword(username, 'test-password');
     habitRepository.applyHabitMutation({
       kind: 'set_select',
-      user: username,
       habit: 'test-habit',
       date: dayFromString('2020-01-01'),
       value: 'yes',
@@ -58,10 +60,11 @@ describe('UserService.entitlementsForUser', () => {
 
   it('omits NEW_USER after a text entry is stored', () => {
     const username = 'entitlements-text-user-test';
+    configService.createEmptyUserConfig(username);
+    const habitRepository = new UserHabitRepository(username, configService);
     userAndAuthRepository.setUserPassword(username, 'test-password');
     habitRepository.applyHabitMutation({
       kind: 'set_text',
-      user: username,
       habit: 'journal',
       date: dayFromString('2020-01-01'),
       text: 'A thought.',

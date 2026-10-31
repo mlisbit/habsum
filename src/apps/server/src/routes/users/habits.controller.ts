@@ -1,19 +1,15 @@
 import type { Request, Response } from 'express';
 import { dasherize } from '@habsum/utils/strings';
-import { HabitRepository } from '../../repositories/habit-repository.js';
+import { UserHabitRepository } from '../../repositories/user-habit-repository.js';
 import { HabitService } from '../../services/habit-service.js';
 import type { HabitListQuery, PatchBody } from '../../types/habit.types.js';
 import ServiceError from '../../utils/classes/service-error.js';
 import getHabitFilter from '../../utils/get-habit-filter.js';
-import getHabitHistoryDataQuery from '../../utils/get-habit-history-data-query.js';
 import getHabitListContext from '../../utils/get-habit-list-context.js';
-import getHabitListDataQuery from '../../utils/get-habit-list-data-query.js';
 import { getHabitApiDate, getHabitApiToday } from '../../utils/server-time-utils.js';
 import { UserService } from '../../services/user-service.js';
 import { sendServiceResult } from '../../utils/controller-result-utils.js';
 
-const habitRepository = new HabitRepository();
-const habitService = new HabitService(habitRepository);
 const userService = new UserService();
 
 export const habitsController = {
@@ -28,8 +24,10 @@ export const habitsController = {
   ) {
     return sendServiceResult(res, () => {
       const { user } = req.params;
+      const habitRepository = new UserHabitRepository(user, userService);
+      const habitService = new HabitService(habitRepository);
       const requestedAt = new Date();
-      const userConfig = userService.loadUserConfig(user);
+      const { userConfig } = habitRepository;
       const viewingDate = getHabitApiDate(req.query.date, requestedAt);
       const habitIds = getHabitFilter(req.query.filter ?? req.query.habitId);
       if (habitIds.length === 0) throw new ServiceError('bad_request', 'filter is required');
@@ -41,16 +39,14 @@ export const habitsController = {
         return definition;
       });
       const hydratedHabits = habitRepository.loadHydratedHabits(
-        getHabitHistoryDataQuery({
-          user,
-          habits: habitDefinitions,
+        habitRepository.getHabitHistoryDataQuery({
+          habitNames: habitDefinitions.map((habit) => habit.name),
           viewDate: viewingDate,
         }),
       );
 
       return habitService.getHabitHistoryPresentation({
         user,
-        userConfig,
         habitDefinitions,
         hydratedHabits,
         viewingDate,
@@ -63,25 +59,21 @@ export const habitsController = {
   getHabits(req: Request<{ user: string }, unknown, unknown, HabitListQuery>, res: Response) {
     return sendServiceResult(res, () => {
       const { user } = req.params;
+      const habitRepository = new UserHabitRepository(user, userService);
+      const habitService = new HabitService(habitRepository);
       const requestedAt = new Date();
-      const userConfig = userService.loadUserConfig(user);
       const viewContext = getHabitListContext({
         query: req.query,
         requestedAt,
       });
-      const dataQuery = getHabitListDataQuery({
-        user,
-        config: userConfig,
-        context: viewContext,
-      });
-      const metadata = habitRepository.getDataMetadata(user);
+      const dataQuery = habitRepository.getHabitListDataQuery(viewContext);
+      const metadata = habitRepository.getDataMetadata();
       const hydratedHabits = habitRepository.loadHydratedHabits(dataQuery, {
         firstRecordedDate: metadata.firstRecordedDate,
       });
 
       return habitService.getHabitListPresentation({
         user,
-        config: userConfig,
         context: viewContext,
         metadata,
         hydratedHabits,
@@ -92,9 +84,9 @@ export const habitsController = {
   patchHabits(req: Request<{ user: string }, unknown, PatchBody>, res: Response) {
     return sendServiceResult(res, () => {
       const { user } = req.params;
+      const habitService = new HabitService(new UserHabitRepository(user, userService));
       return habitService.patchHabit({
         user,
-        config: userService.loadUserConfig(user),
         body: req.body,
         at: new Date(),
       });

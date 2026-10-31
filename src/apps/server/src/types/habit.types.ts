@@ -42,7 +42,6 @@ export type HabitDataSelection = {
 };
 
 export type HabitDataQuery = {
-  user: string;
   viewDate: Day;
   habits: HabitDataSelection[];
 };

@@ -1,7 +1,5 @@
 // Service function for exporting a user's stored habit events as CSV text.
-import { HabitRepository } from '../repositories/habit-repository.js';
-
-const habitRepository = new HabitRepository();
+import type { UserHabitRepository } from '../repositories/user-habit-repository.js';
 
 function csvCell(value: string | number | null | undefined): string {
   if (value == null) return '';
@@ -13,11 +11,11 @@ function csvLine(values: Array<string | number | null | undefined>): string {
   return values.map(csvCell).join(',');
 }
 
-export function buildUserDataCsv(user: string): string {
+export function buildUserDataCsv(habitRepository: UserHabitRepository): string {
   const lines = [
     csvLine(['record_type', 'habit', 'date', 'value', 'event_id', 'amount', 'created_at']),
   ];
-  const data = habitRepository.getDataExport(user);
+  const data = habitRepository.getDataExport();
 
   for (const row of data.dailySelects) {
     lines.push(csvLine(['daily_select', row.habit, row.date, row.value, '', '', row.updatedAt]));

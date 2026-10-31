@@ -4,12 +4,11 @@ import { yamlString } from '@habsum/types/common/misc';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../../app.js';
 import { ConfigService } from '../../services/config-service.js';
-import { HabitRepository } from '../../repositories/habit-repository.js';
+import { UserHabitRepository } from '../../repositories/user-habit-repository.js';
 import { UserAndAuthRepository } from '../../repositories/user-and-auth-repository.js';
 import { SESSION_COOKIE_NAME } from '../../utils/cookie-session-utils.js';
 
 const configService = new ConfigService();
-const habitRepository = new HabitRepository();
 const userAndAuthRepository = new UserAndAuthRepository();
 
 function writeUserConfig(user: string, text: string) {
@@ -80,9 +79,9 @@ describe('GET /users/:user/habits repeat config', () => {
     );
     userAndAuthRepository.setUserPassword(user, 'test-password');
     userAndAuthRepository.patchUserProfile(user, { displayName: 'Alex Morgan' });
+    const habitRepository = new UserHabitRepository(user, configService);
     habitRepository.applyHabitMutation({
       kind: 'set_total',
-      user,
       habit: 'every day',
       date: dayFromString('2999-06-01'),
       total: 1,
@@ -279,9 +278,9 @@ describe('GET /users/:user/habits repeat config', () => {
 `,
     );
     userAndAuthRepository.setUserPassword(user, 'test-password');
+    const habitRepository = new UserHabitRepository(user, configService);
     habitRepository.applyHabitMutation({
       kind: 'set_total',
-      user,
       habit: 'midweek reps',
       date: dayFromString('2026-07-01'),
       total: 12,
@@ -289,7 +288,6 @@ describe('GET /users/:user/habits repeat config', () => {
     });
     habitRepository.applyHabitMutation({
       kind: 'set_total',
-      user,
       habit: 'midweek reps',
       date: dayFromString('2026-07-03'),
       total: 20,
@@ -297,7 +295,6 @@ describe('GET /users/:user/habits repeat config', () => {
     });
     habitRepository.applyHabitMutation({
       kind: 'set_total',
-      user,
       habit: 'friday reps',
       date: dayFromString('2026-07-03'),
       total: 5,

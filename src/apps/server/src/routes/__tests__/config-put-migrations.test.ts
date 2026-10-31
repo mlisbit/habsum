@@ -5,14 +5,12 @@ import { yamlString } from '@habsum/types/common/misc';
 import { describe, expect, it } from 'vitest';
 import { createApp } from '../../app.js';
 import { ConfigService } from '../../services/config-service.js';
-import { HabitRepository } from '../../repositories/habit-repository.js';
-import getHabitListDataQuery from '../../utils/get-habit-list-data-query.js';
+import { UserHabitRepository } from '../../repositories/user-habit-repository.js';
 import { UserAndAuthRepository } from '../../repositories/user-and-auth-repository.js';
 import { SESSION_COOKIE_NAME } from '../../utils/cookie-session-utils.js';
 import getDatabasePath from '../../utils/get-database-path.js';
 
 const configService = new ConfigService();
-const habitRepository = new HabitRepository();
 const userAndAuthRepository = new UserAndAuthRepository();
 
 function writeUserConfig(user: string, text: string) {
@@ -23,18 +21,10 @@ function writeUserConfig(user: string, text: string) {
 }
 
 function hydratedSelectValue(user: string, habit: string, date: string): string | null {
-  const config = configService.loadUserConfig(user);
-  if (!config) throw new Error(`missing config for ${user}`);
+  const habitRepository = new UserHabitRepository(user, configService);
   const viewDate = dayFromString(date);
   const hydratedHabits = habitRepository.loadHydratedHabits(
-    getHabitListDataQuery({
-      user,
-      config,
-      context: {
-        viewDate,
-        today: viewDate,
-      },
-    }),
+    habitRepository.getHabitListDataQuery({ viewDate, today: viewDate }),
   );
   const habitData = hydratedHabits.find((candidate) => candidate.name === habit);
   if (!habitData || habitData.type !== 'single_select') return null;
@@ -147,9 +137,9 @@ describe('PUT /users/:user/config migrations', () => {
 `,
     );
     userAndAuthRepository.setUserPassword(user, 'test-password');
+    const habitRepository = new UserHabitRepository(user, configService);
     habitRepository.applyHabitMutation({
       kind: 'set_total',
-      user,
       habit: 'push ups',
       date: dayFromString('2025-01-01'),
       total: 12,
@@ -157,14 +147,12 @@ describe('PUT /users/:user/config migrations', () => {
     });
     habitRepository.applyHabitMutation({
       kind: 'set_select',
-      user,
       habit: 'mood',
       date: dayFromString('2025-01-01'),
       value: 'blackout',
     });
     habitRepository.applyHabitMutation({
       kind: 'set_text',
-      user,
       habit: 'journal',
       date: dayFromString('2025-01-01'),
       text: 'A thought.',
@@ -195,7 +183,7 @@ describe('PUT /users/:user/config migrations', () => {
       })
       .expect(200);
 
-    const summationEvents = habitRepository.getDataExport(user).summationEvents;
+    const summationEvents = habitRepository.getDataExport().summationEvents;
     expect(summationEvents.filter((event) => event.habit === 'push ups')).toEqual([]);
     expect(summationEvents).toEqual(
       expect.arrayContaining([
@@ -203,7 +191,7 @@ describe('PUT /users/:user/config migrations', () => {
       ]),
     );
     expect(hydratedSelectValue(user, 'mood', '2025-01-01')).toBe('wrecked');
-    expect(habitRepository.getDataExport(user).texts).toEqual([
+    expect(habitRepository.getDataExport().texts).toEqual([
       expect.objectContaining({
         habit: 'daily journal',
         date: '2025-01-01',
@@ -223,16 +211,15 @@ describe('PUT /users/:user/config migrations', () => {
 `,
     );
     userAndAuthRepository.setUserPassword(user, 'test-password');
+    const habitRepository = new UserHabitRepository(user, configService);
     habitRepository.applyHabitMutation({
       kind: 'set_select',
-      user,
       habit: 'mood',
       date: dayFromString('2025-01-01'),
       value: 'blackout',
     });
     habitRepository.applyHabitMutation({
       kind: 'set_select',
-      user,
       habit: 'mood',
       date: dayFromString('2025-01-02'),
       value: 'okay',

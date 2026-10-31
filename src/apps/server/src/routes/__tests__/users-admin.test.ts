@@ -5,13 +5,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { createApp } from '../../app.js';
 import { ConfigService } from '../../services/config-service.js';
 import { EmailService } from '../../services/email-service.js';
-import { HabitRepository } from '../../repositories/habit-repository.js';
+import { UserHabitRepository } from '../../repositories/user-habit-repository.js';
 import { UserAndAuthRepository } from '../../repositories/user-and-auth-repository.js';
 import { SESSION_COOKIE_NAME } from '../../utils/cookie-session-utils.js';
 import getPackageVersion from '../../utils/get-package-version.js';
 
 const configService = new ConfigService();
-const habitRepository = new HabitRepository();
 const userAndAuthRepository = new UserAndAuthRepository();
 const PACKAGE_VERSION = getPackageVersion();
 let adminSequence = 0;
@@ -201,9 +200,9 @@ describe('GET /users', () => {
       displayName: 'Login Audit',
       email: 'login-audit@example.com',
     });
+    const habitRepository = new UserHabitRepository('login-audit-user', configService);
     habitRepository.applyHabitMutation({
       kind: 'add_total',
-      user: 'login-audit-user',
       habit: 'push ups',
       date: dayFromString('2026-05-28'),
       total: 10,
@@ -211,7 +210,6 @@ describe('GET /users', () => {
     });
     habitRepository.applyHabitMutation({
       kind: 'set_select',
-      user: 'login-audit-user',
       habit: 'soda consumption',
       date: dayFromString('2026-05-28'),
       value: 'none',

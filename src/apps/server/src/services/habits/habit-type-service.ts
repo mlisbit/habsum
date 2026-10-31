@@ -1,14 +1,13 @@
 import type { PatchHabitResponse } from '@habsum/types/api-responses/habit-patch';
 import type { Day } from '@habsum/types/common/day';
 import type { Habit } from '@habsum/types/common/habit';
-import type { HabitRepository } from '../../repositories/habit-repository.js';
+import type { UserHabitRepository } from '../../repositories/user-habit-repository.js';
 import type { HydratedHabitData, PatchBody } from '../../types/habit.types.js';
 import type { HabitDef } from '../../types/userConfig.js';
 
-export type HabitMutationRepository = Pick<HabitRepository, 'applyHabitMutation'>;
+export type HabitMutationRepository = Pick<UserHabitRepository, 'applyHabitMutation'>;
 
 export type ApplyHabitPatchInput = {
-  user: string;
   date: Day;
   body: PatchBody;
 };
