@@ -369,10 +369,13 @@ export async function getUsernameAvailability(username: string) {
 
 export async function sendUserInviteEmail(user: string, registrationUrl: string) {
   const body: UserInviteEmailPostRequest = { registrationUrl };
-  return request<UserInviteEmailPostResponse>(`/users/${encodeURIComponent(user)}/invite-email`, {
-    method: 'POST',
-    body: JSON.stringify(body),
-  });
+  return request<UserInviteEmailPostResponse>(
+    `/users/invite-email?name=${encodeURIComponent(user)}`,
+    {
+      method: 'POST',
+      body: JSON.stringify(body),
+    },
+  );
 }
 
 export async function adminResetUserPassword(name: string) {
@@ -385,10 +388,13 @@ export async function adminResetUserPassword(name: string) {
 
 export async function adminSetUserDemoAccount(name: string, demoUser: boolean) {
   const body: UserDemoAccountPutRequest = { demoUser };
-  return request<UserDemoAccountPutResponse>(`/users/${encodeURIComponent(name)}/demo-account`, {
-    method: 'PUT',
-    body: JSON.stringify(body),
-  });
+  return request<UserDemoAccountPutResponse>(
+    `/users/demo-account?name=${encodeURIComponent(name)}`,
+    {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    },
+  );
 }
 
 export async function adminDeleteUser(name: string) {

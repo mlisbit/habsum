@@ -11,7 +11,6 @@ import type { UserConfig, HabitDef } from '../types/userConfig.js';
 import YAMLConfig from '../utils/yaml-config/yaml-config.js';
 import { isSafeConfigUserId } from '../utils/request-utils.js';
 import ServiceError from '../utils/classes/service-error.js';
-import restrictForDemo from '../utils/restrict-for-demo.js';
 
 type GetUserConfigInput = {
   user: string;
@@ -279,7 +278,6 @@ export class ConfigService {
     };
   }
 
-  @restrictForDemo()
   putUserConfig({ user, body = {} }: PutUserConfigInput) {
     if (!isSafeConfigUserId(user)) {
       throw new ServiceError('bad_request', 'invalid user');

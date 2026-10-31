@@ -19,7 +19,6 @@ import { UserAndAuthRepository } from '../repositories/user-and-auth-repository.
 import { AuthService } from '../services/auth-service.js';
 import { ConfigService } from '../services/config-service.js';
 import { UserService } from '../services/user-service.js';
-import { resolveActiveSessionId } from '../utils/cookie-session-utils.js';
 import { sendAsyncServiceResult, sendServiceResult } from '../utils/controller-result-utils.js';
 
 const WEB_VERSION_HEADER = 'x-habsum-web-version';
@@ -69,7 +68,7 @@ function countConfiguredHabits(username: string): number {
 export const usersController = {
   getMe(req: Request, res: Response) {
     return sendServiceResult(res, () =>
-      authService.getMe(resolveActiveSessionId(req), req.headers[WEB_VERSION_HEADER]),
+      authService.getMe(res.locals.session, req.headers[WEB_VERSION_HEADER]),
     );
   },
 
@@ -104,11 +103,10 @@ export const usersController = {
     return sendServiceResult(res, () => userService.patchUser(req.params.user, req.body));
   },
 
-  putUserDemoAccount(
-    req: Request<{ user: string }, unknown, UserDemoAccountPutRequest>,
-    res: Response,
-  ) {
-    return sendServiceResult(res, () => userService.setDemoAccount(req.params.user, req.body));
+  putUserDemoAccount(req: Request<unknown, unknown, UserDemoAccountPutRequest>, res: Response) {
+    const name = typeof req.query.name === 'string' ? req.query.name : '';
+    if (!name) return res.status(400).json({ error: 'name is required' });
+    return sendServiceResult(res, () => userService.setDemoAccount(name, req.body));
   },
 
   deleteUser(req: Request<{ user: string }>, res: Response) {
@@ -259,12 +257,12 @@ export const usersController = {
     return res.status(201).json(body);
   },
 
-  postUserInviteEmail(
-    req: Request<{ user: string }, unknown, UserInviteEmailPostRequest>,
-    res: Response,
-  ) {
+  postUserInviteEmail(req: Request<unknown, unknown, UserInviteEmailPostRequest>, res: Response) {
+    const name = typeof req.query.name === 'string' ? req.query.name : '';
+    if (!name) return res.status(400).json({ error: 'name is required' });
+    if (!isSafeConfigUserId(name)) return res.status(400).json({ error: 'invalid user' });
     return sendAsyncServiceResult(res, () =>
-      authService.sendInviteEmail(req.params.user, req.body?.registrationUrl),
+      authService.sendInviteEmail(name, req.body?.registrationUrl),
     );
   },
 

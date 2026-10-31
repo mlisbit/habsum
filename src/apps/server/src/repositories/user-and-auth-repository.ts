@@ -69,20 +69,12 @@ export class UserAndAuthRepository {
     return isUserPasswordValid(username, password);
   }
 
-  isNewLoginPasswordAllowed(userId: string, newPassword: string): boolean {
-    return !isUserPasswordValid(userId, newPassword);
-  }
-
   setUserPassword(username: string, password: string): void {
     setUserPassword(username, password);
   }
 
   updateLoginPassword(username: string, password: string): boolean {
     return updateLoginPassword(username, password);
-  }
-
-  resetLoginPassword(userId: string, newPassword: string): boolean {
-    return updateLoginPassword(userId, newPassword);
   }
 
   renameUserAuthRecord(fromUsername: string, toUsername: string): void {

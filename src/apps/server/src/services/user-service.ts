@@ -18,7 +18,6 @@ import type { UserConfig } from '../types/userConfig.js';
 import { ConfigService } from './config-service.js';
 import { UserAndAuthRepository } from '../repositories/user-and-auth-repository.js';
 import ServiceError from '../utils/classes/service-error.js';
-import restrictForDemo from '../utils/restrict-for-demo.js';
 import isDemoEnabled from '../utils/is-demo-enabled.js';
 
 type UserPatchResult = {
@@ -153,7 +152,6 @@ export class UserService {
     return { sessions };
   }
 
-  @restrictForDemo()
   deleteOtherSecuritySessions(user: string, currentSessionId: string | null) {
     this.assertValidUserId(user);
     if (currentSessionId == null) {
@@ -164,7 +162,6 @@ export class UserService {
     return { ok: true as const, revoked };
   }
 
-  @restrictForDemo()
   deleteSecuritySession(user: string, token: string, currentSessionId?: string) {
     this.assertValidUserId(user);
 
@@ -188,7 +185,6 @@ export class UserService {
     return { ok: true as const };
   }
 
-  @restrictForDemo()
   changePassword(user: string, body: PasswordChangeInput | undefined) {
     this.assertValidUserId(user);
 
@@ -216,7 +212,6 @@ export class UserService {
     return { ok: true as const };
   }
 
-  @restrictForDemo()
   issueTemporaryPassword(user: string) {
     this.assertValidUserId(user);
     const password = generateTemporaryPassword();
@@ -227,18 +222,6 @@ export class UserService {
   }
 
   patchUser(user: string, body: UserPatchInput | undefined): UserPatchResult {
-    if (body != null && ('username' in body || 'displayName' in body || 'email' in body)) {
-      return this.patchUserAccount(user, body);
-    }
-    return this.applyUserPatch(user, body);
-  }
-
-  @restrictForDemo()
-  private patchUserAccount(user: string, body: UserPatchInput): UserPatchResult {
-    return this.applyUserPatch(user, body);
-  }
-
-  private applyUserPatch(user: string, body: UserPatchInput | undefined): UserPatchResult {
     this.assertValidUserId(user);
 
     const parsed = this.parseUserPatchBody(user, body ?? {});
@@ -277,7 +260,6 @@ export class UserService {
     return { ok: true, username: user };
   }
 
-  @restrictForDemo()
   deleteUser(user: string): UserDeleteResult {
     this.assertValidUserId(user);
 

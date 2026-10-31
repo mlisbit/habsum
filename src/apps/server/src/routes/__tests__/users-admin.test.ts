@@ -104,7 +104,15 @@ describe('POST /users', () => {
       .expect(201);
 
     await request(app)
-      .post(`/users/${created.body.user}/invite-email`)
+      .post('/users/invite-email')
+      .set('Cookie', cookie)
+      .send({ registrationUrl: created.body.registrationUrl })
+      .expect(400, { error: 'name is required' });
+    expect(sendEmail).not.toHaveBeenCalled();
+
+    await request(app)
+      .post('/users/invite-email')
+      .query({ name: created.body.user })
       .set('Cookie', cookie)
       .send({ registrationUrl: created.body.registrationUrl })
       .expect(200, { ok: true, recipient: 'email-invite@example.com' });

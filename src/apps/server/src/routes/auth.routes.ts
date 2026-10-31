@@ -1,9 +1,5 @@
 import { Router } from 'express';
 import { authController } from './auth.controller.js';
-import {
-  resolveForgotPasswordAccount,
-  resolveResetPasswordAccount,
-} from '../middleware/password-recovery.js';
 
 export const authRouter = Router();
 
@@ -17,21 +13,13 @@ authRouter.post('/auth/signup', authController.postSignup);
 authRouter.post('/auth/login', authController.postLogin);
 
 // Used by the forgot-password page to request a recovery email without revealing accounts.
-authRouter.post(
-  '/auth/forgot-password',
-  resolveForgotPasswordAccount,
-  authController.postForgotPassword,
-);
+authRouter.post('/auth/forgot-password', authController.postForgotPassword);
 
 // Used by the reset-password page to validate a recovery or invitation token before submission.
 authRouter.get('/auth/reset-password', authController.getResetPassword);
 
 // Used by the reset-password page to set a new password and start a session.
-authRouter.post(
-  '/auth/reset-password',
-  resolveResetPasswordAccount,
-  authController.postResetPassword,
-);
+authRouter.post('/auth/reset-password', authController.postResetPassword);
 
 // Used by the operate-under popup to validate its window-scoped administrator token.
 authRouter.post('/auth/ouc', authController.postOuc);

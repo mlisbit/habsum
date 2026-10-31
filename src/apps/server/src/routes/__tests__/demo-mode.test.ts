@@ -170,7 +170,7 @@ describe('demo mode', () => {
     expect(userAndAuthRepository.getUserProfile(user).theme).toBe('light');
 
     for (const body of [
-      { habit: 'water', total: 3 },
+      { habit: 'water', total: 3, type: 'text' },
       { habit: 'mood', value: 'good' },
     ]) {
       await request(app)
@@ -218,6 +218,7 @@ describe('demo mode', () => {
     ['journal', { text: 'Changed note' }],
     ['journal', { text: '' }],
     ['journal', { action: 'clear' }],
+    ['journal', { type: 'summation', total: 5 }],
     ['weekly notes', { text: 'Changed note' }],
     ['weekly notes', { text: '' }],
     ['weekly notes', { action: 'clear' }],
@@ -506,13 +507,14 @@ describe('demo mode', () => {
     expect(userAndAuthRepository.isUserPasswordValid(user, 'original-password')).toBe(true);
   });
 
-  it('requires request context for an administrator service call in demo mode', async () => {
+  it('allows internal service calls without HTTP request context', async () => {
     const { user } = await getDemoSession({ admin: true });
 
-    expect(() => new UserService().patchUser(user, { displayName: 'Changed name' })).toThrow(
-      forbidden.error,
-    );
-    expect(userAndAuthRepository.getUserProfile(user).displayName).toBe('Demo User');
+    expect(new UserService().patchUser(user, { displayName: 'Changed name' })).toEqual({
+      ok: true,
+      username: user,
+    });
+    expect(userAndAuthRepository.getUserProfile(user).displayName).toBe('Changed name');
   });
 
   it('resolves recovery privileges from the requested account rather than other body fields', async () => {

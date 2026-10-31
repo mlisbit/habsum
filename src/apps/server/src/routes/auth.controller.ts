@@ -5,6 +5,7 @@ import type { SignupRequest } from '@habsum/types/api-responses/signup-post';
 import type { InitialUserPostRequest } from '@habsum/types/api-responses/initial-user-post';
 import type { LoginUserRequest } from '@habsum/types/common/misc';
 import type { Request, Response } from 'express';
+import { UserAndAuthRepository } from '../repositories/user-and-auth-repository.js';
 import { AuthService } from '../services/auth-service.js';
 import {
   sendAsyncServiceResult,
@@ -19,6 +20,7 @@ import {
 } from '../utils/cookie-session-utils.js';
 
 const authService = new AuthService();
+const userAndAuthRepository = new UserAndAuthRepository();
 
 export const authController = {
   postInitialUser(req: Request<unknown, unknown, InitialUserPostRequest>, res: Response) {
@@ -52,7 +54,9 @@ export const authController = {
   },
 
   async postForgotPassword(req: Request<unknown, unknown, ForgotPasswordRequest>, res: Response) {
-    return sendAsyncServiceResult(res, () => authService.forgotPassword(req.body));
+    return sendAsyncServiceResult(res, () =>
+      authService.forgotPassword(req.body, res.locals.session),
+    );
   },
 
   getResetPassword(req: Request, res: Response) {
@@ -61,7 +65,7 @@ export const authController = {
 
   postResetPassword(req: Request<unknown, unknown, ResetPasswordRequest>, res: Response) {
     try {
-      const result = authService.resetPassword(req.body);
+      const result = authService.resetPassword(req.body, res.locals.session);
       if (result.sessionId) appendSessionCookie(res, result.sessionId);
       return res.json(result.data);
     } catch (error) {
@@ -74,7 +78,10 @@ export const authController = {
   },
 
   postOucLogout(req: Request, res: Response) {
-    authService.logoutOuc(getOucSessionHeader(req) ?? null);
+    const sessionId = getOucSessionHeader(req);
+    if (sessionId && userAndAuthRepository.isOucSessionId(sessionId)) {
+      authService.logout(sessionId);
+    }
     return res.json({ ok: true });
   },
 

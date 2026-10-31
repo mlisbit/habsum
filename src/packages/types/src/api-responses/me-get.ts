@@ -34,8 +34,8 @@ export type MeGetLoggedIn = {
    * daily selection, summation, or text entries yet; `DEMO_USER` when marked as a demo account.
    */
   entitlements: ProductEntitlement[];
-  /** First 8 characters of the session id (e.g. `OUC_a1b2` for operate-under sessions). */
-  sessionTokenPrefix: string;
+  /** Whether the request uses an operate-under session. */
+  isOucSession: boolean;
 };
 
 /**

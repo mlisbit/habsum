@@ -27,7 +27,7 @@ const resolvedUser: MeGetLoggedIn = {
   theme: null,
   createdAt: dayWithTimeFromString('2026-08-03 09:00:00'),
   entitlements: [],
-  sessionTokenPrefix: 'abcd1234',
+  isOucSession: false,
 };
 
 const loggedOut: MeGetLoggedOut = {

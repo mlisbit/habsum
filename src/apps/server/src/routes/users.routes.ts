@@ -1,42 +1,40 @@
 import { Router } from 'express';
 import { usersController } from './users.controller.js';
-import { requireAdmin, requireMatchingRouteUser } from '../middleware/auth.js';
+import { requireAdminMiddleware } from '../middleware/require-admin-middleware.js';
 
 export const usersRouter = Router();
 
 // Used by the global user context to resolve the active user's profile, role, and permissions.
 usersRouter.get('/users/me', usersController.getMe);
 
-// Used by account settings to update the authenticated user's profile preferences.
-usersRouter.patch('/users/:user', requireMatchingRouteUser, usersController.patchUser);
-
-// Used by account settings to permanently delete the authenticated user's account.
-usersRouter.delete('/users/:user', requireMatchingRouteUser, usersController.deleteUser);
-
 // Used by the administrator page to list users and their account metadata.
-usersRouter.get('/users', requireAdmin, usersController.getUsers);
+usersRouter.get('/users', requireAdminMiddleware, usersController.getUsers);
 
 // Used by administrators to set or clear an account's demo flag when demo mode is enabled.
-usersRouter.put('/users/:user/demo-account', requireAdmin, usersController.putUserDemoAccount);
+usersRouter.put('/users/demo-account', requireAdminMiddleware, usersController.putUserDemoAccount);
 
 // Used by the create-user modal to validate a username before submission.
 usersRouter.get(
   '/users/username-availability',
-  requireAdmin,
+  requireAdminMiddleware,
   usersController.getUsernameAvailability,
 );
 
 // Used by administrators to open an operate-under session for a selected user.
-usersRouter.post('/users/ouc', requireAdmin, usersController.postUsersOuc);
+usersRouter.post('/users/ouc', requireAdminMiddleware, usersController.postUsersOuc);
 
 // Used by administrators to email a newly created user's registration link.
-usersRouter.post('/users/:user/invite-email', requireAdmin, usersController.postUserInviteEmail);
+usersRouter.post(
+  '/users/invite-email',
+  requireAdminMiddleware,
+  usersController.postUserInviteEmail,
+);
 
 // Used by the administrator page to create a user from a username, email, or both.
-usersRouter.post('/users', requireAdmin, usersController.postUsers);
+usersRouter.post('/users', requireAdminMiddleware, usersController.postUsers);
 
 // Used by the administrator page to issue a temporary password for a user.
-usersRouter.patch('/users', requireAdmin, usersController.patchUsers);
+usersRouter.patch('/users', requireAdminMiddleware, usersController.patchUsers);
 
 // Used by the administrator page to delete a selected user's account and data.
-usersRouter.delete('/users', requireAdmin, usersController.deleteUsers);
+usersRouter.delete('/users', requireAdminMiddleware, usersController.deleteUsers);

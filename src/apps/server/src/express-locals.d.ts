@@ -1,10 +1,9 @@
+import type SessionContext from './utils/classes/session-context.js';
+
 declare global {
   namespace Express {
     interface Locals {
-      /** Set by auth middleware after a valid session cookie. */
-      sessionUser?: string;
+      session: SessionContext | null;
     }
   }
 }
-
-export {};

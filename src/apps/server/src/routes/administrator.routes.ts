@@ -1,42 +1,42 @@
 import { Router } from 'express';
-import { requireAdmin } from '../middleware/auth.js';
+import { requireAdminMiddleware } from '../middleware/require-admin-middleware.js';
 import { administratorController } from './administrator.controller.js';
 
 export const administratorRouter = Router();
 
 administratorRouter.get(
   '/administrator/database/download',
-  requireAdmin,
+  requireAdminMiddleware,
   administratorController.downloadDatabase,
 );
 administratorRouter.delete(
   '/administrator/database',
-  requireAdmin,
+  requireAdminMiddleware,
   administratorController.deleteDatabase,
 );
 administratorRouter.get(
   '/administrator/email-settings',
-  requireAdmin,
+  requireAdminMiddleware,
   administratorController.getEmailSettings,
 );
 administratorRouter.put(
   '/administrator/email-settings',
-  requireAdmin,
+  requireAdminMiddleware,
   administratorController.putEmailSettings,
 );
 administratorRouter.post(
   '/administrator/email-settings/test',
-  requireAdmin,
+  requireAdminMiddleware,
   administratorController.postEmailTest,
 );
 
 administratorRouter.get(
   '/administrator/application-settings',
-  requireAdmin,
+  requireAdminMiddleware,
   administratorController.getApplicationSettings,
 );
 administratorRouter.put(
   '/administrator/application-settings',
-  requireAdmin,
+  requireAdminMiddleware,
   administratorController.putApplicationSettings,
 );

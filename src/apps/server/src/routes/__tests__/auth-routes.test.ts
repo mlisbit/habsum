@@ -9,6 +9,7 @@ import { ConfigRepository } from '../../repositories/config-repository.js';
 import { EmailService } from '../../services/email-service.js';
 import { UserAndAuthRepository } from '../../repositories/user-and-auth-repository.js';
 import { ApplicationSettingsRepository } from '../../repositories/application-settings-repository.js';
+import { OUC_SESSION_HEADER, SESSION_COOKIE_NAME } from '../../utils/cookie-session-utils.js';
 
 const configService = new ConfigService();
 const userAndAuthRepository = new UserAndAuthRepository();
@@ -171,7 +172,12 @@ describe('session routes', () => {
 
     expect(sessionCookie).toMatch(/^habsum_sid=/);
     const meRes = await request(app).get('/users/me').set('Cookie', sessionCookie!).expect(200);
-    expect(meRes.body).toMatchObject({ username: 'session-route-user', admin: false });
+    expect(meRes.body).toMatchObject({
+      username: 'session-route-user',
+      admin: false,
+      isOucSession: false,
+    });
+    expect(meRes.body).not.toHaveProperty('sessionTokenPrefix');
 
     await request(app).post('/auth/logout').set('Cookie', sessionCookie!).send({}).expect(200);
 
@@ -180,6 +186,21 @@ describe('session routes', () => {
       .set('Cookie', sessionCookie!)
       .expect(200);
     expect(loggedOutMeRes.body.username).toBeNull();
+  });
+
+  it.each(['header', 'cookie'])('reports an OUC session supplied through a %s', async (source) => {
+    const user = `ouc-me-${source}`;
+    userAndAuthRepository.setUserPassword(user, 'secret');
+    const token = userAndAuthRepository.createOucUserSession(user);
+    const headers: Record<string, string> =
+      source === 'header'
+        ? { [OUC_SESSION_HEADER]: token }
+        : { Cookie: `${SESSION_COOKIE_NAME}=${token}` };
+
+    const response = await request(createApp()).get('/users/me').set(headers).expect(200);
+
+    expect(response.body).toMatchObject({ username: user, isOucSession: true });
+    expect(response.body).not.toHaveProperty('sessionTokenPrefix');
   });
 
   it.each([

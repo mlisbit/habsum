@@ -9,10 +9,6 @@ let bootstrapResolve: ((ok: boolean) => void) | null = null;
 let bootstrapPromise: Promise<boolean> | null = null;
 let bootstrapCompleted: boolean | null = null;
 
-export function isOucSessionTokenPrefix(prefix: string): boolean {
-  return prefix.startsWith('OUC_');
-}
-
 export function getOucSessionToken(): string | null {
   try {
     return sessionStorage.getItem(OUC_SESSION_STORAGE_KEY);

@@ -14,8 +14,8 @@ import ServiceError from '../utils/classes/service-error.js';
 import { ApplicationSettingsRepository } from '../repositories/application-settings-repository.js';
 import { EmailSettingsRepository } from '../repositories/email-settings-repository.js';
 import isForbiddenUsername from '@habsum/utils/is-forbidden-username';
-import restrictForDemo from '../utils/restrict-for-demo.js';
-import getDemoRestrictionContext from '../utils/get-demo-restriction-context.js';
+import type SessionContext from '../utils/classes/session-context.js';
+import isDemoEnabled from '../utils/is-demo-enabled.js';
 
 const PACKAGE_VERSION = getPackageVersion();
 
@@ -263,9 +263,8 @@ export class AuthService {
     return { data: { ok: true as const, user }, sessionId };
   }
 
-  getMe(sessionId: string | null, webVersionHeader: unknown) {
-    const user = sessionId ? this.userAndAuthRepository.getUsernameForSession(sessionId) : null;
-    if (!user) {
+  getMe(session: SessionContext | null, webVersionHeader: unknown) {
+    if (!session) {
       return {
         username: null,
         displayName: null,
@@ -276,6 +275,7 @@ export class AuthService {
       };
     }
 
+    const { username: user } = session;
     this.userAndAuthRepository.recordUserLoginMetadata(
       user,
       webAndApiVersionForHeader(webVersionHeader),
@@ -286,24 +286,28 @@ export class AuthService {
       displayName: profile.displayName,
       theme: profile.theme,
       email: profile.email ?? '',
-      admin: this.userAndAuthRepository.isUserAdmin(user),
+      admin: session.isAdmin,
       createdAt: accountCreatedAtToApi(profile.createdAt),
       entitlements: this.userService.entitlementsForUser(user),
-      sessionTokenPrefix: sessionId!.slice(0, 8),
+      isOucSession: session.isOUCSession,
     };
   }
 
-  @restrictForDemo()
-  async forgotPassword(body: ForgotPasswordInput | undefined) {
+  async forgotPassword(body: ForgotPasswordInput | undefined, session: SessionContext | null) {
     const rawEmail = body?.email;
     const email = typeof rawEmail === 'string' ? rawEmail.trim().toLowerCase() : '';
-    const recovery = getDemoRestrictionContext().getStore()?.passwordRecovery;
-    const resolvedUsername =
-      recovery?.kind === 'forgot' && recovery.email === email
-        ? (recovery.account?.username ?? null)
-        : email
-          ? this.resolveUsernameForPasswordReset(email)
-          : null;
+    const resolvedUsername = email
+      ? this.userAndAuthRepository.resolveUsernameByLoginId(email)
+      : null;
+
+    if (
+      isDemoEnabled() &&
+      !session?.isAdmin &&
+      !session?.isOUCSession &&
+      !(resolvedUsername && this.userAndAuthRepository.isUserAdmin(resolvedUsername))
+    ) {
+      throw new ServiceError('forbidden', 'Action prevented for demo users.');
+    }
 
     if (!this.getStatus().features.forgotPassword) {
       throw new ServiceError('forbidden', 'password recovery is disabled');
@@ -368,16 +372,18 @@ export class AuthService {
     };
   }
 
-  @restrictForDemo()
-  resetPassword(body: ResetPasswordInput | undefined) {
+  resetPassword(body: ResetPasswordInput | undefined, session: SessionContext | null) {
     const token = typeof body?.token === 'string' ? body.token.trim() : '';
-    const recovery = getDemoRestrictionContext().getStore()?.passwordRecovery;
-    const row =
-      recovery?.kind === 'reset' && recovery.token === token
-        ? recovery.resetToken
-        : token
-          ? this.userAndAuthRepository.lookupValidPasswordResetToken(token)
-          : null;
+    const row = token ? this.userAndAuthRepository.lookupValidPasswordResetToken(token) : null;
+
+    if (
+      isDemoEnabled() &&
+      !session?.isAdmin &&
+      !session?.isOUCSession &&
+      !(row && this.userAndAuthRepository.isUserAdmin(row.userId))
+    ) {
+      throw new ServiceError('forbidden', 'Action prevented for demo users.');
+    }
 
     if (!token) {
       throw new ServiceError('bad_request', 'token is required');
@@ -392,7 +398,7 @@ export class AuthService {
       throw new ServiceError('bad_request', 'invalid or expired reset link');
     }
 
-    if (!this.userAndAuthRepository.isNewLoginPasswordAllowed(row.userId, newPassword)) {
+    if (this.userAndAuthRepository.isUserPasswordValid(row.userId, newPassword)) {
       throw new ServiceError('bad_request', 'new password must be different from the current one');
     }
 
@@ -400,7 +406,7 @@ export class AuthService {
       throw new ServiceError('bad_request', 'invalid or expired reset link');
     }
 
-    if (!this.userAndAuthRepository.resetLoginPassword(row.userId, newPassword)) {
+    if (!this.userAndAuthRepository.updateLoginPassword(row.userId, newPassword)) {
       throw new ServiceError('bad_request', 'account no longer exists');
     }
 
@@ -424,12 +430,6 @@ export class AuthService {
     }
 
     return { ok: true as const, user };
-  }
-
-  logoutOuc(token: string | null): void {
-    if (token && this.userAndAuthRepository.isOucSessionId(token)) {
-      this.userAndAuthRepository.revokeUserSession(token);
-    }
   }
 
   logout(sessionId: string | null): void {
@@ -475,10 +475,6 @@ export class AuthService {
     }
 
     return { ok: true as const, recipient: email };
-  }
-
-  private resolveUsernameForPasswordReset(email: string): string | null {
-    return this.userAndAuthRepository.resolveUsernameByLoginId(email);
   }
 
   private async sendPasswordResetEmail(

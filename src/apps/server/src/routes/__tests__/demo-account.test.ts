@@ -28,11 +28,21 @@ beforeEach(() => {
 
 afterEach(() => vi.unstubAllEnvs());
 
-describe('PUT /users/:user/demo-account', () => {
+describe('PUT /users/demo-account', () => {
+  it('requires the target username in the query', async () => {
+    await request(app)
+      .put('/users/demo-account')
+      .set('Cookie', adminCookie)
+      .send({ demoUser: true })
+      .expect(400, { error: 'name is required' });
+    expect(repository.isDemoUser(user)).toBe(false);
+  });
+
   it('persists an idempotent toggle and returns DEMO_USER in current-user and user-list models', async () => {
     for (const demoUser of [true, true, false, false]) {
       const response = await request(app)
-        .put(`/users/${user}/demo-account`)
+        .put('/users/demo-account')
+        .query({ name: user })
         .set('Cookie', adminCookie)
         .send({ demoUser })
         .expect(200);
@@ -61,7 +71,8 @@ describe('PUT /users/:user/demo-account', () => {
 
   it('allows administrators to toggle their own account while retaining administrator access', async () => {
     await request(app)
-      .put(`/users/${admin}/demo-account`)
+      .put('/users/demo-account')
+      .query({ name: admin })
       .set('Cookie', adminCookie)
       .send({ demoUser: true })
       .expect(200);
@@ -72,21 +83,28 @@ describe('PUT /users/:user/demo-account', () => {
       expect.arrayContaining([ProductEntitlement.ADMIN, ProductEntitlement.DEMO_USER]),
     );
     await request(app)
-      .put(`/users/${admin}/demo-account`)
+      .put('/users/demo-account')
+      .query({ name: admin })
       .set('Cookie', adminCookie)
       .send({ demoUser: false })
       .expect(200);
   });
 
   it('requires an administrator session and rejects operate-under sessions', async () => {
-    await request(app).put(`/users/${user}/demo-account`).send({ demoUser: true }).expect(401);
     await request(app)
-      .put(`/users/${user}/demo-account`)
+      .put('/users/demo-account')
+      .query({ name: user })
+      .send({ demoUser: true })
+      .expect(401);
+    await request(app)
+      .put('/users/demo-account')
+      .query({ name: user })
       .set('Cookie', cookie)
       .send({ demoUser: true })
       .expect(403);
     await request(app)
-      .put(`/users/${user}/demo-account`)
+      .put('/users/demo-account')
+      .query({ name: user })
       .set('Cookie', adminCookie)
       .set(OUC_SESSION_HEADER, repository.createOucUserSession(user))
       .send({ demoUser: true })
@@ -98,7 +116,8 @@ describe('PUT /users/:user/demo-account', () => {
     repository.setUserDemo(user, true);
     vi.stubEnv('HABSUM_ENABLE_DEMO', flag);
     await request(app)
-      .put(`/users/${user}/demo-account`)
+      .put('/users/demo-account')
+      .query({ name: user })
       .set('Cookie', adminCookie)
       .send({ demoUser: false })
       .expect(403, { error: 'Demo mode is disabled.' });
@@ -111,7 +130,8 @@ describe('PUT /users/:user/demo-account', () => {
     'rejects invalid demo flags: %j',
     async (body) => {
       await request(app)
-        .put(`/users/${user}/demo-account`)
+        .put('/users/demo-account')
+        .query({ name: user })
         .set('Cookie', adminCookie)
         .send(body)
         .expect(400, { error: 'demoUser must be a boolean' });
@@ -121,7 +141,8 @@ describe('PUT /users/:user/demo-account', () => {
 
   it('returns not found without creating an account', async () => {
     await request(app)
-      .put('/users/missing-demo-account/demo-account')
+      .put('/users/demo-account')
+      .query({ name: 'missing-demo-account' })
       .set('Cookie', adminCookie)
       .send({ demoUser: true })
       .expect(404, { error: 'user not found' });
