@@ -22,7 +22,7 @@ import type {
   HydratedHabitData,
   PatchBody,
 } from '../types/habit.types.js';
-import type { HabitDef, UserConfig } from '../types/userConfig.js';
+import type { UserConfig, HabitDef } from '../types/userConfig.js';
 import ServiceError from '../utils/classes/service-error.js';
 import getHabitListDataQuery from '../utils/get-habit-list-data-query.js';
 import isHabitRepeatedOnDate from '../utils/habits/is-habit-repeated-on-date.js';
@@ -39,6 +39,7 @@ type PatchHabitInput = {
 };
 
 type PresentHabitListInput = {
+  user: string;
   config: UserConfig;
   context: HabitListViewContext;
   metadata: HabitDataMetadata;
@@ -63,7 +64,13 @@ export class HabitService {
    * The controller resolves the viewing context and loads the hydrated habits
    * and page metadata before calling this method.
    */
-  getHabitListPresentation({ config, context, metadata, hydratedHabits }: PresentHabitListInput) {
+  getHabitListPresentation({
+    user,
+    config,
+    context,
+    metadata,
+    hydratedHabits,
+  }: PresentHabitListInput) {
     const habits = this.presentHabits({
       definitions: config.habits,
       hydratedHabits,
@@ -76,7 +83,7 @@ export class HabitService {
     });
 
     return new HabitResultBuilder({
-      user: config.user,
+      user,
       viewingDate: context.viewDate,
       familiarName: metadata.familiarName,
       firstRecordedDate: metadata.firstRecordedDate,
@@ -130,6 +137,7 @@ export class HabitService {
     typeService.applyPatch({ user, date: day, body });
 
     const response = this.updatedHabit({
+      user,
       config,
       date: day,
       habit,
@@ -170,12 +178,14 @@ export class HabitService {
   }
 
   private updatedHabit({
+    user,
     config,
     date,
     habit,
     today,
     typeService,
   }: {
+    user: string;
     config: UserConfig;
     date: Day;
     habit: string;
@@ -186,9 +196,9 @@ export class HabitService {
       viewDate: date,
       today,
     };
-    const metadata = this.repository.getDataMetadata(config.user);
+    const metadata = this.repository.getDataMetadata(user);
     const hydratedHabits = this.repository.loadHydratedHabits(
-      getHabitListDataQuery({ config, context }),
+      getHabitListDataQuery({ user, config, context }),
       {
         firstRecordedDate: metadata.firstRecordedDate,
       },
@@ -208,7 +218,7 @@ export class HabitService {
     }).present();
 
     return typeService.buildPatchResponse({
-      user: config.user,
+      user,
       date,
       result,
       habitData,

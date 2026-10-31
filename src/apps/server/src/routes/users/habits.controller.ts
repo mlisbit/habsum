@@ -62,22 +62,25 @@ export const habitsController = {
 
   getHabits(req: Request<{ user: string }, unknown, unknown, HabitListQuery>, res: Response) {
     return sendServiceResult(res, () => {
+      const { user } = req.params;
       const requestedAt = new Date();
-      const userConfig = userService.loadUserConfig(req.params.user);
+      const userConfig = userService.loadUserConfig(user);
       const viewContext = getHabitListContext({
         query: req.query,
         requestedAt,
       });
       const dataQuery = getHabitListDataQuery({
+        user,
         config: userConfig,
         context: viewContext,
       });
-      const metadata = habitRepository.getDataMetadata(userConfig.user);
+      const metadata = habitRepository.getDataMetadata(user);
       const hydratedHabits = habitRepository.loadHydratedHabits(dataQuery, {
         firstRecordedDate: metadata.firstRecordedDate,
       });
 
       return habitService.getHabitListPresentation({
+        user,
         config: userConfig,
         context: viewContext,
         metadata,

@@ -10,7 +10,6 @@ describe('HistoryPagePresenter', () => {
     const viewingDate = dayFromString('2026-07-23');
     const requestedAt = new Date('2026-07-23T12:00:00.000Z');
     const config: UserConfig = {
-      user: 'tester',
       includeAbsentDaysInAverage: false,
       habits: [
         {

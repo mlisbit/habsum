@@ -1,13 +1,13 @@
 import { yamlString, type UserConfigJson, type YAMLString } from '@habsum/types/common/misc';
 import {
   getConfigDeletions,
+  getConfigJson,
   getConfigMigrations,
   getUserConfigFromJson,
-  getUserConfigJsonFromText,
 } from '../utils/config-editor-utils.js';
 import { ConfigRepository } from '../repositories/config-repository.js';
 import { HabitRepository } from '../repositories/habit-repository.js';
-import type { HabitDef, UserConfig } from '../types/userConfig.js';
+import type { UserConfig, HabitDef } from '../types/userConfig.js';
 import YAMLConfig from '../utils/yaml-config/yaml-config.js';
 import { isSafeConfigUserId } from '../utils/request-utils.js';
 import ServiceError from '../utils/classes/service-error.js';
@@ -202,7 +202,7 @@ export class ConfigService {
     if (!this.repository.hasUserConfig(user)) {
       return { ok: false, error: 'habit config not found' };
     }
-    const validation = this.validateUserConfigText(user, content);
+    const validation = this.validateUserConfigText(content);
     if (!validation.ok) return validation;
     const yamlConfig = new YAMLConfig(content);
     this.repository.writeUserConfigText(user, yamlConfig.getVersionedText(content));
@@ -210,12 +210,11 @@ export class ConfigService {
   }
 
   validateUserConfigText(
-    user: string,
     content: YAMLString,
   ): { ok: true; config: UserConfig } | { ok: false; error: string } {
     try {
       const yamlConfig = new YAMLConfig(content);
-      return { ok: true, config: { ...yamlConfig.parse(), user } };
+      return { ok: true, config: yamlConfig.parse() };
     } catch (e) {
       if (e instanceof YAMLConfig.ConfigValidationError) {
         return { ok: false, error: e.message };
@@ -228,7 +227,7 @@ export class ConfigService {
     const text = this.repository.readUserConfigText(user);
     if (text == null) return null;
 
-    return { ...new YAMLConfig(text).parse(), user };
+    return new YAMLConfig(text).parse();
   }
 
   createEmptyUserConfig(user: string): { ok: true; user: string } | { ok: false; error: string } {
@@ -242,7 +241,7 @@ export class ConfigService {
       includeAbsentDaysInAverage: false,
       habits: [],
     });
-    const validation = this.validateUserConfigText(user, text);
+    const validation = this.validateUserConfigText(text);
     if (!validation.ok) return validation;
     this.repository.writeUserConfigText(user, text);
 
@@ -280,7 +279,7 @@ export class ConfigService {
     if (!config) throw new ServiceError('not_found', 'user not found');
     return {
       text,
-      config: getUserConfigJsonFromText(user, text),
+      config: getConfigJson(text),
     };
   }
 

@@ -1,5 +1,5 @@
 import { yamlString, type YAMLString } from '@habsum/types/common/misc';
-import type { ConfigData } from '../../types/userConfig.js';
+import type { UserConfig } from '../../types/userConfig.js';
 import YAMLConfigParserV1 from './versions/v1.js';
 import YAMLConfigSerializer from './serializer.js';
 import {
@@ -79,7 +79,7 @@ export default class YAMLConfig {
     return this.version < YAMLConfig.latestVersion;
   }
 
-  parse(): ConfigData {
+  parse(): UserConfig {
     if (this.content === undefined) {
       throw new YAMLConfigValidationError('config cannot be empty');
     }

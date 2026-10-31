@@ -10,7 +10,7 @@ import yaml from 'js-yaml';
 import type { YAMLString } from '@habsum/types/common/misc';
 import {
   HABIT_REPEAT_DAYS,
-  type ConfigData,
+  type UserConfig,
   type HabitDef,
   type HabitInsight,
   type RawHabitConfig,
@@ -419,7 +419,7 @@ function normalizePresentation(
 }
 
 export default class YAMLConfigParser implements YAMLConfigParserInterface {
-  parse(content: YAMLString): ConfigData {
+  parse(content: YAMLString): UserConfig {
     if (!content.trim()) {
       throw new YAMLConfigValidationError('config cannot be empty');
     }
@@ -435,7 +435,7 @@ export default class YAMLConfigParser implements YAMLConfigParserInterface {
     return this.parseConfig(parsed);
   }
 
-  private parseConfig(parsed: unknown): ConfigData {
+  private parseConfig(parsed: unknown): UserConfig {
     if (parsed != null && !isRecord(parsed)) {
       throw new YAMLConfigValidationError('config must be a yaml mapping');
     }

@@ -1,12 +1,12 @@
 import type { YAMLString } from '@habsum/types/common/misc';
-import type { ConfigData } from '../../types/userConfig.js';
+import type { UserConfig } from '../../types/userConfig.js';
 
 export interface YAMLConfigParser {
-  parse(content: YAMLString): ConfigData;
+  parse(content: YAMLString): UserConfig;
 }
 
 export interface YAMLConfigSerializer {
-  serialize(config: ConfigData): YAMLString;
+  serialize(config: UserConfig): YAMLString;
 }
 
 export type YAMLConfigParserConstructor = new () => YAMLConfigParser;

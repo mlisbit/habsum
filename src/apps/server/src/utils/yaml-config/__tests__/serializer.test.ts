@@ -1,14 +1,14 @@
 import { readFileSync } from 'node:fs';
 import { yamlString } from '@habsum/types/common/misc';
 import { describe, expect, it } from 'vitest';
-import type { ConfigData } from '../../../types/userConfig.js';
+import type { UserConfig } from '../../../types/userConfig.js';
 import YAMLConfig from '../yaml-config.js';
 
 function fixture(name: string): string {
   return readFileSync(new URL(`./fixtures/${name}`, import.meta.url), 'utf8');
 }
 
-const config: ConfigData = {
+const config: UserConfig = {
   includeAbsentDaysInAverage: true,
   habits: [
     {
@@ -65,7 +65,7 @@ describe('YAMLConfigSerializer', () => {
   });
 
   it('writes text habit configuration without presentation options or daily text', () => {
-    const textConfig: ConfigData = {
+    const textConfig: UserConfig = {
       includeAbsentDaysInAverage: false,
       habits: [
         {

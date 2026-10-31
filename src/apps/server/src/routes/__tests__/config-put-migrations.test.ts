@@ -28,6 +28,7 @@ function hydratedSelectValue(user: string, habit: string, date: string): string 
   const viewDate = dayFromString(date);
   const hydratedHabits = habitRepository.loadHydratedHabits(
     getHabitListDataQuery({
+      user,
       config,
       context: {
         viewDate,

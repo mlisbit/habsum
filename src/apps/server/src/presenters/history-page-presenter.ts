@@ -4,7 +4,7 @@ import type { Day } from '@habsum/types/common/day';
 import type { Habit } from '@habsum/types/common/habit';
 import { dasherize } from '@habsum/utils/strings';
 import type { HydratedHabitData } from '../types/habit.types.js';
-import type { HabitDef, UserConfig } from '../types/userConfig.js';
+import type { UserConfig, HabitDef } from '../types/userConfig.js';
 import getMinDate from '../utils/get-min-date.js';
 import isHabitRepeatedOnDate from '../utils/habits/is-habit-repeated-on-date.js';
 import { HabitPresenter, type HabitPresentationContext } from './habits/habit-presenter.js';

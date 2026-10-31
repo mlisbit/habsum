@@ -28,18 +28,18 @@ describe('single-select config editing', () => {
       - {label: A bit, sentiment: positive}
       - {label: A lot, sentiment: positive}
 `);
-    const config = getConfigJson('reader', text);
+    const config = getConfigJson(text);
     expect(config.habits[0].theme).toBe('checkbox');
     const saved = new YAMLConfig().getSerializer().serialize(getUserConfigFromJson(config));
-    expect(getConfigJson('reader', saved)).toEqual(config);
+    expect(getConfigJson(saved)).toEqual(config);
   });
 
   it('round-trips structured options and writes only frequency in streak_options', () => {
-    const config = getConfigJson('reader', previous);
+    const config = getConfigJson(previous);
     const converted = new YAMLConfig().getSerializer().serialize(getUserConfigFromJson(config));
     expect(converted).toContain('label: None\n        sentiment: negative');
     expect(converted).toContain('streak_options:\n      frequency: 7d');
-    expect(getConfigJson('reader', converted)).toEqual(config);
+    expect(getConfigJson(converted)).toEqual(config);
     expect(getConfigMigrations(previous, converted)).toEqual([]);
     expect(getConfigDeletions(previous, converted)).toEqual([]);
   });
@@ -64,7 +64,7 @@ describe('single-select config editing', () => {
   it('does not migrate or delete recorded data when only sentiment changes', () => {
     const converted = new YAMLConfig()
       .getSerializer()
-      .serialize(getUserConfigFromJson(getConfigJson('reader', previous)));
+      .serialize(getUserConfigFromJson(getConfigJson(previous)));
     const changed = yamlString(converted.replace('sentiment: negative', 'sentiment: positive'));
     expect(getConfigMigrations(converted, changed)).toEqual([]);
     expect(getConfigDeletions(converted, changed)).toEqual([]);

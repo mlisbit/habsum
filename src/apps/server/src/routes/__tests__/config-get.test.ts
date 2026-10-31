@@ -17,12 +17,12 @@ function writeUserConfig(user: string, text: string) {
 }
 
 describe('GET /users/:user/config', () => {
-  it('attaches the requested user after parsing configuration data', () => {
+  it('returns only configuration data when validating and loading configs', () => {
     const user = 'config-data-context-user';
     const text = yamlString('user: ignored\nhabits: {}\n');
-    const expected = { user, includeAbsentDaysInAverage: false, habits: [] };
+    const expected = { includeAbsentDaysInAverage: false, habits: [] };
 
-    expect(configService.validateUserConfigText(user, text)).toEqual({
+    expect(configService.validateUserConfigText(text)).toEqual({
       ok: true,
       config: expected,
     });
@@ -66,8 +66,8 @@ describe('GET /users/:user/config', () => {
       .expect(200);
 
     expect(res.body.insights).toBeUndefined();
+    expect(res.body.config).not.toHaveProperty('user');
     expect(res.body.config).toMatchObject({
-      user,
       includeAbsentDaysInAverage: false,
       habits: [
         {
@@ -107,14 +107,13 @@ habits:
       .set('Cookie', `${SESSION_COOKIE_NAME}=${session}`)
       .send({
         config: {
-          user,
           includeAbsentDaysInAverage: true,
           habits: [
             { name: 'pages', type: 'summation', goal: null, repeat: ['tuesday', 'thursday'] },
           ],
         },
       })
-      .expect(200);
+      .expect(200, { ok: true, user });
 
     const res = await request(createApp())
       .get(`/users/${user}/config`)
@@ -153,7 +152,6 @@ habits:
       .set('Cookie', cookie)
       .send({
         config: {
-          user,
           includeAbsentDaysInAverage: false,
           habits: [
             {
@@ -193,7 +191,6 @@ habits:
       .set('Cookie', `${SESSION_COOKIE_NAME}=${session}`)
       .send({
         config: {
-          user,
           includeAbsentDaysInAverage: false,
           habits: [
             {

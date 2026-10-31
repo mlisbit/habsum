@@ -1,7 +1,7 @@
 // Serializes configuration data into persisted YAML habit config text.
 import yaml from 'js-yaml';
 import { yamlString, type YAMLString } from '@habsum/types/common/misc';
-import type { ConfigData, HabitDef, HabitInsight } from '../../types/userConfig.js';
+import type { UserConfig, HabitDef, HabitInsight } from '../../types/userConfig.js';
 import type { YAMLConfigSerializer as YAMLConfigSerializerInterface } from './types.js';
 
 const YAML_DUMP_OPTS = { lineWidth: -1, noRefs: true };
@@ -121,7 +121,7 @@ function dumpHabitBlock(habit: HabitDef): string {
 }
 
 export default class YAMLConfigSerializer implements YAMLConfigSerializerInterface {
-  serialize(config: ConfigData): YAMLString {
+  serialize(config: UserConfig): YAMLString {
     const rootEntries: Record<string, unknown> = {};
     if (config.includeAbsentDaysInAverage) {
       rootEntries.include_absent_days_in_average = true;

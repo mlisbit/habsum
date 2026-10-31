@@ -4,9 +4,11 @@ import type { UserConfig } from '../types/userConfig.js';
 import getHabitInsightDataRange from './habits/get-habit-insight-data-range.js';
 
 export default function getHabitListDataQuery({
+  user,
   config,
   context,
 }: {
+  user: string;
   config: UserConfig;
   context: {
     viewDate: Day;
@@ -14,7 +16,7 @@ export default function getHabitListDataQuery({
   };
 }): HabitDataQuery {
   return {
-    user: config.user,
+    user,
     viewDate: context.viewDate,
     habits: config.habits.map((habit) => ({
       name: habit.name,
