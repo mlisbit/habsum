@@ -83,35 +83,13 @@ A self-hosted, highly configurable habit tracking dashboard.
 
 ## Quick start with Docker
 
-```yaml
-services:
-  server:
-    image: ghcr.io/mlisbit/habsum/habsum-server:latest
-    restart: unless-stopped
-    environment:
-      NODE_ENV: production
-      HOST: 0.0.0.0
-      PORT: '3001'
-      HABSUM_DB: /app/config/habsum.db
-      HABSUM_INITIAL_WEB_SIGNUP: 'true'
-    volumes:
-      - habsum-data:/app/config
-
-  web:
-    image: ghcr.io/mlisbit/habsum/habsum-webapp:latest
-    restart: unless-stopped
-    ports:
-      - '23123:3000'
-    environment:
-      NODE_ENV: production
-      PORT: '3000'
-      HABSUM_SERVER_URL: http://server:3001
-    depends_on:
-      - server
-
-volumes:
-  habsum-data:
+```bash
+mkdir ./habsum && cd ./habsum
+wget -O compose.yml https://raw.githubusercontent.com/mlisbit/habsum/main/docker/compose.yml
+docker compose up -d
 ```
+
+You can find more detailed instructions at [`habsum.com/docs`](https://habsum.com/docs/) or [`/docs/overview/quick-start.md`](/docs/overview/quick-start.md)
 
 ## Development
 

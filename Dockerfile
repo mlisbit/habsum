@@ -32,7 +32,8 @@ ENV NODE_ENV=development
 # Standalone API image for publishing.
 FROM admin-tools AS server
 
-ENV PORT=3001
+ENV NODE_ENV=production
+
 EXPOSE 3001
 
 WORKDIR /app/src/apps/server
@@ -65,7 +66,6 @@ FROM node:20-bookworm-slim AS webapp
 WORKDIR /app
 
 ENV NODE_ENV=production
-ENV PORT=3000
 
 COPY package.json package-lock.json ./
 COPY src ./src
