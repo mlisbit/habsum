@@ -32,12 +32,10 @@ function SingleSelectActions({
 
   const handleSelectChange = useCallback(
     async (nextValue: TernaryCheckboxValue) => {
-      if (nextValue == null) {
-        await onUpdate({ habit: habit.name, action: 'clear' });
-      } else {
-        const value = nextValue === 'yes' ? positiveValue : negativeValue;
-        if (value != null) await onUpdate({ habit: habit.name, value });
-      }
+      const value = nextValue === 'yes' ? positiveValue : nextValue === 'no' ? negativeValue : null;
+      await onUpdate(
+        value == null ? { habit: habit.name, action: 'clear' } : { habit: habit.name, value },
+      );
     },
     [habit.name, positiveValue, negativeValue, onUpdate],
   );

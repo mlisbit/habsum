@@ -10,6 +10,8 @@ export type SingleSelectOption = {
 };
 
 export function isCheckboxThemeCompatible(options: readonly SingleSelectOption[]): boolean {
+  if (options.length === 1) return options[0].sentiment === 'positive';
+
   return (
     options.length === 2 &&
     options.some((option) => option.sentiment === 'positive') &&

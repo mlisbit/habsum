@@ -41,7 +41,9 @@ describe('checkbox theme settings', () => {
     { sentiments: ['negative', 'positive'], show: true },
     { sentiments: ['positive', 'positive'], show: false },
     { sentiments: ['negative', 'negative'], show: false },
-    { sentiments: ['positive'], show: false },
+    { sentiments: ['positive'], show: true },
+    { sentiments: ['negative'], show: false },
+    { sentiments: [], show: false },
     { sentiments: ['positive', 'negative', 'positive'], show: false },
   ] as const)(
     'offers the theme based on sentiments, not labels: $sentiments',
@@ -53,6 +55,19 @@ describe('checkbox theme settings', () => {
       expect(screen.queryByRole('checkbox', { name: 'Show as checkbox' }) != null).toBe(show);
     },
   );
+
+  it('saves the checkbox theme for a single positive option', () => {
+    const options: ConfigHabitDraft['options'] = [{ label: 'Finished', sentiment: 'positive' }];
+    const onDoneClick = renderConfigModal({ ...draftFromHabit(habit), options });
+
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Show as checkbox' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Done' }));
+
+    expect(onDoneClick).toHaveBeenCalledWith(
+      'Read',
+      expect.objectContaining({ options, theme: 'checkbox' }),
+    );
+  });
 
   it('keeps a configured theme when editing options makes them incompatible', () => {
     const onDoneClick = renderConfigModal({ ...draftFromHabit(habit), theme: 'checkbox' });

@@ -14,7 +14,8 @@ describe('habit presenters', () => {
     { sentiments: ['negative', 'positive'], compatible: true },
     { sentiments: ['positive', 'positive'], compatible: false },
     { sentiments: ['negative', 'negative'], compatible: false },
-    { sentiments: ['positive'], compatible: false },
+    { sentiments: ['positive'], compatible: true },
+    { sentiments: ['negative'], compatible: false },
     { sentiments: [], compatible: false },
     { sentiments: ['positive', 'negative', 'positive'], compatible: false },
   ] as const)(

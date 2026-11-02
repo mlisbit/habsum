@@ -45,20 +45,6 @@ The application is available on `http://localhost:3000` and the api is available
 
 The **Publish homepage** workflow deploys to GitHub Pages on relevant pushes to `main`, or when run manually. In the repository's **Settings → Pages → Build and deployment**, set **Source** to **GitHub Actions** before the first deployment. Assets use relative URLs, so the build works at `/habsum/`, a custom domain, or the root of the local preview.
 
-## Linting
-
-We use stylelint + eslint. They're pretty opinionated around following BEM. Here are some relevant commands:
-
-- `npm run stylelint-plugins:build` Compile the lint rules, which for some reason are in typescript.
-- `npm run stylelint-plugins:watch`
-- `npm run eslint-plugins:build`
-- `npm run eslint-plugins:watch`
-- `npm run lint` run all linting.
-- `npm run lint:js`
-- `npm run lint:css` & `npm run lint:css:fix`
-
-Tests and lint rules run in precommit too.
-
 ## Note on emails, password resets, and user account creation
 
 For context, the application was originally hosted on a third party site so friends can use it. They didn't really. But because of that, there's a whole "forgot password", "user account creation" flow. In order to get these to work there needed to be emails -- this all still exists in the code, and is available to you to use -- but you don't have to.

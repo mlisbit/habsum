@@ -291,6 +291,49 @@ describe('HabitRenderer type-specific rendering', () => {
     );
   });
 
+  it('toggles a single positive checkbox option on and off', async () => {
+    const user = userEvent.setup();
+    const onUpdate = vi.fn().mockResolvedValue(undefined);
+    const habit: HabitRowSingleSelect = {
+      name: 'Reading',
+      type: 'single_select',
+      details: {
+        options: [{ label: 'Finished', sentiment: 'positive' }],
+        theme: 'checkbox',
+        value: null,
+      },
+    };
+    const renderHabit = (value: string | null) => (
+      <ToastProvider>
+        <ModalProvider>
+          <HabitRenderer
+            user="reader"
+            viewDate={dayFromString('2026-07-27')}
+            habit={{ ...habit, details: { ...habit.details, value } }}
+            onUpdate={onUpdate}
+          />
+        </ModalProvider>
+      </ToastProvider>
+    );
+    const { rerender } = render(renderHabit(null));
+
+    await user.click(screen.getByRole('button', { name: 'Reading: not set' }));
+    expect(onUpdate).toHaveBeenLastCalledWith({ habit: 'Reading', value: 'Finished' });
+
+    rerender(renderHabit('Finished'));
+    const checkbox = screen.getByRole('button', { name: 'Reading: Finished' });
+    expect(checkbox.classList.contains('ternary-checkbox--yes')).toBe(true);
+    await user.hover(checkbox);
+    expect((await screen.findByRole('tooltip')).textContent).toBe('Finished');
+    await user.click(checkbox);
+    expect(onUpdate).toHaveBeenLastCalledWith({ habit: 'Reading', action: 'clear' });
+
+    rerender(renderHabit(null));
+    await user.click(screen.getByRole('button', { name: 'Reading: not set' }));
+    expect(onUpdate).toHaveBeenLastCalledWith({ habit: 'Reading', value: 'Finished' });
+    expect(onUpdate).toHaveBeenCalledTimes(3);
+  });
+
   it.each(['None', 'A bit', null])(
     'uses option sentiments while keeping selection values as labels: %s',
     async (value) => {
