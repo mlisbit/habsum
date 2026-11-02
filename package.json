@@ -38,6 +38,8 @@
     "test:admin": "npm run test --workspace @habsum/admin",
     "test:webapp": "npm run test --workspace @habsum/webapp",
     "test:server": "npm run test --workspace @habsum/server",
+    "pretest:e2e": "npm --workspace @habsum/webapp run build",
+    "test:e2e": "playwright test --config e2e/playwright.config.ts",
     "licenses:generate": "node scripts/generate-third-party-notices.mjs",
     "secrets:check": "node scripts/check-staged-secrets.mjs",
     "stylelint-plugins:build": "npm run build --workspace @habsum/stylelint-plugins",
@@ -47,6 +49,7 @@
     "prepare": "husky && npm run stylelint-plugins:build && npm run eslint-plugins:build"
   },
   "devDependencies": {
+    "@playwright/test": "1.64.1",
     "eslint": "9.39.1",
     "eslint-plugin-habsum": "*",
     "typescript-eslint": "8.48.1",

@@ -32,8 +32,11 @@ jobs:
       - name: Test release version increments
         run: node --test scripts/bump-release-version.test.mjs
 
-      - name: Build webapp
-        run: npm --workspace @habsum/webapp run build
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Test webapp end to end
+        run: npm run test:e2e
 
       - name: Build homepage
         run: npm run build:homepage

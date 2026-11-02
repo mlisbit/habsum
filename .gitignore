@@ -20,5 +20,8 @@ config/
 
 .env.docker
 
+# Playwright artifacts
+/e2e/test-results/
+
 # Generated during Docker builds.
 /THIRD_PARTY_NOTICES.md
