@@ -1,0 +1,36 @@
+@use 'functions';
+
+// Block: config-version-dropdown
+.config-version-dropdown__menu {
+  display: flex;
+  flex-direction: column;
+  gap: functions.spacing(1);
+}
+
+.config-version-dropdown__item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: functions.spacing(1);
+  width: 100%;
+  padding: functions.spacing(1, 2);
+  border: 0;
+  border-radius: var(--border-radius-m);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.config-version-dropdown__item:hover,
+.config-version-dropdown__item[aria-pressed='true'] {
+  background: var(--background-input);
+}
+
+.config-version-dropdown__item:focus-visible {
+  outline: none;
+  box-shadow: var(--box-shadow-focus);
+}
+
+.config-version-dropdown__date {
+  white-space: nowrap;
+}

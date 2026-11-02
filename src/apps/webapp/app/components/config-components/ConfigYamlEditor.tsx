@@ -54,9 +54,10 @@ function subscribeToTheme(onStoreChange: () => void) {
 type ConfigYamlEditorProps = {
   text: YAMLString;
   onChange: (text: YAMLString) => void;
+  readOnly?: boolean;
 };
 
-export function ConfigYamlEditor({ text, onChange }: ConfigYamlEditorProps) {
+export function ConfigYamlEditor({ text, onChange, readOnly = false }: ConfigYamlEditorProps) {
   const isDarkTheme = useSyncExternalStore(
     subscribeToTheme,
     () => document.documentElement.dataset.theme === 'dark',
@@ -68,6 +69,8 @@ export function ConfigYamlEditor({ text, onChange }: ConfigYamlEditorProps) {
       <CodeMirror
         value={text}
         onChange={(next) => onChange(yamlString(next))}
+        readOnly={readOnly}
+        editable={!readOnly}
         extensions={[yaml(), autocompletion({ override: [habitTypeCompletion] })]}
         height="100%"
         minHeight="min(60vh, 640px)"

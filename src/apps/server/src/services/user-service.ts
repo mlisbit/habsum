@@ -281,8 +281,8 @@ export class UserService {
     return { ok: true, username: out.user };
   }
 
-  getUserConfig(user: string) {
-    return this.configService.getUserConfig({ user });
+  getUserConfig(user: string, version?: number) {
+    return this.configService.getUserConfig({ user, version });
   }
 
   putUserConfig(user: string, body: UserConfigInput | undefined) {

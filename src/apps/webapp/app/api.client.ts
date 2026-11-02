@@ -499,8 +499,9 @@ export async function patchHabit(user: string, body: HabitPatch, opts: { date: s
   } satisfies Habit;
 }
 
-export async function getUserConfig(user: string) {
-  const path = `/users/${encodeURIComponent(user)}/config`;
+export async function getUserConfig(user: string, version?: string) {
+  const query = version == null ? '' : `?${new URLSearchParams({ v: version })}`;
+  const path = `/users/${encodeURIComponent(user)}/config${query}`;
   return getRequest<UserConfigGetResponse>(path);
 }
 

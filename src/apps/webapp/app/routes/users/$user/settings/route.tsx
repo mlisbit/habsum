@@ -24,8 +24,7 @@ function useWideSettingsLayout(): boolean {
 function activeSettingsSectionLabel(path: string): string | null {
   if (path.endsWith('/account')) return 'Account';
   if (path.includes('/settings/security')) return 'Security';
-  if (path.endsWith('/habits')) return 'Habits';
-  if (path.endsWith('/config')) return 'Config';
+  if (path.includes('/settings/habits')) return 'Habits';
   if (path.endsWith('/administrator/users')) return 'Administrator · Users';
   if (path.endsWith('/administrator/options')) return 'Administrator · Options';
   if (path.endsWith('/administrator/info')) return 'Administrator · Info';
@@ -125,7 +124,7 @@ export default function UserSettingsLayout() {
           </Link>
           <Link
             className={`settings__link text-b-l${
-              path.endsWith('/habits') ? ' settings__link--active' : ''
+              path.includes('/settings/habits') ? ' settings__link--active' : ''
             }`}
             to={`${base}/habits`}
           >

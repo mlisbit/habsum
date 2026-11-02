@@ -1,10 +1,16 @@
 // exclusive-bem-block: config-page
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Link, useBlocker } from 'react-router';
-import { yamlString, type UserConfigJson, type YAMLString } from '@habsum/types/common/misc';
+import {
+  yamlString,
+  type UserConfigJson,
+  type UserConfigVersion,
+  type YAMLString,
+} from '@habsum/types/common/misc';
 import { getUserConfig, putUserConfig } from '~/api.client';
 import { ConfigGuiEditor } from './ConfigGuiEditor';
 import { ConfigYamlEditor } from './ConfigYamlEditor';
+import { ConfigVersionDropdown } from './ConfigVersionDropdown';
 import { UnsavedChangesModal } from '~/components/UnsavedChangesModal';
 import { Button } from '@habsum/ui/components/Button';
 import { InfoText } from '@habsum/ui/components/InfoText';
@@ -31,14 +37,16 @@ type ConfigSettingsCardProps = {
 type ConfigSettingsProps = {
   user: string;
   mode: 'habits' | 'yaml';
+  version?: string;
   renderCard: (props: ConfigSettingsCardProps) => ReactNode;
 };
 
-export function ConfigSettings({ user, mode, renderCard }: ConfigSettingsProps) {
+export function ConfigSettings({ user, mode, version, renderCard }: ConfigSettingsProps) {
   const [text, setText] = useState<YAMLString>(() => yamlString(''));
   const [initialText, setInitialText] = useState<YAMLString>(() => yamlString(''));
   const [config, setConfig] = useState<UserConfigJson | null>(null);
   const [initialConfig, setInitialConfig] = useState<UserConfigJson | null>(null);
+  const [versions, setVersions] = useState<UserConfigVersion[]>([]);
   const [habitOrder, setHabitOrder] = useState<string[]>([]);
   const [initialHabitOrderKey, setInitialHabitOrderKey] = useState('');
   const [loading, setLoading] = useState(true);
@@ -48,37 +56,51 @@ export function ConfigSettings({ user, mode, renderCard }: ConfigSettingsProps) 
   const { showToast } = useToast();
   const { present, closeModal } = useModal();
   const configCardHeader = mode === 'habits' ? 'Habits' : 'Config';
+  const readOnly = mode === 'yaml' && version != null;
+  const configCardSubtitle = readOnly ? `Version ${version} (read only)` : undefined;
 
   useEffect(() => {
     if (!user) return;
+    let active = true;
     setLoading(true);
     setLoadFailed(false);
-    getUserConfig(user)
+    getUserConfig(user, version)
       .then((r) => {
+        if (!active) return;
         setText(r.text);
         setInitialText(r.text);
         setConfig(r.config);
         setInitialConfig(r.config);
+        setVersions(r.versions);
         const order = r.config.habits.map((h) => h.name);
         setHabitOrder(order);
         setInitialHabitOrderKey(habitOrderKey(order));
       })
       .catch((e) => {
+        if (!active) return;
         setLoadFailed(true);
         showToast({ type: 'error', message: e instanceof Error ? e.message : String(e) });
       })
-      .finally(() => setLoading(false));
-  }, [showToast, user]);
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [showToast, user, version]);
 
   const includeAbsentDaysInAverage = config?.includeAbsentDaysInAverage ?? false;
 
   const yamlDirty = text !== initialText;
   const orderDirty = habitOrderKey(habitOrder) !== initialHabitOrderKey;
   const configDirty = configKey(config) !== configKey(initialConfig);
-  const dirty = mode === 'yaml' ? yamlDirty : configDirty || orderDirty;
+  const dirty = !readOnly && (mode === 'yaml' ? yamlDirty : configDirty || orderDirty);
   const blocker = useBlocker(
     ({ currentLocation, nextLocation }) =>
-      dirty && currentLocation.pathname !== nextLocation.pathname,
+      dirty &&
+      (currentLocation.pathname !== nextLocation.pathname ||
+        new URLSearchParams(currentLocation.search).get('v') !==
+          new URLSearchParams(nextLocation.search).get('v')),
   );
   const blockerRef = useRef(blocker);
   blockerRef.current = blocker;
@@ -131,6 +153,7 @@ export function ConfigSettings({ user, mode, renderCard }: ConfigSettingsProps) 
       setInitialText(refreshed.text);
       setConfig(refreshed.config);
       setInitialConfig(refreshed.config);
+      setVersions(refreshed.versions);
       const order = refreshed.config.habits.map((h) => h.name);
       setHabitOrder(order);
       setInitialHabitOrderKey(habitOrderKey(order));
@@ -151,11 +174,18 @@ export function ConfigSettings({ user, mode, renderCard }: ConfigSettingsProps) 
     [config],
   );
 
+  const versionDropdown =
+    mode === 'yaml' ? (
+      <ConfigVersionDropdown versions={versions} version={version} disabled={loading || saving} />
+    ) : null;
+
   if (loading) {
     return (
       <div className="config-page">
         {renderCard({
           headerText: configCardHeader,
+          subtitle: configCardSubtitle,
+          actions: versionDropdown,
           children: <Loader className="config-page__loader" label="Loading config" size="medium" />,
         })}
       </div>
@@ -167,6 +197,8 @@ export function ConfigSettings({ user, mode, renderCard }: ConfigSettingsProps) 
       <div className="config-page">
         {renderCard({
           headerText: configCardHeader,
+          subtitle: configCardSubtitle,
+          actions: versionDropdown,
         })}
       </div>
     );
@@ -193,6 +225,7 @@ export function ConfigSettings({ user, mode, renderCard }: ConfigSettingsProps) 
 
       {renderCard({
         headerText: configCardHeader,
+        subtitle: configCardSubtitle,
         actions:
           mode === 'habits' ? (
             <Button
@@ -202,10 +235,12 @@ export function ConfigSettings({ user, mode, renderCard }: ConfigSettingsProps) 
               disabled={saving}
               onClick={() => addHabitRef.current?.()}
             />
-          ) : null,
+          ) : (
+            versionDropdown
+          ),
         children:
           mode === 'yaml' ? (
-            <ConfigYamlEditor text={text} onChange={setText} />
+            <ConfigYamlEditor text={text} onChange={setText} readOnly={readOnly} />
           ) : (
             <ConfigGuiEditor
               config={config}
@@ -261,7 +296,7 @@ export function ConfigSettings({ user, mode, renderCard }: ConfigSettingsProps) 
             subtitle: 'View and edit the raw YAML file associated with this user.',
             actions: (
               <Link
-                to={`/users/${encodeURIComponent(user)}/settings/config`}
+                to={`/users/${encodeURIComponent(user)}/settings/habits/config`}
                 className="button button--secondary button--medium"
               >
                 View YAML

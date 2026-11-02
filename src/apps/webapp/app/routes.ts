@@ -21,7 +21,7 @@ export default [
       route('administrator/options', 'routes/users/$user/administrator/options/route.tsx'),
       route('administrator/info', 'routes/users/$user/administrator/info/route.tsx'),
       route('habits', 'routes/users/$user/settings/habits/route.tsx'),
-      route('config', 'routes/users/$user/settings/config/route.tsx'),
+      route('habits/config', 'routes/users/$user/settings/config/route.tsx'),
     ]),
     route('users/:user/administrator/:section', 'routes/users/$user/administrator-redirect.tsx'),
     route('*', 'routes/not-found/route.tsx'),

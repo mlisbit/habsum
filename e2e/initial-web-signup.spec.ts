@@ -203,7 +203,7 @@ test('saving a habit rename migrates its recorded data and updates the YAML conf
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
   await page.getByRole('link', { name: 'Habits', exact: true }).click();
   await page.getByRole('link', { name: 'View YAML', exact: true }).click();
-  await expect(page).toHaveURL('/users/first-owner/settings/config');
+  await expect(page).toHaveURL('/users/first-owner/settings/habits/config');
   const yamlEditor = page.getByRole('textbox');
   await expect(yamlEditor).toContainText('Press-ups:');
   await expect(yamlEditor).not.toContainText('Pushups:');

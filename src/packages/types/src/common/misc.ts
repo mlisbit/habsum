@@ -99,6 +99,13 @@ export type UserConfigJson = {
 export type UserConfigGetResponse = {
   text: YAMLString;
   config: UserConfigJson;
+  versions: UserConfigVersion[];
+};
+
+export type UserConfigVersion = {
+  version: number;
+  savedAt: DayWithTime;
+  isCurrent: boolean;
 };
 
 export type UserConfigMigration = [from: string, to: string];

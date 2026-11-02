@@ -14,6 +14,7 @@ import ServiceError from '../utils/classes/service-error.js';
 
 type GetUserConfigInput = {
   user: string;
+  version?: number;
 };
 
 type PutUserConfigInput = {
@@ -186,8 +187,8 @@ export class ConfigService {
     return this.repository.listConfiguredUsers();
   }
 
-  readUserConfigText(user: string): YAMLString | null {
-    return this.repository.readUserConfigText(user);
+  readUserConfigText(user: string, version?: number): YAMLString | null {
+    return this.repository.readUserConfigText(user, version);
   }
 
   writeUserConfigText(
@@ -264,17 +265,21 @@ export class ConfigService {
     return { ok: true, user };
   }
 
-  getUserConfig({ user }: GetUserConfigInput) {
+  getUserConfig({ user, version }: GetUserConfigInput) {
     if (!isSafeConfigUserId(user)) {
       throw new ServiceError('bad_request', 'invalid user');
     }
-    const text = this.readUserConfigText(user);
-    if (text == null) throw new ServiceError('not_found', 'user not found');
-    const config = this.loadUserConfig(user);
-    if (!config) throw new ServiceError('not_found', 'user not found');
+    const text = this.readUserConfigText(user, version);
+    if (text == null) {
+      throw new ServiceError(
+        'not_found',
+        version == null ? 'user not found' : `config version ${version} not found`,
+      );
+    }
     return {
       text,
       config: getConfigJson(text),
+      versions: this.repository.getUserConfigVersions(user),
     };
   }
 

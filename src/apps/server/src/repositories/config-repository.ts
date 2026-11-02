@@ -1,7 +1,8 @@
 // Repository that owns persisted YAML user config versions in SQLite.
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
-import { yamlString, type YAMLString } from '@habsum/types/common/misc';
+import { dayWithTimeFromString } from '@habsum/types/common/day';
+import { yamlString, type UserConfigVersion, type YAMLString } from '@habsum/types/common/misc';
 import getDatabasePath from '../utils/get-database-path.js';
 import { db } from './_private/db.js';
 
@@ -44,6 +45,13 @@ const getHabitConfigVersionStmt = db.prepare<[string, number], HabitConfigRow>(`
   SELECT user, version, text
   FROM habit_configs
   WHERE user = ? AND version = ?
+`);
+
+const getHabitConfigVersionsStmt = db.prepare<[string], { version: number; savedAt: string }>(`
+  SELECT version, created_at AS savedAt
+  FROM habit_configs
+  WHERE user = ?
+  ORDER BY version DESC
 `);
 
 const getNextHabitConfigVersionStmt = db.prepare<[string], { version: number }>(`
@@ -163,9 +171,20 @@ export class ConfigRepository {
       .sort();
   }
 
-  readUserConfigText(user: string): YAMLString | null {
-    const text = getActiveStoredConfig(user)?.text;
+  readUserConfigText(user: string, version?: number): YAMLString | null {
+    const config =
+      version == null ? getActiveStoredConfig(user) : getHabitConfigVersionStmt.get(user, version);
+    const text = config?.text;
     return text == null ? null : yamlString(text);
+  }
+
+  getUserConfigVersions(user: string): UserConfigVersion[] {
+    const currentVersion = getActiveStoredConfig(user)?.version;
+    return getHabitConfigVersionsStmt.all(user).map(({ version, savedAt }) => ({
+      version,
+      savedAt: dayWithTimeFromString(savedAt),
+      isCurrent: version === currentVersion,
+    }));
   }
 
   hasUserConfig(user: string): boolean {

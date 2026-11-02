@@ -120,6 +120,11 @@ describe('PUT /users/:user/config migrations', () => {
       .expect(200);
     expect(activeRes.body.text).toContain('third');
     expect(activeRes.body.text).not.toContain('fourth');
+    expect(activeRes.body.versions).toEqual([
+      { version: 5, savedAt: expect.any(String), isCurrent: false },
+      { version: 4, savedAt: expect.any(String), isCurrent: true },
+      { version: 3, savedAt: expect.any(String), isCurrent: false },
+    ]);
   });
 
   it('migrates historical habit and option data for config rename migrations', async () => {

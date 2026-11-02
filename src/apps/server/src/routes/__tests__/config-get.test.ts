@@ -1,3 +1,4 @@
+import Database from 'better-sqlite3';
 import request from 'supertest';
 import { yamlString } from '@habsum/types/common/misc';
 import { describe, expect, it } from 'vitest';
@@ -5,6 +6,7 @@ import { createApp } from '../../app.js';
 import { ConfigService } from '../../services/config-service.js';
 import { UserAndAuthRepository } from '../../repositories/user-and-auth-repository.js';
 import { SESSION_COOKIE_NAME } from '../../utils/cookie-session-utils.js';
+import getDatabasePath from '../../utils/get-database-path.js';
 
 const configService = new ConfigService();
 const userAndAuthRepository = new UserAndAuthRepository();
@@ -17,6 +19,120 @@ function writeUserConfig(user: string, text: string) {
 }
 
 describe('GET /users/:user/config', () => {
+  it('returns the requested revision without changing the active config', async () => {
+    const user = 'config-historical-user';
+    writeUserConfig(user, 'habits:\n  previous:\n    type: summation\n');
+    const previousText = configService.readUserConfigText(user);
+    expect(
+      configService.writeUserConfigText(user, yamlString('habits:\n  current:\n    type: text\n'))
+        .ok,
+    ).toBe(true);
+    userAndAuthRepository.setUserPassword(user, 'test-password');
+    const session = userAndAuthRepository.createUserSession(user, 3600);
+    const app = createApp();
+    const cookie = `${SESSION_COOKIE_NAME}=${session}`;
+    const sqlite = new Database(getDatabasePath());
+    try {
+      const updateSavedAt = sqlite.prepare(
+        'UPDATE habit_configs SET created_at = ? WHERE user = ? AND version = ?',
+      );
+      for (const version of [1, 2, 3]) {
+        updateSavedAt.run(`2026-11-0${version} 16:30:00`, user, version);
+      }
+    } finally {
+      sqlite.close();
+    }
+
+    const historical = await request(app)
+      .get(`/users/${user}/config?v=2`)
+      .set('Cookie', cookie)
+      .expect(200);
+    expect(historical.body.text).toBe(previousText);
+    expect(historical.body.config.habits).toEqual([
+      expect.objectContaining({ name: 'previous', type: 'summation' }),
+    ]);
+    expect(historical.body.versions).toEqual([
+      { version: 3, savedAt: '2026-11-03 16:30:00', isCurrent: true },
+      { version: 2, savedAt: '2026-11-02 16:30:00', isCurrent: false },
+      { version: 1, savedAt: '2026-11-01 16:30:00', isCurrent: false },
+    ]);
+
+    const current = await request(app)
+      .get(`/users/${user}/config`)
+      .set('Cookie', cookie)
+      .expect(200);
+    expect(current.body.config.habits).toEqual([
+      expect.objectContaining({ name: 'current', type: 'text' }),
+    ]);
+    expect(current.body.text).toBe(configService.readUserConfigText(user));
+    expect(current.body.versions).toEqual(historical.body.versions);
+  });
+
+  it('returns 404 for missing and pruned revisions', async () => {
+    const user = 'config-missing-revision-user';
+    writeUserConfig(user, 'habits: {}\n');
+    expect(configService.writeUserConfigText(user, yamlString('habits: {}\n')).ok).toBe(true);
+    expect(configService.writeUserConfigText(user, yamlString('habits: {}\n')).ok).toBe(true);
+    userAndAuthRepository.setUserPassword(user, 'test-password');
+    const session = userAndAuthRepository.createUserSession(user, 3600);
+    const app = createApp();
+
+    const current = await request(app)
+      .get(`/users/${user}/config`)
+      .set('Cookie', `${SESSION_COOKIE_NAME}=${session}`)
+      .expect(200);
+    expect(current.body.versions.map(({ version }: { version: number }) => version)).toEqual([
+      4, 3, 2,
+    ]);
+
+    for (const version of [1, 999]) {
+      await request(app)
+        .get(`/users/${user}/config?v=${version}`)
+        .set('Cookie', `${SESSION_COOKIE_NAME}=${session}`)
+        .expect(404, { error: `config version ${version} not found` });
+    }
+  });
+
+  it('rejects invalid version query parameters instead of returning the active config', async () => {
+    const user = 'config-invalid-revision-user';
+    writeUserConfig(user, 'habits: {}\n');
+    userAndAuthRepository.setUserPassword(user, 'test-password');
+    const session = userAndAuthRepository.createUserSession(user, 3600);
+    const app = createApp();
+
+    for (const query of [
+      'v=',
+      'v=0',
+      'v=-1',
+      'v=1.5',
+      'v=abc',
+      'v=1e2',
+      'v=9007199254740992',
+      'v=1&v=2',
+      'v[number]=1',
+    ]) {
+      await request(app)
+        .get(`/users/${user}/config?${query}`)
+        .set('Cookie', `${SESSION_COOKIE_NAME}=${session}`)
+        .expect(400, { error: 'v must be a positive integer' });
+    }
+  });
+
+  it('keeps historical configs restricted to the authenticated user', async () => {
+    const user = 'config-revision-owner';
+    const otherUser = 'config-revision-other-user';
+    writeUserConfig(user, 'habits: {}\n');
+    writeUserConfig(otherUser, 'habits: {}\n');
+    userAndAuthRepository.setUserPassword(user, 'test-password');
+    userAndAuthRepository.setUserPassword(otherUser, 'test-password');
+    const session = userAndAuthRepository.createUserSession(user, 3600);
+
+    await request(createApp())
+      .get(`/users/${otherUser}/config?v=1`)
+      .set('Cookie', `${SESSION_COOKIE_NAME}=${session}`)
+      .expect(403, { error: 'forbidden' });
+  });
+
   it('returns only configuration data when validating and loading configs', () => {
     const user = 'config-data-context-user';
     const text = yamlString('user: ignored\nhabits: {}\n');

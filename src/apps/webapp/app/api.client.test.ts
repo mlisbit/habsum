@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ApiRequestError, createUser, getApplication, getApplicationUpdates } from './api.client';
+import {
+  ApiRequestError,
+  createUser,
+  getApplication,
+  getApplicationUpdates,
+  getUserConfig,
+} from './api.client';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -54,6 +60,24 @@ describe('API errors', () => {
       body,
     } satisfies Partial<ApiRequestError>);
   });
+});
+
+it('requests config revisions separately from the current config', async () => {
+  const fetchMock = vi.fn(
+    async (_url: string, _init?: RequestInit) =>
+      new Response(JSON.stringify({ text: 'habits: {}', config: { habits: [] }, versions: [] }), {
+        status: 200,
+      }),
+  );
+  vi.stubGlobal('fetch', fetchMock);
+
+  await Promise.all([getUserConfig('mac'), getUserConfig('mac', '2'), getUserConfig('mac', '3')]);
+
+  expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
+    expect.stringMatching(/\/users\/mac\/config$/),
+    expect.stringMatching(/\/users\/mac\/config\?v=2$/),
+    expect.stringMatching(/\/users\/mac\/config\?v=3$/),
+  ]);
 });
 
 it('sends the installed web version to the updates endpoint', async () => {
