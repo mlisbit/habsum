@@ -85,15 +85,20 @@ describe('WidgetBuilder', () => {
     });
   });
 
-  it('includes absent graph days in the average when requested', () => {
+  it('averages recorded values including zero while ignoring missing days', () => {
     const widgets = new WidgetBuilder()
-      .withBarGraph({ data: graphData, goal: null })
+      .withBarGraph({
+        data: {
+          ...graphData,
+          '2026-07-22': { ...graphData['2026-07-22'], value: 0 },
+        },
+        goal: null,
+      })
       .withInsights({
         streakInsights: null,
         includeCurrentStreak: false,
         includeLongestStreak: false,
         includeWeeklyAverage: true,
-        includeAbsentDaysInAverage: true,
       })
       .build();
 
@@ -102,10 +107,27 @@ describe('WidgetBuilder', () => {
       insights: [
         {
           header: 'Average/day',
-          description: '4',
+          description: '2',
           hover: expect.any(String),
         },
       ],
+    });
+  });
+
+  it('shows no average when no values have been recorded', () => {
+    const widgets = new WidgetBuilder()
+      .withBarGraph({ data: { '2026-07-21': graphData['2026-07-21'] }, goal: null })
+      .withInsights({
+        streakInsights: null,
+        includeCurrentStreak: false,
+        includeLongestStreak: false,
+        includeWeeklyAverage: true,
+      })
+      .build();
+
+    expect(widgets[0]?.body[1]).toEqual({
+      kind: 'insights',
+      insights: [{ header: 'Average/day', description: '—', hover: expect.any(String) }],
     });
   });
 

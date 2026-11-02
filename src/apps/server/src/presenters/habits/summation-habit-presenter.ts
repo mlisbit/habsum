@@ -121,7 +121,6 @@ export class SummationHabitPresenter extends HabitPresenter<
         includeCurrentStreak,
         includeLongestStreak,
         includeWeeklyAverage,
-        includeAbsentDaysInAverage: this.context.includeAbsentDaysInAverage,
         streakFrequency: this.definition.streak_options?.frequency,
       })
       .build();

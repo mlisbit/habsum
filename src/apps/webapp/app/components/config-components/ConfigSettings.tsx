@@ -89,8 +89,6 @@ export function ConfigSettings({ user, mode, version, renderCard }: ConfigSettin
     };
   }, [showToast, user, version]);
 
-  const includeAbsentDaysInAverage = config?.includeAbsentDaysInAverage ?? false;
-
   const yamlDirty = text !== initialText;
   const orderDirty = habitOrderKey(habitOrder) !== initialHabitOrderKey;
   const configDirty = configKey(config) !== configKey(initialConfig);
@@ -166,14 +164,6 @@ export function ConfigSettings({ user, mode, version, renderCard }: ConfigSettin
     }
   }, [config, dirty, habitOrder, mode, showToast, text, user]);
 
-  const onIncludeAbsentDaysInAverageChange = useCallback(
-    (value: boolean) => {
-      const nextConfig = config == null ? null : { ...config, includeAbsentDaysInAverage: value };
-      setConfig(nextConfig);
-    },
-    [config],
-  );
-
   const versionDropdown =
     mode === 'yaml' ? (
       <ConfigVersionDropdown versions={versions} version={version} disabled={loading || saving} />
@@ -229,7 +219,7 @@ export function ConfigSettings({ user, mode, version, renderCard }: ConfigSettin
         actions:
           mode === 'habits' ? (
             <Button
-              type="secondary"
+              type="primary"
               icon="plus"
               text="Add"
               disabled={saving}
@@ -257,38 +247,6 @@ export function ConfigSettings({ user, mode, version, renderCard }: ConfigSettin
             />
           ),
       })}
-
-      {mode === 'habits'
-        ? renderCard({
-            headerText: 'Statistics',
-            children: (
-              <div className="card-padding config-page__statistics">
-                <div className="config-page__statistics-row">
-                  <label
-                    htmlFor="config-include-absent-days-average"
-                    className="config-page__statistics-label text-b-m"
-                  >
-                    Missing days in averages
-                  </label>
-                  <select
-                    id="config-include-absent-days-average"
-                    className="config-page__statistics-select text-b-m"
-                    value={includeAbsentDaysInAverage ? 'include' : 'ignore'}
-                    onChange={(e) =>
-                      onIncludeAbsentDaysInAverageChange(e.target.value === 'include')
-                    }
-                  >
-                    <option value="ignore">Ignore missing days</option>
-                    <option value="include">Include missing days</option>
-                  </select>
-                </div>
-                <p className="config-page__statistics-copy text-light text-b-m">
-                  Controls how averages are calculated when a habit has no entry for a day.
-                </p>
-              </div>
-            ),
-          })
-        : null}
 
       {mode === 'habits'
         ? renderCard({

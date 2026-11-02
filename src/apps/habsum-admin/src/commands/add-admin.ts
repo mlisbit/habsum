@@ -64,7 +64,6 @@ export default async function addAdmin(
         .run(
           normalizedUsername,
           new YAMLConfig().getSerializer().serialize({
-            includeAbsentDaysInAverage: false,
             habits: [],
           }),
         );

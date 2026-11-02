@@ -446,7 +446,6 @@ export default class YAMLConfigParser implements YAMLConfigParserInterface {
     }
 
     return {
-      includeAbsentDaysInAverage: rawConfig.include_absent_days_in_average === true,
       habits: Object.entries(habits).map(([name, def]): HabitDef => {
         if (!isRecord(def)) {
           throw new YAMLConfigValidationError(`habit "${name}" must be a yaml mapping`);

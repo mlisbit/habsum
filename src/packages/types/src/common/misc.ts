@@ -92,7 +92,6 @@ export type UserConfigJsonHabit = {
 };
 
 export type UserConfigJson = {
-  includeAbsentDaysInAverage: boolean;
   habits: UserConfigJsonHabit[];
 };
 

@@ -9,7 +9,6 @@ function fixture(name: string): string {
 }
 
 const config: UserConfig = {
-  includeAbsentDaysInAverage: true,
   habits: [
     {
       name: 'mood',
@@ -59,14 +58,12 @@ describe('YAMLConfigSerializer', () => {
   it('produces yaml that can be parsed back into configuration data', () => {
     const yaml = new YAMLConfig().getSerializer().serialize(config);
     expect(new YAMLConfig(yaml).parse()).toMatchObject({
-      includeAbsentDaysInAverage: true,
       habits: config.habits,
     });
   });
 
   it('writes text habit configuration without presentation options or daily text', () => {
     const textConfig: UserConfig = {
-      includeAbsentDaysInAverage: false,
       habits: [
         {
           name: 'journal',

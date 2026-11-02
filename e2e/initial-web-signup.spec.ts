@@ -107,6 +107,8 @@ test('creates a pushup summation habit, records a quick add, and exports the dat
   expect((await recordPushups).status()).toBe(200);
 
   await page.getByRole('button', { name: 'Settings', exact: true }).click();
+  await expect(page).toHaveURL('/users/first-owner/settings/habits');
+  await page.getByRole('link', { name: 'Account', exact: true }).click();
   await expect(page).toHaveURL('/users/first-owner/settings/account');
 
   const downloadPromise = page.waitForEvent('download');

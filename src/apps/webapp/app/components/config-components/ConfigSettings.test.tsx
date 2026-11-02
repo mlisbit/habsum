@@ -39,7 +39,7 @@ vi.mock('@uiw/react-codemirror', () => ({
 function configResponse(text: string): UserConfigGetResponse {
   return {
     text: yamlString(text),
-    config: { includeAbsentDaysInAverage: false, habits: [] },
+    config: { habits: [] },
     versions: [3, 2, 1].map((version) => ({
       version,
       savedAt: dayWithTimeFromString(`2026-11-0${version} 16:30:00`),

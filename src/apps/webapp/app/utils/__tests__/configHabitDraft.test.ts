@@ -15,7 +15,6 @@ describe('single-select data visualization config', () => {
       data_visualization: { heatmap: {} },
     };
     const config: UserConfigJson = {
-      includeAbsentDaysInAverage: false,
       habits: [habit],
     };
 
@@ -40,7 +39,6 @@ describe('text habit config', () => {
       streak_options: { frequency: '7d' },
     };
     const config: UserConfigJson = {
-      includeAbsentDaysInAverage: false,
       habits: [habit],
     };
 
@@ -65,7 +63,6 @@ describe('text habit config', () => {
       goal: null,
     };
     const config: UserConfigJson = {
-      includeAbsentDaysInAverage: false,
       habits: [habit],
     };
 
@@ -98,7 +95,6 @@ describe('single-select habit theme config', () => {
       theme: 'checkbox',
     };
     const config: UserConfigJson = {
-      includeAbsentDaysInAverage: false,
       habits: [habit],
     };
     const draft = draftFromHabit(habit);
@@ -121,7 +117,6 @@ describe('habit insight config', () => {
       goal: 100,
     };
     const config: UserConfigJson = {
-      includeAbsentDaysInAverage: false,
       habits: [habit],
     };
     const draft = {
@@ -146,7 +141,6 @@ describe('habit insight config', () => {
       goal: 100,
     };
     const config: UserConfigJson = {
-      includeAbsentDaysInAverage: false,
       habits: [habit],
     };
     const draft = {

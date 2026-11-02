@@ -122,18 +122,9 @@ function dumpHabitBlock(habit: HabitDef): string {
 
 export default class YAMLConfigSerializer implements YAMLConfigSerializerInterface {
   serialize(config: UserConfig): YAMLString {
-    const rootEntries: Record<string, unknown> = {};
-    if (config.includeAbsentDaysInAverage) {
-      rootEntries.include_absent_days_in_average = true;
-    }
-
     const habitBlocks = config.habits.map(dumpHabitBlock);
     const habitsYaml =
       habitBlocks.length > 0 ? `habits:\n${habitBlocks.join('\n\n')}` : 'habits: {}';
-    const restEntries = Object.entries(rootEntries);
-    if (restEntries.length === 0) return yamlString(`${habitsYaml}\n`);
-
-    const restYaml = yaml.dump(Object.fromEntries(restEntries), YAML_DUMP_OPTS).trimEnd();
-    return yamlString(`${restYaml}\n\n${habitsYaml}\n`);
+    return yamlString(`${habitsYaml}\n`);
   }
 }

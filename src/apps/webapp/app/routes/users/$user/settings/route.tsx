@@ -116,19 +116,19 @@ export default function UserSettingsLayout() {
         <nav id="settings-nav" className="settings__nav">
           <Link
             className={`settings__link text-b-l${
-              path.endsWith('/account') ? ' settings__link--active' : ''
-            }`}
-            to={`${base}/account`}
-          >
-            Account
-          </Link>
-          <Link
-            className={`settings__link text-b-l${
               path.includes('/settings/habits') ? ' settings__link--active' : ''
             }`}
             to={`${base}/habits`}
           >
             Habits
+          </Link>
+          <Link
+            className={`settings__link text-b-l${
+              path.endsWith('/account') ? ' settings__link--active' : ''
+            }`}
+            to={`${base}/account`}
+          >
+            Account
           </Link>
           <Link
             className={`settings__link text-b-l${

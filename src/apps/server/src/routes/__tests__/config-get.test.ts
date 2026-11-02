@@ -136,7 +136,7 @@ describe('GET /users/:user/config', () => {
   it('returns only configuration data when validating and loading configs', () => {
     const user = 'config-data-context-user';
     const text = yamlString('user: ignored\nhabits: {}\n');
-    const expected = { includeAbsentDaysInAverage: false, habits: [] };
+    const expected = { habits: [] };
 
     expect(configService.validateUserConfigText(text)).toEqual({
       ok: true,
@@ -184,7 +184,6 @@ describe('GET /users/:user/config', () => {
     expect(res.body.insights).toBeUndefined();
     expect(res.body.config).not.toHaveProperty('user');
     expect(res.body.config).toMatchObject({
-      includeAbsentDaysInAverage: false,
       habits: [
         {
           name: 'mood',
@@ -204,11 +203,11 @@ describe('GET /users/:user/config', () => {
     expect(res.body.habits).toBeUndefined();
   });
 
-  it('accepts structured config json on the original config endpoint', async () => {
+  it('saves structured config and drops the retired averaging setting from older YAML', async () => {
     const user = 'config-json-put-user';
     writeUserConfig(
       user,
-      `include_absent_days_in_average: false
+      `include_absent_days_in_average: true
 
 habits:
   pages:
@@ -223,7 +222,6 @@ habits:
       .set('Cookie', `${SESSION_COOKIE_NAME}=${session}`)
       .send({
         config: {
-          includeAbsentDaysInAverage: true,
           habits: [
             { name: 'pages', type: 'summation', goal: null, repeat: ['tuesday', 'thursday'] },
           ],
@@ -236,9 +234,9 @@ habits:
       .set('Cookie', `${SESSION_COOKIE_NAME}=${session}`)
       .expect(200);
 
-    expect(res.body.config.includeAbsentDaysInAverage).toBe(true);
+    expect(res.body.config).not.toHaveProperty('includeAbsentDaysInAverage');
     expect(res.body.text.startsWith('# version: 1\n')).toBe(true);
-    expect(res.body.text).toContain('include_absent_days_in_average: true');
+    expect(res.body.text).not.toContain('include_absent_days_in_average');
     expect(res.body.text).toContain('repeat: [tuesday, thursday]');
   });
 
@@ -268,7 +266,6 @@ habits:
       .set('Cookie', cookie)
       .send({
         config: {
-          includeAbsentDaysInAverage: false,
           habits: [
             {
               name: 'journal',
@@ -307,7 +304,6 @@ habits:
       .set('Cookie', `${SESSION_COOKIE_NAME}=${session}`)
       .send({
         config: {
-          includeAbsentDaysInAverage: false,
           habits: [
             {
               name: 'mood',

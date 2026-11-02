@@ -8,7 +8,6 @@ import type { HabitViewOptions } from './_private/utils.js';
 export type HabitPresentationContext = HabitViewOptions & {
   includeWidgets?: boolean;
   includeEvents?: boolean;
-  includeAbsentDaysInAverage?: boolean;
 };
 
 export type HabitHistoryEvent = {

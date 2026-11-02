@@ -134,7 +134,6 @@ describe('YAMLConfigParser v1', () => {
 
     expect(legacyConfig).toEqual(newConfig);
     expect(newConfig).toMatchObject({
-      includeAbsentDaysInAverage: true,
       habits: [
         {
           name: 'mood',

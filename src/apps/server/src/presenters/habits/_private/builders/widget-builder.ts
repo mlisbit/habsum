@@ -24,7 +24,6 @@ type InsightsOptions = {
   includeCurrentStreak: boolean;
   includeLongestStreak: boolean;
   includeWeeklyAverage?: boolean;
-  includeAbsentDaysInAverage?: boolean;
   streakFrequency?: string;
 };
 
@@ -110,9 +109,7 @@ export class WidgetBuilder {
       options.includeLongestStreak
         ? this.getLongestStreakInsight(options.streakInsights, options.streakFrequency)
         : null,
-      options.includeWeeklyAverage
-        ? this.getWeeklyAverageInsight(graphData, options.includeAbsentDaysInAverage ?? false)
-        : null,
+      options.includeWeeklyAverage ? this.getWeeklyAverageInsight(graphData) : null,
     ].filter((insight): insight is HabitWidgetInsight => insight != null);
   }
 
@@ -157,20 +154,16 @@ export class WidgetBuilder {
     };
   }
 
-  private getWeeklyAverageInsight(
-    graphData: BarGraphData | null,
-    includeAbsentDays: boolean,
-  ): HabitWidgetInsight | null {
+  private getWeeklyAverageInsight(graphData: BarGraphData | null): HabitWidgetInsight | null {
     if (!graphData) return null;
 
-    const allValues = Object.values(graphData).map((datum) => datum.value);
-    const values = includeAbsentDays
-      ? allValues
-      : allValues.filter((value): value is number => value != null);
+    const values = Object.values(graphData)
+      .map((datum) => datum.value)
+      .filter((value): value is number => value != null);
     const average =
       values.length === 0
         ? null
-        : Math.round(values.reduce<number>((sum, value) => sum + (value ?? 0), 0) / values.length);
+        : Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
     const entries = Object.entries(graphData);
     const first = entries.at(0)?.[0];
     const outlined = entries.find(([, datum]) => datum.outline === true)?.[0];

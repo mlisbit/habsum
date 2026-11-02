@@ -43,7 +43,6 @@ describe('YAMLConfig', () => {
     const parsed = new YAMLConfig(yamlString(`user: ignored\n${content}`)).parse();
 
     expect(parsed).toMatchObject({
-      includeAbsentDaysInAverage: false,
       habits: [{ name: 'Reading', type: 'single_select' }],
     });
     expect(parsed).not.toHaveProperty('user');

@@ -70,7 +70,6 @@ export function getConfigJson(text: YAMLString): UserConfigJson {
   try {
     const config = new YAMLConfig(text).parse();
     return {
-      includeAbsentDaysInAverage: config.includeAbsentDaysInAverage,
       habits: config.habits.map(habitDefToConfigJson),
     };
   } catch (e) {
@@ -133,7 +132,6 @@ export function getUserConfigFromJson(config: UserConfigJson): UserConfig {
   // This intermediate document uses the version 1 YAML shape.
   const content = yamlString(
     yaml.dump({
-      include_absent_days_in_average: config.includeAbsentDaysInAverage,
       habits,
     }),
   );

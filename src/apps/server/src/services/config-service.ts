@@ -234,7 +234,6 @@ export class ConfigService {
     }
 
     const text = this.yamlConfig.getSerializer().serialize({
-      includeAbsentDaysInAverage: false,
       habits: [],
     });
     const validation = this.validateUserConfigText(text);

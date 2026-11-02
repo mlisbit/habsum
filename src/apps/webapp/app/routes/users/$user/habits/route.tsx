@@ -238,7 +238,7 @@ export default function HabitsPage() {
         onBack={() => {
           void signOut().then(() => navigate('/login'));
         }}
-        onSettings={() => navigate(`/users/${encodeURIComponent(user)}/settings/account`)}
+        onSettings={() => navigate(`/users/${encodeURIComponent(user)}/settings`)}
         progress={state?.page.progress ?? EMPTY_PAGE_PROGRESS}
         hideDayNavigation={state?.page.showEmptyIntro === true}
       />

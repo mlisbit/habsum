@@ -70,7 +70,6 @@ export class HabitService {
         viewingDate: context.viewDate,
         today: context.today,
         includeWidgets: true,
-        includeAbsentDaysInAverage: config.includeAbsentDaysInAverage,
       },
     });
 
@@ -204,7 +203,6 @@ export class HabitService {
         viewingDate: date,
         today: context.today,
         includeWidgets: true,
-        includeAbsentDaysInAverage: config.includeAbsentDaysInAverage,
       },
     }).present();
 
